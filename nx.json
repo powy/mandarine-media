@@ -1,0 +1,79 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/jest.config.[jt]s",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/**/*.stories.@(js|jsx|ts|tsx|mdx)",
+      "!{projectRoot}/.storybook/**/*",
+      "!{projectRoot}/**/*.md"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"],
+      "cache": true
+    },
+    "lint": {
+      "inputs": ["default", "{workspaceRoot}/.eslintrc.json"],
+      "cache": true
+    },
+    "test": {
+      "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js"],
+      "cache": true
+    },
+    "type-check": {
+      "inputs": ["default", "^production"],
+      "cache": true
+    }
+  },
+  "generators": {
+    "@nx/react": {
+      "application": {
+        "style": "css",
+        "linter": "eslint",
+        "bundler": "vite",
+        "unitTestRunner": "vitest"
+      },
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "eslint",
+        "unitTestRunner": "vitest"
+      }
+    },
+    "@nx/react-native": {
+      "application": {
+        "linter": "eslint",
+        "unitTestRunner": "jest"
+      },
+      "component": {
+        "classComponent": false
+      },
+      "library": {
+        "linter": "eslint",
+        "unitTestRunner": "jest"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "testTargetName": "test",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static"
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "mobile",
+  "root": "apps/mobile",
+  "projectType": "application",
+  "sourceRoot": "apps/mobile/src",
+  "targets": {
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native start",
+        "cwd": "apps/mobile"
+      }
+    },
+    "android": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native run-android",
+        "cwd": "apps/mobile"
+      }
+    },
+    "ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native run-ios",
+        "cwd": "apps/mobile"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native build-android",
+        "cwd": "apps/mobile"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/mobile"],
+      "options": {
+        "jestConfig": "apps/mobile/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/mobile/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  },
+  "tags": ["scope:mobile", "type:app"],
+  "implicitDependencies": ["share"]
+}

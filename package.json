@@ -1,0 +1,51 @@
+{
+  "name": "kyool-media-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm:dev:*\"",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:backoffice": "npm run dev --workspace=backoffice",
+    "dev:mobile": "npm run start --workspace=mobile",
+    "dev:share": "npm run dev --workspace=share",
+    "build": "npm run build:share && npm run build --workspaces --if-present",
+    "build:share": "npm run build --workspace=share",
+    "test": "npm run test --workspaces --if-present",
+    "test:share": "npm run test --workspace=share",
+    "test:backoffice": "npm run test --workspace=backoffice",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "clean": "npm run clean:deps && npm run clean:dist",
+    "clean:deps": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
+    "clean:dist": "rm -rf apps/*/dist packages/*/dist",
+    "install:clean": "npm run clean:deps && npm install",
+    "postinstall": "npm run build:share"
+  },
+  "devDependencies": {
+    "@nx/js": "^21.2.4",
+    "@nx/react": "^21.2.4",
+    "@nx/react-native": "^21.2.4",
+    "@nx/vite": "^21.2.4",
+    "@nx/workspace": "^21.2.4",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.0.0",
+    "nx": "^21.2.4",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.27.6",
+    "react-native-vector-icons": "^10.2.0"
+  }
+}

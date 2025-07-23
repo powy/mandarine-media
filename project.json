@@ -1,0 +1,31 @@
+{
+  "name": "kyool-media",
+  "root": ".",
+  "projectType": "library",
+  "targets": {
+    "dev": {
+      "executor": "@nx/workspace:run-commands",
+      "options": {
+        "command": "concurrently \"npm:dev:*\""
+      }
+    },
+    "build": {
+      "executor": "@nx/workspace:run-commands",
+      "options": {
+        "command": "npm run build:shared && npm run build --workspaces --if-present"
+      }
+    },
+    "lint": {
+      "executor": "@nx/workspace:run-commands",
+      "options": {
+        "command": "npm run lint --workspaces --if-present"
+      }
+    },
+    "test": {
+      "executor": "@nx/workspace:run-commands",
+      "options": {
+        "command": "npm run test --workspaces --if-present"
+      }
+    }
+  }
+}
