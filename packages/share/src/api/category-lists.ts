@@ -96,7 +96,7 @@ export const categoryListsApi = {
     if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
     if (params?.active_only !== undefined) searchParams.append('active_only', params.active_only.toString());
 
-    const response = await apiClient.get(`/category/lists?${searchParams}`);
+    const response = await apiClient.get(`/api/v1/category/lists?${searchParams}`);
     return response.data;
   },
 
@@ -104,7 +104,7 @@ export const categoryListsApi = {
    * Create a new category list
    */
   createCategoryList: async (data: CategoryListCreate): Promise<CategoryList> => {
-    const response = await apiClient.post('/category/lists', data);
+    const response = await apiClient.post('/api/v1/category/lists', data);
     return response.data;
   },
 
@@ -112,7 +112,7 @@ export const categoryListsApi = {
    * Get specific category list by ID
    */
   getCategoryList: async (categoryListId: string): Promise<CategoryList> => {
-    const response = await apiClient.get(`/category/lists/${categoryListId}`);
+    const response = await apiClient.get(`/api/v1/category/lists/${categoryListId}`);
     return response.data;
   },
 
@@ -120,7 +120,7 @@ export const categoryListsApi = {
    * Update a category list
    */
   updateCategoryList: async (categoryListId: string, data: CategoryListUpdate): Promise<CategoryList> => {
-    const response = await apiClient.put(`/category/lists/${categoryListId}`, data);
+    const response = await apiClient.put(`/api/v1/category/lists/${categoryListId}`, data);
     return response.data;
   },
 
@@ -128,7 +128,7 @@ export const categoryListsApi = {
    * Delete a category list
    */
   deleteCategoryList: async (categoryListId: string): Promise<CategoryList> => {
-    const response = await apiClient.delete(`/category/lists/${categoryListId}`);
+    const response = await apiClient.delete(`/api/v1/category/lists/${categoryListId}`);
     return response.data;
   },
 
@@ -148,7 +148,7 @@ export const categoryListsApi = {
     if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
     if (params?.active_only !== undefined) searchParams.append('active_only', params.active_only.toString());
 
-    const response = await apiClient.get(`/category/lists/${categoryListId}/items?${searchParams}`);
+    const response = await apiClient.get(`/api/v1/category/lists/${categoryListId}/items?${searchParams}`);
     return response.data;
   },
 
@@ -159,7 +159,7 @@ export const categoryListsApi = {
     categoryListId: string,
     data: CategoryListItemCreate
   ): Promise<CategoryListItem> => {
-    const response = await apiClient.post(`/category/lists/${categoryListId}/items`, data);
+    const response = await apiClient.post(`/api/v1/category/lists/${categoryListId}/items`, data);
     return response.data;
   },
 
@@ -171,7 +171,7 @@ export const categoryListsApi = {
     itemId: string,
     data: CategoryListItemUpdate
   ): Promise<CategoryListItem> => {
-    const response = await apiClient.put(`/category/lists/${categoryListId}/items/${itemId}`, data);
+    const response = await apiClient.put(`/api/v1/category/lists/${categoryListId}/items/${itemId}`, data);
     return response.data;
   },
 
@@ -179,7 +179,7 @@ export const categoryListsApi = {
    * Delete a category list item
    */
   deleteCategoryListItem: async (categoryListId: string, itemId: string): Promise<CategoryListItem> => {
-    const response = await apiClient.delete(`/category/lists/${categoryListId}/items/${itemId}`);
+    const response = await apiClient.delete(`/api/v1/category/lists/${categoryListId}/items/${itemId}`);
     return response.data;
   },
 
@@ -190,7 +190,7 @@ export const categoryListsApi = {
     categoryListId: string,
     data: UpdateCategoryListItemsOrderRequest
   ): Promise<{ message: string }> => {
-    const response = await apiClient.put(`/category/lists/${categoryListId}/items/order`, data);
+    const response = await apiClient.put(`/api/v1/category/lists/${categoryListId}/items/order`, data);
     return response.data;
   },
 
@@ -198,7 +198,7 @@ export const categoryListsApi = {
    * Get category list JSON content by name (for frontend consumption)
    */
   getCategoryListJSON: async (categoryListName: string): Promise<CategoryListJSON> => {
-    const response = await apiClient.get(`/category/lists/${categoryListName}/json`);
+    const response = await apiClient.get(`/api/v1/category/lists/${categoryListName}/json`);
     return response.data;
   },
 
@@ -206,7 +206,7 @@ export const categoryListsApi = {
    * Regenerate JSON for a specific category list
    */
   regenerateCategoryListJSON: async (categoryListId: string): Promise<{ message: string }> => {
-    const response = await apiClient.post(`/category/lists/${categoryListId}/regenerate-json`);
+    const response = await apiClient.post(`/api/v1/category/lists/${categoryListId}/regenerate-json`);
     return response.data;
   },
 
@@ -214,7 +214,7 @@ export const categoryListsApi = {
    * Regenerate JSON for all category lists
    */
   regenerateAllCategoryListsJSON: async (): Promise<BulkUpdateCategoryListsResponse> => {
-    const response = await apiClient.post('/category/lists/regenerate-all-json');
+    const response = await apiClient.post('/api/v1/category/lists/regenerate-all-json');
     return response.data;
   },
 
@@ -225,7 +225,7 @@ export const categoryListsApi = {
     message: string;
     created_categories: string[];
   }> => {
-    const response = await apiClient.post('/category/lists/initialize-defaults');
+    const response = await apiClient.post('/api/v1/category/lists/initialize-defaults');
     return response.data;
   },
 };

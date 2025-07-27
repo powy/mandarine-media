@@ -45,7 +45,7 @@ class TestMediaDescriptionsList:
         """Test successful retrieval of media descriptions list."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.get("/api/v1/media/descriptions", headers=headers)
+        response = client.get("/api/v1/media-descriptions", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -62,7 +62,7 @@ class TestMediaDescriptionsList:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             params={"skip": 10, "limit": 5}
         )
@@ -77,7 +77,7 @@ class TestMediaDescriptionsList:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             params={
                 "media_type": "video",
@@ -98,7 +98,7 @@ class TestMediaDescriptionsList:
         
         # Test negative skip
         response = client.get(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             params={"skip": -1}
         )
@@ -106,7 +106,7 @@ class TestMediaDescriptionsList:
         
         # Test limit too high
         response = client.get(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             params={"limit": 101}
         )
@@ -114,7 +114,7 @@ class TestMediaDescriptionsList:
         
         # Test limit too low
         response = client.get(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             params={"limit": 0}
         )
@@ -122,8 +122,8 @@ class TestMediaDescriptionsList:
     
     def test_list_media_descriptions_unauthorized(self, client):
         """Test media descriptions list without authentication."""
-        response = client.get("/api/v1/media/descriptions")
-        assert response.status_code == 403
+        response = client.get("/api/v1/media-descriptions")
+        assert response.status_code == 401
 
 
 class TestMediaDescriptionCreate:
@@ -134,7 +134,7 @@ class TestMediaDescriptionCreate:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -153,7 +153,7 @@ class TestMediaDescriptionCreate:
         
         # First creation should succeed
         response1 = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -161,7 +161,7 @@ class TestMediaDescriptionCreate:
         
         # Second creation with same file_number should fail
         response2 = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -179,7 +179,7 @@ class TestMediaDescriptionCreate:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=invalid_data
         )
@@ -193,7 +193,7 @@ class TestMediaDescriptionCreate:
         invalid_data["media_type"] = "invalid_type"
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=invalid_data
         )
@@ -207,7 +207,7 @@ class TestMediaDescriptionCreate:
         invalid_data["content_status"] = "invalid_status"
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=invalid_data
         )
@@ -216,17 +216,17 @@ class TestMediaDescriptionCreate:
     def test_create_media_description_unauthorized(self, client, sample_media_data):
         """Test creation without authentication."""
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             json=sample_media_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_create_media_description_non_admin(self, client, user_token, sample_media_data):
         """Test creation with non-admin user."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -241,7 +241,7 @@ class TestMediaDescriptionRead:
         # First create a media description
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=admin_headers,
             json=sample_media_data
         )
@@ -251,7 +251,7 @@ class TestMediaDescriptionRead:
         # Then read it
         user_headers = {"Authorization": f"Bearer {user_token}"}
         response = client.get(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=user_headers
         )
         
@@ -267,7 +267,7 @@ class TestMediaDescriptionRead:
         
         # Create media description
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -277,7 +277,7 @@ class TestMediaDescriptionRead:
         
         # Read as admin (should not increment view count)
         response = client.get(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers
         )
         
@@ -290,7 +290,7 @@ class TestMediaDescriptionRead:
         fake_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/media/descriptions/{fake_id}",
+            f"/api/v1/media-descriptions/{fake_id}",
             headers=headers
         )
         
@@ -302,7 +302,7 @@ class TestMediaDescriptionRead:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions/invalid-uuid",
+            "/api/v1/media-descriptions/invalid-uuid",
             headers=headers
         )
         
@@ -311,8 +311,8 @@ class TestMediaDescriptionRead:
     def test_read_media_description_unauthorized(self, client):
         """Test reading without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/media/descriptions/{fake_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/media-descriptions/{fake_id}")
+        assert response.status_code == 401
 
 
 class TestMediaDescriptionUpdate:
@@ -324,7 +324,7 @@ class TestMediaDescriptionUpdate:
         
         # Create media description first
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -333,7 +333,7 @@ class TestMediaDescriptionUpdate:
         
         # Update it
         response = client.put(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers,
             json=sample_media_update_data
         )
@@ -352,7 +352,7 @@ class TestMediaDescriptionUpdate:
         
         # Create media description first
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -363,7 +363,7 @@ class TestMediaDescriptionUpdate:
         # Update only one field
         partial_update = {"is_featured": True}
         response = client.put(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers,
             json=partial_update
         )
@@ -381,7 +381,7 @@ class TestMediaDescriptionUpdate:
         media1_data = sample_media_data.copy()
         media1_data["file_number"] = 11111
         create_response1 = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=media1_data
         )
@@ -391,7 +391,7 @@ class TestMediaDescriptionUpdate:
         media2_data = sample_media_data.copy()
         media2_data["file_number"] = 22222
         create_response2 = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=media2_data
         )
@@ -401,7 +401,7 @@ class TestMediaDescriptionUpdate:
         # Try to update second media with first media's file_number
         update_data = {"file_number": 11111}
         response = client.put(
-            f"/api/v1/media/descriptions/{media2_id}",
+            f"/api/v1/media-descriptions/{media2_id}",
             headers=headers,
             json=update_data
         )
@@ -415,7 +415,7 @@ class TestMediaDescriptionUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/media/descriptions/{fake_id}",
+            f"/api/v1/media-descriptions/{fake_id}",
             headers=headers,
             json=sample_media_update_data
         )
@@ -429,7 +429,7 @@ class TestMediaDescriptionUpdate:
         
         # Create media description first
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -439,7 +439,7 @@ class TestMediaDescriptionUpdate:
         # Try to update with invalid media type
         invalid_update = {"media_type": "invalid_type"}
         response = client.put(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers,
             json=invalid_update
         )
@@ -450,10 +450,10 @@ class TestMediaDescriptionUpdate:
         """Test update without authentication."""
         fake_id = str(uuid.uuid4())
         response = client.put(
-            f"/api/v1/media/descriptions/{fake_id}",
+            f"/api/v1/media-descriptions/{fake_id}",
             json=sample_media_update_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_update_media_description_non_admin(self, client, user_token, sample_media_update_data):
         """Test update with non-admin user."""
@@ -461,7 +461,7 @@ class TestMediaDescriptionUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/media/descriptions/{fake_id}",
+            f"/api/v1/media-descriptions/{fake_id}",
             headers=headers,
             json=sample_media_update_data
         )
@@ -477,7 +477,7 @@ class TestMediaDescriptionDelete:
         
         # Create media description first
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -486,7 +486,7 @@ class TestMediaDescriptionDelete:
         
         # Delete it
         response = client.delete(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers
         )
         
@@ -496,7 +496,7 @@ class TestMediaDescriptionDelete:
         
         # Verify it's deleted by trying to read it
         read_response = client.get(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers
         )
         assert read_response.status_code == 404
@@ -507,7 +507,7 @@ class TestMediaDescriptionDelete:
         fake_id = str(uuid.uuid4())
         
         response = client.delete(
-            f"/api/v1/media/descriptions/{fake_id}",
+            f"/api/v1/media-descriptions/{fake_id}",
             headers=headers
         )
         
@@ -519,7 +519,7 @@ class TestMediaDescriptionDelete:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.delete(
-            "/api/v1/media/descriptions/invalid-uuid",
+            "/api/v1/media-descriptions/invalid-uuid",
             headers=headers
         )
         
@@ -528,8 +528,8 @@ class TestMediaDescriptionDelete:
     def test_delete_media_description_unauthorized(self, client):
         """Test deletion without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.delete(f"/api/v1/media/descriptions/{fake_id}")
-        assert response.status_code == 403
+        response = client.delete(f"/api/v1/media-descriptions/{fake_id}")
+        assert response.status_code == 401
     
     def test_delete_media_description_non_admin(self, client, user_token):
         """Test deletion with non-admin user."""
@@ -537,7 +537,7 @@ class TestMediaDescriptionDelete:
         fake_id = str(uuid.uuid4())
         
         response = client.delete(
-            f"/api/v1/media/descriptions/{fake_id}",
+            f"/api/v1/media-descriptions/{fake_id}",
             headers=headers
         )
         assert response.status_code == 403
@@ -551,7 +551,7 @@ class TestFeaturedMedia:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions/featured/list",
+            "/api/v1/media-descriptions/featured/list",
             headers=headers
         )
         
@@ -564,7 +564,7 @@ class TestFeaturedMedia:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions/featured/list",
+            "/api/v1/media-descriptions/featured/list",
             headers=headers,
             params={"skip": 0, "limit": 5}
         )
@@ -579,7 +579,7 @@ class TestFeaturedMedia:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions/featured/list",
+            "/api/v1/media-descriptions/featured/list",
             headers=headers,
             params={"skip": -1}
         )
@@ -587,8 +587,8 @@ class TestFeaturedMedia:
     
     def test_get_featured_media_unauthorized(self, client):
         """Test featured media without authentication."""
-        response = client.get("/api/v1/media/descriptions/featured/list")
-        assert response.status_code == 403
+        response = client.get("/api/v1/media-descriptions/featured/list")
+        assert response.status_code == 401
 
 
 class TestTrendingMedia:
@@ -599,7 +599,7 @@ class TestTrendingMedia:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions/trending/list",
+            "/api/v1/media-descriptions/trending/list",
             headers=headers
         )
         
@@ -612,7 +612,7 @@ class TestTrendingMedia:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/media/descriptions/trending/list",
+            "/api/v1/media-descriptions/trending/list",
             headers=headers,
             params={"skip": 0, "limit": 10}
         )
@@ -624,8 +624,8 @@ class TestTrendingMedia:
     
     def test_get_trending_media_unauthorized(self, client):
         """Test trending media without authentication."""
-        response = client.get("/api/v1/media/descriptions/trending/list")
-        assert response.status_code == 403
+        response = client.get("/api/v1/media-descriptions/trending/list")
+        assert response.status_code == 401
 
 
 class TestMediaInteractions:
@@ -636,7 +636,7 @@ class TestMediaInteractions:
         # Create media description first
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=admin_headers,
             json=sample_media_data
         )
@@ -647,7 +647,7 @@ class TestMediaInteractions:
         # Like the media
         user_headers = {"Authorization": f"Bearer {user_token}"}
         response = client.post(
-            f"/api/v1/media/descriptions/{media_id}/like",
+            f"/api/v1/media-descriptions/{media_id}/like",
             headers=user_headers
         )
         
@@ -661,7 +661,7 @@ class TestMediaInteractions:
         fake_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/media/descriptions/{fake_id}/like",
+            f"/api/v1/media-descriptions/{fake_id}/like",
             headers=headers
         )
         
@@ -671,15 +671,15 @@ class TestMediaInteractions:
     def test_like_media_description_unauthorized(self, client):
         """Test liking without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.post(f"/api/v1/media/descriptions/{fake_id}/like")
-        assert response.status_code == 403
+        response = client.post(f"/api/v1/media-descriptions/{fake_id}/like")
+        assert response.status_code == 401
     
     def test_share_media_description_success(self, client, user_token, admin_token, sample_media_data):
         """Test successful media share action."""
         # Create media description first
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=admin_headers,
             json=sample_media_data
         )
@@ -690,7 +690,7 @@ class TestMediaInteractions:
         # Share the media
         user_headers = {"Authorization": f"Bearer {user_token}"}
         response = client.post(
-            f"/api/v1/media/descriptions/{media_id}/share",
+            f"/api/v1/media-descriptions/{media_id}/share",
             headers=user_headers
         )
         
@@ -704,7 +704,7 @@ class TestMediaInteractions:
         fake_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/media/descriptions/{fake_id}/share",
+            f"/api/v1/media-descriptions/{fake_id}/share",
             headers=headers
         )
         
@@ -714,8 +714,8 @@ class TestMediaInteractions:
     def test_share_media_description_unauthorized(self, client):
         """Test sharing without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.post(f"/api/v1/media/descriptions/{fake_id}/share")
-        assert response.status_code == 403
+        response = client.post(f"/api/v1/media-descriptions/{fake_id}/share")
+        assert response.status_code == 401
 
 
 class TestMediaDescriptionEdgeCases:
@@ -732,7 +732,7 @@ class TestMediaDescriptionEdgeCases:
         data_with_dates["contract_end_date_utc"] = (future_date + timedelta(days=365)).isoformat()
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=data_with_dates
         )
@@ -752,7 +752,7 @@ class TestMediaDescriptionEdgeCases:
         data_with_long_text["synopsis_text"] = long_text
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=data_with_long_text
         )
@@ -771,7 +771,7 @@ class TestMediaDescriptionEdgeCases:
         data_with_negatives["episode_number"] = -1
         
         response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=data_with_negatives
         )
@@ -785,7 +785,7 @@ class TestMediaDescriptionEdgeCases:
         
         # Create media description
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -799,7 +799,7 @@ class TestMediaDescriptionEdgeCases:
             "episode_title": "Updated Title"
         }
         response = client.put(
-            f"/api/v1/media/descriptions/{media_id}",
+            f"/api/v1/media-descriptions/{media_id}",
             headers=headers,
             json=update_data
         )
@@ -843,7 +843,7 @@ class TestBulkMediaDescriptions:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -868,7 +868,7 @@ class TestBulkMediaDescriptions:
         
         # Create one media description first
         create_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
@@ -894,7 +894,7 @@ class TestBulkMediaDescriptions:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -924,7 +924,7 @@ class TestBulkMediaDescriptions:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -939,7 +939,7 @@ class TestBulkMediaDescriptions:
         bulk_data = {"descriptions": []}
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -964,10 +964,10 @@ class TestBulkMediaDescriptions:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             json=bulk_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_create_bulk_media_descriptions_non_admin(self, client, user_token):
         """Test bulk creation with non-admin user."""
@@ -985,7 +985,7 @@ class TestBulkMediaDescriptions:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -1007,7 +1007,7 @@ class TestBulkMediaDescriptions:
         }
         
         response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )

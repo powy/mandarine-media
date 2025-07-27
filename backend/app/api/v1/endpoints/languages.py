@@ -35,8 +35,8 @@ def create_language(
     Create new language. Admin only.
     """
     # Check if language sigle already exists
-    existing = crud.language.get_by_sigle(db=db, sigle=language_in.sigle)
-    if existing:
+    existing_sigle = crud.language.get_by_sigle(db=db, sigle=language_in.sigle)
+    if existing_sigle:
         raise HTTPException(
             status_code=409,
             detail=f"Language with sigle '{language_in.sigle}' already exists",
@@ -79,8 +79,8 @@ def update_language(
     
     # Check if updating sigle to an existing one
     if language_in.sigle is not None:
-        existing = crud.language.get_by_sigle(db=db, sigle=language_in.sigle)
-        if existing and existing.id != id:
+        existing_sigle = crud.language.get_by_sigle(db=db, sigle=language_in.sigle)
+        if existing_sigle and existing_sigle.id != id:
             raise HTTPException(
                 status_code=409,
                 detail=f"Language with sigle '{language_in.sigle}' already exists",

@@ -9,7 +9,14 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from app.db.database import Base
-from app.models import user  # Import all models
+from app.models.common import GUID, JSONArray
+from app.core.config import settings
+# Import all models to ensure they are registered with SQLAlchemy
+from app.models import (
+    user, media_description, video_file, public_person, subscription_plan, 
+    audience_category, description_report, video_file_report, category_list,
+    program, season, language, country, territory, picture, content_list, screen_content
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -42,7 +49,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = str(settings.DATABASE_URI)
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -61,11 +68,10 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    from sqlalchemy import create_engine
+    
+    # Create engine using settings DATABASE_URI
+    connectable = create_engine(str(settings.DATABASE_URI))
 
     with connectable.connect() as connection:
         context.configure(

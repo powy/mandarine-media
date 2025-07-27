@@ -71,7 +71,7 @@ class TestVideoFilesList:
         """Test successful retrieval of video files list."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.get("/api/v1/video/files", headers=headers)
+        response = client.get("/api/v1/video-files", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -88,7 +88,7 @@ class TestVideoFilesList:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             params={"skip": 5, "limit": 10}
         )
@@ -104,7 +104,7 @@ class TestVideoFilesList:
         
         # Test negative skip
         response = client.get(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             params={"skip": -1}
         )
@@ -112,7 +112,7 @@ class TestVideoFilesList:
         
         # Test limit too high
         response = client.get(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             params={"limit": 101}
         )
@@ -120,8 +120,8 @@ class TestVideoFilesList:
     
     def test_list_video_files_unauthorized(self, client):
         """Test video files list without authentication."""
-        response = client.get("/api/v1/video/files")
-        assert response.status_code == 403
+        response = client.get("/api/v1/video-files")
+        assert response.status_code == 401
 
 
 class TestVideoFileCreate:
@@ -132,7 +132,7 @@ class TestVideoFileCreate:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -156,7 +156,7 @@ class TestVideoFileCreate:
         }
         
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=invalid_data
         )
@@ -170,7 +170,7 @@ class TestVideoFileCreate:
         invalid_data["encoding_status"] = "invalid_status"
         
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=invalid_data
         )
@@ -179,17 +179,17 @@ class TestVideoFileCreate:
     def test_create_video_file_unauthorized(self, client, sample_video_file_data):
         """Test creation without authentication."""
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             json=sample_video_file_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_create_video_file_non_admin(self, client, user_token, sample_video_file_data):
         """Test creation with non-admin user."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -204,7 +204,7 @@ class TestVideoFileRead:
         # First create a video file
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=admin_headers,
             json=sample_video_file_data
         )
@@ -214,7 +214,7 @@ class TestVideoFileRead:
         # Then read it
         user_headers = {"Authorization": f"Bearer {user_token}"}
         response = client.get(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=user_headers
         )
         
@@ -230,7 +230,7 @@ class TestVideoFileRead:
         fake_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/video/files/{fake_id}",
+            f"/api/v1/video-files/{fake_id}",
             headers=headers
         )
         
@@ -242,7 +242,7 @@ class TestVideoFileRead:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/files/invalid-uuid",
+            "/api/v1/video-files/invalid-uuid",
             headers=headers
         )
         
@@ -251,8 +251,8 @@ class TestVideoFileRead:
     def test_read_video_file_unauthorized(self, client):
         """Test reading without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/video/files/{fake_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/video-files/{fake_id}")
+        assert response.status_code == 401
 
 
 class TestVideoFileUpdate:
@@ -264,7 +264,7 @@ class TestVideoFileUpdate:
         
         # Create video file first
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -273,7 +273,7 @@ class TestVideoFileUpdate:
         
         # Update it
         response = client.put(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers,
             json=sample_video_file_update_data
         )
@@ -290,7 +290,7 @@ class TestVideoFileUpdate:
         
         # Create video file first
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -301,7 +301,7 @@ class TestVideoFileUpdate:
         # Update only one field
         partial_update = {"encoding_status": "completed"}
         response = client.put(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers,
             json=partial_update
         )
@@ -317,7 +317,7 @@ class TestVideoFileUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/video/files/{fake_id}",
+            f"/api/v1/video-files/{fake_id}",
             headers=headers,
             json=sample_video_file_update_data
         )
@@ -331,7 +331,7 @@ class TestVideoFileUpdate:
         
         # Create video file first
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -341,7 +341,7 @@ class TestVideoFileUpdate:
         # Try to update with invalid encoding status
         invalid_update = {"encoding_status": "invalid_status"}
         response = client.put(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers,
             json=invalid_update
         )
@@ -352,10 +352,10 @@ class TestVideoFileUpdate:
         """Test update without authentication."""
         fake_id = str(uuid.uuid4())
         response = client.put(
-            f"/api/v1/video/files/{fake_id}",
+            f"/api/v1/video-files/{fake_id}",
             json=sample_video_file_update_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_update_video_file_non_admin(self, client, user_token, sample_video_file_update_data):
         """Test update with non-admin user."""
@@ -363,7 +363,7 @@ class TestVideoFileUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/video/files/{fake_id}",
+            f"/api/v1/video-files/{fake_id}",
             headers=headers,
             json=sample_video_file_update_data
         )
@@ -379,7 +379,7 @@ class TestVideoFileDelete:
         
         # Create video file first
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -388,7 +388,7 @@ class TestVideoFileDelete:
         
         # Delete it
         response = client.delete(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers
         )
         
@@ -398,7 +398,7 @@ class TestVideoFileDelete:
         
         # Verify it's deleted by trying to read it
         read_response = client.get(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers
         )
         assert read_response.status_code == 404
@@ -409,7 +409,7 @@ class TestVideoFileDelete:
         fake_id = str(uuid.uuid4())
         
         response = client.delete(
-            f"/api/v1/video/files/{fake_id}",
+            f"/api/v1/video-files/{fake_id}",
             headers=headers
         )
         
@@ -419,8 +419,8 @@ class TestVideoFileDelete:
     def test_delete_video_file_unauthorized(self, client):
         """Test deletion without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.delete(f"/api/v1/video/files/{fake_id}")
-        assert response.status_code == 403
+        response = client.delete(f"/api/v1/video-files/{fake_id}")
+        assert response.status_code == 401
     
     def test_delete_video_file_non_admin(self, client, user_token):
         """Test deletion with non-admin user."""
@@ -428,7 +428,7 @@ class TestVideoFileDelete:
         fake_id = str(uuid.uuid4())
         
         response = client.delete(
-            f"/api/v1/video/files/{fake_id}",
+            f"/api/v1/video-files/{fake_id}",
             headers=headers
         )
         assert response.status_code == 403
@@ -454,7 +454,7 @@ class TestVideoFileUpload:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/video/files/upload",
+            "/api/v1/video-files/upload",
             headers=headers,
             files={"file": (mock_video_file["filename"], BytesIO(mock_video_file["content"]), mock_video_file["content_type"])}
         )
@@ -482,7 +482,7 @@ class TestVideoFileUpload:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/video/files/upload",
+            "/api/v1/video-files/upload",
             headers=headers,
             files={"file": (mock_video_file["filename"], BytesIO(mock_video_file["content"]), mock_video_file["content_type"])}
         )
@@ -495,7 +495,7 @@ class TestVideoFileUpload:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/video/files/upload",
+            "/api/v1/video-files/upload",
             headers=headers
         )
         
@@ -504,17 +504,17 @@ class TestVideoFileUpload:
     def test_upload_video_file_unauthorized(self, client, mock_video_file):
         """Test video file upload without authentication."""
         response = client.post(
-            "/api/v1/video/files/upload",
+            "/api/v1/video-files/upload",
             files={"file": (mock_video_file["filename"], BytesIO(mock_video_file["content"]), mock_video_file["content_type"])}
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_upload_video_file_non_admin(self, client, user_token, mock_video_file):
         """Test video file upload with non-admin user."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.post(
-            "/api/v1/video/files/upload",
+            "/api/v1/video-files/upload",
             headers=headers,
             files={"file": (mock_video_file["filename"], BytesIO(mock_video_file["content"]), mock_video_file["content_type"])}
         )
@@ -530,7 +530,7 @@ class TestVideoMediaLinking:
         
         # Create media description first
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_description_data
         )
@@ -539,7 +539,7 @@ class TestVideoMediaLinking:
         
         # Create video file
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -548,7 +548,7 @@ class TestVideoMediaLinking:
         
         # Link them
         response = client.post(
-            f"/api/v1/video/files/{video_id}/link/{media_id}",
+            f"/api/v1/video-files/{video_id}/link/{media_id}",
             headers=headers
         )
         
@@ -562,7 +562,7 @@ class TestVideoMediaLinking:
         
         # Create media description first
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_description_data
         )
@@ -572,7 +572,7 @@ class TestVideoMediaLinking:
         fake_video_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/video/files/{fake_video_id}/link/{media_id}",
+            f"/api/v1/video-files/{fake_video_id}/link/{media_id}",
             headers=headers
         )
         
@@ -585,7 +585,7 @@ class TestVideoMediaLinking:
         
         # Create video file first
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -595,7 +595,7 @@ class TestVideoMediaLinking:
         fake_media_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/video/files/{video_id}/link/{fake_media_id}",
+            f"/api/v1/video-files/{video_id}/link/{fake_media_id}",
             headers=headers
         )
         
@@ -607,8 +607,8 @@ class TestVideoMediaLinking:
         fake_video_id = str(uuid.uuid4())
         fake_media_id = str(uuid.uuid4())
         
-        response = client.post(f"/api/v1/video/files/{fake_video_id}/link/{fake_media_id}")
-        assert response.status_code == 403
+        response = client.post(f"/api/v1/video-files/{fake_video_id}/link/{fake_media_id}")
+        assert response.status_code == 401
     
     def test_link_video_to_media_non_admin(self, client, user_token):
         """Test linking with non-admin user."""
@@ -617,7 +617,7 @@ class TestVideoMediaLinking:
         fake_media_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/video/files/{fake_video_id}/link/{fake_media_id}",
+            f"/api/v1/video-files/{fake_video_id}/link/{fake_media_id}",
             headers=headers
         )
         assert response.status_code == 403
@@ -631,7 +631,7 @@ class TestUnlinkedVideoFiles:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get(
-            "/api/v1/video/files/unlinked/list",
+            "/api/v1/video-files/unlinked/list",
             headers=headers
         )
         
@@ -644,7 +644,7 @@ class TestUnlinkedVideoFiles:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get(
-            "/api/v1/video/files/unlinked/list",
+            "/api/v1/video-files/unlinked/list",
             headers=headers,
             params={"skip": 0, "limit": 5}
         )
@@ -656,15 +656,15 @@ class TestUnlinkedVideoFiles:
     
     def test_get_unlinked_video_files_unauthorized(self, client):
         """Test unlinked video files without authentication."""
-        response = client.get("/api/v1/video/files/unlinked/list")
-        assert response.status_code == 403
+        response = client.get("/api/v1/video-files/unlinked/list")
+        assert response.status_code == 401
     
     def test_get_unlinked_video_files_non_admin(self, client, user_token):
         """Test unlinked video files with non-admin user."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/files/unlinked/list",
+            "/api/v1/video-files/unlinked/list",
             headers=headers
         )
         assert response.status_code == 403
@@ -678,7 +678,7 @@ class TestVideoFilesByMedia:
         # Create media description first
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=admin_headers,
             json=sample_media_description_data
         )
@@ -688,7 +688,7 @@ class TestVideoFilesByMedia:
         # Get video files for this media
         user_headers = {"Authorization": f"Bearer {user_token}"}
         response = client.get(
-            f"/api/v1/video/files/by-media/{media_id}",
+            f"/api/v1/video-files/by-media/{media_id}",
             headers=user_headers
         )
         
@@ -702,7 +702,7 @@ class TestVideoFilesByMedia:
         fake_media_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/video/files/by-media/{fake_media_id}",
+            f"/api/v1/video-files/by-media/{fake_media_id}",
             headers=headers
         )
         
@@ -712,8 +712,8 @@ class TestVideoFilesByMedia:
     def test_get_video_files_by_media_unauthorized(self, client):
         """Test getting video files without authentication."""
         fake_media_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/video/files/by-media/{fake_media_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/video-files/by-media/{fake_media_id}")
+        assert response.status_code == 401
 
 
 class TestEncodingStatusUpdate:
@@ -725,7 +725,7 @@ class TestEncodingStatusUpdate:
         
         # Create video file first
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -734,7 +734,7 @@ class TestEncodingStatusUpdate:
         
         # Update encoding status
         response = client.put(
-            f"/api/v1/video/files/{video_id}/encoding-status",
+            f"/api/v1/video-files/{video_id}/encoding-status",
             headers=headers,
             params={
                 "status": "completed",
@@ -752,7 +752,7 @@ class TestEncodingStatusUpdate:
         
         # Create video file first
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -761,7 +761,7 @@ class TestEncodingStatusUpdate:
         
         # Try to update with invalid status
         response = client.put(
-            f"/api/v1/video/files/{video_id}/encoding-status",
+            f"/api/v1/video-files/{video_id}/encoding-status",
             headers=headers,
             params={"status": "invalid_status"}
         )
@@ -775,7 +775,7 @@ class TestEncodingStatusUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/video/files/{fake_id}/encoding-status",
+            f"/api/v1/video-files/{fake_id}/encoding-status",
             headers=headers,
             params={"status": "completed"}
         )
@@ -788,10 +788,10 @@ class TestEncodingStatusUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/video/files/{fake_id}/encoding-status",
+            f"/api/v1/video-files/{fake_id}/encoding-status",
             params={"status": "completed"}
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_update_encoding_status_non_admin(self, client, user_token):
         """Test encoding status update with non-admin user."""
@@ -799,7 +799,7 @@ class TestEncodingStatusUpdate:
         fake_id = str(uuid.uuid4())
         
         response = client.put(
-            f"/api/v1/video/files/{fake_id}/encoding-status",
+            f"/api/v1/video-files/{fake_id}/encoding-status",
             headers=headers,
             params={"status": "completed"}
         )
@@ -819,7 +819,7 @@ class TestVideoFileEdgeCases:
         large_data["bitrate_kbps"] = 100000  # 100 Mbps
         
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=large_data
         )
@@ -838,7 +838,7 @@ class TestVideoFileEdgeCases:
         negative_data["bitrate_kbps"] = -5000
         
         response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=negative_data
         )
@@ -852,7 +852,7 @@ class TestVideoFileEdgeCases:
         
         # Create video file
         create_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -864,7 +864,7 @@ class TestVideoFileEdgeCases:
         
         for status in statuses:
             response = client.put(
-                f"/api/v1/video/files/{video_id}/encoding-status",
+                f"/api/v1/video-files/{video_id}/encoding-status",
                 headers=headers,
                 params={"status": status}
             )
@@ -885,7 +885,7 @@ class TestVideoFileDualUpload:
         }
         
         response = client.post(
-            "/api/v1/video/files/create-metadata",
+            "/api/v1/video-files/create-metadata",
             headers=headers,
             json=metadata_data
         )
@@ -908,7 +908,7 @@ class TestVideoFileDualUpload:
         }
         
         response = client.post(
-            "/api/v1/video/files/create-with-existing-url",
+            "/api/v1/video-files/create-with-existing-url",
             headers=headers,
             json=existing_url_data
         )
@@ -933,7 +933,7 @@ class TestVideoFileDualUpload:
         }
         
         metadata_response = client.post(
-            "/api/v1/video/files/create-metadata",
+            "/api/v1/video-files/create-metadata",
             headers=headers,
             json=metadata_data
         )
@@ -960,7 +960,7 @@ class TestVideoFileDualUpload:
         files = {"file": ("test_video_upload.mp4", BytesIO(content), "video/mp4")}
         
         response = client.post(
-            f"/api/v1/video/files/{file_id}/upload-file",
+            f"/api/v1/video-files/{file_id}/upload-file",
             headers=headers,
             files=files
         )
@@ -982,7 +982,7 @@ class TestVideoFileDualUpload:
         files = {"file": ("test.mp4", BytesIO(content), "video/mp4")}
         
         response = client.post(
-            f"/api/v1/video/files/{fake_id}/upload-file",
+            f"/api/v1/video-files/{fake_id}/upload-file",
             headers=headers,
             files=files
         )
@@ -1002,7 +1002,7 @@ class TestVideoFileDualUpload:
         }
         
         create_response = client.post(
-            "/api/v1/video/files/create-with-existing-url",
+            "/api/v1/video-files/create-with-existing-url",
             headers=headers,
             json=existing_url_data
         )
@@ -1014,7 +1014,7 @@ class TestVideoFileDualUpload:
         files = {"file": ("test.mp4", BytesIO(content), "video/mp4")}
         
         response = client.post(
-            f"/api/v1/video/files/{file_id}/upload-file",
+            f"/api/v1/video-files/{file_id}/upload-file",
             headers=headers,
             files=files
         )
@@ -1031,7 +1031,7 @@ class TestVideoFileDualUpload:
         fake_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/video/files/{fake_id}/test",
+            f"/api/v1/video-files/{fake_id}/test",
             headers=headers
         )
         
@@ -1046,11 +1046,11 @@ class TestVideoFileDualUpload:
         }
         
         response = client.post(
-            "/api/v1/video/files/create-metadata",
+            "/api/v1/video-files/create-metadata",
             json=metadata_data
         )
         
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_create_metadata_non_admin(self, client, user_token):
         """Test creating metadata with non-admin user."""
@@ -1061,7 +1061,7 @@ class TestVideoFileDualUpload:
         }
         
         response = client.post(
-            "/api/v1/video/files/create-metadata",
+            "/api/v1/video-files/create-metadata",
             headers=headers,
             json=metadata_data
         )
@@ -1078,7 +1078,7 @@ class TestVideoFileDualUpload:
         }
         
         response = client.post(
-            "/api/v1/video/files/create-with-existing-url",
+            "/api/v1/video-files/create-with-existing-url",
             headers=headers,
             json=incomplete_data
         )

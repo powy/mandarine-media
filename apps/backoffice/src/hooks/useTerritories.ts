@@ -6,7 +6,7 @@ export const useTerritoriesList = (params?: { skip?: number; limit?: number; cou
   return useQuery({
     queryKey: ['territories', 'list', params],
     queryFn: () => territoriesApi.getAll(params),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 

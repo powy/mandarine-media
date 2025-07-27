@@ -247,7 +247,7 @@ def create_category_list_item(
     if item_in.media_description_id:
         media_desc = crud.media_description.get(db=db, id=item_in.media_description_id)
         if not media_desc:
-            raise HTTPException(status_code=404, detail="Media description not found")
+            raise HTTPException(status_code=400, detail="Invalid media description ID")
     
     item = crud.category_list_item.create(db=db, obj_in=item_in)
     
@@ -255,6 +255,38 @@ def create_category_list_item(
     crud.category_list.update_json_for_list(db=db, id=category_list_id)
     
     return item
+
+
+@router.put("/{category_list_id}/items/order", response_model=dict)
+def update_category_list_items_order(
+    *,
+    db: Session = Depends(deps.get_db),
+    category_list_id: UUID,
+    order_update: schemas.UpdateCategoryListItemsOrderRequest,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Update the display order of category list items. Admin only.
+    """
+    # Verify category list exists
+    category_list = crud.category_list.get(db=db, id=category_list_id)
+    if not category_list:
+        raise HTTPException(status_code=404, detail="Category list not found")
+    
+    # Convert to dict format expected by CRUD
+    items_order = [
+        {"id": item.id, "display_order": item.display_order}
+        for item in order_update.items
+    ]
+    
+    success = crud.category_list_item.update_items_order(db=db, items_order=items_order)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to update items order")
+    
+    # Update JSON for the category list
+    crud.category_list.update_json_for_list(db=db, id=category_list_id)
+    
+    return {"message": "Items order updated successfully"}
 
 
 @router.put("/{category_list_id}/items/{item_id}", response_model=schemas.CategoryListItem)
@@ -314,38 +346,6 @@ def delete_category_list_item(
     crud.category_list.update_json_for_list(db=db, id=category_list_id)
     
     return item
-
-
-@router.put("/{category_list_id}/items/order", response_model=dict)
-def update_category_list_items_order(
-    *,
-    db: Session = Depends(deps.get_db),
-    category_list_id: UUID,
-    order_update: schemas.UpdateCategoryListItemsOrderRequest,
-    current_user: schemas.User = Depends(deps.get_current_active_admin),
-) -> Any:
-    """
-    Update the display order of category list items. Admin only.
-    """
-    # Verify category list exists
-    category_list = crud.category_list.get(db=db, id=category_list_id)
-    if not category_list:
-        raise HTTPException(status_code=404, detail="Category list not found")
-    
-    # Convert to dict format expected by CRUD
-    items_order = [
-        {"id": item.id, "display_order": item.display_order}
-        for item in order_update.items
-    ]
-    
-    success = crud.category_list_item.update_items_order(db=db, items_order=items_order)
-    if not success:
-        raise HTTPException(status_code=400, detail="Failed to update items order")
-    
-    # Update JSON for the category list
-    crud.category_list.update_json_for_list(db=db, id=category_list_id)
-    
-    return {"message": "Items order updated successfully"}
 
 
 # JSON endpoints

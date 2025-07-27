@@ -142,7 +142,7 @@ class TestPublicPersonsList:
     def test_list_public_persons_unauthorized(self, client):
         """Test public persons list without authentication."""
         response = client.get("/api/v1/persons")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestPublicPersonCreate:
@@ -163,7 +163,7 @@ class TestPublicPersonCreate:
         assert data["first_name_hangul"] == sample_public_person_data["first_name_hangul"]
         assert data["last_name_hangul"] == sample_public_person_data["last_name_hangul"]
         assert data["stage_name_roman"] == sample_public_person_data["stage_name_roman"]
-        assert data["profession_primary"] == sample_public_person_data["profession_primary"]
+        assert data["profession_list"] == sample_public_person_data["profession_list"]
         assert "id" in data
         assert "creation_date_utc" in data
     
@@ -178,17 +178,7 @@ class TestPublicPersonCreate:
             "last_name_roman": "Kim",
             "stage_name_hangul": "테스트",
             "stage_name_roman": "Test",
-            "birthdate": "1990-01-01",
-            "gender": "female",
-            "nationality": "South Korean",
-            "profession_primary": "Actor",
-            "debut_year": 2010,
-            "agency_name": "Test Agency",
-            "height_cm": 165,
-            "blood_type": "A",
-            "zodiac_sign": "Capricorn",
-            "education": "Test University",
-            "social_media_instagram": "@test"
+            "profession_list": ["Actor"]
         }
         
         response = client.post(
@@ -200,7 +190,7 @@ class TestPublicPersonCreate:
         assert response.status_code == 200
         data = response.json()
         assert data["first_name_roman"] == "Test"
-        assert data["profession_primary"] == "Actor"
+        assert data["profession_list"] == ["Actor"]
     
     def test_create_public_person_invalid_data(self, client, admin_token):
         """Test creation with invalid data."""
@@ -219,12 +209,12 @@ class TestPublicPersonCreate:
         )
         assert response.status_code == 422
     
-    def test_create_public_person_invalid_gender(self, client, admin_token, sample_public_person_data):
-        """Test creation with invalid gender."""
+    def test_create_public_person_invalid_stage_name(self, client, admin_token, sample_public_person_data):
+        """Test creation with invalid stage name."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         invalid_data = sample_public_person_data.copy()
-        invalid_data["gender"] = "invalid_gender"
+        invalid_data["stage_name_roman"] = ""  # Empty required field
         
         response = client.post(
             "/api/v1/persons",
@@ -233,12 +223,12 @@ class TestPublicPersonCreate:
         )
         assert response.status_code == 422
     
-    def test_create_public_person_invalid_date(self, client, admin_token, sample_public_person_data):
-        """Test creation with invalid birthdate."""
+    def test_create_public_person_invalid_profession_list(self, client, admin_token, sample_public_person_data):
+        """Test creation with invalid profession list."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         invalid_data = sample_public_person_data.copy()
-        invalid_data["birthdate"] = "invalid-date"
+        invalid_data["profession_list"] = "not_a_list"  # Should be a list
         
         response = client.post(
             "/api/v1/persons",
@@ -253,7 +243,7 @@ class TestPublicPersonCreate:
             "/api/v1/persons",
             json=sample_public_person_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_create_public_person_non_admin(self, client, user_token, sample_public_person_data):
         """Test creation with non-admin user."""
@@ -323,7 +313,7 @@ class TestPublicPersonRead:
         """Test reading without authentication."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/persons/{fake_id}")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestPublicPersonUpdate:
@@ -351,9 +341,8 @@ class TestPublicPersonUpdate:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["biography_text"] == sample_public_person_update_data["biography_text"]
-        assert data["agency_name"] == sample_public_person_update_data["agency_name"]
-        assert data["social_media_instagram"] == sample_public_person_update_data["social_media_instagram"]
+        assert data["stage_name_roman"] == sample_public_person_update_data["stage_name_roman"]
+        assert data["profession_list"] == sample_public_person_update_data["profession_list"]
     
     def test_update_public_person_partial_update(self, client, admin_token, sample_public_person_data):
         """Test partial update of public person."""
@@ -367,10 +356,10 @@ class TestPublicPersonUpdate:
         )
         assert create_response.status_code == 200
         person_id = create_response.json()["id"]
-        original_name = create_response.json()["first_name_roman"]
+        original_name = create_response.json()["stage_name_roman"]
         
         # Update only one field
-        partial_update = {"is_active": False}
+        partial_update = {"first_name_hangul": "새로운이름"}
         response = client.put(
             f"/api/v1/persons/{person_id}",
             headers=headers,
@@ -379,8 +368,8 @@ class TestPublicPersonUpdate:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["is_active"] is False
-        assert data["first_name_roman"] == original_name  # Should remain unchanged
+        assert data["first_name_hangul"] == "새로운이름"
+        assert data["stage_name_roman"] == original_name  # Should remain unchanged
     
     def test_update_public_person_not_found(self, client, admin_token, sample_public_person_update_data):
         """Test updating non-existent public person."""
@@ -409,8 +398,8 @@ class TestPublicPersonUpdate:
         assert create_response.status_code == 200
         person_id = create_response.json()["id"]
         
-        # Try to update with invalid gender
-        invalid_update = {"gender": "invalid_gender"}
+        # Try to update with invalid stage name (empty)
+        invalid_update = {"stage_name_roman": ""}
         response = client.put(
             f"/api/v1/persons/{person_id}",
             headers=headers,
@@ -426,7 +415,7 @@ class TestPublicPersonUpdate:
             f"/api/v1/persons/{fake_id}",
             json=sample_public_person_update_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_update_public_person_non_admin(self, client, user_token, sample_public_person_update_data):
         """Test update with non-admin user."""
@@ -491,7 +480,7 @@ class TestPublicPersonDelete:
         """Test deletion without authentication."""
         fake_id = str(uuid.uuid4())
         response = client.delete(f"/api/v1/persons/{fake_id}")
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_delete_public_person_non_admin(self, client, user_token):
         """Test deletion with non-admin user."""
@@ -554,7 +543,7 @@ class TestPublicPersonSearch:
             "/api/v1/persons/search/by-name",
             params={"name": "Kim"}
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestPublicPersonByProfession:
@@ -604,119 +593,57 @@ class TestPublicPersonByProfession:
     def test_get_by_profession_unauthorized(self, client):
         """Test get by profession without authentication."""
         response = client.get("/api/v1/persons/profession/Singer")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
-class TestPublicPersonByAgency:
-    """Test public person by agency endpoint."""
-    
-    def test_get_by_agency_success(self, client, user_token):
-        """Test successful retrieval by agency."""
-        headers = {"Authorization": f"Bearer {user_token}"}
-        
-        response = client.get(
-            "/api/v1/persons/agency/ADOR",
-            headers=headers
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-    
-    def test_get_by_agency_with_pagination(self, client, user_token):
-        """Test get by agency with pagination."""
-        headers = {"Authorization": f"Bearer {user_token}"}
-        
-        response = client.get(
-            "/api/v1/persons/agency/HYBE",
-            headers=headers,
-            params={"skip": 0, "limit": 15}
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) <= 15
-    
-    def test_get_by_agency_url_encoded(self, client, user_token):
-        """Test get by agency with URL-encoded agency name."""
-        headers = {"Authorization": f"Bearer {user_token}"}
-        
-        response = client.get(
-            "/api/v1/persons/agency/YG%20Entertainment",
-            headers=headers
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-    
-    def test_get_by_agency_unauthorized(self, client):
-        """Test get by agency without authentication."""
-        response = client.get("/api/v1/persons/agency/ADOR")
-        assert response.status_code == 403
 
 
 class TestPublicPersonEdgeCases:
     """Test edge cases and error scenarios."""
     
-    def test_create_public_person_with_future_birthdate(self, client, admin_token, sample_public_person_data):
-        """Test creating public person with future birthdate."""
+    def test_create_public_person_with_empty_optional_fields(self, client, admin_token):
+        """Test creating public person with empty optional fields."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        future_data = sample_public_person_data.copy()
-        future_data["birthdate"] = "2030-01-01"  # Future date
+        # Only required field
+        minimal_data = {
+            "stage_name_roman": "Test Artist"
+        }
         
         response = client.post(
             "/api/v1/persons",
             headers=headers,
-            json=future_data
-        )
-        
-        # Should accept future dates (might be valid for fictional characters)
-        assert response.status_code == 200
-    
-    def test_create_public_person_with_very_old_birthdate(self, client, admin_token, sample_public_person_data):
-        """Test creating public person with very old birthdate."""
-        headers = {"Authorization": f"Bearer {admin_token}"}
-        
-        old_data = sample_public_person_data.copy()
-        old_data["birthdate"] = "1900-01-01"  # Very old date
-        
-        response = client.post(
-            "/api/v1/persons",
-            headers=headers,
-            json=old_data
+            json=minimal_data
         )
         
         assert response.status_code == 200
         data = response.json()
-        assert data["birthdate"] == "1900-01-01"
+        assert data["stage_name_roman"] == "Test Artist"
     
-    def test_create_public_person_with_extreme_height(self, client, admin_token, sample_public_person_data):
-        """Test creating public person with extreme height values."""
+    def test_create_public_person_with_multiple_professions(self, client, admin_token, sample_public_person_data):
+        """Test creating public person with multiple professions."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        extreme_data = sample_public_person_data.copy()
-        extreme_data["height_cm"] = 300  # Very tall
+        multi_prof_data = sample_public_person_data.copy()
+        multi_prof_data["profession_list"] = ["singer", "dancer", "actress", "model", "songwriter"]
         
         response = client.post(
             "/api/v1/persons",
             headers=headers,
-            json=extreme_data
+            json=multi_prof_data
         )
         
         assert response.status_code == 200
         data = response.json()
-        assert data["height_cm"] == 300
+        assert len(data["profession_list"]) == 5
+        assert "songwriter" in data["profession_list"]
     
-    def test_create_public_person_with_long_text_fields(self, client, admin_token, sample_public_person_data):
-        """Test creating public person with very long text fields."""
+    def test_create_public_person_with_long_stage_name(self, client, admin_token, sample_public_person_data):
+        """Test creating public person with very long stage name."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         long_data = sample_public_person_data.copy()
-        long_data["biography_text"] = "A" * 5000  # Very long biography
-        long_data["education"] = "B" * 1000  # Very long education
+        long_data["stage_name_roman"] = "A" * 200  # Very long stage name
         
         response = client.post(
             "/api/v1/persons",
@@ -724,12 +651,13 @@ class TestPublicPersonEdgeCases:
             json=long_data
         )
         
+        # Should succeed unless there are database constraints
         assert response.status_code == 200
         data = response.json()
-        assert len(data["biography_text"]) == 5000
+        assert len(data["stage_name_roman"]) == 200
     
-    def test_update_public_person_all_genders(self, client, admin_token, sample_public_person_data):
-        """Test updating public person through all gender options."""
+    def test_update_public_person_profession_list(self, client, admin_token, sample_public_person_data):
+        """Test updating public person profession list."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Create public person
@@ -741,17 +669,17 @@ class TestPublicPersonEdgeCases:
         assert create_response.status_code == 200
         person_id = create_response.json()["id"]
         
-        # Test all valid genders
-        genders = ["male", "female", "other"]
+        # Update profession list
+        update_data = {"profession_list": ["actor", "director"]}
+        response = client.put(
+            f"/api/v1/persons/{person_id}",
+            headers=headers,
+            json=update_data
+        )
         
-        for gender in genders:
-            response = client.put(
-                f"/api/v1/persons/{person_id}",
-                headers=headers,
-                json={"gender": gender}
-            )
-            assert response.status_code == 200
-            assert response.json()["gender"] == gender
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data["profession_list"]) == {"actor", "director"}
     
     def test_create_public_person_with_special_characters(self, client, admin_token, sample_public_person_data):
         """Test creating public person with special characters in names."""

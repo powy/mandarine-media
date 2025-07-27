@@ -11,18 +11,28 @@ export default function SimpleAppLayout({ activeSection, onSectionChange, childr
   const navigate = useNavigate();
   
   const menuItems = [
-    { id: 'dashboard', label: '🏠 Dashboard', icon: '🏠' },
-    { id: 'media', label: '📹 Media Descriptions', icon: '📹' },
-    { id: 'videos', label: '🎬 Video Files', icon: '🎬' },
-    { id: 'video-reports', label: '📊 Video Reports', icon: '📊' },
-    { id: 'category-lists', label: '📑 Category Lists', icon: '📑' },
-    { id: 'persons', label: '👤 Public Persons (v1.5)', icon: '👤' },
-    { id: 'users', label: '👥 Users', icon: '👥' },
-    { id: 'programs', label: '📺 Programs', icon: '📺' },
-    { id: 'languages', label: '🌐 Languages', icon: '🌐' },
-    { id: 'countries', label: '🌍 Countries', icon: '🌍' },
-    { id: 'territories', label: '🗺️ Territories', icon: '🗺️' },
-    { id: 'pictures', label: '🖼️ Pictures', icon: '🖼️' },
+    { id: 'dashboard', label: 'Dashboard' },
+    // Display & Organization
+    { id: 'content-lists', label: 'Content Lists' },
+    { id: 'screen-contents', label: 'Screen Contents' },
+    { id: 'category-lists', label: 'Category Lists' },
+    // Content Management
+    { id: 'programs', label: 'Programs' },
+    { id: 'seasons', label: 'Seasons' },
+    { id: 'media', label: 'Media Descriptions' },
+    { id: 'videos', label: 'Video Files' },
+    { id: 'pictures', label: 'Pictures' },
+    // Reports
+    { id: 'description-reports', label: 'Description Reports' },
+    // Details
+    { id: 'languages', label: 'Languages' },
+    { id: 'persons', label: 'Public Persons' },
+    { id: 'countries', label: 'Countries' },
+    { id: 'territories', label: 'Territories' },
+    // User & Business
+    { id: 'users', label: 'Users' },
+    // Reports & Monitoring
+    { id: 'video-reports', label: 'Video Reports' },
   ];
 
   const handleNavigation = (itemId: string) => {
@@ -96,7 +106,6 @@ export default function SimpleAppLayout({ activeSection, onSectionChange, childr
                 }
               }}
             >
-              <span style={{ fontSize: '16px' }}>{item.icon}</span>
               {item.label}
             </button>
           ))}

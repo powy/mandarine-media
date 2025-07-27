@@ -73,7 +73,7 @@ class TestUsersList:
     def test_list_users_unauthorized(self, client):
         """Test users list without authentication."""
         response = client.get("/api/v1/users/")
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_list_users_non_admin(self, client, user_token):
         """Test users list with non-admin user."""
@@ -117,7 +117,7 @@ class TestUserMe:
     def test_get_current_user_unauthorized(self, client):
         """Test current user profile without authentication."""
         response = client.get("/api/v1/users/me")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestUserCreate:
@@ -233,7 +233,7 @@ class TestUserCreate:
             "/api/v1/users/",
             json=sample_user_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_create_user_non_admin(self, client, user_token, sample_user_data):
         """Test creation with non-admin user."""
@@ -292,7 +292,7 @@ class TestUserRead:
         """Test reading user without authentication."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/users/{fake_id}")
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_read_user_by_id_non_admin(self, client, user_token):
         """Test reading user with non-admin user."""
@@ -460,7 +460,7 @@ class TestUserUpdate:
             f"/api/v1/users/{fake_id}",
             json=sample_user_update_data
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_update_user_non_admin(self, client, user_token, sample_user_update_data):
         """Test update with non-admin user."""

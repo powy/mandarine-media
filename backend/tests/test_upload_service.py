@@ -248,9 +248,8 @@ class TestContentTypeDetection:
         
         file = MockUploadFile("unknown", b"content", None)
         
-        # Mock magic detection to fail
-        with patch('app.services.upload_service.magic.from_buffer', side_effect=Exception("Magic failed")):
-            content_type = await service.detect_content_type(file)
+        # Without magic detection, should fall back to mimetypes
+        content_type = await service.detect_content_type(file)
         
         assert content_type == "application/octet-stream"
 

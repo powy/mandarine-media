@@ -13,27 +13,27 @@ export const territoriesApi = {
       queryParams.append('country_id', country_id);
     }
     
-    const response = await apiClient.get(`/territories?${queryParams}`);
+    const response = await apiClient.get(`/api/v1/territories?${queryParams}`);
     return response.data as Territory[];
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/territories/${id}`);
+    const response = await apiClient.get(`/api/v1/territories/${id}`);
     return response.data as Territory;
   },
 
   create: async (territory: TerritoryCreate) => {
-    const response = await apiClient.post('/territories', territory);
+    const response = await apiClient.post('/api/v1/territories', territory);
     return response.data as Territory;
   },
 
   update: async (id: string, territory: TerritoryUpdate) => {
-    const response = await apiClient.put(`/territories/${id}`, territory);
+    const response = await apiClient.put(`/api/v1/territories/${id}`, territory);
     return response.data as Territory;
   },
 
   delete: async (id: string) => {
-    const response = await apiClient.delete(`/territories/${id}`);
+    const response = await apiClient.delete(`/api/v1/territories/${id}`);
     return response.data as Territory;
   },
 };

@@ -196,7 +196,7 @@ class TestLanguagesEdgeCases:
         language1_id = response1.json()["id"]
         
         # Create second language with same name but different sigle (should succeed)
-        data2 = {"name": "French", "sigle": "fr-CA"}
+        data2 = {"name": "French", "sigle": "fc"}
         response2 = client.post("/api/v1/languages", json=data2, headers=headers)
         assert response2.status_code == 200  # Should succeed as names can be duplicate
         language2_id = response2.json()["id"]
@@ -210,13 +210,13 @@ class TestLanguagesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Create first language
-        data1 = {"name": "Test Language 1", "sigle": "dup"}
+        data1 = {"name": "Test Language 1", "sigle": "xx"}
         response1 = client.post("/api/v1/languages", json=data1, headers=headers)
         assert response1.status_code == 200
         language1_id = response1.json()["id"]
         
         # Try to create duplicate sigle
-        data2 = {"name": "Test Language 2", "sigle": "dup"}
+        data2 = {"name": "Test Language 2", "sigle": "xx"}
         response2 = client.post("/api/v1/languages", json=data2, headers=headers)
         assert response2.status_code == 409
         

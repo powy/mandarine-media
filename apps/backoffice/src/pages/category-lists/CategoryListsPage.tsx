@@ -264,7 +264,7 @@ const CategoryListsPage: React.FC = () => {
         />
       )}
 
-      <style jsx>{`
+      <style>{`
         .category-lists-page {
           padding: 24px;
           max-width: 1200px;
@@ -493,7 +493,7 @@ const CategoryListFormModal: React.FC<{
           </button>
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         .modal-overlay {
           position: fixed;
           top: 0;
@@ -541,7 +541,7 @@ const CategoryListItemsModal: React.FC<{
           </button>
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         .modal-overlay {
           position: fixed;
           top: 0;

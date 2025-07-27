@@ -100,15 +100,16 @@ def sample_media_v14_data(created_program, created_season, created_language, cre
         "copyright_owner_id": str(uuid.uuid4()),
         "eligible_plans": ["basic", "premium"],
         "audience_categories_id_list": [str(uuid.uuid4())],
-        "image_fullscreen": "https://example.com/fullscreen.jpg",
-        "image_thumbnail1": "https://example.com/thumb1.jpg",
-        "image_thumbnail2": "https://example.com/thumb2.jpg",
-        "image_thumbnail3": "https://example.com/thumb3.jpg",
+        "image_fullscreen": str(uuid.uuid4()),
+        "image_thumbnail1": str(uuid.uuid4()),
+        "image_thumbnail2": str(uuid.uuid4()),
+        "image_mobile_home": str(uuid.uuid4()),
+        "image_desktop_home": str(uuid.uuid4()),
         "translation_share": 15.5,
         "sacem_share": 10.0,
         "other_share": 5.0,
         "revenue_share": 25.0,
-        "paid_token_cost": 2.50
+        "paid_token_cost": 2
     }
 
 
@@ -119,7 +120,11 @@ class TestMediaDescriptionsV14:
         """Test creating media description with v1.4 fields."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        response = client.post("/api/v1/media/descriptions", json=sample_media_v14_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=sample_media_v14_data, headers=headers)
+        
+        if response.status_code != 200:
+            print(f"Response status: {response.status_code}")
+            print(f"Response content: {response.text}")
         
         assert response.status_code == 200
         data = response.json()
@@ -146,7 +151,8 @@ class TestMediaDescriptionsV14:
         assert data["image_fullscreen"] == sample_media_v14_data["image_fullscreen"]
         assert data["image_thumbnail1"] == sample_media_v14_data["image_thumbnail1"]
         assert data["image_thumbnail2"] == sample_media_v14_data["image_thumbnail2"]
-        assert data["image_thumbnail3"] == sample_media_v14_data["image_thumbnail3"]
+        assert data["image_mobile_home"] == sample_media_v14_data["image_mobile_home"]
+        assert data["image_desktop_home"] == sample_media_v14_data["image_desktop_home"]
         
         # Check revenue fields
         assert data["translation_share"] == sample_media_v14_data["translation_share"]
@@ -168,7 +174,7 @@ class TestMediaDescriptionsV14:
             "content_status": "published"
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -188,7 +194,7 @@ class TestMediaDescriptionsV14:
             "content_status": "published"
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -208,7 +214,7 @@ class TestMediaDescriptionsV14:
             "content_status": "published"
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         # Should succeed but with null program_id in response (handled by foreign key constraint)
         assert response.status_code in [200, 400]  # Depends on validation implementation
@@ -226,7 +232,7 @@ class TestMediaDescriptionsV14:
             "content_status": "published"
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         # Should succeed but with null season_id in response (handled by foreign key constraint)
         assert response.status_code in [200, 400]  # Depends on validation implementation
@@ -236,19 +242,19 @@ class TestMediaDescriptionsV14:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Create media first
-        create_response = client.post("/api/v1/media/descriptions", json=sample_media_v14_data, headers=headers)
+        create_response = client.post("/api/v1/media-descriptions", json=sample_media_v14_data, headers=headers)
         media_id = create_response.json()["id"]
         
         # Update with new v1.4 fields
         update_data = {
-            "image_fullscreen": "https://example.com/new-fullscreen.jpg",
+            "image_fullscreen": str(uuid.uuid4()),
             "translation_share": 20.0,
             "sacem_share": 15.0,
             "eligible_plans": ["premium"],
             "actors_id_list": [str(uuid.uuid4()), str(uuid.uuid4())]
         }
         
-        response = client.put(f"/api/v1/media/descriptions/{media_id}", json=update_data, headers=headers)
+        response = client.put(f"/api/v1/media-descriptions/{media_id}", json=update_data, headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -263,12 +269,12 @@ class TestMediaDescriptionsV14:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Create media with v1.4 fields
-        create_response = client.post("/api/v1/media/descriptions", json=sample_media_v14_data, headers=headers)
+        create_response = client.post("/api/v1/media-descriptions", json=sample_media_v14_data, headers=headers)
         assert create_response.status_code == 200
         
         # List media
         user_headers = {"Authorization": f"Bearer {user_token}"}
-        response = client.get("/api/v1/media/descriptions", headers=user_headers)
+        response = client.get("/api/v1/media-descriptions", headers=user_headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -299,7 +305,7 @@ class TestMediaDescriptionsV14:
             "revenue_share": 150.0  # Invalid: over 100%
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         # Should either succeed (no validation) or fail with validation error
         assert response.status_code in [200, 422]
@@ -313,7 +319,7 @@ class TestMediaDescriptionsV14:
             "translation_share": -5.0  # Invalid: negative
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data_negative, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data_negative, headers=headers)
         
         # Should either succeed (no validation) or fail with validation error
         assert response.status_code in [200, 422]
@@ -331,7 +337,7 @@ class TestMediaDescriptionsV14:
             "image_fullscreen": "not-a-valid-url"
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         # Should either succeed (no validation) or fail with validation error
         assert response.status_code in [200, 422]
@@ -352,7 +358,7 @@ class TestMediaDescriptionsV14:
             "audience_categories_id_list": []
         }
         
-        response = client.post("/api/v1/media/descriptions", json=media_data, headers=headers)
+        response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         assert response.status_code == 200
         data = response.json()

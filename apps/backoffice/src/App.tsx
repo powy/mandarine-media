@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { authApi, initApiClient } from 'share';
+import { authApi, initApiClient, usersApi } from 'share';
 import SimpleAppLayout from './components/layout/SimpleAppLayout';
 import PersonsManagementPage from './pages/persons/PersonsManagementPage';
 import CategoryListsPage from './pages/category-lists/CategoryListsPage';
 import UsersManagementPage from './pages/users/UsersManagementPage';
 import ProgramsManagementPage from './pages/programs/ProgramsManagementPage';
+import ContentListsPage from './pages/content-lists/ContentListsPage';
+import ScreenContentsPage from './pages/screen-contents/ScreenContentsPage';
+import { MediaListPage } from './pages/media/MediaListPage';
+import { VideoFileListPage } from './pages/video-files/VideoFileListPage';
+import { LanguagesPage } from './pages/languages/LanguagesPage';
+import { CountriesPage } from './pages/countries/CountriesPage';
+import { TerritoriesPage } from './pages/territories/TerritoriesPage';
+import { PicturesPage } from './pages/pictures/PicturesPage';
+import { SeasonsPage } from './pages/seasons/SeasonsPage';
 import { Dashboard } from './pages/Dashboard';
+import DescriptionReportsPage from './pages/description-reports/DescriptionReportsPage';
+import VideoFileReportsPage from './pages/video-file-reports/VideoFileReportsPage';
 
 // Initialize API client
 initApiClient({ 
@@ -45,10 +56,13 @@ function AppWithRouter() {
     if (pathname.startsWith('/video-reports')) return 'video-reports';
     if (pathname.startsWith('/users')) return 'users';
     if (pathname.startsWith('/programs')) return 'programs';
+    if (pathname.startsWith('/seasons')) return 'seasons';
     if (pathname.startsWith('/languages')) return 'languages';
     if (pathname.startsWith('/countries')) return 'countries';
     if (pathname.startsWith('/territories')) return 'territories';
     if (pathname.startsWith('/pictures')) return 'pictures';
+    if (pathname.startsWith('/content-lists')) return 'content-lists';
+    if (pathname.startsWith('/screen-contents')) return 'screen-contents';
     return 'dashboard';
   };
 
@@ -100,13 +114,17 @@ function AppWithRouter() {
         <Route path="/category-lists" element={<CategoryListsPage />} />
         <Route path="/users" element={<UsersManagementPage />} />
         <Route path="/programs" element={<ProgramsManagementPage />} />
-        <Route path="/media" element={<PlaceholderPage title="Media Descriptions Management" />} />
-        <Route path="/videos" element={<PlaceholderPage title="Video Files Management" />} />
-        <Route path="/video-reports" element={<PlaceholderPage title="Video Reports Management" />} />
-        <Route path="/languages" element={<PlaceholderPage title="Languages Management" />} />
-        <Route path="/countries" element={<PlaceholderPage title="Countries Management" />} />
-        <Route path="/territories" element={<PlaceholderPage title="Territories Management" />} />
-        <Route path="/pictures" element={<PlaceholderPage title="Pictures Management" />} />
+        <Route path="/seasons" element={<SeasonsPage />} />
+        <Route path="/media" element={<MediaListPage />} />
+        <Route path="/videos" element={<VideoFileListPage />} />
+        <Route path="/video-reports" element={<VideoFileReportsPage />} />
+        <Route path="/languages" element={<LanguagesPage />} />
+        <Route path="/countries" element={<CountriesPage />} />
+        <Route path="/territories" element={<TerritoriesPage />} />
+        <Route path="/pictures" element={<PicturesPage />} />
+        <Route path="/description-reports" element={<DescriptionReportsPage />} />
+        <Route path="/content-lists" element={<ContentListsPage />} />
+        <Route path="/screen-contents" element={<ScreenContentsPage />} />
       </Routes>
     </SimpleAppLayout>
   );
@@ -117,14 +135,34 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [loginError, setLoginError] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
-      setIsAuthenticated(true);
+      checkUserRole();
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
+
+  const checkUserRole = async () => {
+    try {
+      const currentUser = await usersApi.getCurrentUser();
+      if (currentUser.is_admin) {
+        setUserRole('admin');
+        setIsAuthenticated(true);
+      } else {
+        setLoginError('Access denied. Administrator privileges required for backoffice access.');
+        localStorage.removeItem('access_token');
+      }
+    } catch (error) {
+      console.error('Failed to verify user role:', error);
+      localStorage.removeItem('access_token');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +170,7 @@ function App() {
     try {
       const response = await authApi.login(loginData);
       localStorage.setItem('access_token', response.access_token);
-      setIsAuthenticated(true);
+      await checkUserRole();
     } catch (error: any) {
       setLoginError(error.response?.data?.detail || 'Login failed');
     }

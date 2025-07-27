@@ -15,7 +15,12 @@ export const authApi = {
     });
 
     // Store token in localStorage directly
-    localStorage.setItem('access_token', response.data.access_token);
+    try {
+      localStorage.setItem('access_token', response.data.access_token);
+    } catch (error) {
+      // Handle localStorage errors gracefully
+      console.warn('Failed to store token in localStorage:', error);
+    }
     
     return response.data;
   },
@@ -34,7 +39,12 @@ export const authApi = {
 
   // Logout - clear token
   async logout(): Promise<void> {
-    localStorage.removeItem('access_token');
+    try {
+      localStorage.removeItem('access_token');
+    } catch (error) {
+      // Handle localStorage errors gracefully
+      console.warn('Failed to remove token from localStorage:', error);
+    }
   },
 
   // Check if user is authenticated

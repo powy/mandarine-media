@@ -85,7 +85,9 @@ class CRUDCategoryList(CRUDBase[CategoryList, CategoryListCreate, CategoryListUp
                     # Get full data with items and media descriptions
                     full_list = self.get_with_items(db=db, id=category_list.id)
                     if full_list:
-                        full_list.update_json(db_session=db)
+                        # Update JSON without committing (we'll commit at the end)
+                        full_list.update_json(db_session=None)
+                        db.add(full_list)
                         updated_count += 1
                         updated_ids.append(str(category_list.id))
                     else:
@@ -96,6 +98,9 @@ class CRUDCategoryList(CRUDBase[CategoryList, CategoryListCreate, CategoryListUp
                     failed_count += 1
                     failed_ids.append(str(category_list.id))
             
+            # Commit all changes at once
+            db.commit()
+            
             return {
                 "updated_count": updated_count,
                 "failed_count": failed_count,
@@ -104,6 +109,7 @@ class CRUDCategoryList(CRUDBase[CategoryList, CategoryListCreate, CategoryListUp
             }
         except Exception as e:
             print(f"Error in bulk JSON update: {str(e)}")
+            db.rollback()
             return {
                 "updated_count": 0,
                 "failed_count": 0,
@@ -117,6 +123,10 @@ class CRUDCategoryList(CRUDBase[CategoryList, CategoryListCreate, CategoryListUp
         if category_list:
             return category_list.json_content
         return None
+
+    def count_total(self, db: Session) -> int:
+        """Count total number of category lists."""
+        return db.query(CategoryList).count()
 
     def create_default_categories(self, db: Session) -> List[CategoryList]:
         """Create the default category lists as specified."""
@@ -183,6 +193,22 @@ class CRUDCategoryList(CRUDBase[CategoryList, CategoryListCreate, CategoryListUp
 
 
 class CRUDCategoryListItem(CRUDBase[CategoryListItem, CategoryListItemCreate, CategoryListItemUpdate]):
+    def create(self, db: Session, *, obj_in: CategoryListItemCreate) -> CategoryListItem:
+        """Create category list item with eager loading of media description."""
+        # Call parent create method
+        db_obj = super().create(db=db, obj_in=obj_in)
+        
+        # Refresh with media description relationship loaded
+        db.refresh(db_obj)
+        db_obj_with_media = (
+            db.query(CategoryListItem)
+            .options(joinedload(CategoryListItem.media_description))
+            .filter(CategoryListItem.id == db_obj.id)
+            .first()
+        )
+        
+        return db_obj_with_media or db_obj
+    
     def get_by_category_list(
         self, db: Session, *, category_list_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[CategoryListItem]:

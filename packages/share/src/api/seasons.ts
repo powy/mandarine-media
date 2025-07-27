@@ -13,27 +13,27 @@ export const seasonsApi = {
       queryParams.append('program_id', program_id);
     }
     
-    const response = await apiClient.get(`/seasons?${queryParams}`);
+    const response = await apiClient.get(`/api/v1/seasons?${queryParams}`);
     return response.data as Season[];
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/seasons/${id}`);
+    const response = await apiClient.get(`/api/v1/seasons/${id}`);
     return response.data as Season;
   },
 
   create: async (season: SeasonCreate) => {
-    const response = await apiClient.post('/seasons', season);
+    const response = await apiClient.post('/api/v1/seasons', season);
     return response.data as Season;
   },
 
   update: async (id: string, season: SeasonUpdate) => {
-    const response = await apiClient.put(`/seasons/${id}`, season);
+    const response = await apiClient.put(`/api/v1/seasons/${id}`, season);
     return response.data as Season;
   },
 
   delete: async (id: string) => {
-    const response = await apiClient.delete(`/seasons/${id}`);
+    const response = await apiClient.delete(`/api/v1/seasons/${id}`);
     return response.data as Season;
   },
 };

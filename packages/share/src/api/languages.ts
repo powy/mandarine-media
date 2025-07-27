@@ -4,27 +4,27 @@ import { Language, LanguageCreate, LanguageUpdate } from '../types';
 export const languagesApi = {
   getAll: async (params: { skip?: number; limit?: number } = {}) => {
     const { skip = 0, limit = 20 } = params;
-    const response = await apiClient.get(`/languages?skip=${skip}&limit=${limit}`);
+    const response = await apiClient.get(`/api/v1/languages?skip=${skip}&limit=${limit}`);
     return response.data as Language[];
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/languages/${id}`);
+    const response = await apiClient.get(`/api/v1/languages/${id}`);
     return response.data as Language;
   },
 
   create: async (language: LanguageCreate) => {
-    const response = await apiClient.post('/languages', language);
+    const response = await apiClient.post('/api/v1/languages', language);
     return response.data as Language;
   },
 
   update: async (id: string, language: LanguageUpdate) => {
-    const response = await apiClient.put(`/languages/${id}`, language);
+    const response = await apiClient.put(`/api/v1/languages/${id}`, language);
     return response.data as Language;
   },
 
   delete: async (id: string) => {
-    const response = await apiClient.delete(`/languages/${id}`);
+    const response = await apiClient.delete(`/api/v1/languages/${id}`);
     return response.data as Language;
   },
 };

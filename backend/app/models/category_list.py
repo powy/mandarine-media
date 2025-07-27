@@ -131,3 +131,19 @@ class CategoryListItem(Base):
     # Relationships
     category_list = relationship("CategoryList", back_populates="items")
     media_description = relationship("MediaDescription")
+    
+    # Computed properties for API responses
+    @property
+    def media_title(self):
+        """Get media title from related media description."""
+        return self.media_description.episode_title if self.media_description else None
+    
+    @property
+    def media_type(self):
+        """Get media type from related media description."""
+        return self.media_description.media_type if self.media_description else None
+    
+    @property
+    def thumbnail_url(self):
+        """Get thumbnail URL from related media description."""
+        return self.media_description.main_thumbnail_url if self.media_description else None

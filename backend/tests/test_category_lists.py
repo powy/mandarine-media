@@ -66,7 +66,7 @@ class TestCategoryListsAPI:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -84,7 +84,7 @@ class TestCategoryListsAPI:
     def test_create_category_list_unauthorized(self, client, sample_category_list_data):
         """Test category list creation without authentication."""
         response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data
         )
         
@@ -95,7 +95,7 @@ class TestCategoryListsAPI:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -108,7 +108,7 @@ class TestCategoryListsAPI:
         
         # Create first category list
         response1 = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -116,7 +116,7 @@ class TestCategoryListsAPI:
         
         # Try to create second with same name
         response2 = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -126,7 +126,7 @@ class TestCategoryListsAPI:
         """Test successful retrieval of category lists."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        response = client.get("/api/v1/category/lists", headers=headers)
+        response = client.get("/api/v1/category-lists", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -143,10 +143,10 @@ class TestCategoryListsAPI:
             test_data = sample_category_list_data.copy()
             test_data["name"] = f"test-list-{i}"
             test_data["title"] = f"Test List {i}"
-            client.post("/api/v1/category/lists", json=test_data, headers=headers)
+            client.post("/api/v1/category-lists", json=test_data, headers=headers)
         
         # Test pagination
-        response = client.get("/api/v1/category/lists?limit=3&skip=0", headers=headers)
+        response = client.get("/api/v1/category-lists?limit=3&skip=0", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]) <= 3
@@ -159,7 +159,7 @@ class TestCategoryListsAPI:
         
         # Create category list
         create_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -167,7 +167,7 @@ class TestCategoryListsAPI:
         category_list_id = create_response.json()["id"]
         
         # Get category list by ID
-        response = client.get(f"/api/v1/category/lists/{category_list_id}", headers=headers)
+        response = client.get(f"/api/v1/category-lists/{category_list_id}", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -181,7 +181,7 @@ class TestCategoryListsAPI:
         headers = {"Authorization": f"Bearer {admin_token}"}
         fake_id = str(uuid.uuid4())
         
-        response = client.get(f"/api/v1/category/lists/{fake_id}", headers=headers)
+        response = client.get(f"/api/v1/category-lists/{fake_id}", headers=headers)
         
         assert response.status_code == 404
     
@@ -191,7 +191,7 @@ class TestCategoryListsAPI:
         
         # Create category list
         create_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -200,7 +200,7 @@ class TestCategoryListsAPI:
         
         # Update category list
         response = client.put(
-            f"/api/v1/category/lists/{category_list_id}",
+            f"/api/v1/category-lists/{category_list_id}",
             json=sample_category_list_update_data,
             headers=headers
         )
@@ -218,7 +218,7 @@ class TestCategoryListsAPI:
         
         # Create category list
         create_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -226,12 +226,12 @@ class TestCategoryListsAPI:
         category_list_id = create_response.json()["id"]
         
         # Delete category list
-        response = client.delete(f"/api/v1/category/lists/{category_list_id}", headers=headers)
+        response = client.delete(f"/api/v1/category-lists/{category_list_id}", headers=headers)
         
         assert response.status_code == 200
         
         # Verify deletion
-        get_response = client.get(f"/api/v1/category/lists/{category_list_id}", headers=headers)
+        get_response = client.get(f"/api/v1/category-lists/{category_list_id}", headers=headers)
         assert get_response.status_code == 404
 
 
@@ -244,7 +244,7 @@ class TestCategoryListItemsAPI:
         
         # Create category list first
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -257,7 +257,7 @@ class TestCategoryListItemsAPI:
         
         # Create category list item
         response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/items",
+            f"/api/v1/category-lists/{category_list_id}/items",
             json=item_data,
             headers=headers
         )
@@ -275,7 +275,7 @@ class TestCategoryListItemsAPI:
         
         # Create media description first
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             json=sample_media_description_data,
             headers=headers
         )
@@ -284,7 +284,7 @@ class TestCategoryListItemsAPI:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -297,7 +297,7 @@ class TestCategoryListItemsAPI:
         item_data["media_description_id"] = media_id
         
         response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/items",
+            f"/api/v1/category-lists/{category_list_id}/items",
             json=item_data,
             headers=headers
         )
@@ -314,7 +314,7 @@ class TestCategoryListItemsAPI:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -322,7 +322,7 @@ class TestCategoryListItemsAPI:
         category_list_id = list_response.json()["id"]
         
         # Get category list items
-        response = client.get(f"/api/v1/category/lists/{category_list_id}/items", headers=headers)
+        response = client.get(f"/api/v1/category-lists/{category_list_id}/items", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -336,7 +336,7 @@ class TestCategoryListItemsAPI:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -348,7 +348,7 @@ class TestCategoryListItemsAPI:
         item_data["category_list_id"] = category_list_id
         
         item_response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/items",
+            f"/api/v1/category-lists/{category_list_id}/items",
             json=item_data,
             headers=headers
         )
@@ -363,7 +363,7 @@ class TestCategoryListItemsAPI:
         }
         
         response = client.put(
-            f"/api/v1/category/lists/{category_list_id}/items/{item_id}",
+            f"/api/v1/category-lists/{category_list_id}/items/{item_id}",
             json=update_data,
             headers=headers
         )
@@ -380,7 +380,7 @@ class TestCategoryListItemsAPI:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -392,7 +392,7 @@ class TestCategoryListItemsAPI:
         item_data["category_list_id"] = category_list_id
         
         item_response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/items",
+            f"/api/v1/category-lists/{category_list_id}/items",
             json=item_data,
             headers=headers
         )
@@ -400,12 +400,12 @@ class TestCategoryListItemsAPI:
         item_id = item_response.json()["id"]
         
         # Delete category list item
-        response = client.delete(f"/api/v1/category/lists/{category_list_id}/items/{item_id}", headers=headers)
+        response = client.delete(f"/api/v1/category-lists/{category_list_id}/items/{item_id}", headers=headers)
         
         assert response.status_code == 200
         
         # Verify deletion by getting items list
-        items_response = client.get(f"/api/v1/category/lists/{category_list_id}/items", headers=headers)
+        items_response = client.get(f"/api/v1/category-lists/{category_list_id}/items", headers=headers)
         assert items_response.status_code == 200
         items_data = items_response.json()["data"]
         assert len(items_data) == 0
@@ -420,7 +420,7 @@ class TestCategoryListItemsOrdering:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -438,7 +438,7 @@ class TestCategoryListItemsOrdering:
             }
             
             item_response = client.post(
-                f"/api/v1/category/lists/{category_list_id}/items",
+                f"/api/v1/category-lists/{category_list_id}/items",
                 json=item_data,
                 headers=headers
             )
@@ -455,7 +455,7 @@ class TestCategoryListItemsOrdering:
         }
         
         response = client.put(
-            f"/api/v1/category/lists/{category_list_id}/items/order",
+            f"/api/v1/category-lists/{category_list_id}/items/order",
             json=order_update_data,
             headers=headers
         )
@@ -463,7 +463,7 @@ class TestCategoryListItemsOrdering:
         assert response.status_code == 200
         
         # Verify new order
-        items_response = client.get(f"/api/v1/category/lists/{category_list_id}/items", headers=headers)
+        items_response = client.get(f"/api/v1/category-lists/{category_list_id}/items", headers=headers)
         assert items_response.status_code == 200
         items = items_response.json()["data"]
         
@@ -483,7 +483,7 @@ class TestCategoryListJSON:
         
         # Create media description
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             json=sample_media_description_data,
             headers=headers
         )
@@ -492,7 +492,7 @@ class TestCategoryListJSON:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -509,7 +509,7 @@ class TestCategoryListJSON:
         }
         
         item_response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/items",
+            f"/api/v1/category-lists/{category_list_id}/items",
             json=item_data,
             headers=headers
         )
@@ -517,13 +517,13 @@ class TestCategoryListJSON:
         
         # Regenerate JSON
         regenerate_response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/regenerate-json",
+            f"/api/v1/category-lists/{category_list_id}/regenerate-json",
             headers=headers
         )
         assert regenerate_response.status_code == 200
         
         # Get JSON by list name
-        response = client.get(f"/api/v1/category/lists/{sample_category_list_data['name']}/json")
+        response = client.get(f"/api/v1/category-lists/{sample_category_list_data['name']}/json")
         
         assert response.status_code == 200
         data = response.json()
@@ -540,7 +540,7 @@ class TestCategoryListJSON:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -549,7 +549,7 @@ class TestCategoryListJSON:
         
         # Regenerate JSON
         response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/regenerate-json",
+            f"/api/v1/category-lists/{category_list_id}/regenerate-json",
             headers=headers
         )
         
@@ -562,15 +562,18 @@ class TestCategoryListJSON:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Create multiple category lists
+        created_ids = []
         for i in range(3):
             test_data = sample_category_list_data.copy()
-            test_data["name"] = f"test-list-{i}"
+            test_data["name"] = f"test_list_{'abcdefg'[i]}"
             test_data["title"] = f"Test List {i}"
             
-            client.post("/api/v1/category/lists", json=test_data, headers=headers)
+            create_response = client.post("/api/v1/category-lists", json=test_data, headers=headers)
+            assert create_response.status_code == 200
+            created_ids.append(create_response.json()["id"])
         
         # Regenerate all JSON
-        response = client.post("/api/v1/category/lists/regenerate-all-json", headers=headers)
+        response = client.post("/api/v1/category-lists/regenerate-all-json", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -586,7 +589,7 @@ class TestCategoryListInitialization:
         """Test successful initialization of default categories."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        response = client.post("/api/v1/category/lists/initialize-defaults", headers=headers)
+        response = client.post("/api/v1/category-lists/initialize-defaults", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -595,7 +598,7 @@ class TestCategoryListInitialization:
         assert isinstance(data["created_categories"], list)
         
         # Verify some expected default categories were created
-        expected_categories = ["welcome", "movie", "tv-show", "short-drama", "webtoon"]
+        expected_categories = ["home", "movies", "short_dramas", "webtoons", "dramas"]
         for category in expected_categories:
             assert category in data["created_categories"]
     
@@ -603,7 +606,7 @@ class TestCategoryListInitialization:
         """Test initialization of default categories with non-admin user."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.post("/api/v1/category/lists/initialize-defaults", headers=headers)
+        response = client.post("/api/v1/category-lists/initialize-defaults", headers=headers)
         
         assert response.status_code == 403
 
@@ -696,7 +699,7 @@ class TestCategoryListValidation:
         }
         
         response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=invalid_data,
             headers=headers
         )
@@ -709,7 +712,7 @@ class TestCategoryListValidation:
         
         # Create category list
         list_response = client.post(
-            "/api/v1/category/lists",
+            "/api/v1/category-lists",
             json=sample_category_list_data,
             headers=headers
         )
@@ -726,7 +729,7 @@ class TestCategoryListValidation:
         }
         
         response = client.post(
-            f"/api/v1/category/lists/{category_list_id}/items",
+            f"/api/v1/category-lists/{category_list_id}/items",
             json=item_data,
             headers=headers
         )
@@ -735,6 +738,6 @@ class TestCategoryListValidation:
     
     def test_get_category_list_json_not_found(self, client):
         """Test retrieval of JSON for non-existent category list."""
-        response = client.get("/api/v1/category/lists/non-existent-list/json")
+        response = client.get("/api/v1/category-lists/non-existent-list/json")
         
         assert response.status_code == 404

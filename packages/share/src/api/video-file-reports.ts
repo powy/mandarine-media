@@ -28,7 +28,7 @@ export const videoFileReportsApi = {
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.event) searchParams.append('event', params.event);
 
-    const response = await apiClient.get(`/video/file/reports?${searchParams}`);
+    const response = await apiClient.get(`/api/v1/video/file/reports?${searchParams}`);
     return response.data;
   },
 
@@ -36,7 +36,7 @@ export const videoFileReportsApi = {
    * Get specific video file report by ID
    */
   getReport: async (reportId: string): Promise<VideoFileReport> => {
-    const response = await apiClient.get(`/video/file/reports/${reportId}`);
+    const response = await apiClient.get(`/api/v1/video/file/reports/${reportId}`);
     return response.data;
   },
 
@@ -44,7 +44,7 @@ export const videoFileReportsApi = {
    * Get all reports for a specific video file
    */
   getReportsByVideoFile: async (videoFileId: string): Promise<VideoFileReport[]> => {
-    const response = await apiClient.get(`/video/file/reports/video-file/${videoFileId}`);
+    const response = await apiClient.get(`/api/v1/video/file/reports/video-file/${videoFileId}`);
     return response.data;
   },
 
@@ -52,7 +52,7 @@ export const videoFileReportsApi = {
    * Destroy actual video file (create destruction report)
    */
   destroyVideoFile: async (videoFileId: string): Promise<{ message: string; video_file_id: string; status: string }> => {
-    const response = await apiClient.post(`/video/files/${videoFileId}/destroy`);
+    const response = await apiClient.post(`/api/v1/video/files/${videoFileId}/destroy`);
     return response.data;
   },
 };

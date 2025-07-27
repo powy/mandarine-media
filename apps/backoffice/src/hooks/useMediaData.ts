@@ -6,7 +6,7 @@ export const useMediaList = (filters: MediaFilters = {}) => {
   return useQuery({
     queryKey: ['media', 'list', filters],
     queryFn: () => mediaApi.getMediaDescriptions(filters),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 

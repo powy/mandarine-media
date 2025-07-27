@@ -6,7 +6,7 @@ export const useProgramsList = (params?: { skip?: number; limit?: number }) => {
   return useQuery({
     queryKey: ['programs', 'list', params],
     queryFn: () => programsApi.getAll(params),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 

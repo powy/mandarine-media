@@ -6,7 +6,7 @@ export const usePicturesList = (params?: { skip?: number; limit?: number }) => {
   return useQuery({
     queryKey: ['pictures', 'list', params],
     queryFn: () => picturesApi.getAll(params),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 

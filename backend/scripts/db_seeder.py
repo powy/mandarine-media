@@ -58,7 +58,9 @@ class DatabaseSeeder:
             'media_descriptions',
             'video_files',
             'description_reports',
-            'video_file_reports'
+            'video_file_reports',
+            'content_lists',
+            'screen_contents'
         ]
         
         # API endpoint mapping
@@ -78,7 +80,9 @@ class DatabaseSeeder:
             'media_descriptions': '/api/v1/media/descriptions',
             'video_files': '/api/v1/video/files',
             'description_reports': '/api/v1/description/reports',
-            'video_file_reports': '/api/v1/video/file/reports'
+            'video_file_reports': '/api/v1/video/file/reports',
+            'content_lists': '/api/v1/content/lists',
+            'screen_contents': '/api/v1/screen/contents'
         }
 
     def authenticate(self) -> bool:
@@ -175,6 +179,29 @@ class DatabaseSeeder:
         
         return items if items else None
 
+    def process_mixed_content_references(self, value: Any) -> Optional[List[str]]:
+        """Process content_items field that can reference programs, seasons, or media_descriptions"""
+        if pd.isna(value) or value == '':
+            return None
+        
+        items = []
+        if isinstance(value, str):
+            # Split by comma and try to resolve each reference across multiple entity types
+            refs = [item.strip() for item in value.split(',') if item.strip()]
+            for ref in refs:
+                # Try to resolve as program first, then season, then media_description
+                resolved_id = (
+                    self.resolve_reference(ref, 'programs') or
+                    self.resolve_reference(ref, 'seasons') or
+                    self.resolve_reference(ref, 'media_descriptions')
+                )
+                if resolved_id:
+                    items.append(resolved_id)
+                else:
+                    logger.warning(f"Could not resolve mixed content reference: {ref}")
+        
+        return items if items else None
+
     def prepare_row_data(self, row: pd.Series, sheet_name: str) -> Dict[str, Any]:
         """Prepare row data for API submission"""
         data = {}
@@ -185,7 +212,7 @@ class DatabaseSeeder:
                 continue
             
             # Handle special field types
-            if column.endswith('_id_list') or column.endswith('_list'):
+            if column.endswith('_id_list') or column.endswith('_list') or column in ['content_items', 'content_types', 'content_lists']:
                 # These are JSON array fields that might contain entity references
                 if 'public_person' in column or 'person' in column:
                     data[column] = self.process_reference_list(value, 'public_persons')
@@ -197,6 +224,15 @@ class DatabaseSeeder:
                     data[column] = self.process_reference_list(value, 'territories')
                 elif 'category' in column:
                     data[column] = self.process_reference_list(value, 'categories')
+                elif column == 'content_items':
+                    # For content lists: can reference programs, seasons, or media_descriptions
+                    data[column] = self.process_mixed_content_references(value)
+                elif column == 'content_lists':
+                    # For screen contents: references to content lists
+                    data[column] = self.process_reference_list(value, 'content_lists')
+                elif column == 'content_types':
+                    # For content lists: array of content type strings
+                    data[column] = self.process_json_array_field(value)
                 else:
                     data[column] = self.process_json_array_field(value)
             
@@ -213,6 +249,15 @@ class DatabaseSeeder:
                     entity_type = 'pictures'
                     
                 data[column] = self.resolve_reference(value, entity_type)
+            
+            elif column == 'thumbnail_format':
+                # Validate thumbnail format enum value
+                valid_formats = ['small_square', 'medium_portrait', 'large_landscape', 'vertical_mobile']
+                if value in valid_formats:
+                    data[column] = value
+                else:
+                    logger.warning(f"Invalid thumbnail format: {value}. Valid options: {valid_formats}")
+                    continue
             
             elif column in ['creation_date_utc', 'contract_start_date_utc', 'contract_end_date_utc', 
                           'original_broadcast_date_utc', 'last_updated_utc', 'encodage_date_utc', 'upload_timestamp']:
@@ -266,7 +311,7 @@ class DatabaseSeeder:
                     self.entity_cache[f"{entity_type}_id_{entity_id}"] = entity_id
                     
                     # Cache by name if available
-                    for name_field in ['name', 'program_name', 'stage_name_roman', 'episode_title', 'full_name', 'email']:
+                    for name_field in ['name', 'program_name', 'stage_name_roman', 'episode_title', 'full_name', 'email', 'title']:
                         if name_field in created_entity:
                             cache_key = f"{entity_type}_name_{created_entity[name_field]}"
                             self.entity_cache[cache_key] = entity_id

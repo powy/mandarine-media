@@ -63,6 +63,41 @@ class MediaDescriptionBase(BaseModel):
     source_platform: Optional[str] = None
     rights_holder: Optional[str] = None
     distribution_territories: Optional[List[str]] = None
+    
+    # v1.4 fields - Person role fields
+    actors_id_list: Optional[List[str]] = None
+    directors_id_list: Optional[List[str]] = None
+    productor_id_list: Optional[List[str]] = None
+    authors_id_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Location and language fields
+    origin_country_id_list: Optional[List[str]] = None
+    original_languages_id: Optional[List[str]] = None
+    available_countries_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Business fields
+    copyright_owner_id: Optional[str] = None
+    eligible_plans: Optional[List[str]] = None
+    audience_categories_id_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Metadata fields
+    friendly_url: Optional[str] = None
+    human_keywords_text_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Image fields
+    image_fullscreen: Optional[UUID] = None
+    image_thumbnail1: Optional[UUID] = None
+    image_thumbnail2: Optional[UUID] = None
+    image_mobile_home: Optional[UUID] = None
+    image_desktop_home: Optional[UUID] = None
+    additional_images_id_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Revenue fields (Admin only)
+    translation_share: Optional[float] = None
+    sacem_share: Optional[float] = None
+    other_share: Optional[float] = None
+    revenue_share: Optional[float] = None
+    paid_token_cost: Optional[int] = None
 
 
 class MediaDescriptionCreate(MediaDescriptionBase):
@@ -112,6 +147,41 @@ class MediaDescriptionUpdate(BaseModel):
     source_platform: Optional[str] = None
     rights_holder: Optional[str] = None
     distribution_territories: Optional[List[str]] = None
+    
+    # v1.4 fields - Person role fields
+    actors_id_list: Optional[List[str]] = None
+    directors_id_list: Optional[List[str]] = None
+    productor_id_list: Optional[List[str]] = None
+    authors_id_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Location and language fields
+    origin_country_id_list: Optional[List[str]] = None
+    original_languages_id: Optional[List[str]] = None
+    available_countries_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Business fields
+    copyright_owner_id: Optional[str] = None
+    eligible_plans: Optional[List[str]] = None
+    audience_categories_id_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Metadata fields
+    friendly_url: Optional[str] = None
+    human_keywords_text_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Image fields
+    image_fullscreen: Optional[UUID] = None
+    image_thumbnail1: Optional[UUID] = None
+    image_thumbnail2: Optional[UUID] = None
+    image_mobile_home: Optional[UUID] = None
+    image_desktop_home: Optional[UUID] = None
+    additional_images_id_list: Optional[List[str]] = None
+    
+    # v1.4 fields - Revenue fields (Admin only)
+    translation_share: Optional[float] = None
+    sacem_share: Optional[float] = None
+    other_share: Optional[float] = None
+    revenue_share: Optional[float] = None
+    paid_token_cost: Optional[int] = None
 
 
 class MediaDescriptionInDB(MediaDescriptionBase):

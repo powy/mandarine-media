@@ -186,6 +186,7 @@ export class ExcelParser {
           case 'available_countries_list':
           case 'eligible_plans':
           case 'audience_categories_id_list':
+          case 'additional_images_id_list':
             description[fieldName] = this.convertToStringArray(value);
             break;
           

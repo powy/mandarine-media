@@ -69,14 +69,9 @@ export interface MediaDescription {
   image_fullscreen?: string;
   image_thumbnail1?: string;
   image_thumbnail2?: string;
-  image_thumbnail3?: string;
-  image_thumbnail4?: string;
-  image_thumbnail5?: string;
-  image_thumbnail6?: string;
-  image_thumbnail7?: string;
-  image_thumbnail8?: string;
-  image_thumbnail9?: string;
-  image_thumbnail10?: string;
+  image_mobile_home?: string;
+  image_desktop_home?: string;
+  additional_images_id_list?: string[];
   translation_share?: number;
   sacem_share?: number;
   other_share?: number;
@@ -313,14 +308,9 @@ export interface MediaDescriptionCreate {
   image_fullscreen?: string;
   image_thumbnail1?: string;
   image_thumbnail2?: string;
-  image_thumbnail3?: string;
-  image_thumbnail4?: string;
-  image_thumbnail5?: string;
-  image_thumbnail6?: string;
-  image_thumbnail7?: string;
-  image_thumbnail8?: string;
-  image_thumbnail9?: string;
-  image_thumbnail10?: string;
+  image_mobile_home?: string;
+  image_desktop_home?: string;
+  additional_images_id_list?: string[];
   translation_share?: number;
   sacem_share?: number;
   other_share?: number;
@@ -543,4 +533,133 @@ export interface CategoryListItemJSON {
   forward_link?: string;
   media_title?: string;
   media_type?: string;
+}
+
+// v1.6 New Types
+export type ThumbnailFormatEnum = 'small_square' | 'medium_portrait' | 'large_landscape' | 'vertical_mobile';
+
+export interface ContentList {
+  id: string;
+  creation_date_utc: string;
+  last_updated_utc: string;
+  title: string;
+  thumbnail_format: ThumbnailFormatEnum;
+  is_active: boolean;
+  display_order: number;
+  description?: string;
+  content_items?: string[];
+  content_types?: string[];
+  json_content?: string;
+  json_last_updated?: string;
+}
+
+export interface ContentListCreate {
+  title: string;
+  thumbnail_format: ThumbnailFormatEnum;
+  is_active: boolean;
+  display_order: number;
+  description?: string;
+  content_items?: string[];
+  content_types?: string[];
+}
+
+export interface ContentListUpdate {
+  title?: string;
+  thumbnail_format?: ThumbnailFormatEnum;
+  is_active?: boolean;
+  display_order?: number;
+  description?: string;
+  content_items?: string[];
+  content_types?: string[];
+}
+
+export interface ContentListJSON {
+  id: string;
+  title: string;
+  thumbnail_format: ThumbnailFormatEnum;
+  description?: string;
+  last_updated: string;
+  items: ContentListItemJSON[];
+}
+
+export interface ContentListItemJSON {
+  content_id: string;
+  content_type: 'program' | 'season' | 'media_description';
+  title: string;
+  thumbnail_url?: string;
+  display_order: number;
+}
+
+export interface ScreenContent {
+  id: string;
+  creation_date_utc: string;
+  last_updated_utc: string;
+  title: string;
+  is_active: boolean;
+  display_order: number;
+  description?: string;
+  content_lists?: string[];
+  screen_type?: string;
+  json_content?: string;
+  json_last_updated?: string;
+}
+
+export interface ScreenContentCreate {
+  title: string;
+  is_active: boolean;
+  display_order: number;
+  description?: string;
+  content_lists?: string[];
+  screen_type?: string;
+}
+
+export interface ScreenContentUpdate {
+  title?: string;
+  is_active?: boolean;
+  display_order?: number;
+  description?: string;
+  content_lists?: string[];
+  screen_type?: string;
+}
+
+export interface ScreenContentJSON {
+  id: string;
+  title: string;
+  description?: string;
+  screen_type?: string;
+  last_updated: string;
+  content_lists: ContentListJSON[];
+}
+
+export interface ContentListFilters {
+  skip?: number;
+  limit?: number;
+  is_active?: boolean;
+  thumbnail_format?: ThumbnailFormatEnum;
+}
+
+export interface ScreenContentFilters {
+  skip?: number;
+  limit?: number;
+  is_active?: boolean;
+  screen_type?: string;
+}
+
+export interface ContentListListResponse {
+  data: ContentList[];
+  pagination: PaginationInfo;
+}
+
+export interface ScreenContentListResponse {
+  data: ScreenContent[];
+  pagination: PaginationInfo;
+}
+
+export interface ReorderContentRequest {
+  content_items: string[];
+  content_types: string[];
+}
+
+export interface ReorderListsRequest {
+  content_lists: string[];
 }

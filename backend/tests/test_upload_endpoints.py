@@ -124,7 +124,7 @@ class TestVideoUpload:
             files={"file": (video_file["filename"], BytesIO(video_file["content"]), video_file["content_type"])},
         )
         
-        assert response.status_code == 403  # No user authenticated, so it's forbidden rather than 401
+        assert response.status_code == 401  # No user authenticated, so it's forbidden rather than 401
     
     def test_video_upload_non_admin(self, client, user_token, video_file):
         """Test video upload with non-admin user."""
@@ -238,7 +238,7 @@ class TestWebcomicUpload:
             files=files_data,
         )
         
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     @patch('app.api.v1.endpoints.media_uploads.MediaUploadService')
     def test_webcomic_upload_partial_failure(self, mock_service_class, client, admin_token, image_files):
@@ -299,7 +299,7 @@ class TestBackendManagement:
     def test_get_backends_unauthorized(self, client):
         """Test getting backends without authentication."""
         response = client.get("/api/v1/upload/backends")
-        assert response.status_code == 403
+        assert response.status_code == 401
     
     def test_get_backends_non_admin(self, client, user_token):
         """Test getting backends with non-admin user."""
@@ -347,7 +347,7 @@ class TestBackendManagement:
             "/api/v1/upload/file",
             params={"file_url": "http://localhost:8000/files/test_file.mp4"}
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestLegacyVideoUpload:
@@ -362,7 +362,7 @@ class TestLegacyVideoUpload:
             headers = {"Authorization": f"Bearer {admin_token}"}
             
             response = client.post(
-                "/api/v1/video/files/upload",
+                "/api/v1/video-files/upload",
                 headers=headers,
                 files={"file": (video_file["filename"], BytesIO(video_file["content"]), video_file["content_type"])},
             )
@@ -375,8 +375,8 @@ class TestLegacyVideoUpload:
     def test_legacy_video_upload_unauthorized(self, client, video_file):
         """Test legacy upload without authentication."""
         response = client.post(
-            "/api/v1/video/files/upload",
+            "/api/v1/video-files/upload",
             files={"file": (video_file["filename"], BytesIO(video_file["content"]), video_file["content_type"])},
         )
         
-        assert response.status_code == 403
+        assert response.status_code == 401

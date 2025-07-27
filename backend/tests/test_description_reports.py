@@ -22,7 +22,7 @@ class TestDescriptionReportsList:
         """Test successful retrieval of description reports list."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        response = client.get("/api/v1/description/reports", headers=headers)
+        response = client.get("/api/v1/description-reports", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -39,7 +39,7 @@ class TestDescriptionReportsList:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get(
-            "/api/v1/description/reports",
+            "/api/v1/description-reports",
             headers=headers,
             params={"skip": 0, "limit": 5}
         )
@@ -51,14 +51,14 @@ class TestDescriptionReportsList:
     
     def test_list_description_reports_unauthorized(self, client):
         """Test reports list without authentication."""
-        response = client.get("/api/v1/description/reports")
-        assert response.status_code == 403
+        response = client.get("/api/v1/description-reports")
+        assert response.status_code == 401
     
     def test_list_description_reports_non_admin(self, client, user_token):
         """Test reports list with non-admin user."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.get("/api/v1/description/reports", headers=headers)
+        response = client.get("/api/v1/description-reports", headers=headers)
         assert response.status_code == 403
 
 
@@ -71,7 +71,7 @@ class TestDescriptionReportRead:
         fake_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/description/reports/{fake_id}",
+            f"/api/v1/description-reports/{fake_id}",
             headers=headers
         )
         
@@ -83,7 +83,7 @@ class TestDescriptionReportRead:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get(
-            "/api/v1/description/reports/invalid-uuid",
+            "/api/v1/description-reports/invalid-uuid",
             headers=headers
         )
         
@@ -92,8 +92,8 @@ class TestDescriptionReportRead:
     def test_read_description_report_unauthorized(self, client):
         """Test reading without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/description/reports/{fake_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/description-reports/{fake_id}")
+        assert response.status_code == 401
     
     def test_read_description_report_non_admin(self, client, user_token):
         """Test reading with non-admin user."""
@@ -101,7 +101,7 @@ class TestDescriptionReportRead:
         fake_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/description/reports/{fake_id}",
+            f"/api/v1/description-reports/{fake_id}",
             headers=headers
         )
         assert response.status_code == 403
@@ -116,7 +116,7 @@ class TestDescriptionReportsBatch:
         fake_batch_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/description/reports/batch/{fake_batch_id}",
+            f"/api/v1/description-reports/batch/{fake_batch_id}",
             headers=headers
         )
         
@@ -130,7 +130,7 @@ class TestDescriptionReportsBatch:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get(
-            "/api/v1/description/reports/batch/invalid-uuid",
+            "/api/v1/description-reports/batch/invalid-uuid",
             headers=headers
         )
         
@@ -139,8 +139,8 @@ class TestDescriptionReportsBatch:
     def test_read_reports_by_batch_unauthorized(self, client):
         """Test reading batch reports without authentication."""
         fake_batch_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/description/reports/batch/{fake_batch_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/description-reports/batch/{fake_batch_id}")
+        assert response.status_code == 401
     
     def test_read_reports_by_batch_non_admin(self, client, user_token):
         """Test reading batch reports with non-admin user."""
@@ -148,7 +148,7 @@ class TestDescriptionReportsBatch:
         fake_batch_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/description/reports/batch/{fake_batch_id}",
+            f"/api/v1/description-reports/batch/{fake_batch_id}",
             headers=headers
         )
         assert response.status_code == 403
@@ -163,7 +163,7 @@ class TestDescriptionReportsDescription:
         fake_description_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/description/reports/description/{fake_description_id}",
+            f"/api/v1/description-reports/description/{fake_description_id}",
             headers=headers
         )
         
@@ -177,7 +177,7 @@ class TestDescriptionReportsDescription:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get(
-            "/api/v1/description/reports/description/invalid-uuid",
+            "/api/v1/description-reports/description/invalid-uuid",
             headers=headers
         )
         
@@ -186,8 +186,8 @@ class TestDescriptionReportsDescription:
     def test_read_reports_by_description_unauthorized(self, client):
         """Test reading description reports without authentication."""
         fake_description_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/description/reports/description/{fake_description_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/description-reports/description/{fake_description_id}")
+        assert response.status_code == 401
     
     def test_read_reports_by_description_non_admin(self, client, user_token):
         """Test reading description reports with non-admin user."""
@@ -195,7 +195,7 @@ class TestDescriptionReportsDescription:
         fake_description_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/description/reports/description/{fake_description_id}",
+            f"/api/v1/description-reports/description/{fake_description_id}",
             headers=headers
         )
         assert response.status_code == 403
@@ -223,7 +223,7 @@ class TestDescriptionReportsIntegration:
         }
         
         bulk_response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -234,7 +234,7 @@ class TestDescriptionReportsIntegration:
         
         # Check that reports were created for this batch
         reports_response = client.get(
-            f"/api/v1/description/reports/batch/{batch_id}",
+            f"/api/v1/description-reports/batch/{batch_id}",
             headers=headers
         )
         
@@ -258,7 +258,7 @@ class TestDescriptionReportsIntegration:
         bulk_data = {"descriptions": [sample_media_description_for_report]}
         
         bulk_response = client.post(
-            "/api/v1/media/descriptions/bulk",
+            "/api/v1/media-descriptions/bulk",
             headers=headers,
             json=bulk_data
         )
@@ -269,7 +269,7 @@ class TestDescriptionReportsIntegration:
         
         # Get reports by description ID
         reports_response = client.get(
-            f"/api/v1/description/reports/description/{description_id}",
+            f"/api/v1/description-reports/description/{description_id}",
             headers=headers
         )
         

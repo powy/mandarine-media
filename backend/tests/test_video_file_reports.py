@@ -48,7 +48,7 @@ class TestVideoFileReportsList:
         """Test successful retrieval of video file reports list."""
         headers = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.get("/api/v1/video/file/reports", headers=headers)
+        response = client.get("/api/v1/video-file-reports", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
@@ -66,7 +66,7 @@ class TestVideoFileReportsList:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"skip": 5, "limit": 10}
         )
@@ -81,7 +81,7 @@ class TestVideoFileReportsList:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -98,7 +98,7 @@ class TestVideoFileReportsList:
         
         # Test negative skip
         response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"skip": -1}
         )
@@ -106,7 +106,7 @@ class TestVideoFileReportsList:
         
         # Test limit too high
         response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"limit": 1001}
         )
@@ -114,8 +114,8 @@ class TestVideoFileReportsList:
     
     def test_list_video_file_reports_unauthorized(self, client):
         """Test video file reports list without authentication."""
-        response = client.get("/api/v1/video/file/reports")
-        assert response.status_code == 403
+        response = client.get("/api/v1/video-file-reports")
+        assert response.status_code == 401
 
 
 class TestVideoFileReportRead:
@@ -127,7 +127,7 @@ class TestVideoFileReportRead:
         fake_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/video/file/reports/{fake_id}",
+            f"/api/v1/video-file-reports/{fake_id}",
             headers=headers
         )
         
@@ -139,7 +139,7 @@ class TestVideoFileReportRead:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/file/reports/invalid-uuid",
+            "/api/v1/video-file-reports/invalid-uuid",
             headers=headers
         )
         
@@ -148,8 +148,8 @@ class TestVideoFileReportRead:
     def test_read_video_file_report_unauthorized(self, client):
         """Test reading without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/video/file/reports/{fake_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/video-file-reports/{fake_id}")
+        assert response.status_code == 401
 
 
 class TestVideoFileReportsByVideoFile:
@@ -161,7 +161,7 @@ class TestVideoFileReportsByVideoFile:
         fake_video_id = str(uuid.uuid4())
         
         response = client.get(
-            f"/api/v1/video/file/reports/video-file/{fake_video_id}",
+            f"/api/v1/video-file-reports/video-file/{fake_video_id}",
             headers=headers
         )
         
@@ -175,7 +175,7 @@ class TestVideoFileReportsByVideoFile:
         headers = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get(
-            "/api/v1/video/file/reports/video-file/invalid-uuid",
+            "/api/v1/video-file-reports/video-file/invalid-uuid",
             headers=headers
         )
         
@@ -184,8 +184,8 @@ class TestVideoFileReportsByVideoFile:
     def test_get_reports_by_video_file_unauthorized(self, client):
         """Test getting reports without authentication."""
         fake_video_id = str(uuid.uuid4())
-        response = client.get(f"/api/v1/video/file/reports/video-file/{fake_video_id}")
-        assert response.status_code == 403
+        response = client.get(f"/api/v1/video-file-reports/video-file/{fake_video_id}")
+        assert response.status_code == 401
 
 
 class TestVideoFileDelete:
@@ -197,7 +197,7 @@ class TestVideoFileDelete:
         
         # Create media description first
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_description_data
         )
@@ -209,7 +209,7 @@ class TestVideoFileDelete:
         video_data["media_description_id"] = media_id
         
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=video_data
         )
@@ -218,7 +218,7 @@ class TestVideoFileDelete:
         
         # Get initial report count
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -226,14 +226,14 @@ class TestVideoFileDelete:
         
         # Delete the video file
         delete_response = client.delete(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers
         )
         assert delete_response.status_code == 200
         
         # Check that an orphan report was created
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -260,7 +260,7 @@ class TestVideoFileDelete:
         
         # Create video file without linking to media
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -269,7 +269,7 @@ class TestVideoFileDelete:
         
         # Get initial report count
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -277,14 +277,14 @@ class TestVideoFileDelete:
         
         # Delete the video file
         delete_response = client.delete(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers
         )
         assert delete_response.status_code == 200
         
         # Check that an orphan report was created
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -314,7 +314,7 @@ class TestVideoFileDestroy:
         
         # Create video file first
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -323,7 +323,7 @@ class TestVideoFileDestroy:
         
         # Get initial report count for file_delete events
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "file_delete"}
         )
@@ -331,7 +331,7 @@ class TestVideoFileDestroy:
         
         # Destroy the video file
         destroy_response = client.post(
-            f"/api/v1/video/files/{video_id}/destroy",
+            f"/api/v1/video-files/{video_id}/destroy",
             headers=headers
         )
         
@@ -343,7 +343,7 @@ class TestVideoFileDestroy:
         
         # Check that a destruction report was created
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "file_delete"}
         )
@@ -369,7 +369,7 @@ class TestVideoFileDestroy:
         fake_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/video/files/{fake_id}/destroy",
+            f"/api/v1/video-files/{fake_id}/destroy",
             headers=headers
         )
         
@@ -381,7 +381,7 @@ class TestVideoFileDestroy:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.post(
-            "/api/v1/video/files/invalid-uuid/destroy",
+            "/api/v1/video-files/invalid-uuid/destroy",
             headers=headers
         )
         
@@ -390,8 +390,8 @@ class TestVideoFileDestroy:
     def test_destroy_video_file_unauthorized(self, client):
         """Test destruction without authentication."""
         fake_id = str(uuid.uuid4())
-        response = client.post(f"/api/v1/video/files/{fake_id}/destroy")
-        assert response.status_code == 403
+        response = client.post(f"/api/v1/video-files/{fake_id}/destroy")
+        assert response.status_code == 401
     
     def test_destroy_video_file_non_admin(self, client, user_token):
         """Test destruction with non-admin user."""
@@ -399,7 +399,7 @@ class TestVideoFileDestroy:
         fake_id = str(uuid.uuid4())
         
         response = client.post(
-            f"/api/v1/video/files/{fake_id}/destroy",
+            f"/api/v1/video-files/{fake_id}/destroy",
             headers=headers
         )
         assert response.status_code == 403
@@ -414,7 +414,7 @@ class TestVideoFileReportIntegration:
         
         # Create media description
         media_response = client.post(
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_description_data
         )
@@ -424,7 +424,7 @@ class TestVideoFileReportIntegration:
         
         # Create video file
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
@@ -432,21 +432,21 @@ class TestVideoFileReportIntegration:
         
         # Link video to media
         link_response = client.post(
-            f"/api/v1/video/files/{video_id}/link/{media_id}",
+            f"/api/v1/video-files/{video_id}/link/{media_id}",
             headers=headers
         )
         assert link_response.status_code == 200
         
         # Delete video file (should create orphan report)
         delete_response = client.delete(
-            f"/api/v1/video/files/{video_id}",
+            f"/api/v1/video-files/{video_id}",
             headers=headers
         )
         assert delete_response.status_code == 200
         
         # Verify orphan report was created
         orphan_reports = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -468,7 +468,7 @@ class TestVideoFileReportIntegration:
             video_data["file_name"] = f"test_video_{i}.mp4"
             
             video_response = client.post(
-                "/api/v1/video/files",
+                "/api/v1/video-files",
                 headers=headers,
                 json=video_data
             )
@@ -476,11 +476,11 @@ class TestVideoFileReportIntegration:
         
         # Delete them to create orphan reports
         for video_id in video_ids:
-            client.delete(f"/api/v1/video/files/{video_id}", headers=headers)
+            client.delete(f"/api/v1/video-files/{video_id}", headers=headers)
         
         # Test pagination
         response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=user_headers,
             params={"skip": 0, "limit": 2}
         )
@@ -491,7 +491,7 @@ class TestVideoFileReportIntegration:
         
         # Test event filtering
         response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=user_headers,
             params={"event": "possible_orphan"}
         )
@@ -505,56 +505,56 @@ class TestVideoFileReportIntegration:
         
         # Create video file
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
         video_id = video_response.json()["id"]
         
         # Get initial counts
-        all_reports = client.get("/api/v1/video/file/reports", headers=headers)
+        all_reports = client.get("/api/v1/video-file-reports", headers=headers)
         initial_total = all_reports.json()["pagination"]["total"]
         
         orphan_reports = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
         initial_orphan_count = orphan_reports.json()["pagination"]["total"]
         
         destroy_reports = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "file_delete"}
         )
         initial_destroy_count = destroy_reports.json()["pagination"]["total"]
         
         # Delete video file (should create orphan report)
-        delete_response = client.delete(f"/api/v1/video/files/{video_id}", headers=headers)
+        delete_response = client.delete(f"/api/v1/video-files/{video_id}", headers=headers)
         assert delete_response.status_code == 200
         
         # Create another video file for destruction test
         video_response2 = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=sample_video_file_data
         )
         video_id2 = video_response2.json()["id"]
         
         # Destroy the second video file (should create destruction report)
-        destroy_response = client.post(f"/api/v1/video/files/{video_id2}/destroy", headers=headers)
+        destroy_response = client.post(f"/api/v1/video-files/{video_id2}/destroy", headers=headers)
         assert destroy_response.status_code == 200
         
         # Verify report counts increased correctly
         final_orphan_reports = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
         final_orphan_count = final_orphan_reports.json()["pagination"]["total"]
         
         final_destroy_reports = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "file_delete"}
         )
@@ -582,7 +582,7 @@ class TestVideoFileReportEdgeCases:
         }
         
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=video_data
         )
@@ -590,12 +590,12 @@ class TestVideoFileReportEdgeCases:
         video_id = video_response.json()["id"]
         
         # Delete to create report
-        delete_response = client.delete(f"/api/v1/video/files/{video_id}", headers=headers)
+        delete_response = client.delete(f"/api/v1/video-files/{video_id}", headers=headers)
         assert delete_response.status_code == 200
         
         # Verify report was created with truncated or handled long name
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -616,7 +616,7 @@ class TestVideoFileReportEdgeCases:
         }
         
         video_response = client.post(
-            "/api/v1/video/files",
+            "/api/v1/video-files",
             headers=headers,
             json=video_data
         )
@@ -624,12 +624,12 @@ class TestVideoFileReportEdgeCases:
         video_id = video_response.json()["id"]
         
         # Delete to create report
-        delete_response = client.delete(f"/api/v1/video/files/{video_id}", headers=headers)
+        delete_response = client.delete(f"/api/v1/video-files/{video_id}", headers=headers)
         assert delete_response.status_code == 200
         
         # Verify report was created with unicode name preserved
         reports_response = client.get(
-            "/api/v1/video/file/reports",
+            "/api/v1/video-file-reports",
             headers=headers,
             params={"event": "possible_orphan"}
         )
@@ -657,7 +657,7 @@ class TestVideoFileReportEdgeCases:
             video_data["file_name"] = f"concurrent_test_{i}.mp4"
             
             video_response = client.post(
-                "/api/v1/video/files",
+                "/api/v1/video-files",
                 headers=headers,
                 json=video_data
             )
@@ -665,16 +665,16 @@ class TestVideoFileReportEdgeCases:
             video_ids.append(video_response.json()["id"])
         
         # Get initial report count
-        initial_reports = client.get("/api/v1/video/file/reports", headers=headers)
+        initial_reports = client.get("/api/v1/video-file-reports", headers=headers)
         initial_count = initial_reports.json()["pagination"]["total"]
         
         # Delete all video files (simulating concurrent operations)
         for video_id in video_ids:
-            delete_response = client.delete(f"/api/v1/video/files/{video_id}", headers=headers)
+            delete_response = client.delete(f"/api/v1/video-files/{video_id}", headers=headers)
             assert delete_response.status_code == 200
         
         # Verify all reports were created
-        final_reports = client.get("/api/v1/video/file/reports", headers=headers)
+        final_reports = client.get("/api/v1/video-file-reports", headers=headers)
         final_count = final_reports.json()["pagination"]["total"]
         
         # Should have 5 more reports

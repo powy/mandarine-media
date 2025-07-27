@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { PencilIcon, TrashIcon, EyeIcon, StarIcon } from '@heroicons/react/24/outline';
 import { MediaDescription, MediaFilters } from 'share';
-import { DataTable, PageHeader, ConfirmDialog } from '@/components/common';
+import { DataTable } from '../../common/DataTable';
+import { PageHeader } from '../../common/PageHeader';
+import { ConfirmDialog } from '../../common/ConfirmDialog';
 import { MediaFiltersComponent } from './MediaFilters';
-import { StatusBadge } from '@/components/common/StatusBadge';
-import { useMediaList, useDeleteMedia } from '@/hooks/useMediaData';
-import { formatDate, formatNumber } from '@/utils/formatters';
+import { StatusBadge } from '../../common/StatusBadge';
+import { useMediaList, useDeleteMedia } from '../../../hooks/useMediaData';
+import { formatDate, formatNumber } from '../../../utils/formatters';
 import clsx from 'clsx';
 
 export const MediaList = () => {

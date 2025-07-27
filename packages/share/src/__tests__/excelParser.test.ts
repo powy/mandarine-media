@@ -1,21 +1,22 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExcelParser } from '../utils/excelParser';
 import { MediaDescriptionCreate } from '../types';
 
 // Mock XLSX since it's not available in test environment
-jest.mock('xlsx', () => ({
-  read: jest.fn(),
+vi.mock('xlsx', () => ({
+  read: vi.fn(),
   utils: {
-    sheet_to_json: jest.fn(),
-    json_to_sheet: jest.fn(),
-    book_new: jest.fn(),
-    book_append_sheet: jest.fn(),
+    sheet_to_json: vi.fn(),
+    json_to_sheet: vi.fn(),
+    book_new: vi.fn(),
+    book_append_sheet: vi.fn(),
   },
-  write: jest.fn(),
+  write: vi.fn(),
 }));
 
 describe('ExcelParser', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('convertRow', () => {

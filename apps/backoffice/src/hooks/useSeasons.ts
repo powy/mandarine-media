@@ -6,7 +6,7 @@ export const useSeasonsList = (params?: { skip?: number; limit?: number; program
   return useQuery({
     queryKey: ['seasons', 'list', params],
     queryFn: () => seasonsApi.getAll(params),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 

@@ -1,5 +1,10 @@
-import { DescriptionReportsList } from '@/components/features/description-reports/DescriptionReportsList';
+import { SimplePage } from '../../components/SimplePage';
 
-export const DescriptionReportsPage = () => {
-  return <DescriptionReportsList />;
-};
+export default function DescriptionReportsPage() {
+  return (
+    <SimplePage 
+      title="Description Reports" 
+      description="Manage and review description reports and content submissions."
+    />
+  );
+}

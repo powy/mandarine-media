@@ -5,26 +5,25 @@
   "sourceRoot": "apps/backoffice/src",
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
       "options": {
-        "command": "npm run build",
-        "cwd": "apps/backoffice"
+        "configFile": "apps/backoffice/vite.config.ts"
       }
     },
     "serve": {
-      "executor": "@nx/vite:dev-server",
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "backoffice:build",
-        "port": 3001,
-        "configFile": "apps/backoffice/vite.config.ts"
+        "command": "npm run dev",
+        "cwd": "apps/backoffice"
       }
     },
     "preview": {
       "executor": "@nx/vite:preview-server",
       "options": {
         "buildTarget": "backoffice:build",
-        "port": 3001
+        "port": 3002,
+        "host": "127.0.0.1"
       }
     },
     "test": {

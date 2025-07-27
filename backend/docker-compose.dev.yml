@@ -8,6 +8,7 @@ services:
       - POSTGRES_USER=kyool_user
       - POSTGRES_PASSWORD=kyool_password
       - POSTGRES_DB=kyool_media
+      - CORS_ORIGINS=http://127.0.0.1:3002,http://localhost:3001,http://localhost:3002
     volumes:
       - .:/app
     depends_on:

@@ -223,6 +223,71 @@ def create_sample_data():
         }
     ]
 
+    # Content Lists sheet (NEW in API 1.6)
+    content_lists_data = [
+        {
+            'title': 'Trending K-Dramas',
+            'thumbnail_format': 'large_landscape',
+            'is_active': True,
+            'display_order': 1,
+            'description': 'Most popular Korean drama series this month',
+            'content_items': 'Squid Game, Kingdom, Crash Landing on You',  # Mixed content references
+            'content_types': '["program", "program", "program"]',  # Corresponding types
+            '_ref_name': 'Trending K-Dramas'
+        },
+        {
+            'title': 'Top Episodes This Week',
+            'thumbnail_format': 'medium_portrait',
+            'is_active': True,
+            'display_order': 2,
+            'description': 'Most watched episodes from the past week',
+            'content_items': 'Squid Game E01, Squid Game E02',  # Episode references
+            'content_types': '["media_description", "media_description"]',
+            '_ref_name': 'Top Episodes'
+        },
+        {
+            'title': 'Featured Content',
+            'thumbnail_format': 'small_square',
+            'is_active': True,
+            'display_order': 3,
+            'description': 'Curated selection of featured content',
+            'content_items': 'Squid Game, Squid Game E01',  # Mixed program and episode
+            'content_types': '["program", "media_description"]',
+            '_ref_name': 'Featured Content'
+        }
+    ]
+
+    # Screen Contents sheet (NEW in API 1.6)
+    screen_contents_data = [
+        {
+            'title': 'Homepage Layout',
+            'is_active': True,
+            'display_order': 1,
+            'description': 'Main homepage screen layout with trending content',
+            'content_lists': 'Trending K-Dramas, Top Episodes',  # References to content lists
+            'screen_type': 'homepage',
+            '_ref_name': 'Homepage'
+        },
+        {
+            'title': 'Drama Category Page',
+            'is_active': True,
+            'display_order': 2,
+            'description': 'Drama category page showing featured and trending dramas',
+            'content_lists': 'Featured Content, Trending K-Dramas',
+            'screen_type': 'category',
+            '_ref_name': 'Drama Category'
+        },
+        {
+            'title': 'Search Results Layout',
+            'is_active': True,
+            'display_order': 3,
+            'description': 'Layout for search results pages',
+            'content_lists': 'Top Episodes',
+            'screen_type': 'search',
+            '_ref_name': 'Search Results'
+        }
+    ]
+
     return {
         'users': users_data,
         'languages': languages_data,
@@ -231,7 +296,9 @@ def create_sample_data():
         'programs': programs_data,
         'public_persons': public_persons_data,
         'media_descriptions': media_descriptions_data,
-        'video_files': video_files_data
+        'video_files': video_files_data,
+        'content_lists': content_lists_data,
+        'screen_contents': screen_contents_data
     }
 
 def create_excel_template(output_path: str):
@@ -325,6 +392,20 @@ def create_instructions_sheet():
             'Key Fields': 'file_url, encoding_status, upload_method',
             'Reference Field': '_ref_name',
             'Notes': 'Links to media_descriptions'
+        },
+        {
+            'Sheet Name': 'content_lists',
+            'Description': 'Flexible content organization lists (NEW in API 1.6)',
+            'Key Fields': 'title (required), thumbnail_format (required), content_items, content_types',
+            'Reference Field': '_ref_name',
+            'Notes': 'Can mix programs, seasons, and media descriptions. thumbnail_format must be: small_square, medium_portrait, large_landscape, or vertical_mobile'
+        },
+        {
+            'Sheet Name': 'screen_contents',
+            'Description': 'Complete screen layout management (NEW in API 1.6)',
+            'Key Fields': 'title (required), content_lists, screen_type',
+            'Reference Field': '_ref_name',
+            'Notes': 'Organizes content lists into screen layouts. References content_lists by name.'
         }
     ]
     
@@ -332,7 +413,7 @@ def create_instructions_sheet():
 
 def main():
     # Create directories
-    output_dir = Path("/home/powy/code/kyool-media/backend/data")
+    output_dir = Path("./data")
     output_dir.mkdir(exist_ok=True)
     
     # Create the main template

@@ -199,7 +199,7 @@ class TestTokenAuthentication:
 
         response = client.get("/api/v1/users/me", headers=headers)
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_empty_authorization_header(self, client):
         """Test accessing protected endpoint with empty authorization header."""
@@ -207,13 +207,13 @@ class TestTokenAuthentication:
 
         response = client.get("/api/v1/users/me", headers=headers)
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_missing_authorization_header(self, client):
         """Test accessing protected endpoint without authorization header."""
         response = client.get("/api/v1/users/me")
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_bearer_token_case_sensitivity(self, client, user_token):
         """Test bearer token with different case."""
@@ -372,7 +372,7 @@ class TestAuthenticationEdgeCases:
         # Test multiple endpoints with same token
         endpoints = [
             "/api/v1/users/me",
-            "/api/v1/media/descriptions",
+            "/api/v1/media-descriptions",
             "/api/v1/persons",
         ]
 

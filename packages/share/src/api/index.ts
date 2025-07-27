@@ -11,3 +11,5 @@ export * from './languages';
 export * from './countries';
 export * from './territories';
 export * from './pictures';
+export * from './content-lists';
+export * from './screen-contents';
