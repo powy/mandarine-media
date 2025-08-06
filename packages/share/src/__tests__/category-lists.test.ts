@@ -84,7 +84,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.getCategoryLists();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category/lists?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category-lists/?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -100,7 +100,7 @@ describe('Category Lists API', () => {
       const result = await categoryListsApi.getCategoryLists(filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/api/v1/category/lists?skip=0&limit=10&active_only=true'
+        '/api/v1/category-lists/?skip=0&limit=10&active_only=true'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -120,7 +120,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.createCategoryList(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category/lists', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category-lists/', createData);
       expect(result).toEqual(mockCategoryList);
     });
   });
@@ -131,7 +131,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.getCategoryList('category-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/');
       expect(result).toEqual(mockCategoryList);
     });
   });
@@ -143,7 +143,7 @@ describe('Category Lists API', () => {
       const updateData = { title: 'Updated Homepage Content' };
       const result = await categoryListsApi.updateCategoryList('category-list-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/', updateData);
       expect(result).toEqual(mockCategoryList);
     });
   });
@@ -154,7 +154,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.deleteCategoryList('category-list-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/');
       expect(result).toEqual(mockCategoryList);
     });
   });
@@ -170,7 +170,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.getCategoryListItems('category-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1/items?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/items/?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -186,7 +186,7 @@ describe('Category Lists API', () => {
       const result = await categoryListsApi.getCategoryListItems('category-list-1', filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/api/v1/category/lists/category-list-1/items?skip=0&limit=10&active_only=true'
+        '/api/v1/category-lists/category-list-1/items/?skip=0&limit=10&active_only=true'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -209,7 +209,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.createCategoryListItem('category-list-1', createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1/items', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/items/', createData);
       expect(result).toEqual(mockCategoryListItem);
     });
   });
@@ -221,7 +221,7 @@ describe('Category Lists API', () => {
       const updateData = { title: 'Updated Featured Episode' };
       const result = await categoryListsApi.updateCategoryListItem('category-list-1', 'item-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1/items/item-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/items/item-1/', updateData);
       expect(result).toEqual(mockCategoryListItem);
     });
   });
@@ -232,7 +232,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.deleteCategoryListItem('category-list-1', 'item-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1/items/item-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/items/item-1/');
       expect(result).toEqual(mockCategoryListItem);
     });
   });
@@ -250,7 +250,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.updateCategoryListItemsOrder('category-list-1', orderData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1/items/order', orderData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/items/order/', orderData);
       expect(result).toEqual({ message: 'Order updated successfully' });
     });
   });
@@ -261,7 +261,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.getCategoryListJSON('homepage');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category/lists/homepage/json');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/category-lists/homepage/json/');
       expect(result).toEqual(mockCategoryListJSON);
     });
   });
@@ -272,7 +272,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.regenerateCategoryListJSON('category-list-1');
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category/lists/category-list-1/regenerate-json');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category-lists/category-list-1/regenerate-json/');
       expect(result).toEqual({ message: 'JSON regenerated successfully' });
     });
   });
@@ -290,7 +290,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.regenerateAllCategoryListsJSON();
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category/lists/regenerate-all-json');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category-lists/regenerate-all-json/');
       expect(result).toEqual(mockResponse);
     });
   });
@@ -306,7 +306,7 @@ describe('Category Lists API', () => {
 
       const result = await categoryListsApi.initializeDefaultCategories();
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category/lists/initialize-defaults');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category-lists/initialize-defaults/');
       expect(result).toEqual(mockResponse);
     });
   });
@@ -349,7 +349,7 @@ describe('Category Lists API', () => {
 
       await categoryListsApi.createCategoryList(minimalCreateData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category/lists', minimalCreateData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/category-lists/', minimalCreateData);
     });
   });
 });

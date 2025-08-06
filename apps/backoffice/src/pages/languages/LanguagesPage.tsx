@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Language } from 'share';
-import { PageHeader, DataTable } from '@/components/common';
-import { useLanguagesList, useDeleteLanguage } from '@/hooks/useLanguages';
-import { formatDate } from '@/utils/formatters';
+import { PageHeader } from '../../components/common/PageHeader';
+import { DataTable } from '../../components/common/DataTable';
+import { useLanguagesList, useDeleteLanguage } from '../../hooks/useLanguages';
+import { formatDate } from '../../utils/formatters';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 export const LanguagesPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
-  const [limit] = useState(20);
-  
-  const { data: languages = [], isLoading, error } = useLanguagesList({ 
-    skip: (page - 1) * limit, 
-    limit 
-  });
+  const { data: languages = [], isLoading, error } = useLanguagesList();
   
   const deleteMutation = useDeleteLanguage();
 
@@ -34,19 +29,40 @@ export const LanguagesPage = () => {
 
   const columns = [
     {
+      accessorKey: 'name',
       header: 'Name',
-      accessor: 'name' as keyof Language,
-      sortable: true,
     },
     {
+      accessorKey: 'sigle',
       header: 'Code',
-      accessor: 'sigle' as keyof Language,
-      sortable: true,
     },
     {
+      accessorKey: 'creation_date_utc',
       header: 'Created',
-      accessor: 'creation_date_utc' as keyof Language,
-      render: (value: string) => formatDate(value),
+      cell: ({ getValue }: any) => formatDate(getValue() as string),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: any) => {
+        const language = row.original;
+        return (
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleEdit(language)}
+              className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleDelete(language)}
+              className="text-red-600 hover:text-red-900 text-sm font-medium"
+            >
+              Delete
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -79,15 +95,6 @@ export const LanguagesPage = () => {
         data={languages}
         columns={columns}
         loading={isLoading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        pagination={{
-          page,
-          limit,
-          total: languages.length,
-          onPageChange: setPage,
-        }}
-        emptyMessage="No languages found"
       />
     </div>
   );

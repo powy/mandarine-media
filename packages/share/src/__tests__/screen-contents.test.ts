@@ -84,7 +84,7 @@ describe('Screen Contents API', () => {
 
       const result = await getScreenContents();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen/contents?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen-contents/?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -105,7 +105,7 @@ describe('Screen Contents API', () => {
       const result = await getScreenContents(filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/api/v1/screen/contents?skip=0&limit=10&is_active=true&screen_type=homepage'
+        '/api/v1/screen-contents/?skip=0&limit=10&is_active=true&screen_type=homepage'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -117,7 +117,7 @@ describe('Screen Contents API', () => {
 
       const result = await getScreenContent('screen-content-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen/contents/screen-content-1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen-contents/screen-content-1/');
       expect(result).toEqual(mockScreenContent);
     });
   });
@@ -137,7 +137,7 @@ describe('Screen Contents API', () => {
 
       const result = await createScreenContent(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen/contents', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/', createData);
       expect(result).toEqual(mockScreenContent);
     });
   });
@@ -154,7 +154,7 @@ describe('Screen Contents API', () => {
 
       const result = await updateScreenContent('screen-content-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/screen/contents/screen-content-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/screen-contents/screen-content-1/', updateData);
       expect(result).toEqual(mockScreenContent);
     });
   });
@@ -165,7 +165,7 @@ describe('Screen Contents API', () => {
 
       await deleteScreenContent('screen-content-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/screen/contents/screen-content-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/screen-contents/screen-content-1/');
     });
   });
 
@@ -175,7 +175,7 @@ describe('Screen Contents API', () => {
 
       const result = await getScreenContentJSON('screen-content-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen/contents/screen-content-1/json');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen-contents/screen-content-1/json/');
       expect(result).toEqual(mockScreenContentJSON);
     });
   });
@@ -190,7 +190,7 @@ describe('Screen Contents API', () => {
 
       const result = await reorderScreenContentLists('screen-content-1', reorderData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/screen/contents/screen-content-1/reorder-lists', reorderData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/screen-contents/screen-content-1/reorder-lists/', reorderData);
       expect(result).toEqual(mockScreenContent);
     });
   });
@@ -201,7 +201,7 @@ describe('Screen Contents API', () => {
 
       await regenerateScreenContentJSON('screen-content-1');
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen/contents/screen-content-1/regenerate-json');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/screen-content-1/regenerate-json/');
     });
   });
 
@@ -212,7 +212,7 @@ describe('Screen Contents API', () => {
 
       const result = await getScreenContentByType('homepage');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen/contents/by-type/homepage');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen-contents/by-type/homepage/');
       expect(result).toEqual(mockScreenContents);
     });
   });
@@ -237,7 +237,7 @@ describe('Screen Contents API', () => {
 
       const result = await createScreenContent(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen/contents', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/', createData);
       expect(result.content_lists).toEqual([]);
     });
 
@@ -252,7 +252,7 @@ describe('Screen Contents API', () => {
 
       await createScreenContent(minimalCreateData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen/contents', minimalCreateData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/', minimalCreateData);
     });
 
     it('should handle network timeouts', async () => {
@@ -269,7 +269,7 @@ describe('Screen Contents API', () => {
         
         await getScreenContentByType(screenType);
         
-        expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/screen/contents/by-type/${screenType}`);
+        expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/screen-contents/by-type/${screenType}/`);
       }
     });
   });

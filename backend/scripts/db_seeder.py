@@ -77,8 +77,8 @@ class DatabaseSeeder:
             'programs': '/api/v1/programs',
             'seasons': '/api/v1/seasons',
             'public_persons': '/api/v1/persons',
-            'media_descriptions': '/api/v1/media/descriptions',
-            'video_files': '/api/v1/video/files',
+            'media_descriptions': '/api/v1/media-descriptions',
+            'video_files': '/api/v1/video-files',
             'description_reports': '/api/v1/description/reports',
             'video_file_reports': '/api/v1/video/file/reports',
             'content_lists': '/api/v1/content/lists',
@@ -212,7 +212,7 @@ class DatabaseSeeder:
                 continue
             
             # Handle special field types
-            if column.endswith('_id_list') or column.endswith('_list') or column in ['content_items', 'content_types', 'content_lists']:
+            if column.endswith('_id_list') or column.endswith('_list') or column in ['content_items', 'content_types', 'content_lists', 'subtitle_languages_available', 'audio_languages_available', 'distribution_territories', 'original_languages_id']:
                 # These are JSON array fields that might contain entity references
                 if 'public_person' in column or 'person' in column:
                     data[column] = self.process_reference_list(value, 'public_persons')
@@ -233,6 +233,15 @@ class DatabaseSeeder:
                 elif column == 'content_types':
                     # For content lists: array of content type strings
                     data[column] = self.process_json_array_field(value)
+                elif column in ['subtitle_languages_available', 'audio_languages_available']:
+                    # Language strings, not references
+                    data[column] = self.process_json_array_field(value)
+                elif column == 'distribution_territories':
+                    # Territory IDs
+                    data[column] = self.process_reference_list(value, 'territories') 
+                elif column == 'original_languages_id':
+                    # Language IDs 
+                    data[column] = self.process_reference_list(value, 'languages')
                 else:
                     data[column] = self.process_json_array_field(value)
             

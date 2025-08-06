@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { authApi, initApiClient, usersApi } from 'share';
 import SimpleAppLayout from './components/layout/SimpleAppLayout';
 import PersonsManagementPage from './pages/persons/PersonsManagementPage';
@@ -19,9 +20,19 @@ import { Dashboard } from './pages/Dashboard';
 import DescriptionReportsPage from './pages/description-reports/DescriptionReportsPage';
 import VideoFileReportsPage from './pages/video-file-reports/VideoFileReportsPage';
 
+// Create a QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 // Initialize API client
 initApiClient({ 
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   onAuthError: () => {
     localStorage.removeItem('access_token');
     window.location.reload();
@@ -53,7 +64,7 @@ function AppWithRouter() {
     if (pathname.startsWith('/category-lists')) return 'category-lists';
     if (pathname.startsWith('/media')) return 'media';
     if (pathname.startsWith('/videos')) return 'videos';
-    if (pathname.startsWith('/video-reports')) return 'video-reports';
+    if (pathname.startsWith('/video-file-reports')) return 'video-file-reports';
     if (pathname.startsWith('/users')) return 'users';
     if (pathname.startsWith('/programs')) return 'programs';
     if (pathname.startsWith('/seasons')) return 'seasons';
@@ -117,7 +128,7 @@ function AppWithRouter() {
         <Route path="/seasons" element={<SeasonsPage />} />
         <Route path="/media" element={<MediaListPage />} />
         <Route path="/videos" element={<VideoFileListPage />} />
-        <Route path="/video-reports" element={<VideoFileReportsPage />} />
+        <Route path="/video-file-reports" element={<VideoFileReportsPage />} />
         <Route path="/languages" element={<LanguagesPage />} />
         <Route path="/countries" element={<CountriesPage />} />
         <Route path="/territories" element={<TerritoriesPage />} />
@@ -342,9 +353,11 @@ function App() {
         }
       `}</style>
       
-      <Router>
-        <AppWithRouter />
-      </Router>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <AppWithRouter />
+        </Router>
+      </QueryClientProvider>
     </>
   );
 }

@@ -1,55 +1,19 @@
-import { validateUploadOptions, formatFileSize, formatDuration, VideoUploadOptions } from '../utils/videoUpload';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { validateUploadOptions, formatFileSize, formatDuration } from '../utils/videoUpload';
+import type { VideoUploadOptions } from '../utils/videoUpload';
 
-// Simple test framework for Node.js environment
-function describe(description: string, testSuite: () => void) {
-  console.log(`\n--- ${description} ---`);
-  try {
-    testSuite();
-    console.log('✅ All tests passed');
-  } catch (error) {
-    console.error('❌ Test failed:', error);
-  }
-}
-
-function it(description: string, test: () => void) {
-  try {
-    test();
-    console.log(`  ✓ ${description}`);
-  } catch (error) {
-    console.error(`  ✗ ${description}:`, error);
-    throw error;
-  }
-}
-
-function expect(actual: any) {
+// Mock File constructor for tests
+const createMockFile = (type: string, size: number, name: string = 'test.mp4'): File => {
   return {
-    toBe: (expected: any) => {
-      if (actual !== expected) {
-        throw new Error(`Expected ${expected}, but got ${actual}`);
-      }
-    },
-    toEqual: (expected: any) => {
-      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-        throw new Error(`Expected ${JSON.stringify(expected)}, but got ${JSON.stringify(actual)}`);
-      }
-    },
-    toContain: (expected: any) => {
-      if (!actual.includes(expected)) {
-        throw new Error(`Expected ${JSON.stringify(actual)} to contain ${expected}`);
-      }
-    },
-    toHaveLength: (expected: number) => {
-      if (actual.length !== expected) {
-        throw new Error(`Expected length ${expected}, but got ${actual.length}`);
-      }
-    },
-  };
-}
+    type,
+    size,
+    name,
+  } as File;
+};
 
-// Tests for video upload validation
 describe('validateUploadOptions', () => {
   it('should pass validation for valid new upload options', () => {
-    const mockFile = { type: 'video/mp4', size: 1000000 } as File;
+    const mockFile = createMockFile('video/mp4', 1000000);
     const options: VideoUploadOptions = {
       fileName: 'test.mp4',
       uploadMethod: 'new_upload',
@@ -113,7 +77,7 @@ describe('validateUploadOptions', () => {
   });
 
   it('should fail validation for invalid file type', () => {
-    const mockFile = { type: 'text/plain', size: 1000000 } as File;
+    const mockFile = createMockFile('text/plain', 1000000);
     const options: VideoUploadOptions = {
       fileName: 'test.txt',
       uploadMethod: 'new_upload',
@@ -125,7 +89,6 @@ describe('validateUploadOptions', () => {
   });
 });
 
-// Tests for utility functions
 describe('formatFileSize', () => {
   it('should format bytes correctly', () => {
     expect(formatFileSize(0)).toBe('0 Bytes');
@@ -156,30 +119,3 @@ describe('formatDuration', () => {
     expect(formatDuration(0)).toBe('0:00');
   });
 });
-
-// Run tests if this file is executed directly
-if (typeof require !== 'undefined' && require.main === module) {
-  console.log('Running video upload tests...');
-  
-  // Create mock global File constructor for Node.js environment
-  if (typeof File === 'undefined') {
-    (global as any).File = class MockFile {
-      type: string;
-      size: number;
-      name: string;
-      
-      constructor(chunks: any[], filename: string, options: any = {}) {
-        this.type = options.type || '';
-        this.size = options.size || 0;
-        this.name = filename;
-      }
-    };
-  }
-  
-  // Run all tests
-  describe('Video Upload Tests', () => {
-    validateUploadOptions;
-    formatFileSize;
-    formatDuration;
-  });
-}

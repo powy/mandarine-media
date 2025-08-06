@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { formatStatusBadge } from '@/utils/formatters';
+import { formatStatusBadge } from '../../utils/formatters';
 
 interface StatusBadgeProps {
   status: string;

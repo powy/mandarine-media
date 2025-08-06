@@ -77,7 +77,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getMediaDescriptions();
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions?');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions?');
         expect(result).toEqual(mockResponse);
       });
 
@@ -102,7 +102,7 @@ describe('Media API', () => {
         const result = await mediaApi.getMediaDescriptions(filters);
 
         expect(mockApiClient.get).toHaveBeenCalledWith(
-          '/api/v1/media/descriptions?skip=0&limit=10&media_type=video&category_id=cat-1&status=published&is_featured=true&is_premium=false'
+          '/api/v1/media-descriptions?skip=0&limit=10&media_type=video&category_id=cat-1&status=published&is_featured=true&is_premium=false'
         );
         expect(result).toEqual(mockResponse);
       });
@@ -114,7 +114,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getMediaDescription('media-1');
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions/media-1');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions/media-1');
         expect(result).toEqual(mockMediaDescription);
       });
 
@@ -144,7 +144,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.createMediaDescription(createData);
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media/descriptions', createData);
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media-descriptions', createData);
         expect(result).toEqual(mockMediaDescription);
       });
 
@@ -184,7 +184,7 @@ describe('Media API', () => {
         const updateData = { episode_title: 'Updated Title' };
         const result = await mediaApi.updateMediaDescription('media-1', updateData);
 
-        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/media/descriptions/media-1', updateData);
+        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/media-descriptions/media-1', updateData);
         expect(result).toEqual(updatedMedia);
       });
     });
@@ -195,7 +195,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.deleteMediaDescription('media-1');
 
-        expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/media/descriptions/media-1');
+        expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/media-descriptions/media-1');
         expect(result).toEqual(mockMediaDescription);
       });
     });
@@ -208,7 +208,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getFeaturedMedia();
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions/featured/list?skip=0&limit=20');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions/featured/list?skip=0&limit=20');
         expect(result).toEqual([mockMediaDescription]);
       });
 
@@ -217,7 +217,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getFeaturedMedia(10, 5);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions/featured/list?skip=10&limit=5');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions/featured/list?skip=10&limit=5');
         expect(result).toEqual([mockMediaDescription]);
       });
     });
@@ -228,7 +228,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getTrendingMedia(5, 10);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions/trending/list?skip=5&limit=10');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions/trending/list?skip=5&limit=10');
         expect(result).toEqual([mockMediaDescription]);
       });
     });
@@ -241,7 +241,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.likeMedia('media-1');
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media/descriptions/media-1/like');
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media-descriptions/media-1/like');
         expect(result).toEqual(mockMediaDescription);
       });
     });
@@ -252,7 +252,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.shareMedia('media-1');
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media/descriptions/media-1/share');
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media-descriptions/media-1/share');
         expect(result).toEqual(mockMediaDescription);
       });
     });
@@ -270,7 +270,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getVideoFiles();
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video/files?');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video-files?');
         expect(result).toEqual(mockResponse);
       });
 
@@ -289,7 +289,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getVideoFiles(filters);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video/files?skip=10&limit=5');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video-files?skip=10&limit=5');
         expect(result).toEqual(mockResponse);
       });
     });
@@ -300,7 +300,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getVideoFile('video-1');
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video/files/video-1');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video-files/video-1');
         expect(result).toEqual(mockVideoFile);
       });
     });
@@ -316,7 +316,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.createVideoFile(createData);
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video/files', createData);
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video-files', createData);
         expect(result).toEqual(mockVideoFile);
       });
     });
@@ -329,7 +329,7 @@ describe('Media API', () => {
         const updateData = { encoding_status: 'processing' as const };
         const result = await mediaApi.updateVideoFile('video-1', updateData);
 
-        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/video/files/video-1', updateData);
+        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/video-files/video-1', updateData);
         expect(result).toEqual(updatedVideoFile);
       });
     });
@@ -340,7 +340,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.deleteVideoFile('video-1');
 
-        expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/video/files/video-1');
+        expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/video-files/video-1');
         expect(result).toEqual(mockVideoFile);
       });
     });
@@ -353,7 +353,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getVideoFilesByMedia('media-1');
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video/files/by-media/media-1');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video-files/by-media/media-1');
         expect(result).toEqual([mockVideoFile]);
       });
     });
@@ -364,7 +364,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getUnlinkedVideoFiles(10, 5);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video/files/unlinked/list?skip=10&limit=5');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/video-files/unlinked/list?skip=10&limit=5');
         expect(result).toEqual([mockVideoFile]);
       });
     });
@@ -375,7 +375,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.linkVideoToMedia('video-1', 'media-1');
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video/files/video-1/link/media-1');
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video-files/video-1/link/media-1');
         expect(result).toEqual(mockVideoFile);
       });
     });
@@ -386,7 +386,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.updateEncodingStatus('video-1', 'completed');
 
-        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/video/files/video-1/encoding-status', {
+        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/video-files/video-1/encoding-status', {
           status: 'completed',
           logs: undefined,
         });
@@ -398,7 +398,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.updateEncodingStatus('video-1', 'failed', 'Encoding error occurred');
 
-        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/video/files/video-1/encoding-status', {
+        expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/video-files/video-1/encoding-status', {
           status: 'failed',
           logs: 'Encoding error occurred',
         });
@@ -421,7 +421,7 @@ describe('Media API', () => {
         const result = await mediaApi.uploadVideoFile(file);
 
         expect(mockApiClient.post).toHaveBeenCalledWith(
-          '/api/v1/video/files/upload',
+          '/api/v1/video-files/upload',
           expect.any(FormData),
           {
             headers: {
@@ -472,7 +472,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.createVideoFileMetadata(data);
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video/files/create-metadata', data);
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video-files/create-metadata', data);
         expect(result).toEqual(mockResponse);
       });
 
@@ -493,7 +493,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.createVideoFileMetadata(data);
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video/files/create-metadata', data);
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video-files/create-metadata', data);
         expect(result).toEqual(mockResponse);
       });
     });
@@ -510,7 +510,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.createVideoFileWithExistingUrl(data);
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video/files/create-with-existing-url', data);
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video-files/create-with-existing-url', data);
         expect(result).toEqual(mockVideoFile);
       });
     });
@@ -533,7 +533,7 @@ describe('Media API', () => {
         const result = await mediaApi.uploadFileToExistingMetadata('video-1', file);
 
         expect(mockApiClient.post).toHaveBeenCalledWith(
-          '/api/v1/video/files/video-1/upload-file',
+          '/api/v1/video-files/video-1/upload-file',
           expect.any(FormData),
           {
             headers: {
@@ -558,7 +558,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.testVideoFilePlayback('video-1');
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video/files/video-1/test');
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/video-files/video-1/test');
         expect(result).toEqual(mockResponse);
       });
 
@@ -607,7 +607,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.createBulkMediaDescriptions(bulkRequest);
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media/descriptions/bulk', bulkRequest);
+        expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/media-descriptions/bulk', bulkRequest);
         expect(result).toEqual(mockResponse);
       });
 
@@ -667,7 +667,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getDescriptionReports(10, 5);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description/reports?skip=10&limit=5');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description-reports?skip=10&limit=5');
         expect(result).toEqual(mockResponse);
       });
     });
@@ -678,7 +678,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getDescriptionReport('report-1');
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description/reports/report-1');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description-reports/report-1');
         expect(result).toEqual(mockDescriptionReport);
       });
     });
@@ -689,7 +689,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getDescriptionReportsByBatch('batch-1');
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description/reports/batch/batch-1');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description-reports/batch/batch-1');
         expect(result).toEqual([mockDescriptionReport]);
       });
     });
@@ -700,7 +700,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.getDescriptionReportsByDescription('media-1');
 
-        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description/reports/description/media-1');
+        expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/description-reports/description/media-1');
         expect(result).toEqual([mockDescriptionReport]);
       });
     });
@@ -737,7 +737,7 @@ describe('Media API', () => {
 
       const result = await mediaApi.getMediaDescriptions({});
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -763,7 +763,7 @@ describe('Media API', () => {
 
       await mediaApi.getMediaDescription(specialId);
 
-      expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/media/descriptions/${specialId}`);
+      expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/media-descriptions/${specialId}`);
     });
   });
 });

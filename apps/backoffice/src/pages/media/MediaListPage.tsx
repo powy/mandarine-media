@@ -115,14 +115,10 @@ export const MediaListPage = () => {
       <PageHeader
         title="Media Descriptions"
         subtitle="Manage media content descriptions and metadata"
-        action={
-          <button
-            onClick={() => navigate('/media/new')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Add Media Description
-          </button>
-        }
+        action={{
+          label: 'Add Media Description',
+          onClick: () => navigate('/media/new')
+        }}
       />
 
       <DataTable
@@ -146,7 +142,7 @@ export const MediaListPage = () => {
         title="Delete Media Description"
         message="Are you sure you want to delete this media description? This action cannot be undone."
         confirmText="Delete"
-        confirmVariant="danger"
+        type="danger"
       />
     </div>
   );

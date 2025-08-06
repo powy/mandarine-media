@@ -71,7 +71,6 @@ const VideoFileReportsPage: React.FC = () => {
         <StatusBadge
           status={row.original.event}
           color={getEventBadgeColor(row.original.event)}
-          text={row.original.event.replace('_', ' ').toUpperCase()}
         />
       ),
     },

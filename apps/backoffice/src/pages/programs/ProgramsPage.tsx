@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Program } from 'share';
-import { PageHeader, DataTable } from '@/components/common';
-import { useProgramsList, useDeleteProgram } from '@/hooks/usePrograms';
-import { formatDate } from '@/utils/formatters';
+import { PageHeader } from '../../components/common/PageHeader';
+import { DataTable } from '../../components/common/DataTable';
+import { useProgramsList, useDeleteProgram } from '../../hooks/usePrograms';
+import { formatDate } from '../../utils/formatters';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 export const ProgramsPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
-  const [limit] = useState(20);
-  
-  const { data: programs = [], isLoading, error } = useProgramsList({ 
-    skip: (page - 1) * limit, 
-    limit 
-  });
+  const { data: programs = [], isLoading, error } = useProgramsList();
   
   const deleteMutation = useDeleteProgram();
 
@@ -81,12 +76,6 @@ export const ProgramsPage = () => {
         loading={isLoading}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        pagination={{
-          page,
-          limit,
-          total: programs.length,
-          onPageChange: setPage,
-        }}
         emptyMessage="No programs found"
       />
     </div>

@@ -31,16 +31,12 @@ export const SeasonsPage = () => {
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
 
   // API hooks
-  const [page, setPage] = useState(1);
-  const limit = 20;
   const { data: seasons = [], isLoading, error } = useSeasonsList({ 
-    skip: (page - 1) * limit, 
-    limit,
     program_id: selectedProgramId || undefined
   });
 
   // Load programs for dropdown
-  const { data: programs = [] } = useProgramsList({ limit: 100 });
+  const { data: programs = [] } = useProgramsList();
 
   const createMutation = useCreateSeason();
   const updateMutation = useUpdateSeason();
@@ -324,7 +320,6 @@ export const SeasonsPage = () => {
           value={selectedProgramId}
           onChange={(e) => {
             setSelectedProgramId(e.target.value);
-            setPage(1); // Reset to first page when filtering
           }}
           className="max-w-sm px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
         >
@@ -342,13 +337,6 @@ export const SeasonsPage = () => {
         columns={columns}
         loading={isLoading}
         searchPlaceholder="Search seasons..."
-        pagination={{
-          page,
-          limit,
-          total: seasons.length,
-          onPageChange: setPage,
-        }}
-        emptyMessage={selectedProgramId ? "No seasons found for this program" : "No seasons found"}
       />
 
       {/* Create Season Modal */}

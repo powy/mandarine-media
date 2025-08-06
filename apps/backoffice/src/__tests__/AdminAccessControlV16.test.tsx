@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
 import App from '../App';
 import * as shareModule from 'share';
 
@@ -37,11 +36,7 @@ describe('Admin Access Control - API v1.6', () => {
   });
 
   it('shows login form when not authenticated', async () => {
-    render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    );
+    render(<App />);
 
     expect(screen.getByText('Kyool Backoffice')).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
@@ -76,9 +71,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     // Fill in login form
@@ -123,9 +116,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     // Fill in login form
@@ -170,9 +161,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     // Fill in login form
@@ -217,9 +206,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     await waitFor(() => {
@@ -261,9 +248,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     await waitFor(() => {
@@ -297,9 +282,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     await waitFor(() => {
@@ -333,9 +316,7 @@ describe('Admin Access Control - API v1.6', () => {
     );
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     // Should show loading state
@@ -359,9 +340,7 @@ describe('Admin Access Control - API v1.6', () => {
     });
 
     render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     );
 
     // Fill in login form with invalid credentials

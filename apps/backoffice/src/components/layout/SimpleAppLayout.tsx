@@ -32,7 +32,7 @@ export default function SimpleAppLayout({ activeSection, onSectionChange, childr
     // User & Business
     { id: 'users', label: 'Users' },
     // Reports & Monitoring
-    { id: 'video-reports', label: 'Video Reports' },
+    { id: 'video-file-reports', label: 'Video File Reports' },
   ];
 
   const handleNavigation = (itemId: string) => {

@@ -13,7 +13,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite build --watch",
@@ -23,6 +25,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@testing-library/dom": "^10.4.1",
     "axios": "^1.6.0",
     "date-fns": "^2.30.0",
     "xlsx": "^0.18.5",

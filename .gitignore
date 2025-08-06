@@ -125,6 +125,17 @@ ios/build/
 *.ipa
 *.apk
 
+# Android/Gradle
+.gradle/
+*/.gradle/
+apps/*/.gradle/
+local.properties
+gradle-wrapper.jar
+gradlew
+gradlew.bat
+android/build/
+*/android/build/
+
 # Metro
 .metro-health-check*
 

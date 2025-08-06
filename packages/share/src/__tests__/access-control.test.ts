@@ -47,19 +47,19 @@ describe('Access Control Tests (v1.6)', () => {
     it('should allow simple users to read content lists', async () => {
       await getContentLists();
       
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content/lists?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/?');
     });
 
     it('should allow simple users to read screen contents', async () => {
       await getScreenContents();
       
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen/contents?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/screen-contents/?');
     });
 
     it('should allow simple users to read media descriptions', async () => {
       await mediaApi.getMediaDescriptions();
       
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media/descriptions?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/media-descriptions?');
     });
 
     it('should allow simple users to access their own profile', async () => {
@@ -246,7 +246,7 @@ describe('Access Control Tests (v1.6)', () => {
 
       await createContentList(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', createData);
     });
 
     it('should allow Manager/Admin to update content lists', async () => {
@@ -254,13 +254,13 @@ describe('Access Control Tests (v1.6)', () => {
 
       await updateContentList('list-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content/lists/list-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/list-1/', updateData);
     });
 
     it('should allow Manager/Admin to delete content lists', async () => {
       await deleteContentList('list-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/content/lists/list-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/content-lists/list-1/');
     });
 
     it('should allow Manager/Admin to perform all CRUD operations on screen contents', async () => {
@@ -271,16 +271,16 @@ describe('Access Control Tests (v1.6)', () => {
         display_order: 1,
       };
       await createScreenContent(createData);
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen/contents', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/', createData);
 
       // Update
       const updateData = { title: 'Updated Admin Screen' };
       await updateScreenContent('screen-1', updateData);
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/screen/contents/screen-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/screen-contents/screen-1/', updateData);
 
       // Delete
       await deleteScreenContent('screen-1');
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/screen/contents/screen-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/screen-contents/screen-1/');
     });
 
     it('should allow Manager/Admin to access user management', async () => {

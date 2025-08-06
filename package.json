@@ -28,7 +28,10 @@
     "clean:deps": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "clean:dist": "rm -rf apps/*/dist packages/*/dist",
     "install:clean": "npm run clean:deps && npm install",
-    "postinstall": "npm run build:share"
+    "postinstall": "npm run build:share",
+    "test:e2e": "./run-e2e-tests.sh",
+    "start:backend": "cd backend && ./start_server.sh",
+    "stop:backend": "cd backend && docker compose -f docker-compose.dev.yml down"
   },
   "devDependencies": {
     "@nx/js": "^21.2.4",

@@ -35,12 +35,7 @@ export const PicturesPage = () => {
   const [pictureToDelete, setPictureToDelete] = useState<Picture | null>(null);
 
   // API hooks
-  const [page, setPage] = useState(1);
-  const limit = 20;
-  const { data: pictures = [], isLoading, error } = usePicturesList({ 
-    skip: (page - 1) * limit, 
-    limit 
-  });
+  const { data: pictures = [], isLoading, error } = usePicturesList();
 
   const createMutation = useCreatePicture();
   const updateMutation = useUpdatePicture();
@@ -293,7 +288,10 @@ export const PicturesPage = () => {
                             className="max-w-full h-32 object-contain mx-auto"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling!.style.display = 'block';
+                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (nextElement) {
+                                nextElement.style.display = 'block';
+                              }
                             }}
                           />
                           <div className="text-center text-gray-500 text-sm hidden">
@@ -447,13 +445,6 @@ export const PicturesPage = () => {
         columns={columns}
         loading={isLoading}
         searchPlaceholder="Search pictures..."
-        pagination={{
-          page,
-          limit,
-          total: pictures.length,
-          onPageChange: setPage,
-        }}
-        emptyMessage="No pictures found"
       />
 
       {/* Create Picture Modal */}

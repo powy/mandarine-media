@@ -360,6 +360,9 @@ describe('Auth API', () => {
 
   describe('Token Management', () => {
     it('should handle token storage failure gracefully', async () => {
+      // Mock console.warn to suppress expected warning output
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      
       localStorageMock.setItem.mockImplementation(() => {
         throw new Error('Storage quota exceeded');
       });
@@ -368,15 +371,28 @@ describe('Auth API', () => {
 
       // Should not throw even if token storage fails
       await expect(authApi.login({ email: 'user@example.com', password: 'password123' })).resolves.toEqual(mockAuthTokens);
+      
+      // Verify that warning was logged
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store token in localStorage:', expect.any(Error));
+      
+      consoleWarnSpy.mockRestore();
     });
 
     it('should handle token removal failure gracefully', async () => {
+      // Mock console.warn to suppress expected warning output
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      
       localStorageMock.removeItem.mockImplementation(() => {
         throw new Error('Cannot remove item');
       });
 
       // Should not throw even if token removal fails
       await expect(authApi.logout()).resolves.toBeUndefined();
+      
+      // Verify that warning was logged
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to remove token from localStorage:', expect.any(Error));
+      
+      consoleWarnSpy.mockRestore();
     });
   });
 });

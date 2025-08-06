@@ -1,10 +1,6 @@
-// API tests would go here
-// Note: These tests require a testing framework like Jest or Vitest to properly mock HTTP requests
-// For now, we'll create a basic structure for testing API types and interfaces
+import { describe, it, expect } from 'vitest';
+import type { VideoFile } from '../types';
 
-import { VideoFile } from '../types';
-
-// Type validation tests
 describe('API Types', () => {
   it('should have correct VideoFile interface structure', () => {
     // Test that required fields are present
@@ -66,42 +62,3 @@ describe('API Types', () => {
     expect(existingUrlFile.external_url).toBe('https://example.com/video.mp4');
   });
 });
-
-// Simple test framework functions
-function describe(description: string, testSuite: () => void) {
-  console.log(`\n--- ${description} ---`);
-  try {
-    testSuite();
-    console.log('✅ All tests passed');
-  } catch (error) {
-    console.error('❌ Test failed:', error);
-  }
-}
-
-function it(description: string, test: () => void) {
-  try {
-    test();
-    console.log(`  ✓ ${description}`);
-  } catch (error) {
-    console.error(`  ✗ ${description}:`, error);
-    throw error;
-  }
-}
-
-function expect(actual: any) {
-  return {
-    toBe: (expected: any) => {
-      if (actual !== expected) {
-        throw new Error(`Expected ${expected}, but got ${actual}`);
-      }
-    },
-    toBeUndefined: () => {
-      if (actual !== undefined) {
-        throw new Error(`Expected undefined, but got ${actual}`);
-      }
-    },
-  };
-}
-
-// Export for potential use in other test files
-export { describe, it, expect };

@@ -75,7 +75,7 @@ describe('Content Lists API', () => {
 
       const result = await getContentLists();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content/lists?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -96,7 +96,7 @@ describe('Content Lists API', () => {
       const result = await getContentLists(filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/api/v1/content/lists?skip=0&limit=10&is_active=true&thumbnail_format=medium_portrait'
+        '/api/v1/content-lists/?skip=0&limit=10&is_active=true&thumbnail_format=medium_portrait'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -108,7 +108,7 @@ describe('Content Lists API', () => {
 
       const result = await getContentList('content-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/');
       expect(result).toEqual(mockContentList);
     });
   });
@@ -129,7 +129,7 @@ describe('Content Lists API', () => {
 
       const result = await createContentList(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', createData);
       expect(result).toEqual(mockContentList);
     });
   });
@@ -145,7 +145,7 @@ describe('Content Lists API', () => {
 
       const result = await updateContentList('content-list-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/', updateData);
       expect(result).toEqual(mockContentList);
     });
   });
@@ -156,7 +156,7 @@ describe('Content Lists API', () => {
 
       await deleteContentList('content-list-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/');
     });
   });
 
@@ -166,7 +166,7 @@ describe('Content Lists API', () => {
 
       const result = await getContentListJSON('content-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1/json');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/json/');
       expect(result).toEqual(mockContentListJSON);
     });
   });
@@ -182,7 +182,7 @@ describe('Content Lists API', () => {
 
       const result = await reorderContentList('content-list-1', reorderData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1/reorder', reorderData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/reorder/', reorderData);
       expect(result).toEqual(mockContentList);
     });
   });
@@ -193,7 +193,7 @@ describe('Content Lists API', () => {
 
       await regenerateContentListJSON('content-list-1');
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1/regenerate-json');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/regenerate-json/');
     });
   });
 
@@ -219,7 +219,7 @@ describe('Content Lists API', () => {
 
       const result = await createContentList(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', createData);
       expect(result.content_items).toEqual([]);
       expect(result.content_types).toEqual([]);
     });
@@ -236,7 +236,7 @@ describe('Content Lists API', () => {
 
       await createContentList(minimalCreateData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists', minimalCreateData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', minimalCreateData);
     });
   });
 });

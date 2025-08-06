@@ -41,8 +41,8 @@ export const usersApi = {
     const params = new URLSearchParams();
     if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
     if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
-    if (filters?.role) params.append('role', filters.role);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
+    if (filters?.role) params.append('role', filters.role);
     if (filters?.search) params.append('search', filters.search);
 
     const response = await apiClient.get<UserListResponse>(`/api/v1/users?${params}`);

@@ -28,15 +28,10 @@ export const TerritoriesPage = () => {
   const [territoryToDelete, setTerritoryToDelete] = useState<Territory | null>(null);
 
   // API hooks
-  const [page, setPage] = useState(1);
-  const limit = 20;
-  const { data: territories = [], isLoading, error } = useTerritoriesList({ 
-    skip: (page - 1) * limit, 
-    limit 
-  });
+  const { data: territories = [], isLoading, error } = useTerritoriesList();
 
   // Load countries for dropdown
-  const { data: countries = [] } = useCountriesList({ limit: 100 });
+  const { data: countries = [] } = useCountriesList();
 
   const createMutation = useCreateTerritory();
   const updateMutation = useUpdateTerritory();
@@ -312,13 +307,6 @@ export const TerritoriesPage = () => {
         columns={columns}
         loading={isLoading}
         searchPlaceholder="Search territories..."
-        pagination={{
-          page,
-          limit,
-          total: territories.length,
-          onPageChange: setPage,
-        }}
-        emptyMessage="No territories found"
       />
 
       {/* Create Territory Modal */}

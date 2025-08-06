@@ -82,7 +82,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const createdList = await createContentList(contentListData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists', contentListData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', contentListData);
       expect(createdList).toEqual(mockContentList);
 
       // Step 3: Create screen content with the content list
@@ -106,7 +106,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const createdScreen = await createScreenContent(screenContentData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen/contents', screenContentData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/', screenContentData);
       expect(createdScreen).toEqual(mockScreenContent);
     });
 
@@ -138,7 +138,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const result = await reorderContentList('content-list-1', newOrder);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1/reorder', newOrder);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/reorder/', newOrder);
       expect(result.content_items).toEqual(['media-1', 'program-1', 'season-1']);
       expect(result.content_types).toEqual(['media_description', 'program', 'season']);
     });
@@ -193,7 +193,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const jsonCache = await getContentListJSON('content-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1/json');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/json/');
       expect(jsonCache.items).toHaveLength(2);
       expect(jsonCache.items[0].content_type).toBe('program');
       expect(jsonCache.items[1].content_type).toBe('media_description');
@@ -203,7 +203,7 @@ describe('Integration Tests (v1.6)', () => {
 
       await regenerateContentListJSON('content-list-1');
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content/lists/content-list-1/regenerate-json');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/regenerate-json/');
     });
 
     it('should handle screen content JSON caching', async () => {
@@ -269,7 +269,7 @@ describe('Integration Tests (v1.6)', () => {
 
         const screens = await getScreenContentByType(screenType);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/screen/contents/by-type/${screenType}`);
+        expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/screen-contents/by-type/${screenType}/`);
         expect(screens).toEqual(mockScreens);
         expect(screens[0].screen_type).toBe(screenType);
       }

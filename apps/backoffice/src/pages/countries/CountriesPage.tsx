@@ -25,12 +25,7 @@ export const CountriesPage = () => {
   const [countryToDelete, setCountryToDelete] = useState<Country | null>(null);
 
   // API hooks
-  const [page, setPage] = useState(1);
-  const limit = 20;
-  const { data: countries = [], isLoading, error } = useCountriesList({ 
-    skip: (page - 1) * limit, 
-    limit 
-  });
+  const { data: countries = [], isLoading, error } = useCountriesList();
 
   const createMutation = useCreateCountry();
   const updateMutation = useUpdateCountry();
@@ -259,13 +254,6 @@ export const CountriesPage = () => {
         columns={columns}
         loading={isLoading}
         searchPlaceholder="Search countries..."
-        pagination={{
-          page,
-          limit,
-          total: countries.length,
-          onPageChange: setPage,
-        }}
-        emptyMessage="No countries found"
       />
 
       {/* Create Country Modal */}
