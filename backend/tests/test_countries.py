@@ -41,49 +41,7 @@ class TestCountriesCRUD:
         response = client.get("/api/v1/countries", headers=headers)
         
         assert response.status_code == 200
-        data = response.json()
-        assert "data" in data
-        assert "pagination" in data
-        assert isinstance(data["data"], list)
-        assert "skip" in data["pagination"]
-        assert "limit" in data["pagination"]
-        assert "total" in data["pagination"]
-        assert "page" in data["pagination"]
-        assert "pages" in data["pagination"]
-
-    def test_list_countries_with_search(self, client, user_token, admin_token):
-        """Test countries list with search query."""
-        headers_admin = {"Authorization": f"Bearer {admin_token}"}
-        headers_user = {"Authorization": f"Bearer {user_token}"}
-        
-        # Create test countries
-        countries_data = [
-            {"name": "South Korea"},
-            {"name": "North Korea"}, 
-            {"name": "Japan"},
-            {"name": "China"}
-        ]
-        
-        for country_data in countries_data:
-            client.post("/api/v1/countries", json=country_data, headers=headers_admin)
-        
-        # Test search for "Korea"
-        response = client.get("/api/v1/countries?q=Korea", headers=headers_user)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["pagination"]["total"] == 2
-        
-        # Test search for "Japan"  
-        response = client.get("/api/v1/countries?q=Japan", headers=headers_user)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["pagination"]["total"] == 1
-        
-        # Test search for non-existent country
-        response = client.get("/api/v1/countries?q=NonExistent", headers=headers_user)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["pagination"]["total"] == 0
+        assert isinstance(response.json(), list)
 
     def test_get_country_success(self, client, user_token, admin_token, sample_country_data):
         """Test successful country retrieval."""

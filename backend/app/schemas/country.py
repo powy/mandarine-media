@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
-from .pagination import PaginatedResponse
 
 
 class CountryBase(BaseModel):
@@ -40,8 +39,4 @@ class CountryInDB(CountryBase):
 
 
 class Country(CountryInDB):
-    pass
-
-
-class CountryListResponse(PaginatedResponse[Country]):
     pass

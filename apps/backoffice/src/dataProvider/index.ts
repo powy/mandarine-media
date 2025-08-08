@@ -40,9 +40,12 @@ export const dataProvider: DataProvider = {
             q: searchQuery,
             ...otherFilters 
           });
+          // Handle both direct array and paginated response formats
+          const countriesData = Array.isArray(countriesResponse) ? countriesResponse : countriesResponse.data || [];
+          const countriesTotal = Array.isArray(countriesResponse) ? countriesData.length : countriesResponse.pagination?.total || countriesData.length;
           return {
-            data: resourceMappers.countries.mapList(countriesResponse.data),
-            total: countriesResponse.pagination.total,
+            data: resourceMappers.countries.mapList(countriesData),
+            total: countriesTotal,
           };
 
         case 'media-descriptions':
@@ -51,9 +54,12 @@ export const dataProvider: DataProvider = {
             limit: perPage,
             ...filters
           });
+          // Handle both direct array and paginated response formats
+          const mediaData = Array.isArray(mediaResponse) ? mediaResponse : mediaResponse.data || [];
+          const mediaTotal = Array.isArray(mediaResponse) ? mediaData.length : mediaResponse.pagination?.total || mediaData.length;
           return {
-            data: resourceMappers.mediaDescriptions.mapList(mediaResponse.data),
-            total: mediaResponse.pagination.total,
+            data: resourceMappers.mediaDescriptions.mapList(mediaData),
+            total: mediaTotal,
           };
 
         case 'languages':
@@ -147,9 +153,12 @@ export const dataProvider: DataProvider = {
             profession,
             ...otherPersonFilters 
           });
+          // Handle both direct array and paginated response formats
+          const personsData = Array.isArray(personsResponse) ? personsResponse : personsResponse.data || [];
+          const personsTotal = Array.isArray(personsResponse) ? personsData.length : personsResponse.pagination?.total || personsData.length;
           return {
-            data: resourceMappers.publicPersons.mapList(personsResponse.data),
-            total: personsResponse.pagination.total,
+            data: resourceMappers.publicPersons.mapList(personsData),
+            total: personsTotal,
           };
 
         case 'users':
@@ -162,9 +171,12 @@ export const dataProvider: DataProvider = {
             is_admin,
             ...otherUserFilters 
           });
+          // Handle both direct array and paginated response formats
+          const usersData = Array.isArray(usersResponse) ? usersResponse : usersResponse.data || [];
+          const usersTotal = Array.isArray(usersResponse) ? usersData.length : usersResponse.pagination?.total || usersData.length;
           return {
-            data: resourceMappers.users.mapList(usersResponse.data),
-            total: usersResponse.pagination.total,
+            data: resourceMappers.users.mapList(usersData),
+            total: usersTotal,
           };
 
         case 'category-lists':
@@ -174,23 +186,32 @@ export const dataProvider: DataProvider = {
             limit: perPage,
             ...otherCategoryFilters 
           });
+          // Handle both direct array and paginated response formats
+          const categoryListsData = Array.isArray(categoryLists) ? categoryLists : categoryLists.data || [];
+          const categoryListsTotal = Array.isArray(categoryLists) ? categoryListsData.length : categoryLists.pagination?.total || categoryListsData.length;
           return {
-            data: resourceMappers.categoryLists.mapList(categoryLists.data),
-            total: categoryLists.pagination.total,
+            data: resourceMappers.categoryLists.mapList(categoryListsData),
+            total: categoryListsTotal,
           };
 
         case 'content-lists':
           const contentLists = await getContentLists({ skip, limit: perPage });
+          // Handle both direct array and paginated response formats
+          const contentListsData = Array.isArray(contentLists) ? contentLists : contentLists.data || [];
+          const contentListsTotal = Array.isArray(contentLists) ? contentListsData.length : contentLists.pagination?.total || contentListsData.length;
           return {
-            data: resourceMappers.contentLists.mapList(contentLists.data),
-            total: contentLists.pagination.total,
+            data: resourceMappers.contentLists.mapList(contentListsData),
+            total: contentListsTotal,
           };
 
         case 'screen-contents':
           const screenContents = await getScreenContents({ skip, limit: perPage });
+          // Handle both direct array and paginated response formats
+          const screenContentsData = Array.isArray(screenContents) ? screenContents : screenContents.data || [];
+          const screenContentsTotal = Array.isArray(screenContents) ? screenContentsData.length : screenContents.pagination?.total || screenContentsData.length;
           return {
-            data: resourceMappers.screenContents.mapList(screenContents.data),
-            total: screenContents.pagination.total,
+            data: resourceMappers.screenContents.mapList(screenContentsData),
+            total: screenContentsTotal,
           };
 
         default:
@@ -307,9 +328,12 @@ export const dataProvider: DataProvider = {
               limit: perPage,
               ...filter
             });
+            // Handle both direct array and paginated response formats
+            const mediaData = Array.isArray(mediaResponse) ? mediaResponse : mediaResponse.data || [];
+            const mediaTotal = Array.isArray(mediaResponse) ? mediaData.length : mediaResponse.pagination?.total || mediaData.length;
             return {
-              data: resourceMappers.mediaDescriptions.mapList(mediaResponse.data),
-              total: mediaResponse.pagination.total,
+              data: resourceMappers.mediaDescriptions.mapList(mediaData),
+              total: mediaTotal,
             };
           }
           break;
