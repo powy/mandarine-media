@@ -4,19 +4,16 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: '.',
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-  },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      'share': resolve(__dirname, '../../packages/share/src/index.ts'),
     },
   },
   server: {
-    port: 3002,
-    host: '127.0.0.1',
-    open: true,
+    port: 3001,
+    host: true,
+  },
+  build: {
+    outDir: '../../dist/apps/backoffice',
   },
 });

@@ -45,7 +45,7 @@ describe('Users API', () => {
     it('should fetch users without filters', async () => {
       const mockResponse: UserListResponse = {
         data: [mockUser, mockAdminUser],
-        pagination: { skip: 0, limit: 20, total: 2, has_next: false, has_prev: false },
+        pagination: { skip: 0, limit: 20, total: 2, page: 1, pages: 1 },
       };
 
       mockApiClient.get.mockResolvedValue({ data: mockResponse });
@@ -59,7 +59,7 @@ describe('Users API', () => {
     it('should fetch users with filters', async () => {
       const mockResponse: UserListResponse = {
         data: [mockAdminUser],
-        pagination: { skip: 0, limit: 10, total: 1, has_next: false, has_prev: false },
+        pagination: { skip: 0, limit: 10, total: 1, page: 1, pages: 1 },
       };
 
       mockApiClient.get.mockResolvedValue({ data: mockResponse });
@@ -83,7 +83,7 @@ describe('Users API', () => {
     it('should handle search with special characters', async () => {
       const mockResponse: UserListResponse = {
         data: [],
-        pagination: { skip: 0, limit: 20, total: 0, has_next: false, has_prev: false },
+        pagination: { skip: 0, limit: 20, total: 0, page: 1, pages: 0 },
       };
 
       mockApiClient.get.mockResolvedValue({ data: mockResponse });

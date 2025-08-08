@@ -1,53 +1,66 @@
 import { apiClient } from './client';
-import { PublicPerson, PublicPersonCreate, PublicPersonUpdate } from '../types';
-
-export interface PublicPersonListResponse {
-  data: PublicPerson[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-  };
-}
-
-export interface PublicPersonFilters {
-  skip?: number;
-  limit?: number;
-  profession?: string;  // Still supported via profession_list
-  search?: string;
-}
+import { PublicPerson, PublicPersonCreate, PublicPersonUpdate, PersonsApiParams, PaginatedPersonsResponse } from '../types';
 
 export const personsApi = {
-  async getPublicPersons(filters?: PublicPersonFilters): Promise<PublicPersonListResponse> {
-    const params = new URLSearchParams();
-    if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
-    if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
-    if (filters?.profession) params.append('profession', filters.profession);
-    if (filters?.search) params.append('search', filters.search);
-
-    const response = await apiClient.get<PublicPersonListResponse>(`/api/v1/persons?${params}`);
-    return response.data;
+  getAll: async (params: PersonsApiParams = {}): Promise<PaginatedPersonsResponse> => {
+    const { skip = 0, limit = 20, profession, q } = params;
+    const searchParams = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (profession) {
+      searchParams.append('profession', profession);
+    }
+    
+    if (q) {
+      searchParams.append('search', q);
+    }
+    
+    const response = await apiClient.get(`/api/v1/persons?${searchParams.toString()}`);
+    return response.data as PaginatedPersonsResponse;
   },
 
+  // Keep legacy method for backward compatibility
+  async getPublicPersons(filters?: PersonsApiParams): Promise<PaginatedPersonsResponse> {
+    return this.getAll(filters);
+  },
+
+  getById: async (id: string): Promise<PublicPerson> => {
+    const response = await apiClient.get(`/api/v1/persons/${id}`);
+    return response.data as PublicPerson;
+  },
+
+  create: async (data: PublicPersonCreate): Promise<PublicPerson> => {
+    const response = await apiClient.post('/api/v1/persons', data);
+    return response.data as PublicPerson;
+  },
+
+  update: async (id: string, data: PublicPersonUpdate): Promise<PublicPerson> => {
+    const response = await apiClient.put(`/api/v1/persons/${id}`, data);
+    return response.data as PublicPerson;
+  },
+
+  delete: async (id: string): Promise<PublicPerson> => {
+    const response = await apiClient.delete(`/api/v1/persons/${id}`);
+    return response.data as PublicPerson;
+  },
+
+  // Keep legacy methods for backward compatibility
   async getPublicPerson(id: string): Promise<PublicPerson> {
-    const response = await apiClient.get<PublicPerson>(`/api/v1/persons/${id}`);
-    return response.data;
+    return this.getById(id);
   },
 
   async createPublicPerson(data: PublicPersonCreate): Promise<PublicPerson> {
-    const response = await apiClient.post<PublicPerson>('/api/v1/persons', data);
-    return response.data;
+    return this.create(data);
   },
 
   async updatePublicPerson(id: string, data: PublicPersonUpdate): Promise<PublicPerson> {
-    const response = await apiClient.put<PublicPerson>(`/api/v1/persons/${id}`, data);
-    return response.data;
+    return this.update(id, data);
   },
 
   async deletePublicPerson(id: string): Promise<PublicPerson> {
-    const response = await apiClient.delete<PublicPerson>(`/api/v1/persons/${id}`);
-    return response.data;
+    return this.delete(id);
   },
 
   async searchPublicPersonsByName(name: string, skip: number = 0, limit: number = 20): Promise<PublicPerson[]> {

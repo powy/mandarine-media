@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { User } from '../types';
+import { User, UsersApiParams, PaginatedUsersResponse } from '../types';
 
 export interface UserCreate {
   email: string;
@@ -18,40 +18,77 @@ export interface UserUpdate {
   is_active?: boolean;
 }
 
-export interface UserListResponse {
-  data: User[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-  };
-}
+// Keep legacy interface for backward compatibility
+export interface UserListResponse extends PaginatedUsersResponse {}
 
-export interface UserFilters {
-  skip?: number;
-  limit?: number;
+// Keep legacy interface for backward compatibility  
+export interface UserFilters extends UsersApiParams {
   role?: string;
-  is_active?: boolean;
   search?: string;
 }
 
 export const usersApi = {
+  getAll: async (params: UsersApiParams = {}): Promise<PaginatedUsersResponse> => {
+    const { skip = 0, limit = 20, is_active, is_admin, q } = params;
+    const searchParams = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (is_active !== undefined) {
+      searchParams.append('is_active', is_active.toString());
+    }
+    
+    if (is_admin !== undefined) {
+      searchParams.append('is_admin', is_admin.toString());
+    }
+    
+    if (q) {
+      searchParams.append('q', q);
+    }
+    
+    const response = await apiClient.get(`/api/v1/users?${searchParams.toString()}`);
+    return response.data as PaginatedUsersResponse;
+  },
+
+  // Keep legacy method for backward compatibility
   async getUsers(filters?: UserFilters): Promise<UserListResponse> {
     const params = new URLSearchParams();
+    
+    // Only add parameters if they are explicitly provided (not undefined/empty)
     if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
     if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.role) params.append('role', filters.role);
-    if (filters?.search) params.append('search', filters.search);
+    if (filters?.role && filters.role !== '') params.append('role', filters.role);
+    if (filters?.search && filters.search !== '') params.append('search', filters.search);
 
-    const response = await apiClient.get<UserListResponse>(`/api/v1/users?${params}`);
-    return response.data;
+    const response = await apiClient.get(`/api/v1/users?${params}`);
+    return response.data as UserListResponse;
   },
 
+  getById: async (id: string): Promise<User> => {
+    const response = await apiClient.get(`/api/v1/users/${id}`);
+    return response.data as User;
+  },
+
+  create: async (data: UserCreate): Promise<User> => {
+    const response = await apiClient.post('/api/v1/users', data);
+    return response.data as User;
+  },
+
+  update: async (id: string, data: UserUpdate): Promise<User> => {
+    const response = await apiClient.put(`/api/v1/users/${id}`, data);
+    return response.data as User;
+  },
+
+  delete: async (id: string): Promise<User> => {
+    const response = await apiClient.delete(`/api/v1/users/${id}`);
+    return response.data as User;
+  },
+
+  // Legacy methods for backward compatibility
   async getUser(id: string): Promise<User> {
-    const response = await apiClient.get<User>(`/api/v1/users/${id}`);
-    return response.data;
+    return this.getById(id);
   },
 
   async getCurrentUser(): Promise<User> {
@@ -60,18 +97,15 @@ export const usersApi = {
   },
 
   async createUser(data: UserCreate): Promise<User> {
-    const response = await apiClient.post<User>('/api/v1/users', data);
-    return response.data;
+    return this.create(data);
   },
 
   async updateUser(id: string, data: UserUpdate): Promise<User> {
-    const response = await apiClient.put<User>(`/api/v1/users/${id}`, data);
-    return response.data;
+    return this.update(id, data);
   },
 
   async deleteUser(id: string): Promise<User> {
-    const response = await apiClient.delete<User>(`/api/v1/users/${id}`);
-    return response.data;
+    return this.delete(id);
   },
 
   async activateUser(id: string): Promise<User> {

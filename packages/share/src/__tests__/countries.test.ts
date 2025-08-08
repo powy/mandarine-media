@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { countriesApi } from '../api/countries';
 import { apiClient } from '../api/client';
-import type { Country, CountryCreate, CountryUpdate } from '../types';
+import type { Country, CountryCreate, CountryUpdate, PaginatedCountriesResponse } from '../types';
 
 // Mock the API client
 vi.mock('../api/client', () => ({
@@ -26,23 +26,47 @@ describe('Countries API', () => {
     name: 'South Korea',
   };
 
+  const mockPaginatedResponse: PaginatedCountriesResponse = {
+    data: [mockCountry],
+    pagination: {
+      skip: 0,
+      limit: 20,
+      total: 1,
+      page: 1,
+      pages: 1
+    }
+  };
+
   describe('getAll', () => {
     it('should fetch all countries without filters', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [mockCountry] });
+      mockApiClient.get.mockResolvedValue({ data: mockPaginatedResponse });
 
       const result = await countriesApi.getAll();
 
       expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries?skip=0&limit=20');
-      expect(result).toEqual([mockCountry]);
+      expect(result).toEqual(mockPaginatedResponse);
     });
 
     it('should fetch countries with custom pagination', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [mockCountry] });
+      const customPaginated = {
+        ...mockPaginatedResponse,
+        pagination: { ...mockPaginatedResponse.pagination, skip: 10, limit: 5 }
+      };
+      mockApiClient.get.mockResolvedValue({ data: customPaginated });
 
       const result = await countriesApi.getAll({ skip: 10, limit: 5 });
 
       expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries?skip=10&limit=5');
-      expect(result).toEqual([mockCountry]);
+      expect(result).toEqual(customPaginated);
+    });
+
+    it('should fetch countries with search query', async () => {
+      mockApiClient.get.mockResolvedValue({ data: mockPaginatedResponse });
+
+      const result = await countriesApi.getAll({ q: 'Korea' });
+
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries?skip=0&limit=20&q=Korea');
+      expect(result).toEqual(mockPaginatedResponse);
     });
   });
 
@@ -114,11 +138,21 @@ describe('Countries API', () => {
     });
 
     it('should handle empty response arrays', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      const emptyResponse = {
+        data: [],
+        pagination: {
+          skip: 0,
+          limit: 20,
+          total: 0,
+          page: 1,
+          pages: 0
+        }
+      };
+      mockApiClient.get.mockResolvedValue({ data: emptyResponse });
 
       const result = await countriesApi.getAll();
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(emptyResponse);
     });
 
     it('should handle network timeouts', async () => {

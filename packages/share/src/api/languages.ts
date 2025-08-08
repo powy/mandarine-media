@@ -1,11 +1,20 @@
 import { apiClient } from './client';
-import { Language, LanguageCreate, LanguageUpdate } from '../types';
+import { Language, LanguageCreate, LanguageUpdate, LanguagesApiParams, PaginatedLanguagesResponse } from '../types';
 
 export const languagesApi = {
-  getAll: async (params: { skip?: number; limit?: number } = {}) => {
-    const { skip = 0, limit = 20 } = params;
-    const response = await apiClient.get(`/api/v1/languages?skip=${skip}&limit=${limit}`);
-    return response.data as Language[];
+  getAll: async (params: LanguagesApiParams = {}): Promise<PaginatedLanguagesResponse> => {
+    const { skip = 0, limit = 20, q } = params;
+    const searchParams = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (q) {
+      searchParams.append('q', q);
+    }
+    
+    const response = await apiClient.get(`/api/v1/languages?${searchParams.toString()}`);
+    return response.data as PaginatedLanguagesResponse;
   },
 
   getById: async (id: string) => {

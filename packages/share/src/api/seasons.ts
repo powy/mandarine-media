@@ -1,9 +1,9 @@
 import { apiClient } from './client';
-import { Season, SeasonCreate, SeasonUpdate } from '../types';
+import { Season, SeasonCreate, SeasonUpdate, SeasonsApiParams, PaginatedSeasonsResponse } from '../types';
 
 export const seasonsApi = {
-  getAll: async (params: { skip?: number; limit?: number; program_id?: string } = {}) => {
-    const { skip = 0, limit = 20, program_id } = params;
+  getAll: async (params: SeasonsApiParams = {}): Promise<PaginatedSeasonsResponse> => {
+    const { skip = 0, limit = 20, program_id, q } = params;
     const queryParams = new URLSearchParams({
       skip: skip.toString(),
       limit: limit.toString(),
@@ -13,8 +13,12 @@ export const seasonsApi = {
       queryParams.append('program_id', program_id);
     }
     
+    if (q) {
+      queryParams.append('q', q);
+    }
+    
     const response = await apiClient.get(`/api/v1/seasons?${queryParams}`);
-    return response.data as Season[];
+    return response.data as PaginatedSeasonsResponse;
   },
 
   getById: async (id: string) => {

@@ -56,7 +56,13 @@ export const useDescriptionReports = (
       );
       
       setReports(response.data);
-      setPagination(response.pagination);
+      // Map new pagination format to legacy format for backward compatibility
+      setPagination({
+        page: response.pagination.page,
+        limit: response.pagination.limit,
+        total: response.pagination.total,
+        total_pages: response.pagination.pages
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch description reports';
       setError(errorMessage);

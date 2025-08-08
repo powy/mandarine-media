@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,18 +10,30 @@ from app.api import deps
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.Country])
+@router.get("", response_model=schemas.CountryListResponse)
 def read_countries(
     db: Session = Depends(deps.get_db),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return"),
+    q: Optional[str] = Query(None, description="Search query for country names"),
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Retrieve countries.
+    Retrieve countries with optional search and proper pagination.
     """
-    countries = crud.country.get_multi(db, skip=skip, limit=limit)
-    return countries
+    countries, total = crud.country.get_multi_with_search(
+        db, skip=skip, limit=limit, search_query=q
+    )
+    return schemas.CountryListResponse(
+        data=countries,
+        pagination=schemas.PaginationInfo(
+            skip=skip,
+            limit=limit,
+            total=total,
+            page=skip // limit + 1,
+            pages=(total + limit - 1) // limit
+        )
+    )
 
 
 @router.post("", response_model=schemas.Country)

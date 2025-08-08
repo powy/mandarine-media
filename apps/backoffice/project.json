@@ -1,35 +1,59 @@
 {
   "name": "backoffice",
-  "root": "apps/backoffice",
-  "projectType": "application",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/backoffice/src",
+  "projectType": "application",
+  "tags": ["type:app", "platform:web"],
   "targets": {
-    "build": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{projectRoot}/dist"],
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
       "options": {
-        "configFile": "apps/backoffice/vite.config.ts"
+        "buildTarget": "backoffice:build",
+        "port": 3001
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "backoffice:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "backoffice:build:production",
+          "hmr": false
+        }
       }
     },
-    "serve": {
-      "executor": "nx:run-commands",
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
       "options": {
-        "command": "npm run dev",
-        "cwd": "apps/backoffice"
+        "outputPath": "dist/apps/backoffice"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
       }
     },
     "preview": {
       "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "backoffice:build",
-        "port": 3002,
-        "host": "127.0.0.1"
+        "buildTarget": "backoffice:build"
       }
     },
     "test": {
       "executor": "@nx/vite:test",
+      "outputs": [
+        "{options.reportsDirectory}"
+      ],
       "options": {
-        "passWithNoTests": true
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/apps/backoffice"
       }
     },
     "lint": {
@@ -38,15 +62,6 @@
       "options": {
         "lintFilePatterns": ["apps/backoffice/**/*.{ts,tsx,js,jsx}"]
       }
-    },
-    "type-check": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "tsc --noEmit",
-        "cwd": "apps/backoffice"
-      }
     }
-  },
-  "tags": ["scope:backoffice", "type:app"],
-  "implicitDependencies": ["share"]
+  }
 }

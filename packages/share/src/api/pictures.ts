@@ -1,11 +1,20 @@
 import { apiClient } from './client';
-import { Picture, PictureCreate, PictureUpdate } from '../types';
+import { Picture, PictureCreate, PictureUpdate, PicturesApiParams, PaginatedPicturesResponse } from '../types';
 
 export const picturesApi = {
-  getAll: async (params: { skip?: number; limit?: number } = {}) => {
-    const { skip = 0, limit = 20 } = params;
-    const response = await apiClient.get(`/api/v1/pictures?skip=${skip}&limit=${limit}`);
-    return response.data as Picture[];
+  getAll: async (params: PicturesApiParams = {}): Promise<PaginatedPicturesResponse> => {
+    const { skip = 0, limit = 20, q } = params;
+    const searchParams = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (q) {
+      searchParams.append('q', q);
+    }
+    
+    const response = await apiClient.get(`/api/v1/pictures?${searchParams.toString()}`);
+    return response.data as PaginatedPicturesResponse;
   },
 
   getById: async (id: string) => {

@@ -28,7 +28,6 @@
     "clean:deps": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "clean:dist": "rm -rf apps/*/dist packages/*/dist",
     "install:clean": "npm run clean:deps && npm install",
-    "postinstall": "npm run build:share",
     "test:e2e": "./run-e2e-tests.sh",
     "start:backend": "cd backend && ./start_server.sh",
     "stop:backend": "cd backend && docker compose -f docker-compose.dev.yml down"
@@ -45,10 +44,17 @@
     "eslint": "^8.0.0",
     "nx": "^21.2.4",
     "prettier": "^3.0.0",
+    "puppeteer": "^24.16.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
     "react-native-vector-icons": "^10.2.0"
+  },
+  "overrides": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0"
   }
 }

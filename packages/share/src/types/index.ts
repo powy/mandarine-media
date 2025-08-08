@@ -202,21 +202,74 @@ export interface RegisterRequest {
 
 // API Response types
 export interface PaginationInfo {
-  page: number;
+  skip: number;
   limit: number;
   total: number;
-  total_pages: number;
+  page: number;
+  pages: number;
 }
 
-export interface MediaDescriptionListResponse {
-  data: MediaDescription[];
+// Generic paginated response type
+export interface PaginatedResponse<T> {
+  data: T[];
   pagination: PaginationInfo;
 }
 
-export interface VideoFileListResponse {
-  data: VideoFile[];
-  pagination: PaginationInfo;
+// API parameter types
+export interface BaseApiParams {
+  skip?: number;
+  limit?: number;
 }
+
+export interface CountriesApiParams extends BaseApiParams {
+  q?: string;
+}
+
+export interface LanguagesApiParams extends BaseApiParams {
+  q?: string;
+}
+
+export interface TerritoriesApiParams extends BaseApiParams {
+  country_id?: string;
+  q?: string;
+}
+
+export interface PicturesApiParams extends BaseApiParams {
+  q?: string;
+}
+
+export interface ProgramsApiParams extends BaseApiParams {
+  q?: string;
+}
+
+export interface SeasonsApiParams extends BaseApiParams {
+  program_id?: string;
+  q?: string;
+}
+
+export interface PersonsApiParams extends BaseApiParams {
+  profession?: string;
+  q?: string;
+}
+
+export interface UsersApiParams extends BaseApiParams {
+  is_active?: boolean;
+  is_admin?: boolean;
+  q?: string;
+}
+
+// Specific response types
+export interface PaginatedCountriesResponse extends PaginatedResponse<Country> {}
+export interface PaginatedLanguagesResponse extends PaginatedResponse<Language> {}
+export interface PaginatedTerritoriesResponse extends PaginatedResponse<Territory> {}
+export interface PaginatedPicturesResponse extends PaginatedResponse<Picture> {}
+export interface PaginatedProgramsResponse extends PaginatedResponse<Program> {}
+export interface PaginatedSeasonsResponse extends PaginatedResponse<Season> {}
+export interface PaginatedPersonsResponse extends PaginatedResponse<PublicPerson> {}
+export interface PaginatedUsersResponse extends PaginatedResponse<User> {}
+
+export interface MediaDescriptionListResponse extends PaginatedResponse<MediaDescription> {}
+export interface VideoFileListResponse extends PaginatedResponse<VideoFile> {}
 
 // Filter types
 export interface MediaFilters {
@@ -245,10 +298,7 @@ export interface DescriptionReport {
   batch_id?: string;
 }
 
-export interface DescriptionReportListResponse {
-  data: DescriptionReport[];
-  pagination: PaginationInfo;
-}
+export interface DescriptionReportListResponse extends PaginatedResponse<DescriptionReport> {}
 
 // Bulk creation types
 export interface MediaDescriptionCreate {
@@ -450,16 +500,7 @@ export interface VideoFileReport {
   additional_info?: string;
 }
 
-export interface VideoFileReportListResponse {
-  data: VideoFileReport[];
-  pagination: {
-    skip: number;
-    limit: number;
-    total: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-}
+export interface VideoFileReportListResponse extends PaginatedResponse<VideoFileReport> {}
 
 export interface VideoFileReportParams {
   skip?: number;
@@ -645,15 +686,8 @@ export interface ScreenContentFilters {
   screen_type?: string;
 }
 
-export interface ContentListListResponse {
-  data: ContentList[];
-  pagination: PaginationInfo;
-}
-
-export interface ScreenContentListResponse {
-  data: ScreenContent[];
-  pagination: PaginationInfo;
-}
+export interface ContentListListResponse extends PaginatedResponse<ContentList> {}
+export interface ScreenContentListResponse extends PaginatedResponse<ScreenContent> {}
 
 export interface ReorderContentRequest {
   content_items: string[];

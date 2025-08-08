@@ -1,365 +1,261 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { authApi, initApiClient, usersApi } from 'share';
-import SimpleAppLayout from './components/layout/SimpleAppLayout';
-import PersonsManagementPage from './pages/persons/PersonsManagementPage';
-import CategoryListsPage from './pages/category-lists/CategoryListsPage';
-import UsersManagementPage from './pages/users/UsersManagementPage';
-import ProgramsManagementPage from './pages/programs/ProgramsManagementPage';
-import ContentListsPage from './pages/content-lists/ContentListsPage';
-import ScreenContentsPage from './pages/screen-contents/ScreenContentsPage';
-import { MediaListPage } from './pages/media/MediaListPage';
-import { VideoFileListPage } from './pages/video-files/VideoFileListPage';
-import { LanguagesPage } from './pages/languages/LanguagesPage';
-import { CountriesPage } from './pages/countries/CountriesPage';
-import { TerritoriesPage } from './pages/territories/TerritoriesPage';
-import { PicturesPage } from './pages/pictures/PicturesPage';
-import { SeasonsPage } from './pages/seasons/SeasonsPage';
-import { Dashboard } from './pages/Dashboard';
-import DescriptionReportsPage from './pages/description-reports/DescriptionReportsPage';
-import VideoFileReportsPage from './pages/video-file-reports/VideoFileReportsPage';
+import React from 'react';
+import { Admin, Resource, Layout, AppBar, Menu, MenuItemLink, useSidebarState } from 'react-admin';
+import { dataProvider } from './dataProvider';
+import { authProvider } from './authProvider';
+import { CountryList, CountryCreate, CountryEdit, CountryShow } from './components/resources/Countries';
+import { LanguageList, LanguageCreate, LanguageEdit, LanguageShow } from './components/resources/Languages';
+import { MediaDescriptionList, MediaDescriptionCreate, MediaDescriptionEdit, MediaDescriptionShow } from './components/resources/MediaDescriptions';
+import { PublicPersonList, PublicPersonCreate, PublicPersonEdit, PublicPersonShow } from './components/resources/PublicPersons';
+import { ProgramList, ProgramCreate, ProgramEdit, ProgramShow } from './components/resources/Programs';
+import { SeasonList, SeasonCreate, SeasonEdit, SeasonShow } from './components/resources/Seasons';
+import { PictureList, PictureCreate, PictureEdit, PictureShow } from './components/resources/Pictures';
+import { TerritoryList, TerritoryCreate, TerritoryEdit, TerritoryShow } from './components/resources/Territories';
+import { UserList, UserCreate, UserEdit, UserShow } from './components/resources/Users';
+import { CategoryListList, CategoryListCreate, CategoryListEdit, CategoryListShow } from './components/resources/CategoryLists';
+import { ContentListList, ContentListCreate, ContentListEdit, ContentListShow } from './components/resources/ContentLists';
+import { ScreenContentList, ScreenContentCreate, ScreenContentEdit, ScreenContentShow } from './components/resources/ScreenContents';
 
-// Create a QueryClient instance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
-// Initialize API client
-initApiClient({ 
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
-  onAuthError: () => {
-    localStorage.removeItem('access_token');
-    window.location.reload();
-  }
-});
-
-// Placeholder components for sections not yet extracted
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div style={{ textAlign: 'center', padding: '60px' }}>
-      <h1 style={{ color: '#6b7280', marginBottom: '16px' }}>{title}</h1>
-      <p style={{ color: '#9ca3af' }}>
-        This section is still using the legacy monolithic component.
-        <br />
-        It will be refactored in the next phase.
-      </p>
-    </div>
-  );
-}
-
-// Component to handle the routing and layout
-function AppWithRouter() {
-  const location = useLocation();
+// Custom Menu for better organization
+const CustomMenu = () => {
+  const [open] = useSidebarState();
   
-  // Determine active section based on current path
-  const getActiveSectionFromPath = (pathname: string): string => {
-    if (pathname === '/' || pathname === '/dashboard') return 'dashboard';
-    if (pathname.startsWith('/persons')) return 'persons';
-    if (pathname.startsWith('/category-lists')) return 'category-lists';
-    if (pathname.startsWith('/media')) return 'media';
-    if (pathname.startsWith('/videos')) return 'videos';
-    if (pathname.startsWith('/video-file-reports')) return 'video-file-reports';
-    if (pathname.startsWith('/users')) return 'users';
-    if (pathname.startsWith('/programs')) return 'programs';
-    if (pathname.startsWith('/seasons')) return 'seasons';
-    if (pathname.startsWith('/languages')) return 'languages';
-    if (pathname.startsWith('/countries')) return 'countries';
-    if (pathname.startsWith('/territories')) return 'territories';
-    if (pathname.startsWith('/pictures')) return 'pictures';
-    if (pathname.startsWith('/content-lists')) return 'content-lists';
-    if (pathname.startsWith('/screen-contents')) return 'screen-contents';
-    return 'dashboard';
-  };
-
-  const activeSection = getActiveSectionFromPath(location.pathname);
-
   return (
-    <SimpleAppLayout 
-      activeSection={activeSection} 
-      onSectionChange={() => {}} // Will be handled by navigation
-    >
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '20px',
-        paddingBottom: '16px',
-        borderBottom: '1px solid #e5e7eb'
-      }}>
-        <h1 style={{ 
-          margin: 0, 
-          color: '#1f2937',
-          fontSize: '24px'
-        }}>
-          Kyool Media Backoffice
-        </h1>
-        <button
-          onClick={() => {
-            localStorage.removeItem('access_token');
-            window.location.reload();
-          }}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#dc2626',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          Logout
-        </button>
-      </div>
+    <Menu>
+      {/* Core Content Management */}
+      <MenuItemLink
+        to="/media-descriptions"
+        primaryText="Media Descriptions"
+        leftIcon={<span>🎬</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/programs"
+        primaryText="Programs"
+        leftIcon={<span>📺</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/seasons"
+        primaryText="Seasons"
+        leftIcon={<span>📋</span>}
+        dense={!open}
+      />
       
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/persons" element={<PersonsManagementPage />} />
-        <Route path="/category-lists" element={<CategoryListsPage />} />
-        <Route path="/users" element={<UsersManagementPage />} />
-        <Route path="/programs" element={<ProgramsManagementPage />} />
-        <Route path="/seasons" element={<SeasonsPage />} />
-        <Route path="/media" element={<MediaListPage />} />
-        <Route path="/videos" element={<VideoFileListPage />} />
-        <Route path="/video-file-reports" element={<VideoFileReportsPage />} />
-        <Route path="/languages" element={<LanguagesPage />} />
-        <Route path="/countries" element={<CountriesPage />} />
-        <Route path="/territories" element={<TerritoriesPage />} />
-        <Route path="/pictures" element={<PicturesPage />} />
-        <Route path="/description-reports" element={<DescriptionReportsPage />} />
-        <Route path="/content-lists" element={<ContentListsPage />} />
-        <Route path="/screen-contents" element={<ScreenContentsPage />} />
-      </Routes>
-    </SimpleAppLayout>
-  );
-}
-
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [loginError, setLoginError] = useState<string>('');
-  const [userRole, setUserRole] = useState<string>('');
-
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      checkUserRole();
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const checkUserRole = async () => {
-    try {
-      const currentUser = await usersApi.getCurrentUser();
-      if (currentUser.is_admin) {
-        setUserRole('admin');
-        setIsAuthenticated(true);
-      } else {
-        setLoginError('Access denied. Administrator privileges required for backoffice access.');
-        localStorage.removeItem('access_token');
-      }
-    } catch (error) {
-      console.error('Failed to verify user role:', error);
-      localStorage.removeItem('access_token');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-    try {
-      const response = await authApi.login(loginData);
-      localStorage.setItem('access_token', response.access_token);
-      await checkUserRole();
-    } catch (error: any) {
-      setLoginError(error.response?.data?.detail || 'Login failed');
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    setIsAuthenticated(false);
-  };
-
-  if (isLoading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        backgroundColor: '#f5f5f5'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #e5e7eb',
-            borderTop: '4px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }}></div>
-          <p style={{ color: '#6b7280' }}>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        backgroundColor: '#f5f5f5'
-      }}>
-        <div style={{
-          backgroundColor: 'white',
-          padding: '40px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          width: '100%',
-          maxWidth: '400px'
-        }}>
-          <h1 style={{ 
-            textAlign: 'center', 
-            marginBottom: '24px',
-            color: '#1f2937',
-            fontSize: '28px'
-          }}>
-            Kyool Backoffice
-          </h1>
-          
-          {loginError && (
-            <div style={{
-              padding: '12px',
-              backgroundColor: '#fef2f2',
-              color: '#dc2626',
-              borderRadius: '6px',
-              marginBottom: '16px',
-              fontSize: '14px'
-            }}>
-              {loginError}
-            </div>
-          )}
-          
-          <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontWeight: 'bold',
-                color: '#374151'
-              }}>
-                Email
-              </label>
-              <input
-                type="email"
-                value={loginData.email}
-                onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
-                placeholder="admin@kyool.com"
-              />
-            </div>
-            
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontWeight: 'bold',
-                color: '#374151'
-              }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
-                placeholder="••••••••"
-              />
-            </div>
-            
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Sign In
-            </button>
-          </form>
-          
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '15px', 
-            backgroundColor: '#e9ecef', 
-            borderRadius: '4px', 
-            fontSize: '12px', 
-            color: '#6c757d' 
-          }}>
-            <strong>Test credentials:</strong><br />
-            Email: admin@kyool.com<br />
-            Password: admin123
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      {/* Content Organization */}
+      <MenuItemLink
+        to="/category-lists"
+        primaryText="Category Lists"
+        leftIcon={<span>📂</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/content-lists"
+        primaryText="Content Lists"
+        leftIcon={<span>📝</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/screen-contents"
+        primaryText="Screen Contents"
+        leftIcon={<span>🖥️</span>}
+        dense={!open}
+      />
       
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <AppWithRouter />
-        </Router>
-      </QueryClientProvider>
-    </>
+      {/* People & Assets */}
+      <MenuItemLink
+        to="/public-persons"
+        primaryText="Public Persons"
+        leftIcon={<span>👤</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/pictures"
+        primaryText="Pictures"
+        leftIcon={<span>🖼️</span>}
+        dense={!open}
+      />
+      
+      {/* Reference Data */}
+      <MenuItemLink
+        to="/countries"
+        primaryText="Countries"
+        leftIcon={<span>🌍</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/languages"
+        primaryText="Languages"
+        leftIcon={<span>🗣️</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/territories"
+        primaryText="Territories"
+        leftIcon={<span>🗺️</span>}
+        dense={!open}
+      />
+      
+      {/* System */}
+      <MenuItemLink
+        to="/users"
+        primaryText="Users"
+        leftIcon={<span>👥</span>}
+        dense={!open}
+      />
+    </Menu>
   );
-}
+};
 
-export default App;
+// Custom AppBar
+const CustomAppBar = () => (
+  <AppBar>
+    <span style={{ flex: 1, textAlign: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
+      KYOOL Media Backoffice
+    </span>
+  </AppBar>
+);
+
+// Custom Layout
+const CustomLayout = (props: any) => (
+  <Layout {...props} appBar={CustomAppBar} menu={CustomMenu} />
+);
+
+// Dashboard component - placeholder for now
+const Dashboard = () => (
+  <div style={{ padding: '2rem' }}>
+    <h1>Welcome to KYOOL Media Backoffice</h1>
+    <p>Select a resource from the sidebar to start managing your content.</p>
+    
+    <div style={{ marginTop: '2rem' }}>
+      <h2>Quick Stats</h2>
+      <p>📊 Dashboard with metrics and charts will be implemented in the next phase.</p>
+    </div>
+    
+    <div style={{ marginTop: '2rem' }}>
+      <h2>Recent Activity</h2>
+      <p>📈 Recent operations and system status will be displayed here.</p>
+    </div>
+  </div>
+);
+
+export const App = () => (
+  <Admin
+    dataProvider={dataProvider}
+    authProvider={authProvider}
+    dashboard={Dashboard}
+    layout={CustomLayout}
+    title="KYOOL Media Backoffice"
+  >
+    {/* Core Content Management */}
+    <Resource
+      name="media-descriptions"
+      list={MediaDescriptionList}
+      create={MediaDescriptionCreate}
+      edit={MediaDescriptionEdit}
+      show={MediaDescriptionShow}
+      options={{ label: 'Media Descriptions' }}
+    />
+    
+    {/* Reference Data */}
+    <Resource
+      name="countries"
+      list={CountryList}
+      create={CountryCreate}
+      edit={CountryEdit}
+      show={CountryShow}
+      options={{ label: 'Countries' }}
+    />
+    
+    <Resource
+      name="languages"
+      list={LanguageList}
+      create={LanguageCreate}
+      edit={LanguageEdit}
+      show={LanguageShow}
+      options={{ label: 'Languages' }}
+    />
+    
+    {/* Fully implemented resources */}
+    <Resource
+      name="programs"
+      list={ProgramList}
+      create={ProgramCreate}
+      edit={ProgramEdit}
+      show={ProgramShow}
+      options={{ label: 'Programs' }}
+    />
+    
+    <Resource
+      name="seasons"
+      list={SeasonList}
+      create={SeasonCreate}
+      edit={SeasonEdit}
+      show={SeasonShow}
+      options={{ label: 'Seasons' }}
+    />
+    
+    <Resource
+      name="public-persons"
+      list={PublicPersonList}
+      create={PublicPersonCreate}
+      edit={PublicPersonEdit}
+      show={PublicPersonShow}
+      options={{ label: 'Public Persons' }}
+    />
+    
+    <Resource
+      name="pictures"
+      list={PictureList}
+      create={PictureCreate}
+      edit={PictureEdit}
+      show={PictureShow}
+      options={{ label: 'Pictures' }}
+    />
+    
+    <Resource
+      name="territories"
+      list={TerritoryList}
+      create={TerritoryCreate}
+      edit={TerritoryEdit}
+      show={TerritoryShow}
+      options={{ label: 'Territories' }}
+    />
+    
+    <Resource
+      name="users"
+      list={UserList}
+      create={UserCreate}
+      edit={UserEdit}
+      show={UserShow}
+      options={{ label: 'Users' }}
+    />
+
+    {/* Content organization resources */}
+    <Resource
+      name="category-lists"
+      list={CategoryListList}
+      create={CategoryListCreate}
+      edit={CategoryListEdit}
+      show={CategoryListShow}
+      options={{ label: 'Category Lists' }}
+    />
+    
+    <Resource
+      name="content-lists"
+      list={ContentListList}
+      create={ContentListCreate}
+      edit={ContentListEdit}
+      show={ContentListShow}
+      options={{ label: 'Content Lists' }}
+    />
+    
+    <Resource
+      name="screen-contents"
+      list={ScreenContentList}
+      create={ScreenContentCreate}
+      edit={ScreenContentEdit}
+      show={ScreenContentShow}
+      options={{ label: 'Screen Contents' }}
+    />
+  </Admin>
+);

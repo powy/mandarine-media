@@ -1,11 +1,20 @@
 import { apiClient } from './client';
-import { Program, ProgramCreate, ProgramUpdate } from '../types';
+import { Program, ProgramCreate, ProgramUpdate, ProgramsApiParams, PaginatedProgramsResponse } from '../types';
 
 export const programsApi = {
-  getAll: async (params: { skip?: number; limit?: number } = {}) => {
-    const { skip = 0, limit = 20 } = params;
-    const response = await apiClient.get(`/api/v1/programs?skip=${skip}&limit=${limit}`);
-    return response.data as Program[];
+  getAll: async (params: ProgramsApiParams = {}): Promise<PaginatedProgramsResponse> => {
+    const { skip = 0, limit = 20, q } = params;
+    const searchParams = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (q) {
+      searchParams.append('q', q);
+    }
+    
+    const response = await apiClient.get(`/api/v1/programs?${searchParams.toString()}`);
+    return response.data as PaginatedProgramsResponse;
   },
 
   getById: async (id: string) => {
