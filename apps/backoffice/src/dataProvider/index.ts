@@ -214,6 +214,20 @@ export const dataProvider: DataProvider = {
             total: screenContentsTotal,
           };
 
+        case 'video-files':
+          const videoFilesResponse = await mediaApi.getVideoFiles({
+            skip,
+            limit: perPage,
+            ...filters
+          });
+          // Handle both direct array and paginated response formats
+          const videoFilesData = Array.isArray(videoFilesResponse) ? videoFilesResponse : videoFilesResponse.data || [];
+          const videoFilesTotal = Array.isArray(videoFilesResponse) ? videoFilesData.length : videoFilesResponse.pagination?.total || videoFilesData.length;
+          return {
+            data: resourceMappers.videoFiles.mapList(videoFilesData),
+            total: videoFilesTotal,
+          };
+
         default:
           throw new Error(`Unknown resource: ${resource}`);
       }
@@ -275,6 +289,10 @@ export const dataProvider: DataProvider = {
         case 'screen-contents':
           const screenContent = await getScreenContent(id);
           return { data: resourceMappers.screenContents.mapOne(screenContent) };
+
+        case 'video-files':
+          const videoFile = await mediaApi.getVideoFile(id);
+          return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
         default:
           throw new Error(`Unknown resource: ${resource}`);
@@ -404,6 +422,10 @@ export const dataProvider: DataProvider = {
           const screenContent = await createScreenContent(resourceMappers.screenContents.mapToCreate(data));
           return { data: resourceMappers.screenContents.mapOne(screenContent) };
 
+        case 'video-files':
+          const videoFile = await mediaApi.createVideoFile(resourceMappers.videoFiles.mapToCreate(data));
+          return { data: resourceMappers.videoFiles.mapOne(videoFile) };
+
         default:
           throw new Error(`Create not implemented for resource: ${resource}`);
       }
@@ -461,6 +483,10 @@ export const dataProvider: DataProvider = {
         case 'screen-contents':
           const screenContent = await updateScreenContent(id, resourceMappers.screenContents.mapToUpdate(data));
           return { data: resourceMappers.screenContents.mapOne(screenContent) };
+
+        case 'video-files':
+          const videoFile = await mediaApi.updateVideoFile(id, resourceMappers.videoFiles.mapToUpdate(data));
+          return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
         default:
           throw new Error(`Update not implemented for resource: ${resource}`);
@@ -528,6 +554,10 @@ export const dataProvider: DataProvider = {
         case 'screen-contents':
           await deleteScreenContent(id);
           return { data: { id } }; // deleteScreenContent returns void
+
+        case 'video-files':
+          const deletedVideoFile = await mediaApi.deleteVideoFile(id);
+          return { data: resourceMappers.videoFiles.mapOne(deletedVideoFile) };
 
         default:
           throw new Error(`Delete not implemented for resource: ${resource}`);

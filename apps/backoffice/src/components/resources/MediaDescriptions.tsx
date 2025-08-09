@@ -24,6 +24,10 @@ import {
   Filter,
   ReferenceInput,
   AutocompleteInput,
+  ReferenceManyField,
+  SingleFieldList,
+  ChipField,
+  FunctionField,
 } from 'react-admin';
 
 // Filters for the list view
@@ -180,6 +184,17 @@ export const MediaDescriptionEdit = () => (
       <TextInput source="main_thumbnail_url" fullWidth />
       <TextInput source="secondary_thumbnail_url" fullWidth />
       
+      {/* Video Files Section */}
+      <ReferenceManyField 
+        reference="video-files" 
+        target="media_description_id" 
+        label="Associated Video Files"
+      >
+        <SingleFieldList>
+          <ChipField source="filename" />
+        </SingleFieldList>
+      </ReferenceManyField>
+      
       {/* Financial fields - only for admin users */}
       <NumberInput source="translation_share" />
       <NumberInput source="sacem_share" />
@@ -207,6 +222,30 @@ export const MediaDescriptionShow = () => (
       <BooleanField source="is_premium_content" label="Premium" />
       <TextField source="main_thumbnail_url" />
       <TextField source="secondary_thumbnail_url" />
+      
+      {/* Associated Video Files */}
+      <ReferenceManyField 
+        reference="video-files" 
+        target="media_description_id" 
+        label="Associated Video Files"
+      >
+        <Datagrid>
+          <TextField source="filename" />
+          <FunctionField
+            label="URL/File"
+            render={(record: any) => 
+              record.external_url ? 
+                <a href={record.external_url} target="_blank" rel="noopener noreferrer">External URL</a> : 
+                record.file_url || 'N/A'
+            }
+          />
+          <TextField source="upload_status" />
+          <BooleanField source="is_processed" />
+          <EditButton />
+          <ShowButton />
+        </Datagrid>
+      </ReferenceManyField>
+      
       <DateField source="created_at" />
       <DateField source="last_updated_utc" />
     </SimpleShowLayout>

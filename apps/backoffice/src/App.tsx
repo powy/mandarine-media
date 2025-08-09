@@ -14,6 +14,7 @@ import { UserList, UserCreate, UserEdit, UserShow } from './components/resources
 import { CategoryListList, CategoryListCreate, CategoryListEdit, CategoryListShow } from './components/resources/CategoryLists';
 import { ContentListList, ContentListCreate, ContentListEdit, ContentListShow } from './components/resources/ContentLists';
 import { ScreenContentList, ScreenContentCreate, ScreenContentEdit, ScreenContentShow } from './components/resources/ScreenContents';
+import { VideoFileList, VideoFileCreate, VideoFileEdit, VideoFileShow } from './components/resources/VideoFiles';
 
 // Custom Menu for better organization
 const CustomMenu = () => {
@@ -72,6 +73,12 @@ const CustomMenu = () => {
         to="/pictures"
         primaryText="Pictures"
         leftIcon={<span>🖼️</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/video-files"
+        primaryText="Video Files"
+        leftIcon={<span>🎥</span>}
         dense={!open}
       />
       
@@ -256,6 +263,16 @@ export const App = () => (
       edit={ScreenContentEdit}
       show={ScreenContentShow}
       options={{ label: 'Screen Contents' }}
+    />
+    
+    {/* Video Files Resource */}
+    <Resource
+      name="video-files"
+      list={VideoFileList}
+      create={VideoFileCreate}
+      edit={VideoFileEdit}
+      show={VideoFileShow}
+      options={{ label: 'Video Files' }}
     />
   </Admin>
 );

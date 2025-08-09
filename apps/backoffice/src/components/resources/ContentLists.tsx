@@ -28,6 +28,13 @@ import {
   BooleanInput,
   SelectInput,
   FunctionField,
+  ArrayInput,
+  SimpleFormIterator,
+  ReferenceInput,
+  AutocompleteInput,
+  ArrayField,
+  SingleFieldList,
+  ChipField,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
 
@@ -159,6 +166,21 @@ export const ContentListCreate = () => (
         defaultValue={0} 
         helperText="Order for display (lower numbers appear first)"
       />
+      <ArrayInput source="content_data" label="Content Items">
+        <SimpleFormIterator>
+          <SelectInput 
+            source="content_type" 
+            label="Content Type"
+            choices={[
+              { id: 'program', name: 'Program' },
+              { id: 'season', name: 'Season' },
+              { id: 'media_description', name: 'Media Description' }
+            ]}
+            validate={[required()]}
+          />
+          <TextInput source="content_id" label="Content ID (UUID)" validate={[required()]} />
+        </SimpleFormIterator>
+      </ArrayInput>
     </SimpleForm>
   </Create>
 );
@@ -187,6 +209,21 @@ export const ContentListEdit = () => (
         source="display_order" 
         helperText="Order for display (lower numbers appear first)"
       />
+      <ArrayInput source="content_data" label="Content Items">
+        <SimpleFormIterator>
+          <SelectInput 
+            source="content_type" 
+            label="Content Type"
+            choices={[
+              { id: 'program', name: 'Program' },
+              { id: 'season', name: 'Season' },
+              { id: 'media_description', name: 'Media Description' }
+            ]}
+            validate={[required()]}
+          />
+          <TextInput source="content_id" label="Content ID (UUID)" validate={[required()]} />
+        </SimpleFormIterator>
+      </ArrayInput>
     </SimpleForm>
   </Edit>
 );
@@ -206,14 +243,11 @@ export const ContentListShow = () => (
       />
       <BooleanField source="is_active" label="Active" />
       <TextField source="display_order" label="Display Order" />
-      <FunctionField 
-        label="Content Items" 
-        render={record => 
-          Array.isArray(record.content_items) 
-            ? `${record.content_items.length} items`
-            : 'No items'
-        } 
-      />
+      <ArrayField source="content_items" label="Content Items">
+        <SingleFieldList>
+          <ChipField source="title" />
+        </SingleFieldList>
+      </ArrayField>
       <FunctionField 
         label="Content Types" 
         render={record => 

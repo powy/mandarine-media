@@ -29,7 +29,8 @@ import {
   ContentListUpdate,
   ScreenContent,
   ScreenContentCreate,
-  ScreenContentUpdate
+  ScreenContentUpdate,
+  VideoFile
 } from 'share';
 
 // React Admin expects 'id' field and ISO date strings work well with date inputs
@@ -288,14 +289,23 @@ const categoryLists = {
 };
 
 const contentLists = {
-  mapOne: (item: ContentList): ReactAdminRecord => ({
-    ...item,
-    id: item.id,
-    created_at: item.creation_date_utc,
-    updated_at: item.last_updated_utc,
-    content_items: item.content_items || [],
-    content_types: item.content_types || [],
-  }),
+  mapOne: (item: ContentList): ReactAdminRecord => {
+    // Transform API format to UI format for editing
+    const content_data = (item.content_items || []).map((content_id, index) => ({
+      content_id,
+      content_type: (item.content_types || [])[index] || 'program'
+    }));
+    
+    return {
+      ...item,
+      id: item.id,
+      created_at: item.creation_date_utc,
+      updated_at: item.last_updated_utc,
+      content_items: item.content_items || [],
+      content_types: item.content_types || [],
+      content_data, // For the UI forms
+    };
+  },
 
   mapList: (items: ContentList[]): ReactAdminRecord[] => 
     (items || []).map((item) => ({
@@ -307,21 +317,45 @@ const contentLists = {
     })),
 
   mapToCreate: (data: ReactAdminRecord): ContentListCreate => {
-    const { id, created_at, creation_date_utc, updated_at, last_updated_utc, content_count, ...rest } = data;
+    const { id, created_at, creation_date_utc, updated_at, last_updated_utc, content_count, content_data, ...rest } = data;
+    
+    // Transform UI format to API format
+    let content_items = data.content_items || [];
+    let content_types = data.content_types || [];
+    
+    if (content_data && Array.isArray(content_data)) {
+      content_items = content_data.map(item => item.content_id);
+      content_types = content_data.map(item => item.content_type);
+    }
+    
     return {
       title: data.title || '',
       thumbnail_format: data.thumbnail_format || 'small_square',
       is_active: data.is_active !== false,
       display_order: data.display_order || 0,
-      content_items: data.content_items || [],
-      content_types: data.content_types || [],
+      content_items,
+      content_types,
       ...rest
     } as ContentListCreate;
   },
 
   mapToUpdate: (data: ReactAdminRecord): ContentListUpdate => {
-    const { id, created_at, creation_date_utc, updated_at, last_updated_utc, content_count, ...rest } = data;
-    return rest as ContentListUpdate;
+    const { id, created_at, creation_date_utc, updated_at, last_updated_utc, content_count, content_data, ...rest } = data;
+    
+    // Transform UI format to API format
+    let content_items = data.content_items || [];
+    let content_types = data.content_types || [];
+    
+    if (content_data && Array.isArray(content_data)) {
+      content_items = content_data.map(item => item.content_id);
+      content_types = content_data.map(item => item.content_type);
+    }
+    
+    return {
+      content_items,
+      content_types,
+      ...rest
+    } as ContentListUpdate;
   },
 };
 
@@ -360,6 +394,48 @@ const screenContents = {
   },
 };
 
+const videoFiles = {
+  mapOne: (item: VideoFile): ReactAdminRecord => ({
+    ...item,
+    id: item.id,
+    created_at: item.creation_date_utc,
+    filename: item.file_name, // Map file_name to filename for UI consistency
+  }),
+
+  mapList: (items: VideoFile[]): ReactAdminRecord[] => 
+    (items || []).map((item) => ({
+      ...item,
+      id: item.id,
+      created_at: item.creation_date_utc,
+      filename: item.file_name, // Map file_name to filename for UI consistency
+    })),
+
+  mapToCreate: (data: ReactAdminRecord): Partial<VideoFile> => {
+    const { id, created_at, updated_at, last_updated_utc, filename, ...rest } = data;
+    return {
+      file_name: data.filename || '',
+      upload_method: data.upload_method || 'existing_url',
+      external_url: data.external_url || null,
+      media_description_id: data.media_description_id || null,
+      upload_status: data.upload_status || 'upload_completed',
+      encoding_status: 'completed', // Default encoding status
+      ...rest
+    } as Partial<VideoFile>;
+  },
+
+  mapToUpdate: (data: ReactAdminRecord): Partial<VideoFile> => {
+    const { id, created_at, updated_at, last_updated_utc, filename, ...rest } = data;
+    return {
+      file_name: data.filename,
+      external_url: data.external_url,
+      media_description_id: data.media_description_id,
+      upload_status: data.upload_status,
+      encoding_status: data.encoding_status,
+      ...rest
+    } as Partial<VideoFile>;
+  },
+};
+
 export const resourceMappers = {
   countries,
   languages,
@@ -373,4 +449,5 @@ export const resourceMappers = {
   categoryLists,
   contentLists,
   screenContents,
+  videoFiles,
 };

@@ -28,6 +28,14 @@ import {
   BooleanInput,
   SelectInput,
   FunctionField,
+  ArrayInput,
+  SimpleFormIterator,
+  ReferenceInput,
+  AutocompleteInput,
+  ReferenceManyField,
+  SingleFieldList,
+  ChipField,
+  ArrayField,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
 
@@ -159,6 +167,14 @@ export const ScreenContentCreate = () => (
         defaultValue={0} 
         helperText="Order for display (lower numbers appear first)"
       />
+      <ArrayInput source="content_lists" label="Related Content Lists">
+        <SimpleFormIterator>
+          <ReferenceInput source="content_list_id" reference="content-lists">
+            <AutocompleteInput optionText="title" />
+          </ReferenceInput>
+          <NumberInput source="display_order" label="Order" defaultValue={0} />
+        </SimpleFormIterator>
+      </ArrayInput>
     </SimpleForm>
   </Create>
 );
@@ -186,6 +202,14 @@ export const ScreenContentEdit = () => (
         source="display_order" 
         helperText="Order for display (lower numbers appear first)"
       />
+      <ArrayInput source="content_lists" label="Related Content Lists">
+        <SimpleFormIterator>
+          <ReferenceInput source="content_list_id" reference="content-lists">
+            <AutocompleteInput optionText="title" />
+          </ReferenceInput>
+          <NumberInput source="display_order" label="Order" defaultValue={0} />
+        </SimpleFormIterator>
+      </ArrayInput>
     </SimpleForm>
   </Edit>
 );
@@ -205,14 +229,11 @@ export const ScreenContentShow = () => (
       />
       <BooleanField source="is_active" label="Active" />
       <TextField source="display_order" label="Display Order" />
-      <FunctionField 
-        label="Content Lists" 
-        render={record => 
-          Array.isArray(record.content_lists) 
-            ? `${record.content_lists.length} content lists`
-            : 'No content lists'
-        } 
-      />
+      <ArrayField source="content_lists" label="Related Content Lists">
+        <SingleFieldList>
+          <ChipField source="title" />
+        </SingleFieldList>
+      </ArrayField>
       <DateField source="creation_date_utc" label="Created" />
       <DateField source="last_updated_utc" label="Last Updated" />
       <DateField source="json_last_updated" label="JSON Last Updated" />
