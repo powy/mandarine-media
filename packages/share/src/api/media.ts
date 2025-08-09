@@ -229,3 +229,9 @@ export const mediaApi = {
     return response.data;
   },
 };
+
+export const getMediaDescription = mediaApi.getMediaDescription;
+export const getMediaDescriptions = mediaApi.getMediaDescriptions;
+export const getVideoFilesByMediaDescription = (mediaId: string): Promise<{ data: VideoFile[] }> => {
+  return mediaApi.getVideoFilesByMedia(mediaId).then(data => ({ data }));
+};

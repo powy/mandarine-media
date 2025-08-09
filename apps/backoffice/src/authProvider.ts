@@ -4,8 +4,8 @@ import { authApi } from 'share';
 export const authProvider: AuthProvider = {
   login: async ({ username, password }) => {
     try {
-      const tokens = await authApi.login({ email: username, password });
-      localStorage.setItem('access_token', tokens.access_token);
+      await authApi.login({ email: username, password });
+      // Auth tokens are now automatically stored by the enhanced auth system
       return Promise.resolve();
     } catch (error) {
       return Promise.reject(new Error('Invalid credentials'));
@@ -13,17 +13,22 @@ export const authProvider: AuthProvider = {
   },
 
   logout: async () => {
-    localStorage.removeItem('access_token');
-    return Promise.resolve();
+    try {
+      await authApi.logout();
+      // Tokens are automatically cleared by the enhanced auth system
+      return Promise.resolve();
+    } catch (error) {
+      // Even if logout fails, return success for React Admin
+      return Promise.resolve();
+    }
   },
 
   checkAuth: async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    const isAuthenticated = await authApi.isAuthenticated();
+    if (!isAuthenticated) {
       return Promise.reject(new Error('Not authenticated'));
     }
 
-    // TODO: Add token expiration check here
     return Promise.resolve();
   },
 
@@ -31,7 +36,7 @@ export const authProvider: AuthProvider = {
     const status = error?.status || error?.response?.status;
     
     if (status === 401 || status === 403) {
-      localStorage.removeItem('access_token');
+      // Auth system will automatically handle token clearing via interceptors
       return Promise.reject(new Error('Authentication failed'));
     }
     
@@ -40,18 +45,31 @@ export const authProvider: AuthProvider = {
 
   getIdentity: async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
+      const isAuthenticated = await authApi.isAuthenticated();
+      if (!isAuthenticated) {
         return Promise.reject(new Error('Not authenticated'));
       }
 
-      // TODO: Decode JWT token to get user info, or make API call to get current user
-      // For now, return a placeholder identity
-      return Promise.resolve({
-        id: 'current-user',
-        fullName: 'Admin User',
-        avatar: undefined,
-      });
+      // Try to get current user info from API or cache
+      try {
+        let user = await authApi.getCachedUser();
+        if (!user) {
+          user = await authApi.getCurrentUser();
+        }
+        
+        return Promise.resolve({
+          id: user.id,
+          fullName: user.full_name,
+          avatar: undefined,
+        });
+      } catch (userError) {
+        // If we can't get user info, return a basic identity
+        return Promise.resolve({
+          id: 'current-user',
+          fullName: 'Admin User',
+          avatar: undefined,
+        });
+      }
     } catch (error) {
       return Promise.reject(error);
     }
@@ -59,14 +77,24 @@ export const authProvider: AuthProvider = {
 
   getPermissions: async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
+      const isAuthenticated = await authApi.isAuthenticated();
+      if (!isAuthenticated) {
         return Promise.reject(new Error('Not authenticated'));
       }
 
-      // TODO: Get actual user permissions from API or JWT token
-      // For now, assume admin permissions
-      return Promise.resolve(['admin']);
+      // Try to get user permissions from cached or fresh user data
+      try {
+        let user = await authApi.getCachedUser();
+        if (!user) {
+          user = await authApi.getCurrentUser();
+        }
+        
+        // Return permissions based on user's admin status
+        return Promise.resolve(user.is_admin ? ['admin'] : ['user']);
+      } catch (userError) {
+        // If we can't get user info, assume basic user permissions
+        return Promise.resolve(['user']);
+      }
     } catch (error) {
       return Promise.reject(error);
     }

@@ -13,3 +13,7 @@ export * from './territories';
 export * from './pictures';
 export * from './content-lists';
 export * from './screen-contents';
+
+export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription } from './media';
+export { getSeason, getSeasonsByProgram } from './seasons';
+export { getProgram } from './programs';

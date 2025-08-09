@@ -15,6 +15,9 @@
     "dev": "concurrently \"npm:dev:*\"",
     "dev:web": "npm run dev --workspace=web",
     "dev:backoffice": "npm run dev --workspace=backoffice",
+    "dev:alpha": "npm run dev --workspace=alpha",
+    "dev:alpha:local": "npm run dev:local --workspace=alpha",
+    "dev:alpha:staging": "npm run dev:staging --workspace=alpha",
     "dev:mobile": "npm run start --workspace=mobile",
     "dev:share": "npm run dev --workspace=share",
     "build": "npm run build:share && npm run build --workspaces --if-present",
@@ -49,6 +52,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-native-vector-icons": "^10.2.0"
   },
   "overrides": {

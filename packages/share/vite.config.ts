@@ -19,11 +19,12 @@ export default defineConfig({
       fileName: (format) => `index.${format}.js`,
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: ['react', 'react-dom', '@tanstack/react-query'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
+          '@tanstack/react-query': 'ReactQuery',
         },
       },
     },

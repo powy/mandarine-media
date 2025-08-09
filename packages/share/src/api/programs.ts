@@ -37,3 +37,5 @@ export const programsApi = {
     return response.data as Program;
   },
 };
+
+export const getProgram = programsApi.getById;

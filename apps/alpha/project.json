@@ -1,0 +1,53 @@
+{
+  "name": "alpha",
+  "root": "apps/alpha",
+  "projectType": "application",
+  "sourceRoot": "apps/alpha/src",
+  "targets": {
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native start",
+        "cwd": "apps/alpha"
+      }
+    },
+    "android": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native run-android",
+        "cwd": "apps/alpha"
+      }
+    },
+    "ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native run-ios",
+        "cwd": "apps/alpha"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-native build-android",
+        "cwd": "apps/alpha"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/alpha"],
+      "options": {
+        "jestConfig": "apps/alpha/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/alpha/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  },
+  "tags": ["scope:alpha", "type:app"],
+  "implicitDependencies": ["share"]
+}

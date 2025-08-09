@@ -1,4 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { authTokenStorage } from '../utils/storage';
 
 // Configuration interface for platform-specific settings
 interface ApiConfig {
@@ -25,9 +26,9 @@ export const apiClient: AxiosInstance = axios.create({
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = await authTokenStorage.getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -39,22 +40,88 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for auth errors
+// Track refresh token requests to avoid multiple simultaneous requests
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+// Response interceptor for auth errors with token refresh
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  (response: AxiosResponse) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If we're already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
       try {
-        localStorage.removeItem('access_token');
+        // Import authApi here to avoid circular dependency
+        const { authApi } = await import('./auth');
+        const currentToken = await authTokenStorage.getAccessToken();
+        
+        if (currentToken && authApi.isTokenExpired(currentToken)) {
+          // Try to refresh the token
+          const newTokens = await authApi.refreshToken();
+          const newAccessToken = newTokens.access_token;
+          
+          processQueue(null, newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return apiClient(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        processQueue(refreshError, null);
+        
+        // Clear tokens and call auth error handler
+        try {
+          await authTokenStorage.clearAll();
+        } catch (storageError) {
+          console.warn('Failed to clear tokens:', storageError);
+        }
+        
+        if (apiConfig.onAuthError) {
+          apiConfig.onAuthError();
+        }
+      } finally {
+        isRefreshing = false;
+      }
+    } else if (error.response?.status === 401) {
+      // If retry already attempted or no refresh available, clear tokens
+      try {
+        await authTokenStorage.clearAll();
       } catch (storageError) {
-        console.warn('Failed to remove token from storage:', storageError);
+        console.warn('Failed to clear tokens:', storageError);
       }
       
-      // Call platform-specific auth error handler
       if (apiConfig.onAuthError) {
         apiConfig.onAuthError();
       }
     }
+    
     return Promise.reject(error);
   }
 );

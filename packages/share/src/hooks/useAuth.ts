@@ -3,24 +3,79 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth';
 import { User, LoginRequest, RegisterRequest } from '../types';
 
+// Global auth state that persists across component re-mounts (only for useAuth hook)
+// This is isolated to the useAuth hook and doesn't affect direct authApi usage
+let globalAuthState = {
+  isAuthenticated: false,
+  initialCheckComplete: false,
+};
+
+// Simple event emitter for state changes
+const authStateListeners: Array<() => void> = [];
+
+// Helper functions for global state management
+const updateGlobalAuthState = (updates: Partial<typeof globalAuthState>) => {
+  globalAuthState = { ...globalAuthState, ...updates };
+  
+  // Notify all listeners
+  authStateListeners.forEach(listener => listener());
+};
+
 export const useAuth = () => {
   const queryClient = useQueryClient();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Check authentication status on mount
+  
+  // Initialize local state from global state
+  const [isAuthenticated, setIsAuthenticated] = useState(globalAuthState.isAuthenticated);
+  const [initialCheckComplete, setInitialCheckComplete] = useState(globalAuthState.initialCheckComplete);
+  
+  // Sync local state with global state
   useEffect(() => {
+    const listener = () => {
+      setIsAuthenticated(globalAuthState.isAuthenticated);
+      setInitialCheckComplete(globalAuthState.initialCheckComplete);
+    };
+    
+    authStateListeners.push(listener);
+    
+    // Cleanup listener on unmount
+    return () => {
+      const index = authStateListeners.indexOf(listener);
+      if (index > -1) {
+        authStateListeners.splice(index, 1);
+      }
+    };
+  }, []);
+
+  // Check authentication status on mount and try to get cached user first
+  useEffect(() => {
+    // Only run initial auth check if we haven't completed it yet
+    if (globalAuthState.initialCheckComplete) {
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         const authenticated = await authApi.isAuthenticated();
-        setIsAuthenticated(authenticated);
+        updateGlobalAuthState({ isAuthenticated: authenticated });
+        
+        if (authenticated) {
+          // Try to get cached user data first to avoid unnecessary API calls
+          const cachedUser = await authApi.getCachedUser();
+          if (cachedUser) {
+            // Pre-populate the React Query cache with cached user data
+            queryClient.setQueryData(['user', 'current'], cachedUser);
+          }
+        }
       } catch (error) {
         console.warn('Error checking authentication:', error);
-        setIsAuthenticated(false);
+        updateGlobalAuthState({ isAuthenticated: false });
+      } finally {
+        updateGlobalAuthState({ initialCheckComplete: true });
       }
     };
 
     checkAuth();
-  }, []);
+  }, [queryClient]);
 
   // Get current user
   const { data: user, isLoading: isLoadingUser } = useQuery<User>({
@@ -32,13 +87,30 @@ export const useAuth = () => {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: authApi.login,
-    onSuccess: () => {
-      setIsAuthenticated(true);
-      queryClient.invalidateQueries({ queryKey: ['user', 'current'] });
+    mutationFn: async (credentials: LoginRequest) => {
+      const result = await authApi.login(credentials);
+      return result;
+    },
+    onSuccess: async () => {
+      updateGlobalAuthState({ isAuthenticated: true });
+      
+      // Try to get the cached user data that was stored during login
+      try {
+        const cachedUser = await authApi.getCachedUser();
+        if (cachedUser) {
+          queryClient.setQueryData(['user', 'current'], cachedUser);
+        } else {
+          // If no cached user, invalidate to trigger fresh fetch
+          queryClient.invalidateQueries({ queryKey: ['user', 'current'] });
+        }
+      } catch (error) {
+        console.warn('Error getting cached user after login:', error);
+        queryClient.invalidateQueries({ queryKey: ['user', 'current'] });
+      }
     },
     onError: (error) => {
       console.error('Login error:', error);
+      updateGlobalAuthState({ isAuthenticated: false });
     },
   });
 
@@ -56,12 +128,23 @@ export const useAuth = () => {
 
   // Logout function
   const logout = async () => {
+    // Immediately set global state to logged out to trigger UI change
+    updateGlobalAuthState({ isAuthenticated: false, initialCheckComplete: false });
+    
     try {
-      await authApi.logout();
-      setIsAuthenticated(false);
+      // Clear React Query cache first
       queryClient.clear();
+      
+      // Then clear authentication data
+      await authApi.logout();
+      
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, we must ensure local state is cleared
+      queryClient.clear();
+    } finally {
+      // Always ensure we end in a logged out state
+      updateGlobalAuthState({ isAuthenticated: false, initialCheckComplete: true });
     }
   };
 
@@ -79,9 +162,10 @@ export const useAuth = () => {
     // State
     user,
     isAuthenticated,
-    isLoadingUser,
+    isLoadingUser: isLoadingUser || !initialCheckComplete,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
+    initialCheckComplete,
     
     // Actions
     login,

@@ -15,4 +15,4 @@ export * from './utils';
 
 // Configuration exports
 export { initApiClient } from './api/client';
-export { initStorage } from './utils/storage';
+export { initStorage, initAuthStorage } from './utils/storage';

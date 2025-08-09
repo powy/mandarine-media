@@ -41,3 +41,8 @@ export const seasonsApi = {
     return response.data as Season;
   },
 };
+
+export const getSeason = seasonsApi.getById;
+export const getSeasonsByProgram = (programId: string): Promise<{ data: Season[] }> => {
+  return seasonsApi.getAll({ program_id: programId }).then(response => ({ data: response.data }));
+};
