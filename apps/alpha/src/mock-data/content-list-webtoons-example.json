@@ -1,0 +1,39 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440003",
+  "title": "인기 웹툰",
+  "description": "가장 인기 있는 웹툰 시리즈",
+  "thumbnail_format": "vertical_mobile",
+  "is_active": true,
+  "display_order": 2,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "items": [
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440008",
+      "content_type": "media_description",
+      "title": "지옥",
+      "thumbnail_url": "https://example.com/thumbnails/hellbound.jpg",
+      "display_order": 1
+    },
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440009",
+      "content_type": "media_description",
+      "title": "스위트 홈",
+      "thumbnail_url": "https://example.com/thumbnails/sweet-home.jpg",
+      "display_order": 2
+    },
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440010",
+      "content_type": "media_description",
+      "title": "여신강림",
+      "thumbnail_url": "https://example.com/thumbnails/true-beauty.jpg",
+      "display_order": 3
+    },
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440011",
+      "content_type": "media_description",
+      "title": "모지리1 작은고환",
+      "thumbnail_url": "https://example.com/thumbnails/mojiri-1.jpg",
+      "display_order": 4
+    }
+  ]
+}

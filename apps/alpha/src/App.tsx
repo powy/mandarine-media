@@ -1,13 +1,16 @@
-// TEMPORARILY SIMPLIFIED FOR TESTING QUERYCLIENT FIX
-// This version tests the QueryClient context sharing with mock auth
-// Original auth-dependent logic is commented below
-
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { initApiClient, useAuth } from 'share';
 import { LoginScreen } from './screens/LoginScreen';
+import { WelcomeScreen } from './screens/WelcomeScreen';
 import { DebugGetScreen } from './screens/DebugGetScreen';
+import { ContentScreen } from './screens/ContentScreen';
 import { currentConfig } from '../config';
+import type { RootStackParamList } from './types/navigation';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoadingUser } = useAuth();
@@ -32,13 +35,28 @@ const App: React.FC = () => {
     );
   }
 
+  
   // Show login screen if not authenticated
   if (!isAuthenticated) {
-    return <LoginScreen onLoginSuccess={() => {}} />;
+    return <LoginScreen />;
   }
 
   // Show main app if authenticated
-  return <DebugGetScreen />;
+  return (
+        <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+        initialRouteName={isAuthenticated ? 'Welcome' : 'Login'}
+      >
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="DebugGet" component={DebugGetScreen} />
+        <Stack.Screen name="Content" component={ContentScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -46,13 +64,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: '#fff',
   },
 });
 
 export default App;
+
+

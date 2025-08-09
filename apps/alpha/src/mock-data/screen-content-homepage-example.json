@@ -1,0 +1,121 @@
+{
+  "id": "450e8400-e29b-41d4-a716-446655440001",
+  "title": "홈페이지",
+  "description": "메인 홈페이지 콘텐츠 구성",
+  "screen_type": "homepage",
+  "is_active": true,
+  "display_order": 1,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "content_lists": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "title": "추천 콘텐츠",
+      "description": "오늘의 추천 영화 및 드라마",
+      "thumbnail_format": "large_landscape",
+      "is_active": true,
+      "display_order": 0,
+      "screen_display_order": 0,
+      "items": [
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440005",
+          "content_type": "media_description",
+          "title": "결혼 예정일",
+          "thumbnail_url": "https://example.com/thumbnails/on-your-wedding-day.jpg",
+          "display_order": 1
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440006",
+          "content_type": "media_description",
+          "title": "탈선",
+          "thumbnail_url": "https://example.com/thumbnails/derailed.jpg",
+          "display_order": 2
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440007",
+          "content_type": "media_description",
+          "title": "왕의 편지",
+          "thumbnail_url": "https://example.com/thumbnails/kings-letters.jpg",
+          "display_order": 3
+        }
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "title": "최신 K-드라마",
+      "description": "가장 인기 있는 최신 한국 드라마 모음",
+      "thumbnail_format": "medium_portrait",
+      "is_active": true,
+      "display_order": 1,
+      "screen_display_order": 1,
+      "items": [
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440001",
+          "content_type": "media_description",
+          "title": "사랑의 맛",
+          "thumbnail_url": "https://example.com/thumbnails/love-as-you-taste.jpg",
+          "display_order": 1
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440002",
+          "content_type": "media_description",
+          "title": "달콤한 피",
+          "thumbnail_url": "https://example.com/thumbnails/sweet-blood.jpg",
+          "display_order": 2
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440003",
+          "content_type": "media_description",
+          "title": "유령 학교",
+          "thumbnail_url": "https://example.com/thumbnails/phantom-school.jpg",
+          "display_order": 3
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440004",
+          "content_type": "program",
+          "title": "런닝맨",
+          "thumbnail_url": "https://example.com/thumbnails/running-man.jpg",
+          "display_order": 4
+        }
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "title": "인기 웹툰",
+      "description": "가장 인기 있는 웹툰 시리즈",
+      "thumbnail_format": "vertical_mobile",
+      "is_active": true,
+      "display_order": 2,
+      "screen_display_order": 2,
+      "items": [
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440008",
+          "content_type": "media_description",
+          "title": "지옥",
+          "thumbnail_url": "https://example.com/thumbnails/hellbound.jpg",
+          "display_order": 1
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440009",
+          "content_type": "media_description",
+          "title": "스위트 홈",
+          "thumbnail_url": "https://example.com/thumbnails/sweet-home.jpg",
+          "display_order": 2
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440010",
+          "content_type": "media_description",
+          "title": "여신강림",
+          "thumbnail_url": "https://example.com/thumbnails/true-beauty.jpg",
+          "display_order": 3
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440011",
+          "content_type": "media_description",
+          "title": "모지리1 작은고환",
+          "thumbnail_url": "https://example.com/thumbnails/mojiri-1.jpg",
+          "display_order": 4
+        }
+      ]
+    }
+  ]
+}

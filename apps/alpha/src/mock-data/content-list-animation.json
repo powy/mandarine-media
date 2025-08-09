@@ -1,0 +1,53 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440012",
+  "title": "Animation",
+  "description": "Webtoon animés en formats courts",
+  "thumbnail_format": "large_landscape",
+  "is_active": true,
+  "display_order": 10,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "items": [
+    {
+      "content_id": "da14f81d-bea5-4df9-a601-976f61034e84",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch EP1",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 1
+    },
+    {
+      "content_id": "7d38f86e-359c-4899-bbbb-fbe9f1ae29cd",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch EP2",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 2
+    },
+    {
+      "content_id": "d1b8fb40-6fbc-4c21-9f3c-f7865cde848f",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch EP3",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 3
+    },
+    {
+      "content_id": "11a1b609-4cc5-4c5d-9a74-d0bc2dad734a",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch EP4",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 3
+    },
+    {
+      "content_id": "ad49a954-dfad-431b-82d4-1acf3bbcad4b",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch EP5",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 3
+    },
+    {
+      "content_id": "21395718-e238-441d-9268-758ae3c3f270",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch EP6",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 3
+    },
+  ]
+}

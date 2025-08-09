@@ -10,11 +10,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Linking
 } from 'react-native';
 import { useAuth } from 'share';
 
 interface LoginScreenProps {
-  onLoginSuccess: () => void;
+  onLoginSuccess?: () => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
@@ -30,11 +31,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
     try {
       await login({ email: email.trim(), password });
-      onLoginSuccess();
+      // navigation.replace('Welcome');
+      onLoginSuccess?.();
     } catch (error) {
       const errorMessage = typeof loginError === 'string' ? loginError : 'Please check your credentials';
       Alert.alert('Login Failed', errorMessage);
     }
+  };
+
+  const handleBugReport = () => {
+    Linking.openURL('mailto:thierry@kftv.fr');
   };
 
   return (
@@ -92,6 +98,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <Text style={styles.footerText}>
               Development version - Alpha testing
             </Text>
+            <TouchableOpacity onPress={handleBugReport} style={styles.bugReportButton}>
+              <Text style={styles.bugReportText}>thierry@kftv.fr</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -166,5 +175,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'center',
+  },
+  bugReportButton: {
+    marginTop: 12,
+  },
+  bugReportText: {
+    fontSize: 14,
+    color: '#007bff',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

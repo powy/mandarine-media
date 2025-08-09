@@ -1,0 +1,100 @@
+{
+  "id": "450e8400-e29b-41d4-a716-446655440002",
+  "title": "발견하기",
+  "description": "새로운 콘텐츠를 발견하세요",
+  "screen_type": "discover",
+  "is_active": true,
+  "display_order": 2,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "content_lists": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "title": "영화",
+      "description": "최신 및 인기 영화 모음",
+      "thumbnail_format": "medium_portrait",
+      "is_active": true,
+      "display_order": 1,
+      "screen_display_order": 0,
+      "items": [
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440012",
+          "content_type": "media_description",
+          "title": "배심원 8번",
+          "thumbnail_url": "https://example.com/thumbnails/juror-8.jpg",
+          "display_order": 1
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440013",
+          "content_type": "media_description",
+          "title": "마이크로하비타트",
+          "thumbnail_url": "https://example.com/thumbnails/microhabitat.jpg",
+          "display_order": 2
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440014",
+          "content_type": "media_description",
+          "title": "이상한 가족",
+          "thumbnail_url": "https://example.com/thumbnails/odd-family.jpg",
+          "display_order": 3
+        }
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440005",
+      "title": "TV 프로그램",
+      "description": "인기 TV 프로그램 및 버라이어티",
+      "thumbnail_format": "small_square",
+      "is_active": true,
+      "display_order": 2,
+      "screen_display_order": 1,
+      "items": [
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440015",
+          "content_type": "program",
+          "title": "인기가요",
+          "thumbnail_url": "https://example.com/thumbnails/inkigayo.jpg",
+          "display_order": 1
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440016",
+          "content_type": "program",
+          "title": "판타스틱 듀오",
+          "thumbnail_url": "https://example.com/thumbnails/fantastic-duo.jpg",
+          "display_order": 2
+        }
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440006",
+      "title": "콘서트",
+      "description": "라이브 콘서트 및 음악 공연",
+      "thumbnail_format": "large_landscape",
+      "is_active": true,
+      "display_order": 3,
+      "screen_display_order": 2,
+      "items": [
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440017",
+          "content_type": "media_description",
+          "title": "K-POP 콘서트 2025",
+          "thumbnail_url": "https://example.com/thumbnails/concert-01.jpg",
+          "display_order": 1
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440018",
+          "content_type": "media_description",
+          "title": "스페셜 라이브 쇼",
+          "thumbnail_url": "https://example.com/thumbnails/concert-02.jpg",
+          "display_order": 2
+        },
+        {
+          "content_id": "650e8400-e29b-41d4-a716-446655440019",
+          "content_type": "media_description",
+          "title": "어쿠스틱 세션",
+          "thumbnail_url": "https://example.com/thumbnails/concert-03.jpg",
+          "display_order": 3
+        }
+      ]
+    }
+  ]
+}

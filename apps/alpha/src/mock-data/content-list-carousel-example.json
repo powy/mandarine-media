@@ -1,0 +1,32 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "title": "추천 콘텐츠",
+  "description": "오늘의 추천 영화 및 드라마",
+  "thumbnail_format": "large_landscape",
+  "is_active": true,
+  "display_order": 0,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "items": [
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440005",
+      "content_type": "media_description",
+      "title": "결혼 예정일",
+      "thumbnail_url": "https://example.com/thumbnails/on-your-wedding-day.jpg",
+      "display_order": 1
+    },
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440006",
+      "content_type": "media_description",
+      "title": "탈선",
+      "thumbnail_url": "https://example.com/thumbnails/derailed.jpg",
+      "display_order": 2
+    },
+    {
+      "content_id": "650e8400-e29b-41d4-a716-446655440007",
+      "content_type": "media_description",
+      "title": "왕의 편지",
+      "thumbnail_url": "https://example.com/thumbnails/kings-letters.jpg",
+      "display_order": 3
+    }
+  ]
+}

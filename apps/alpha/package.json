@@ -16,11 +16,16 @@
     "@babel/runtime": "^7.27.6",
     "@react-native-async-storage/async-storage": "^1.19.0",
     "@react-native-community/cli": "^13.6.9",
+    "@react-navigation/native": "^7.1.17",
+    "@react-navigation/native-stack": "^7.3.24",
     "@tanstack/react-query": "^5.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-native": "^0.74.7",
     "react-native-dotenv": "^3.4.11",
+    "react-native-safe-area-context": "^5.6.0",
+    "react-native-screens": "^4.13.1",
+    "react-native-svg": "^15.12.1",
     "share": "*"
   },
   "devDependencies": {
