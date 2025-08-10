@@ -108,6 +108,14 @@ android {
     }
 }
 
+repositories {
+    google()
+    mavenCentral()
+    maven {
+        url = uri("https://muxinc.jfrog.io/artifactory/default-maven-release-local")
+    }
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
@@ -115,6 +123,9 @@ dependencies {
     // Force compatible versions
     implementation("androidx.core:core:1.12.0")
     implementation("androidx.core:core-ktx:1.12.0")
+    
+    // Official Mux Player Android SDK
+    implementation 'com.mux.player:android:1.0.0'
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

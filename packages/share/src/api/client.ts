@@ -31,6 +31,9 @@ apiClient.interceptors.request.use(
       const token = await authTokenStorage.getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('API Client: Adding auth token to request:', config.url);
+      } else {
+        console.warn('API Client: No auth token found for request:', config.url);
       }
     } catch (error) {
       console.warn('Failed to get token from storage:', error);
@@ -60,6 +63,8 @@ const processQueue = (error: any, token: string | null = null) => {
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error) => {
+    console.log('API Client: Error intercepted:', error.response?.status, error.response?.data);
+    console.log('API Client: Error URL:', error.config?.url);
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handleContactPress}>
-        <Text style={styles.contactText}>thierry@kftv.fr</Text>
+        <Text style={styles.contactText}>bug report</Text>
       </TouchableOpacity>
     </View>
   );

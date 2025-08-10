@@ -99,7 +99,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               Development version - Alpha testing
             </Text>
             <TouchableOpacity onPress={handleBugReport} style={styles.bugReportButton}>
-              <Text style={styles.bugReportText}>thierry@kftv.fr</Text>
+              <Text style={styles.bugReportText}>bug report</Text>
             </TouchableOpacity>
           </View>
         </View>

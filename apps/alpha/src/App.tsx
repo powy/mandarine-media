@@ -7,6 +7,8 @@ import { LoginScreen } from './screens/LoginScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { DebugGetScreen } from './screens/DebugGetScreen';
 import { ContentScreen } from './screens/ContentScreen';
+import { VideoScreen } from './screens/VideoScreen';
+import { ErrorScreen } from './screens/ErrorScreen';
 import { currentConfig } from '../config';
 import type { RootStackParamList } from './types/navigation';
 
@@ -54,6 +56,8 @@ const App: React.FC = () => {
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="DebugGet" component={DebugGetScreen} />
         <Stack.Screen name="Content" component={ContentScreen} />
+        <Stack.Screen name="Video" component={VideoScreen} />
+        <Stack.Screen name="Error" component={ErrorScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

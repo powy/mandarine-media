@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
 import { KyoolLogo } from './KyoolLogo';
 
 interface ContentListItem {
@@ -29,13 +32,30 @@ interface ContentListProps {
 }
 
 export const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   if (!contentList) {
     return null;
   }
 
+  const handleItemPress = (item: ContentListItem) => {
+    console.log('ContentList: Item pressed:', item);
+    console.log('ContentList: Navigating with mediaId:', item.content_id);
+    
+    if (item.content_type === 'video' || item.content_type === 'media_description') {
+      navigation.navigate('Video', { mediaId: item.content_id });
+    } else {
+      console.log(`Content type "${item.content_type}" not supported yet`);
+    }
+  };
+
   const renderContentItem = (item: ContentListItem, index: number) => {
     return (
-      <TouchableOpacity key={item.content_id} style={styles.contentItem}>
+      <TouchableOpacity 
+        key={item.content_id} 
+        style={styles.contentItem}
+        onPress={() => handleItemPress(item)}
+      >
         <View style={styles.thumbnailContainer}>
           {item.thumbnail_url ? (
             <Image 

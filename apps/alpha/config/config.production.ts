@@ -1,6 +1,6 @@
 export const config = {
   environment: 'production',
-  apiBaseUrl: 'https://api.kyool.com',
+  apiBaseUrl: 'http://203.0.113.10',
   apiVersion: 'v1',
   auth: {
     tokenKey: 'alpha_access_token',
