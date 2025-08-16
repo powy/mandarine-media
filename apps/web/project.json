@@ -1,36 +1,59 @@
 {
   "name": "web",
-  "root": "apps/web",
-  "projectType": "application",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/web/src",
+  "projectType": "application",
+  "tags": ["type:app", "platform:web"],
   "targets": {
-    "build": {
-      "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/dist"],
-      "options": {
-        "command": "npm run build",
-        "cwd": "apps/web"
-      }
-    },
     "serve": {
       "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
       "options": {
         "buildTarget": "web:build",
-        "port": 3000,
-        "configFile": "apps/web/vite.config.ts"
+        "port": 3001
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "web:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "web:build:production",
+          "hmr": false
+        }
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/web"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
       }
     },
     "preview": {
       "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "web:build",
-        "port": 3000
+        "buildTarget": "web:build"
       }
     },
     "test": {
       "executor": "@nx/vite:test",
+      "outputs": [
+        "{options.reportsDirectory}"
+      ],
       "options": {
-        "passWithNoTests": true
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/apps/web"
       }
     },
     "lint": {
@@ -39,15 +62,6 @@
       "options": {
         "lintFilePatterns": ["apps/web/**/*.{ts,tsx,js,jsx}"]
       }
-    },
-    "type-check": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "tsc --noEmit",
-        "cwd": "apps/web"
-      }
     }
-  },
-  "tags": ["scope:web", "type:app"],
-  "implicitDependencies": ["share"]
+  }
 }

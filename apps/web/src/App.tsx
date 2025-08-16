@@ -1,18 +1,53 @@
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { initializeApi } from './config/api';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import LoginScreen from './screens/LoginScreen';
+import WelcomeScreen from './screens/WelcomeScreen';
+import ContentScreen from './screens/ContentScreen';
+import VideoScreen from './screens/VideoScreen';
+import ErrorScreen from './screens/ErrorScreen';
+import WipScreen from './screens/WipScreen';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 function App() {
+  // Initialize the API client on app start
+  useEffect(() => {
+    initializeApi();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Kyool Media
-        </h1>
-        <p className="text-xl text-gray-600 mb-8">
-          Public Website - Coming Soon
-        </p>
-        <p className="text-sm text-gray-500">
-          This will be the public-facing website for users
-        </p>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="min-h-screen bg-black text-kyool-blue flex flex-col">
+          <Header />
+          <main className="flex-1">
+            <Routes>
+              <Route path="/login" element={<LoginScreen />} />
+              <Route path="/content" element={<ContentScreen />} />
+              <Route path="/video/:id" element={<VideoScreen />} />
+              <Route path="/error" element={<ErrorScreen />} />
+              <Route path="/films" element={<WipScreen />} />
+              <Route path="/dramas" element={<WipScreen />} />
+              <Route path="/tv-shows" element={<WipScreen />} />
+              <Route path="/autre" element={<WipScreen />} />
+              <Route path="/" element={<WelcomeScreen />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </Router>
+    </QueryClientProvider>
   );
 }
 

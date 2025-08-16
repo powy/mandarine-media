@@ -17,9 +17,10 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "share": ["../../packages/share/src/index.ts"],
+      "share/*": ["../../packages/share/src/*"]
     }
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src/**/*", "src/vite-env.d.ts"],
+  "references": [{ "path": "../../packages/share" }]
 }

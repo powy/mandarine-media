@@ -31,7 +31,6 @@ apiClient.interceptors.request.use(
       const token = await authTokenStorage.getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('API Client: Adding auth token to request:', config.url);
       } else {
         console.warn('API Client: No auth token found for request:', config.url);
       }

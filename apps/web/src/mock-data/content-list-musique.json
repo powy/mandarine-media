@@ -1,0 +1,34 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440231",
+  "title": "Musique",
+  "description": "K-Pop et musique traditionnelle de Corée",
+  "thumbnail_format": "small_square",
+  "thumbnail_width": 128,
+  "thumbnail_height": 198,
+  "is_active": true,
+  "display_order": 6,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "items": [
+    {
+      "content_id": "7d9ea75d-55e7-464d-bde6-2a7980bad417",
+      "content_type": "media_description",
+      "title": "Drums 1",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/kut_drums_1080_1080.jpg",
+      "display_order": 1
+    },
+    {
+      "content_id": "6b1c380f-4c59-440d-9287-966dddde3098",
+      "content_type": "media_description",
+      "title": "Drums 2",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/kut_drums_1080_1080.jpg",
+      "display_order": 2
+    },
+    {
+      "content_id": "779767b3-c479-450c-afc4-0d220208690c",
+      "content_type": "media_description",
+      "title": "Drums 3",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/kut_drums_1080_1080.jpg",
+      "display_order": 3
+    }
+  ]
+}

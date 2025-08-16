@@ -1,0 +1,41 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440271",
+  "title": "Recommandé",
+  "description": "A ne pas rater",
+  "thumbnail_format": "small_square",
+  "thumbnail_width": 198,
+  "thumbnail_height": 198,
+  "is_active": true,
+  "display_order": 6,
+  "last_updated": "2025-01-09T10:30:00Z",
+  "items": [
+   {
+      "content_id": "7d9ea75d-55e7-464d-bde6-2a7980bad417",
+      "content_type": "media_description",
+      "title": "Kut Drums",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/kut_drums_1080_1080.jpg",
+      "display_order": 2
+    },
+    {
+      "content_id": "da14f81d-bea5-4df9-a601-976f61034e84",
+      "content_type": "media_description",
+      "title": "Becoming The Monarch",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "display_order": 3
+    },
+    {
+      "content_id": "debb4bee-da15-40cc-bb42-1cd8ad521afa",
+      "content_type": "media_description",
+      "title": "On Your Wedding Day",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/OnYourWeddingDay_1080_1080.jpg",
+      "display_order": 1
+    },
+    {
+      "content_id": "8f71e08f-f73b-451c-8a93-4d406d8ca37e",
+      "content_type": "media_description",
+      "title": "Bloody Blossom",
+      "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/bloody_1080_1080.png",
+      "display_order": 4
+    }
+  ]
+}

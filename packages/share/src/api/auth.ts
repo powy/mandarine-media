@@ -77,7 +77,7 @@ export const authApi = {
     } catch (clearError) {
       console.error('Failed to clear authentication data:', clearError);
       // This is a critical error - we must ensure tokens are cleared
-      throw new Error(`Failed to clear local authentication data: ${clearError.message}`);
+      throw new Error(`Failed to clear local authentication data: ${clearError instanceof Error ? clearError.message : 'Unknown error'}`);
     }
 
     // Try to notify server about logout (optional - don't fail if server is unavailable)
