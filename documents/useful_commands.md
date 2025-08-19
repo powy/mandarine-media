@@ -7,6 +7,18 @@ npm install
 npx nx run mobile:android
 ```
 
+## alpha mobile app
+### First terminal
+```bash
+npm install
+npx nx run alpha:start --reset-cache 
+```
+### second terminal
+```bash
+npx nx run alpha:android
+```
+
+
 ## Back Office
 
 ```bash

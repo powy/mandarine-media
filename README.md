@@ -41,38 +41,13 @@ npm install
 
 The backoffice app requires environment variables to connect to the backend API. Three environment files are available:
 
-1. **`.env`** - Production environment
-   ```bash
-   VITE_API_BASE_URL=http://203.0.113.10
-   ```
+To set up your environment, copy the relevant env file as .env
 
-2. **`.env.localdev`** - Local development environment
-   ```bash
-   VITE_BACKEND_URL=http://localhost:8000
-   ```
+- For fully local development (default) use .env.localdev
+- For local frontend development with distant backend use .env.distdev
+- For staging environment use .env.staging
+- For production environment use .env.production
 
-3. **`.env.staging`** - Staging environment  
-   ```bash
-   VITE_BACKEND_URL=http://203.0.113.10
-   ```
-
-To set up your environment:
-
-```bash
-# For local development (default)
-cd apps/backoffice
-cp .env.localdev .env
-
-# For staging environment
-cd apps/backoffice  
-cp .env.staging .env
-
-# For production environment
-cd apps/backoffice
-# The production .env file is already configured
-```
-
-**Important**: Make sure your backend server is running on the configured URL before starting the backoffice application.
 
 ### Development
 

@@ -15,7 +15,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "build:production": "node scripts/build-production.js",
+    "deploy:s3": "node scripts/deploy-s3.js",
+    "deploy:cloudfront": "node scripts/invalidate-cloudfront.js",
+    "deploy": "node scripts/deploy.js"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
