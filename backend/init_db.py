@@ -21,7 +21,7 @@ def create_tables():
     from app.models import user, media_description, video_file, public_person, audience_category, subscription_plan
     
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created successfully")
+    print("Database tables created successfully")
 
 def create_admin_user():
     """Create default admin user"""
@@ -34,7 +34,7 @@ def create_admin_user():
         existing_admin = crud_user.get_by_email(db, email=admin_email)
         
         if existing_admin:
-            print(f"⚠️  Admin user already exists: {admin_email}")
+            print(f"Admin user already exists: {admin_email}")
             return
         
         # Create admin user
@@ -51,20 +51,20 @@ def create_admin_user():
         admin_user.is_admin = True
         db.commit()
         
-        print(f"✅ Admin user created successfully")
-        print(f"📧 Email: {admin_email}")
-        print(f"🔑 Password: admin123")
-        print("⚠️  Please change the password after first login!")
+        print(f"Admin user created successfully")
+        print(f"Email: {admin_email}")
+        print(f"Password: admin123")
+        print("Please change the password after first login!")
         
     except Exception as e:
-        print(f"❌ Error creating admin user: {e}")
+        print(f"Error creating admin user: {e}")
         db.rollback()
     finally:
         db.close()
 
 def main():
     """Main initialization function"""
-    print("🚀 Initializing KYOOL Media Database...")
+    print("Initializing KYOOL Media Database...")
     print("=" * 50)
     
     try:
@@ -77,7 +77,7 @@ def main():
         print()
         
         print("=" * 50)
-        print("🎉 Database initialization completed successfully!")
+        print("Database initialization completed successfully!")
         print()
         print("Next steps:")
         print("1. Start the backend server: ./start_server.sh")
@@ -85,7 +85,7 @@ def main():
         print("3. Login with admin@kyool.com / admin123")
         
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+        print(f"Database initialization failed: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

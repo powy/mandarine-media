@@ -27,6 +27,7 @@ import {
   BooleanField,
   BooleanInput,
   FunctionField,
+  regex,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
 
@@ -114,8 +115,8 @@ export const CategoryListCreate = () => (
     <SimpleForm toolbar={<CategoryListToolbar />}>
       <TextInput 
         source="name" 
-        validate={[required()]} 
-        helperText="Unique identifier (e.g., 'home', 'movies')"
+        validate={[required(), regex(/^[a-z_]+$/, 'Must contain only lowercase letters and underscores')]} 
+        helperText="Unique identifier (e.g., 'home', 'movies') - lowercase letters and underscores only"
         fullWidth 
       />
       <TextInput 
@@ -144,8 +145,8 @@ export const CategoryListEdit = () => (
     <SimpleForm toolbar={<CategoryListToolbar />}>
       <TextInput 
         source="name" 
-        validate={[required()]} 
-        helperText="Unique identifier (e.g., 'home', 'movies')"
+        validate={[required(), regex(/^[a-z_]+$/, 'Must contain only lowercase letters and underscores')]} 
+        helperText="Unique identifier (e.g., 'home', 'movies') - lowercase letters and underscores only"
         fullWidth 
       />
       <TextInput 

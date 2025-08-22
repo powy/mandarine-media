@@ -83,7 +83,7 @@ export const MediaDescriptionList = () => (
 );
 
 export const MediaDescriptionCreate = () => (
-  <Create>
+  <Create redirect="list">
     <SimpleForm>
       <NumberInput source="file_number" validate={[required()]} />
       <TextInput source="episode_title" label="Title" validate={[required()]} fullWidth />

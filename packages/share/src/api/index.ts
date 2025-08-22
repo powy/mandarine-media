@@ -12,7 +12,7 @@ export * from './countries';
 export * from './territories';
 export * from './pictures';
 export * from './content-lists';
-export * from './screen-contents';
+export * from './screen-contents'; // Note: now includes screen-descriptions exports
 
 export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData } from './media';
 export { getSeason, getSeasonsByProgram } from './seasons';

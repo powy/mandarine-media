@@ -191,7 +191,7 @@ export class ExcelParser {
             break;
           
           default:
-            description[fieldName] = String(value).trim();
+            (description as any)[fieldName] = String(value).trim();
             break;
         }
       }

@@ -99,7 +99,7 @@ export const UserList = () => (
   <List 
     filters={userFilters}
     actions={<UserListActions />} 
-    sort={{ field: 'created_at', order: 'DESC' }}
+    sort={{ field: 'creation_date_utc', order: 'DESC' }}
     perPage={20}
   >
     <Datagrid>
@@ -153,7 +153,7 @@ export const UserCreate = () => (
 );
 
 export const UserEdit = () => (
-  <Edit>
+  <Edit redirect="list">
     <SimpleForm toolbar={<UserToolbar />}>
       <TextInput 
         source="email" 

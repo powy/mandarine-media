@@ -90,9 +90,9 @@ class MediaDescription(Base):
     eligible_plans = Column(JSONArray(), nullable=True)
     audience_categories_id_list = Column(JSONArray(), nullable=True)
     
-    # NEW v1.4 fields - Metadata fields
-    friendly_url = Column(String, nullable=True)
-    human_keywords_text_list = Column(JSONArray(), nullable=True)
+    # NEW v1.4 fields - Metadata fields (v1.9 renamed)
+    slug = Column(String, nullable=True, unique=True)  # Renamed from friendly_url in v1.9
+    tag_text_list = Column(JSONArray(), nullable=True)  # Renamed from human_keywords_text_list in v1.9
     
     # NEW v1.4 fields - Image fields
     image_fullscreen = Column(GUID(), ForeignKey("pictures.id"), nullable=True)

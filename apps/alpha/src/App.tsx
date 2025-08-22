@@ -19,8 +19,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Initialize API client
+    // v1.9: Updated to include /api/v1 in base URL as per OpenAPI spec
     initApiClient({
-      baseURL: currentConfig.apiBaseUrl,
+      baseURL: `${currentConfig.apiBaseUrl}/api/v1`,
       onAuthError: () => {
         console.warn('Authentication failed. Please check your credentials.');
       }

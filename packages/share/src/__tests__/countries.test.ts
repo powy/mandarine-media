@@ -43,7 +43,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.getAll();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries?skip=0&limit=20');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/countries?skip=0&limit=20');
       expect(result).toEqual(mockPaginatedResponse);
     });
 
@@ -56,7 +56,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.getAll({ skip: 10, limit: 5 });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries?skip=10&limit=5');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/countries?skip=10&limit=5');
       expect(result).toEqual(customPaginated);
     });
 
@@ -65,7 +65,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.getAll({ q: 'Korea' });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries?skip=0&limit=20&q=Korea');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/countries?skip=0&limit=20&q=Korea');
       expect(result).toEqual(mockPaginatedResponse);
     });
   });
@@ -76,7 +76,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.getById('country-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/countries/country-1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/countries/country-1');
       expect(result).toEqual(mockCountry);
     });
   });
@@ -91,7 +91,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.create(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/countries', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/countries', createData);
       expect(result).toEqual(mockCountry);
     });
   });
@@ -107,7 +107,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.update('country-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/countries/country-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/countries/country-1', updateData);
       expect(result).toEqual(updatedCountry);
     });
   });
@@ -118,7 +118,7 @@ describe('Countries API', () => {
 
       const result = await countriesApi.delete('country-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/countries/country-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/countries/country-1');
       expect(result).toEqual(mockCountry);
     });
   });

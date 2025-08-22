@@ -4,6 +4,11 @@ node_modules/
 apps/*/node_modules/
 packages/*/node_modules/
 
+# Lock files (npm auto-generates these, causes git conflicts)
+package-lock.json
+apps/*/package-lock.json
+packages/*/package-lock.json
+
 # Production builds
 dist/
 build/

@@ -85,7 +85,7 @@ export const VideoFileList = () => (
 );
 
 export const VideoFileCreate = () => (
-  <Create>
+  <Create redirect="list">
     <SimpleForm>
       <SelectInput 
         source="upload_method" 

@@ -56,8 +56,8 @@ const CustomMenu = () => {
         dense={!open}
       />
       <MenuItemLink
-        to="/screen-contents"
-        primaryText="Screen Contents"
+        to="/screen-descriptions"
+        primaryText="Screen Descriptions"
         leftIcon={<span>🖥️</span>}
         dense={!open}
       />
@@ -257,12 +257,12 @@ export const App = () => (
     />
     
     <Resource
-      name="screen-contents"
+      name="screen-descriptions"
       list={ScreenContentList}
       create={ScreenContentCreate}
       edit={ScreenContentEdit}
       show={ScreenContentShow}
-      options={{ label: 'Screen Contents' }}
+      options={{ label: 'Screen Descriptions' }}
     />
     
     {/* Video Files Resource */}

@@ -17,7 +17,7 @@ export const personsApi = {
       searchParams.append('search', q);
     }
     
-    const response = await apiClient.get(`/api/v1/persons?${searchParams.toString()}`);
+    const response = await apiClient.get(`/persons?${searchParams.toString()}`);
     return response.data as PaginatedPersonsResponse;
   },
 
@@ -27,22 +27,22 @@ export const personsApi = {
   },
 
   getById: async (id: string): Promise<PublicPerson> => {
-    const response = await apiClient.get(`/api/v1/persons/${id}`);
+    const response = await apiClient.get(`/persons/${id}`);
     return response.data as PublicPerson;
   },
 
   create: async (data: PublicPersonCreate): Promise<PublicPerson> => {
-    const response = await apiClient.post('/api/v1/persons', data);
+    const response = await apiClient.post('/persons', data);
     return response.data as PublicPerson;
   },
 
   update: async (id: string, data: PublicPersonUpdate): Promise<PublicPerson> => {
-    const response = await apiClient.put(`/api/v1/persons/${id}`, data);
+    const response = await apiClient.put(`/persons/${id}`, data);
     return response.data as PublicPerson;
   },
 
   delete: async (id: string): Promise<PublicPerson> => {
-    const response = await apiClient.delete(`/api/v1/persons/${id}`);
+    const response = await apiClient.delete(`/persons/${id}`);
     return response.data as PublicPerson;
   },
 
@@ -69,7 +69,7 @@ export const personsApi = {
     params.append('skip', skip.toString());
     params.append('limit', limit.toString());
 
-    const response = await apiClient.get<PublicPerson[]>(`/api/v1/persons/search/by-name?${params}`);
+    const response = await apiClient.get<PublicPerson[]>(`/persons/search/by-name?${params}`);
     return response.data;
   },
 
@@ -78,7 +78,7 @@ export const personsApi = {
     params.append('skip', skip.toString());
     params.append('limit', limit.toString());
 
-    const response = await apiClient.get<PublicPerson[]>(`/api/v1/persons/profession/${encodeURIComponent(profession)}?${params}`);
+    const response = await apiClient.get<PublicPerson[]>(`/persons/profession/${encodeURIComponent(profession)}?${params}`);
     return response.data;
   },
 };

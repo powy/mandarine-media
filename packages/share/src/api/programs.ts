@@ -13,27 +13,27 @@ export const programsApi = {
       searchParams.append('q', q);
     }
     
-    const response = await apiClient.get(`/api/v1/programs?${searchParams.toString()}`);
+    const response = await apiClient.get(`/programs?${searchParams.toString()}`);
     return response.data as PaginatedProgramsResponse;
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/api/v1/programs/${id}`);
+    const response = await apiClient.get(`/programs/${id}`);
     return response.data as Program;
   },
 
   create: async (program: ProgramCreate) => {
-    const response = await apiClient.post('/api/v1/programs', program);
+    const response = await apiClient.post('/programs', program);
     return response.data as Program;
   },
 
   update: async (id: string, program: ProgramUpdate) => {
-    const response = await apiClient.put(`/api/v1/programs/${id}`, program);
+    const response = await apiClient.put(`/programs/${id}`, program);
     return response.data as Program;
   },
 
   delete: async (id: string) => {
-    const response = await apiClient.delete(`/api/v1/programs/${id}`);
+    const response = await apiClient.delete(`/programs/${id}`);
     return response.data as Program;
   },
 };

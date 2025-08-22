@@ -2,7 +2,7 @@ module.exports = {
   preset: 'react-native',
   setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@testing-library/react-native)/)',
+    'node_modules/(?!(react-native|@react-native|@react-navigation|@testing-library/react-native)/)',
   ],
   moduleNameMapper: {
     '^share(.*)$': '<rootDir>/../../packages/share/src$1',

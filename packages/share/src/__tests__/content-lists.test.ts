@@ -43,6 +43,7 @@ describe('Content Lists API', () => {
     thumbnail_format: 'medium_portrait',
     is_active: true,
     display_order: 1,
+    latest_first: true, // v1.9 required field
     description: 'Popular Korean dramas this week',
     content_items: ['prog1', 'season2', 'media3'],
     content_types: ['program', 'season', 'media_description'],
@@ -75,7 +76,7 @@ describe('Content Lists API', () => {
 
       const result = await getContentLists();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/content-lists?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -96,7 +97,7 @@ describe('Content Lists API', () => {
       const result = await getContentLists(filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/api/v1/content-lists/?skip=0&limit=10&is_active=true&thumbnail_format=medium_portrait'
+        '/content-lists?skip=0&limit=10&is_active=true&thumbnail_format=medium_portrait'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -108,7 +109,7 @@ describe('Content Lists API', () => {
 
       const result = await getContentList('content-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/content-lists/content-list-1');
       expect(result).toEqual(mockContentList);
     });
   });
@@ -120,6 +121,7 @@ describe('Content Lists API', () => {
         thumbnail_format: 'large_landscape',
         is_active: true,
         display_order: 2,
+        latest_first: true, // v1.9 required field
         description: 'Test description',
         content_items: ['media1', 'media2'],
         content_types: ['media_description', 'media_description'],
@@ -129,7 +131,7 @@ describe('Content Lists API', () => {
 
       const result = await createContentList(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists', createData);
       expect(result).toEqual(mockContentList);
     });
   });
@@ -145,7 +147,7 @@ describe('Content Lists API', () => {
 
       const result = await updateContentList('content-list-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/content-lists/content-list-1', updateData);
       expect(result).toEqual(mockContentList);
     });
   });
@@ -156,7 +158,7 @@ describe('Content Lists API', () => {
 
       await deleteContentList('content-list-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/content-lists/content-list-1');
     });
   });
 
@@ -166,7 +168,7 @@ describe('Content Lists API', () => {
 
       const result = await getContentListJSON('content-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/json/');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/content-lists/content-list-1/json');
       expect(result).toEqual(mockContentListJSON);
     });
   });
@@ -182,7 +184,7 @@ describe('Content Lists API', () => {
 
       const result = await reorderContentList('content-list-1', reorderData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/reorder/', reorderData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/content-lists/content-list-1/reorder', reorderData);
       expect(result).toEqual(mockContentList);
     });
   });
@@ -193,7 +195,7 @@ describe('Content Lists API', () => {
 
       await regenerateContentListJSON('content-list-1');
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/regenerate-json/');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/content-list-1/regenerate-json');
     });
   });
 
@@ -211,6 +213,7 @@ describe('Content Lists API', () => {
         thumbnail_format: 'small_square',
         is_active: true,
         display_order: 1,
+        latest_first: true, // v1.9 required field
         content_items: [],
         content_types: [],
       };
@@ -219,7 +222,7 @@ describe('Content Lists API', () => {
 
       const result = await createContentList(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists', createData);
       expect(result.content_items).toEqual([]);
       expect(result.content_types).toEqual([]);
     });
@@ -230,13 +233,14 @@ describe('Content Lists API', () => {
         thumbnail_format: 'vertical_mobile',
         is_active: true,
         display_order: 1,
+        latest_first: true, // v1.9 required field
       };
 
       mockApiClient.post.mockResolvedValue({ data: mockContentList });
 
       await createContentList(minimalCreateData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', minimalCreateData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists', minimalCreateData);
     });
   });
 });

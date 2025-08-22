@@ -76,6 +76,11 @@ class VideoFile(Base):
     accessibilities_id_list = Column(JSONArray(), nullable=True)
     encodage_date_utc = Column(DateTime(timezone=True), nullable=True)
     
+    # NEW v1.9 fields
+    environment_key = Column(String, nullable=True, default="")  # Environment identifier
+    protection_key = Column(String, nullable=True, default="")  # Content protection key
+    slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
+    
     # Relationships
     media_description = relationship("MediaDescription", backref="video_files")
     reports = relationship("VideoFileReport", back_populates="video_file")

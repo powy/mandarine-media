@@ -29,6 +29,13 @@ class ContentListBase(BaseModel):
     display_order: int = Field(0, description="Order in which content list appears", ge=0)
     content_items: Optional[List[str]] = Field(default_factory=list, description="List of content IDs (UUIDs as strings)")
     content_types: Optional[List[ContentTypeEnum]] = Field(default_factory=list, description="List of content types corresponding to content_items")
+    
+    # v1.9 fields - Content filtering and organization
+    media_type: Optional[str] = Field(None, description="Filter content by media type")
+    media_categories_id_list: Optional[List[str]] = Field(None, description="Filter by category IDs")
+    themes_and_genres_id_list: Optional[List[str]] = Field(None, description="Filter by theme/genre IDs")
+    latest_first: bool = Field(True, description="Order items by latest first")
+    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
 
     @field_validator('content_items')
     @classmethod
@@ -69,6 +76,13 @@ class ContentListUpdate(BaseModel):
     display_order: Optional[int] = Field(None, description="Order in which content list appears", ge=0)
     content_items: Optional[List[str]] = Field(None, description="List of content IDs (UUIDs as strings)")
     content_types: Optional[List[ContentTypeEnum]] = Field(None, description="List of content types corresponding to content_items")
+    
+    # v1.9 fields - Content filtering and organization
+    media_type: Optional[str] = Field(None, description="Filter content by media type")
+    media_categories_id_list: Optional[List[str]] = Field(None, description="Filter by category IDs")
+    themes_and_genres_id_list: Optional[List[str]] = Field(None, description="Filter by theme/genre IDs")
+    latest_first: Optional[bool] = Field(None, description="Order items by latest first")
+    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
 
     @field_validator('content_items')
     @classmethod

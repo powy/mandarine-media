@@ -14,4 +14,4 @@ from .country import Country
 from .territory import Territory
 from .picture import Picture
 from .content_list import ContentList, ThumbnailFormatEnum, ContentTypeEnum
-from .screen_content import ScreenContent, ScreenTypeEnum
+from .screen_description import ScreenDescription, ScreenTypeEnum

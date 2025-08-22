@@ -59,6 +59,11 @@ class VideoFileBase(BaseModel):
     geo_restrictions: Optional[List[str]] = None
     quality_variants: Optional[List[str]] = None
     processing_logs: Optional[str] = None
+    
+    # v1.9 fields - New environment and protection fields
+    environment_key: Optional[str] = Field(None, description="Environment identifier key")
+    protection_key: Optional[str] = Field(None, description="Content protection key")
+    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
 
 
 class VideoFileCreate(VideoFileBase):
@@ -98,6 +103,11 @@ class VideoFileUpdate(BaseModel):
     geo_restrictions: Optional[List[str]] = None
     quality_variants: Optional[List[str]] = None
     processing_logs: Optional[str] = None
+    
+    # v1.9 fields - New environment and protection fields
+    environment_key: Optional[str] = Field(None, description="Environment identifier key")
+    protection_key: Optional[str] = Field(None, description="Content protection key")
+    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
 
 
 class VideoFileInDB(VideoFileBase):

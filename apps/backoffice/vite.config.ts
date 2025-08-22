@@ -4,6 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  root: __dirname,
   resolve: {
     alias: {
       'share': resolve(__dirname, '../../packages/share/src/index.ts'),
@@ -15,5 +16,8 @@ export default defineConfig({
   },
   build: {
     outDir: '../../dist/apps/backoffice',
+  },
+  preview: {
+    port: 3001,
   },
 });

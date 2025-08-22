@@ -23,7 +23,7 @@ import {
   categoryListsApi,
   videoFileReportsApi,
   getContentLists,
-  getScreenContents,
+  getScreenDescriptions,
   initApiClient,
   useAuth,
 } from 'share';
@@ -121,7 +121,7 @@ export const DebugGetScreen: React.FC = () => {
       // Lists & Organization
       { key: 'categoryLists', fn: () => categoryListsApi.getCategoryLists({ limit: 10 }) },
       { key: 'contentLists', fn: () => getContentLists({ limit: 10 }) },
-      { key: 'screenContents', fn: () => getScreenContents({ limit: 10 }) },
+      { key: 'screenDescriptions', fn: () => getScreenDescriptions({ limit: 10 }) },
 
       // Reports
       { key: 'videoFileReports', fn: () => videoFileReportsApi.getReports({ limit: 10 }) },
@@ -269,7 +269,7 @@ export const DebugGetScreen: React.FC = () => {
         {renderModelSection('pictures', 'Pictures')}
         {renderModelSection('categoryLists', 'CategoryLists')}
         {renderModelSection('contentLists', 'ContentLists')}
-        {renderModelSection('screenContents', 'ScreenContents')}
+        {renderModelSection('screenDescriptions', 'ScreenDescriptions')}
         {renderModelSection('videoFileReports', 'VideoFileReports')}
         {renderModelSection('featuredMedia', 'FeaturedMedia')}
         {renderModelSection('trendingMedia', 'TrendingMedia')}

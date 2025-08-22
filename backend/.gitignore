@@ -257,9 +257,10 @@ static/media/
 config/secrets.json
 config/production.json
 
-# Alembic
-alembic/versions/*.py
-!alembic/versions/__init__.py
+# Alembic - only ignore compiled Python files and cache
+alembic/versions/*.pyc
+alembic/versions/__pycache__/
+# Migration files (*.py) should be committed to version control
 
 # Docker volumes
 postgres_data/

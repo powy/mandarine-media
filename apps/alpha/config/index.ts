@@ -18,7 +18,7 @@ const getConfig = (env: Environment = 'staging') => {
 };
 
 export const currentConfig = getConfig(
-  (process.env.NODE_ENV as Environment) || 'staging'
+  (process.env.NODE_ENV as Environment) || 'development'
 );
 
 export { developmentConfig, stagingConfig, productionConfig };

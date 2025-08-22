@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.models import (
     user, media_description, video_file, public_person, subscription_plan, 
     audience_category, description_report, video_file_report, category_list,
-    program, season, language, country, territory, picture, content_list, screen_content
+    program, season, language, country, territory, picture, content_list, screen_description
 )
 
 # this is the Alembic Config object, which provides

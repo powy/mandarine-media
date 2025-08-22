@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, media_descriptions, video_files, public_persons, media_uploads, description_reports, video_file_reports, category_lists, programs, seasons, languages, countries, territories, pictures, content_lists, screen_contents
+from app.api.v1.endpoints import auth, users, media_descriptions, video_files, public_persons, media_uploads, description_reports, video_file_reports, category_lists, programs, seasons, languages, countries, territories, pictures, content_lists, screen_descriptions
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
@@ -18,4 +18,4 @@ api_router.include_router(countries.router, prefix="/countries", tags=["countrie
 api_router.include_router(territories.router, prefix="/territories", tags=["territories"])
 api_router.include_router(pictures.router, prefix="/pictures", tags=["pictures"])
 api_router.include_router(content_lists.router, prefix="/content-lists", tags=["content-lists"])
-api_router.include_router(screen_contents.router, prefix="/screen-contents", tags=["screen-contents"])
+api_router.include_router(screen_descriptions.router, prefix="/screen-descriptions", tags=["screen-descriptions"])

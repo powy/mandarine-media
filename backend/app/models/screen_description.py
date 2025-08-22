@@ -19,8 +19,8 @@ class ScreenTypeEnum(enum.Enum):
     discover = "discover"
 
 
-class ScreenContent(Base):
-    __tablename__ = "screen_contents"
+class ScreenDescription(Base):
+    __tablename__ = "screen_descriptions"
 
     # Primary fields
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
@@ -38,6 +38,9 @@ class ScreenContent(Base):
     
     # Content organization - ordered list of content list IDs
     content_lists = Column(JSONArray(), nullable=True, default=list)  # Array of content list UUIDs
+    
+    # NEW v1.9 field
+    slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
     
     # JSON cache for performance
     json_content = Column(Text, nullable=True)  # Cached JSON representation

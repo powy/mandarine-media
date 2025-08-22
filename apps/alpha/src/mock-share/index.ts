@@ -156,6 +156,14 @@ export const contentListsApi = {
   }),
 };
 
+export const screenDescriptionsApi = {
+  getScreenDescriptions: (filters?: any) => mockResponse({
+    data: [],
+    pagination: { total: 0, page: 1, limit: 10, total_pages: 0 }
+  }),
+};
+
+// Legacy support for v1.8 compatibility
 export const screenContentsApi = {
   getScreenContents: (filters?: any) => mockResponse({
     data: [],
@@ -169,3 +177,26 @@ export const videoFileReportsApi = {
     pagination: { total: 0, page: 1, limit: 10, total_pages: 0 }
   }),
 };
+
+// Individual function exports for direct imports
+export const getContentLists = contentListsApi.getContentLists;
+export const getScreenDescriptions = screenDescriptionsApi.getScreenDescriptions;
+export const getScreenContents = screenContentsApi.getScreenContents; // Legacy v1.8 support
+
+// Mock useAuth hook
+export const useAuth = () => ({
+  isAuthenticated: true,
+  isLoadingUser: false,
+  user: {
+    id: 1,
+    email: 'demo@kyool.com',
+    full_name: 'Demo User',
+    is_admin: true,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  logout: async () => {
+    console.log('Mock logout called');
+  }
+});

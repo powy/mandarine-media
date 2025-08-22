@@ -66,6 +66,7 @@ describe('Integration Tests (v1.6)', () => {
         thumbnail_format: 'medium_portrait' as const,
         is_active: true,
         display_order: 1,
+        latest_first: true, // v1.9 required field
         description: 'Best Korean entertainment content',
         content_items: ['program-1', 'season-1', 'media-1'],
         content_types: ['program', 'season', 'media_description'],
@@ -82,7 +83,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const createdList = await createContentList(contentListData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/', contentListData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists', contentListData);
       expect(createdList).toEqual(mockContentList);
 
       // Step 3: Create screen content with the content list
@@ -106,7 +107,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const createdScreen = await createScreenContent(screenContentData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/screen-contents/', screenContentData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/screen-descriptions', screenContentData);
       expect(createdScreen).toEqual(mockScreenContent);
     });
 
@@ -129,6 +130,7 @@ describe('Integration Tests (v1.6)', () => {
         thumbnail_format: 'medium_portrait' as const,
         is_active: true,
         display_order: 1,
+        latest_first: true, // v1.9 required field
         creation_date_utc: '2024-01-15T10:30:00Z',
         last_updated_utc: '2024-01-15T15:00:00Z',
         ...newOrder,
@@ -138,7 +140,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const result = await reorderContentList('content-list-1', newOrder);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/reorder/', newOrder);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/content-lists/content-list-1/reorder', newOrder);
       expect(result.content_items).toEqual(['media-1', 'program-1', 'season-1']);
       expect(result.content_types).toEqual(['media_description', 'program', 'season']);
     });
@@ -153,6 +155,7 @@ describe('Integration Tests (v1.6)', () => {
         thumbnail_format: 'large_landscape' as const,
         is_active: true,
         display_order: 1,
+        latest_first: true, // v1.9 required field
         creation_date_utc: '2024-01-15T10:30:00Z',
         last_updated_utc: '2024-01-15T14:30:00Z',
         json_last_updated: '2024-01-15T14:30:00Z',
@@ -193,7 +196,7 @@ describe('Integration Tests (v1.6)', () => {
 
       const jsonCache = await getContentListJSON('content-list-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/json/');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/content-lists/content-list-1/json');
       expect(jsonCache.items).toHaveLength(2);
       expect(jsonCache.items[0].content_type).toBe('program');
       expect(jsonCache.items[1].content_type).toBe('media_description');
@@ -203,7 +206,7 @@ describe('Integration Tests (v1.6)', () => {
 
       await regenerateContentListJSON('content-list-1');
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/content-lists/content-list-1/regenerate-json/');
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/content-list-1/regenerate-json');
     });
 
     it('should handle screen content JSON caching', async () => {
@@ -253,24 +256,26 @@ describe('Integration Tests (v1.6)', () => {
       const screenTypes = ['homepage', 'category', 'search', 'profile', 'discover'];
 
       for (const screenType of screenTypes) {
-        const mockScreens = [
-          {
-            id: `screen-${screenType}`,
-            title: `${screenType} Screen`,
-            screen_type: screenType,
-            is_active: true,
-            display_order: 1,
-            creation_date_utc: '2024-01-15T10:30:00Z',
-            last_updated_utc: '2024-01-15T14:30:00Z',
-          },
-        ];
+        const mockScreen = {
+          id: `screen-${screenType}`,
+          title: `${screenType} Screen`,
+          screen_type: screenType,
+          is_active: true,
+          display_order: 1,
+          creation_date_utc: '2024-01-15T10:30:00Z',
+          last_updated_utc: '2024-01-15T14:30:00Z',
+        };
 
-        mockApiClient.get.mockResolvedValue({ data: mockScreens });
+        // v1.9: API returns single item, not array
+        mockApiClient.get.mockResolvedValue({ data: mockScreen });
 
         const screens = await getScreenContentByType(screenType);
 
-        expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/screen-contents/by-type/${screenType}/`);
-        expect(screens).toEqual(mockScreens);
+        expect(mockApiClient.get).toHaveBeenCalledWith(`/screen-descriptions/by-type/${screenType}`);
+        // Legacy function wraps single result in array
+        expect(Array.isArray(screens)).toBe(true);
+        expect(screens).toHaveLength(1);
+        expect(screens[0]).toEqual(mockScreen);
         expect(screens[0].screen_type).toBe(screenType);
       }
     });

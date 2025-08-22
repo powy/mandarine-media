@@ -52,7 +52,7 @@ describe('Users API', () => {
 
       const result = await usersApi.getUsers();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -75,7 +75,7 @@ describe('Users API', () => {
       const result = await usersApi.getUsers(filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/api/v1/users?skip=0&limit=10&is_active=true&role=admin&search=admin'
+        '/users?skip=0&limit=10&is_active=true&role=admin&search=admin'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -94,7 +94,7 @@ describe('Users API', () => {
 
       const result = await usersApi.getUsers(filters);
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users?search=test%40domain.com');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users?search=test%40domain.com');
       expect(result).toEqual(mockResponse);
     });
 
@@ -123,7 +123,7 @@ describe('Users API', () => {
 
       const result = await usersApi.getUser('user-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users/user-1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users/user-1');
       expect(result).toEqual(mockUser);
     });
 
@@ -170,7 +170,7 @@ describe('Users API', () => {
 
       const result = await usersApi.getCurrentUser();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users/me');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users/me');
       expect(result).toEqual(mockUser);
     });
 
@@ -206,7 +206,7 @@ describe('Users API', () => {
 
       const result = await usersApi.createUser(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/users', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/users', createData);
       expect(result).toEqual(mockUser);
     });
 
@@ -222,7 +222,7 @@ describe('Users API', () => {
 
       const result = await usersApi.createUser(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/users', createData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/users', createData);
       expect(result).toEqual(mockAdminUser);
     });
 
@@ -317,7 +317,7 @@ describe('Users API', () => {
 
       const result = await usersApi.updateUser('user-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/users/user-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/users/user-1', updateData);
       expect(result).toEqual(updatedUser);
     });
 
@@ -331,7 +331,7 @@ describe('Users API', () => {
 
       const result = await usersApi.updateUser('user-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/users/user-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/users/user-1', updateData);
       expect(result).toEqual(updatedUser);
     });
 
@@ -345,7 +345,7 @@ describe('Users API', () => {
 
       const result = await usersApi.updateUser('user-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/users/user-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/users/user-1', updateData);
       expect(result).toEqual(promotedUser);
     });
 
@@ -400,7 +400,7 @@ describe('Users API', () => {
 
       const result = await usersApi.deleteUser('user-1');
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/api/v1/users/user-1');
+      expect(mockApiClient.delete).toHaveBeenCalledWith('/users/user-1');
       expect(result).toEqual(mockUser);
     });
 
@@ -466,7 +466,7 @@ describe('Users API', () => {
 
       const result = await usersApi.activateUser('user-1');
 
-      expect(mockApiClient.patch).toHaveBeenCalledWith('/api/v1/users/user-1/activate');
+      expect(mockApiClient.patch).toHaveBeenCalledWith('/users/user-1/activate');
       expect(result).toEqual(activatedUser);
     });
 
@@ -496,7 +496,7 @@ describe('Users API', () => {
 
       const result = await usersApi.deactivateUser('user-1');
 
-      expect(mockApiClient.patch).toHaveBeenCalledWith('/api/v1/users/user-1/deactivate');
+      expect(mockApiClient.patch).toHaveBeenCalledWith('/users/user-1/deactivate');
       expect(result).toEqual(deactivatedUser);
     });
 
@@ -577,7 +577,7 @@ describe('Users API', () => {
 
       const result = await usersApi.getUsers(filters);
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users?');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users?');
       expect(result).toEqual(mockResponse);
     });
 
@@ -596,7 +596,7 @@ describe('Users API', () => {
 
       const result = await usersApi.getUsers(filters);
 
-      expect(mockApiClient.get).toHaveBeenCalledWith(`/api/v1/users?search=${encodeURIComponent(longSearch)}`);
+      expect(mockApiClient.get).toHaveBeenCalledWith(`/users?search=${encodeURIComponent(longSearch)}`);
       expect(result).toEqual(mockResponse);
     });
 
@@ -611,7 +611,7 @@ describe('Users API', () => {
 
       const result = await usersApi.updateUser('user-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/users/user-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/users/user-1', updateData);
       expect(result).toEqual(updatedUser);
     });
 

@@ -16,11 +16,11 @@ import {
   createContentList,
   updateContentList,
   deleteContentList,
-  getScreenContents,
-  getScreenContent,
-  createScreenContent,
-  updateScreenContent,
-  deleteScreenContent
+  getScreenDescriptions,
+  getScreenDescription,
+  createScreenDescription,
+  updateScreenDescription,
+  deleteScreenDescription
 } from 'share';
 import { resourceMappers } from './mappers';
 
@@ -204,14 +204,14 @@ export const dataProvider: DataProvider = {
             total: contentListsTotal,
           };
 
-        case 'screen-contents':
-          const screenContents = await getScreenContents({ skip, limit: perPage });
+        case 'screen-descriptions':
+          const screenDescriptions = await getScreenDescriptions({ skip, limit: perPage });
           // Handle both direct array and paginated response formats
-          const screenContentsData = Array.isArray(screenContents) ? screenContents : screenContents.data || [];
-          const screenContentsTotal = Array.isArray(screenContents) ? screenContentsData.length : screenContents.pagination?.total || screenContentsData.length;
+          const screenDescriptionsData = Array.isArray(screenDescriptions) ? screenDescriptions : screenDescriptions.data || [];
+          const screenDescriptionsTotal = Array.isArray(screenDescriptions) ? screenDescriptionsData.length : screenDescriptions.pagination?.total || screenDescriptionsData.length;
           return {
-            data: resourceMappers.screenContents.mapList(screenContentsData),
-            total: screenContentsTotal,
+            data: resourceMappers.screenContents.mapList(screenDescriptionsData),
+            total: screenDescriptionsTotal,
           };
 
         case 'video-files':
@@ -275,7 +275,7 @@ export const dataProvider: DataProvider = {
           return { data: resourceMappers.publicPersons.mapOne(person) };
 
         case 'users':
-          const user = await usersApi.getById(parseInt(id));
+          const user = await usersApi.getById(id); // Keep as string UUID
           return { data: resourceMappers.users.mapOne(user) };
 
         case 'category-lists':
@@ -286,9 +286,9 @@ export const dataProvider: DataProvider = {
           const contentList = await getContentList(id);
           return { data: resourceMappers.contentLists.mapOne(contentList) };
 
-        case 'screen-contents':
-          const screenContent = await getScreenContent(id);
-          return { data: resourceMappers.screenContents.mapOne(screenContent) };
+        case 'screen-descriptions':
+          const screenDescription = await getScreenDescription(id);
+          return { data: resourceMappers.screenContents.mapOne(screenDescription) };
 
         case 'video-files':
           const videoFile = await mediaApi.getVideoFile(id);
@@ -418,9 +418,9 @@ export const dataProvider: DataProvider = {
           const contentList = await createContentList(resourceMappers.contentLists.mapToCreate(data));
           return { data: resourceMappers.contentLists.mapOne(contentList) };
 
-        case 'screen-contents':
-          const screenContent = await createScreenContent(resourceMappers.screenContents.mapToCreate(data));
-          return { data: resourceMappers.screenContents.mapOne(screenContent) };
+        case 'screen-descriptions':
+          const screenDescription = await createScreenDescription(resourceMappers.screenContents.mapToCreate(data));
+          return { data: resourceMappers.screenContents.mapOne(screenDescription) };
 
         case 'video-files':
           const videoFile = await mediaApi.createVideoFile(resourceMappers.videoFiles.mapToCreate(data));
@@ -472,6 +472,10 @@ export const dataProvider: DataProvider = {
           const person = await personsApi.update(id, resourceMappers.publicPersons.mapToUpdate(data));
           return { data: resourceMappers.publicPersons.mapOne(person) };
 
+        case 'users':
+          const updatedUser = await usersApi.update(id, resourceMappers.users.mapToUpdate(data)); // Keep as string UUID
+          return { data: resourceMappers.users.mapOne(updatedUser) };
+
         case 'category-lists':
           const categoryList = await categoryListsApi.updateCategoryList(id, resourceMappers.categoryLists.mapToUpdate(data));
           return { data: resourceMappers.categoryLists.mapOne(categoryList) };
@@ -480,9 +484,9 @@ export const dataProvider: DataProvider = {
           const contentList = await updateContentList(id, resourceMappers.contentLists.mapToUpdate(data));
           return { data: resourceMappers.contentLists.mapOne(contentList) };
 
-        case 'screen-contents':
-          const screenContent = await updateScreenContent(id, resourceMappers.screenContents.mapToUpdate(data));
-          return { data: resourceMappers.screenContents.mapOne(screenContent) };
+        case 'screen-descriptions':
+          const screenDescription = await updateScreenDescription(id, resourceMappers.screenContents.mapToUpdate(data));
+          return { data: resourceMappers.screenContents.mapOne(screenDescription) };
 
         case 'video-files':
           const videoFile = await mediaApi.updateVideoFile(id, resourceMappers.videoFiles.mapToUpdate(data));
@@ -551,9 +555,9 @@ export const dataProvider: DataProvider = {
           await deleteContentList(id);
           return { data: { id } }; // deleteContentList returns void
 
-        case 'screen-contents':
-          await deleteScreenContent(id);
-          return { data: { id } }; // deleteScreenContent returns void
+        case 'screen-descriptions':
+          await deleteScreenDescription(id);
+          return { data: { id } }; // deleteScreenDescription returns void
 
         case 'video-files':
           const deletedVideoFile = await mediaApi.deleteVideoFile(id);

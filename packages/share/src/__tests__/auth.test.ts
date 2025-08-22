@@ -68,7 +68,7 @@ describe('Auth API', () => {
       const result = await authApi.login(credentials);
 
       expect(mockApiClient.post).toHaveBeenCalledWith(
-        '/api/v1/auth/login',
+        '/auth/login',
         expect.any(FormData),
         {
           headers: {
@@ -126,7 +126,7 @@ describe('Auth API', () => {
 
       const result = await authApi.register(userData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/api/v1/users/', userData);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/users/', userData);
       expect(result).toEqual(mockUser);
     });
 
@@ -162,7 +162,7 @@ describe('Auth API', () => {
 
       const result = await authApi.getCurrentUser();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users/me');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users/me');
       expect(result).toEqual(mockUser);
     });
 
@@ -249,7 +249,7 @@ describe('Auth API', () => {
       const updateData = { full_name: 'Updated Name' };
       const result = await authApi.updateUser('user-1', updateData);
 
-      expect(mockApiClient.put).toHaveBeenCalledWith('/api/v1/users/user-1', updateData);
+      expect(mockApiClient.put).toHaveBeenCalledWith('/users/user-1', updateData);
       expect(result).toEqual(updatedUser);
     });
 
@@ -279,7 +279,7 @@ describe('Auth API', () => {
 
       const result = await authApi.getUserById('user-1');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/api/v1/users/user-1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/users/user-1');
       expect(result).toEqual(mockUser);
     });
 

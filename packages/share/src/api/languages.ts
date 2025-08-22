@@ -13,27 +13,27 @@ export const languagesApi = {
       searchParams.append('q', q);
     }
     
-    const response = await apiClient.get(`/api/v1/languages?${searchParams.toString()}`);
+    const response = await apiClient.get(`/languages?${searchParams.toString()}`);
     return response.data as PaginatedLanguagesResponse;
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get(`/api/v1/languages/${id}`);
+    const response = await apiClient.get(`/languages/${id}`);
     return response.data as Language;
   },
 
   create: async (language: LanguageCreate) => {
-    const response = await apiClient.post('/api/v1/languages', language);
+    const response = await apiClient.post('/languages', language);
     return response.data as Language;
   },
 
   update: async (id: string, language: LanguageUpdate) => {
-    const response = await apiClient.put(`/api/v1/languages/${id}`, language);
+    const response = await apiClient.put(`/languages/${id}`, language);
     return response.data as Language;
   },
 
   delete: async (id: string) => {
-    const response = await apiClient.delete(`/api/v1/languages/${id}`);
+    const response = await apiClient.delete(`/languages/${id}`);
     return response.data as Language;
   },
 };

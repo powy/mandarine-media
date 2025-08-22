@@ -9,9 +9,9 @@ from app.api import deps
 router = APIRouter()
 
 
-# Screen Contents endpoints
-@router.get("/", response_model=schemas.ScreenContentResponse)
-def get_screen_contents(
+# Screen Descriptions endpoints
+@router.get("/", response_model=schemas.ScreenDescriptionResponse)
+def get_screen_descriptions(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -20,40 +20,40 @@ def get_screen_contents(
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Retrieve screen contents.
+    Retrieve screen descriptions.
     
-    **Access:** All authenticated users can read screen contents.
+    **Access:** All authenticated users can read screen descriptions.
     """
     if screen_type:
-        screen_contents = crud.screen_content.get_by_screen_type(
+        screen_descriptions = crud.screen_description.get_by_screen_type(
             db=db, screen_type=screen_type, skip=skip, limit=limit
         )
-        total = crud.screen_content.count_by_screen_type(
+        total = crud.screen_description.count_by_screen_type(
             db=db, screen_type=screen_type
         )
     elif is_active is not None:
         if is_active:
-            screen_contents = crud.screen_content.get_active_screens(
+            screen_descriptions = crud.screen_description.get_active_screens(
                 db=db, skip=skip, limit=limit
             )
-            total = crud.screen_content.count_active(db=db)
+            total = crud.screen_description.count_active(db=db)
         else:
-            screen_contents = crud.screen_content.get_multi_ordered(
+            screen_descriptions = crud.screen_description.get_multi_ordered(
                 db=db, skip=skip, limit=limit, active_only=False
             )
-            total = len(crud.screen_content.get_multi(db=db, skip=0, limit=10000))  # Simple count
+            total = len(crud.screen_description.get_multi(db=db, skip=0, limit=10000))  # Simple count
     else:
-        screen_contents = crud.screen_content.get_multi_ordered(
+        screen_descriptions = crud.screen_description.get_multi_ordered(
             db=db, skip=skip, limit=limit, active_only=False
         )
-        total = len(crud.screen_content.get_multi(db=db, skip=0, limit=10000))  # Simple count
+        total = len(crud.screen_description.get_multi(db=db, skip=0, limit=10000))  # Simple count
     
     # Calculate pagination info
     total_pages = (total + limit - 1) // limit if total > 0 else 1
     current_page = (skip // limit) + 1
     
     return {
-        "data": screen_contents,
+        "data": screen_descriptions,
         "pagination": {
             "page": current_page,
             "limit": limit,
@@ -63,28 +63,28 @@ def get_screen_contents(
     }
 
 
-@router.get("/{screen_content_id}", response_model=schemas.ScreenContent)
-def get_screen_content(
-    screen_content_id: UUID,
+@router.get("/{screen_description_id}", response_model=schemas.ScreenDescription)
+def get_screen_description(
+    screen_description_id: UUID,
     db: Session = Depends(deps.get_db),
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Get screen content by ID.
     
-    **Access:** All authenticated users can read screen contents.
+    **Access:** All authenticated users can read screen descriptions.
     """
-    screen_content = crud.screen_content.get(db=db, id=screen_content_id)
-    if not screen_content:
+    screen_description = crud.screen_description.get(db=db, id=screen_description_id)
+    if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
-    return screen_content
+    return screen_description
 
 
-@router.post("/", response_model=schemas.ScreenContent)
-def create_screen_content(
+@router.post("/", response_model=schemas.ScreenDescription)
+def create_screen_description(
     *,
     db: Session = Depends(deps.get_db),
-    screen_content_in: schemas.ScreenContentCreate,
+    screen_description_in: schemas.ScreenDescriptionCreate,
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
@@ -93,23 +93,23 @@ def create_screen_content(
     **Access:** Manager/Admin only
     """
     # Check if title already exists
-    existing_screen_content = crud.screen_content.get_by_title(db=db, title=screen_content_in.title)
-    if existing_screen_content:
+    existing_screen_description = crud.screen_description.get_by_title(db=db, title=screen_description_in.title)
+    if existing_screen_description:
         raise HTTPException(
             status_code=400,
             detail="Screen content with this title already exists"
         )
     
-    screen_content = crud.screen_content.create_with_json_cache(db=db, obj_in=screen_content_in)
-    return screen_content
+    screen_description = crud.screen_description.create_with_json_cache(db=db, obj_in=screen_description_in)
+    return screen_description
 
 
-@router.put("/{screen_content_id}", response_model=schemas.ScreenContent)
-def update_screen_content(
+@router.put("/{screen_description_id}", response_model=schemas.ScreenDescription)
+def update_screen_description(
     *,
     db: Session = Depends(deps.get_db),
-    screen_content_id: UUID,
-    screen_content_in: schemas.ScreenContentUpdate,
+    screen_description_id: UUID,
+    screen_description_in: schemas.ScreenDescriptionUpdate,
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
@@ -117,30 +117,30 @@ def update_screen_content(
     
     **Access:** Manager/Admin only
     """
-    screen_content = crud.screen_content.get(db=db, id=screen_content_id)
-    if not screen_content:
+    screen_description = crud.screen_description.get(db=db, id=screen_description_id)
+    if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
     
     # Check if title already exists for another screen content
-    if screen_content_in.title:
-        existing_screen_content = crud.screen_content.get_by_title(db=db, title=screen_content_in.title)
-        if existing_screen_content and existing_screen_content.id != screen_content_id:
+    if screen_description_in.title:
+        existing_screen_description = crud.screen_description.get_by_title(db=db, title=screen_description_in.title)
+        if existing_screen_description and existing_screen_description.id != screen_description_id:
             raise HTTPException(
                 status_code=400,
                 detail="Screen content with this title already exists"
             )
     
-    screen_content = crud.screen_content.update_with_json_cache(
-        db=db, db_obj=screen_content, obj_in=screen_content_in
+    screen_description = crud.screen_description.update_with_json_cache(
+        db=db, db_obj=screen_description, obj_in=screen_description_in
     )
-    return screen_content
+    return screen_description
 
 
-@router.delete("/{screen_content_id}")
-def delete_screen_content(
+@router.delete("/{screen_description_id}")
+def delete_screen_description(
     *,
     db: Session = Depends(deps.get_db),
-    screen_content_id: UUID,
+    screen_description_id: UUID,
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
@@ -148,20 +148,20 @@ def delete_screen_content(
     
     **Access:** Manager/Admin only
     """
-    screen_content = crud.screen_content.get(db=db, id=screen_content_id)
-    if not screen_content:
+    screen_description = crud.screen_description.get(db=db, id=screen_description_id)
+    if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
     
-    crud.screen_content.remove(db=db, id=screen_content_id)
+    crud.screen_description.remove(db=db, id=screen_description_id)
     return {"message": "Screen content deleted successfully"}
 
 
-@router.put("/{screen_content_id}/reorder-lists", response_model=schemas.ScreenContent)
+@router.put("/{screen_description_id}/reorder-lists", response_model=schemas.ScreenDescription)
 def reorder_content_lists(
     *,
     db: Session = Depends(deps.get_db),
-    screen_content_id: UUID,
-    reorder_data: schemas.ScreenContentReorderRequest,
+    screen_description_id: UUID,
+    reorder_data: schemas.ScreenDescriptionReorderRequest,
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
@@ -169,21 +169,21 @@ def reorder_content_lists(
     
     **Access:** Manager/Admin only
     """
-    screen_content = crud.screen_content.get(db=db, id=screen_content_id)
-    if not screen_content:
+    screen_description = crud.screen_description.get(db=db, id=screen_description_id)
+    if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
     
-    screen_content = crud.screen_content.reorder_content_lists(
+    screen_description = crud.screen_description.reorder_content_lists(
         db=db,
-        screen_content=screen_content,
+        screen_description=screen_description,
         new_content_lists=reorder_data.content_lists
     )
-    return screen_content
+    return screen_description
 
 
-@router.get("/{screen_content_id}/json", response_model=schemas.ScreenContentJSONResponse)
-def get_screen_content_json(
-    screen_content_id: UUID,
+@router.get("/{screen_description_id}/json", response_model=schemas.ScreenDescriptionJSONResponse)
+def get_screen_description_json(
+    screen_description_id: UUID,
     db: Session = Depends(deps.get_db),
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
@@ -192,25 +192,25 @@ def get_screen_content_json(
     
     **Access:** All authenticated users can read JSON content.
     """
-    screen_content = crud.screen_content.get(db=db, id=screen_content_id)
-    if not screen_content:
+    screen_description = crud.screen_description.get(db=db, id=screen_description_id)
+    if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
     
-    json_data = screen_content.get_json_data()
+    json_data = screen_description.get_json_data()
     if not json_data:
         # Generate JSON if not available
-        json_data = crud.screen_content.update_json_cache(db=db, screen_content=screen_content)
+        json_data = crud.screen_description.update_json_cache(db=db, screen_description=screen_description)
         if not json_data:
             raise HTTPException(status_code=500, detail="Failed to generate JSON content")
     
     return json_data
 
 
-@router.post("/{screen_content_id}/regenerate-json")
-def regenerate_screen_content_json(
+@router.post("/{screen_description_id}/regenerate-json")
+def regenerate_screen_description_json(
     *,
     db: Session = Depends(deps.get_db),
-    screen_content_id: UUID,
+    screen_description_id: UUID,
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
@@ -218,18 +218,18 @@ def regenerate_screen_content_json(
     
     **Access:** Manager/Admin only
     """
-    screen_content = crud.screen_content.get(db=db, id=screen_content_id)
-    if not screen_content:
+    screen_description = crud.screen_description.get(db=db, id=screen_description_id)
+    if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
     
-    json_data = crud.screen_content.update_json_cache(db=db, screen_content=screen_content)
+    json_data = crud.screen_description.update_json_cache(db=db, screen_description=screen_description)
     if not json_data:
         raise HTTPException(status_code=500, detail="Failed to regenerate JSON content")
     
     return {
         "message": "JSON cache regenerated successfully",
-        "screen_content_id": str(screen_content_id),
-        "last_updated": screen_content.json_last_updated
+        "screen_description_id": str(screen_description_id),
+        "last_updated": screen_description.json_last_updated
     }
 
 
@@ -240,41 +240,41 @@ def regenerate_all_json(
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
-    Regenerate JSON cache for all active screen contents.
+    Regenerate JSON cache for all active screen descriptions.
     
     **Access:** Manager/Admin only
     """
-    results = crud.screen_content.regenerate_all_json_cache(db=db)
+    results = crud.screen_description.regenerate_all_json_cache(db=db)
     return {
         "message": "JSON cache regeneration completed",
         "results": results
     }
 
 
-@router.get("/by-type/{screen_type}", response_model=schemas.ScreenContentByTypeResponse)
-def get_screen_contents_by_type(
+@router.get("/by-type/{screen_type}", response_model=schemas.ScreenDescriptionByTypeResponse)
+def get_screen_descriptions_by_type(
     screen_type: schemas.ScreenTypeEnum,
     db: Session = Depends(deps.get_db),
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Get screen contents by type.
+    Get screen descriptions by type.
     
-    **Access:** All authenticated users can read screen contents.
+    **Access:** All authenticated users can read screen descriptions.
     """
-    screen_contents = crud.screen_content.get_by_screen_type(
+    screen_descriptions = crud.screen_description.get_by_screen_type(
         db=db, screen_type=screen_type, skip=0, limit=1000
     )
     
     return {
         "screen_type": screen_type,
-        "screens": screen_contents,
-        "count": len(screen_contents)
+        "screens": screen_descriptions,
+        "count": len(screen_descriptions)
     }
 
 
-@router.get("/search/by-title", response_model=schemas.ScreenContentResponse)
-def search_screen_contents_by_title(
+@router.get("/search/by-title", response_model=schemas.ScreenDescriptionResponse)
+def search_screen_descriptions_by_title(
     search: str = Query(..., min_length=1, description="Search term for screen content titles"),
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
@@ -282,22 +282,22 @@ def search_screen_contents_by_title(
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Search screen contents by title.
+    Search screen descriptions by title.
     
-    **Access:** All authenticated users can search screen contents.
+    **Access:** All authenticated users can search screen descriptions.
     """
-    screen_contents = crud.screen_content.search_by_title(
+    screen_descriptions = crud.screen_description.search_by_title(
         db=db, search_term=search, skip=skip, limit=limit
     )
     
     # Get total count for pagination
-    total = crud.screen_content.count_search_by_title(db=db, search_term=search) if hasattr(crud.screen_content, 'count_search_by_title') else len(screen_contents)
+    total = crud.screen_description.count_search_by_title(db=db, search_term=search) if hasattr(crud.screen_description, 'count_search_by_title') else len(screen_descriptions)
     
     # Calculate pagination info
     total_pages = (total + limit - 1) // limit
     
     return {
-        "data": screen_contents,
+        "data": screen_descriptions,
         "pagination": {
             "page": (skip // limit) + 1,
             "limit": limit,
@@ -308,17 +308,17 @@ def search_screen_contents_by_title(
 
 
 @router.get("/stats/summary")
-def get_screen_contents_stats(
+def get_screen_descriptions_stats(
     db: Session = Depends(deps.get_db),
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
-    Get screen contents statistics summary.
+    Get screen descriptions statistics summary.
     
     **Access:** Manager/Admin only
     """
-    total_active = crud.screen_content.count_active(db=db)
-    type_counts = crud.screen_content.get_screen_types_with_counts(db=db)
+    total_active = crud.screen_description.count_active(db=db)
+    type_counts = crud.screen_description.get_screen_types_with_counts(db=db)
     
     return {
         "total_active_screens": total_active,
@@ -326,7 +326,7 @@ def get_screen_contents_stats(
     }
 
 
-@router.get("/homepage/primary", response_model=schemas.ScreenContent)
+@router.get("/homepage/primary", response_model=schemas.ScreenDescription)
 def get_primary_homepage_screen(
     db: Session = Depends(deps.get_db),
     current_user: schemas.User = Depends(deps.get_current_active_user),
@@ -336,11 +336,11 @@ def get_primary_homepage_screen(
     
     **Access:** All authenticated users can read homepage screen.
     """
-    screen_content = crud.screen_content.get_primary_screen_by_type(
+    screen_description = crud.screen_description.get_primary_screen_by_type(
         db=db, screen_type="homepage"
     )
     
-    if not screen_content:
+    if not screen_description:
         raise HTTPException(status_code=404, detail="No homepage screen found")
     
-    return screen_content
+    return screen_description

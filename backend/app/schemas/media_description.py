@@ -80,9 +80,9 @@ class MediaDescriptionBase(BaseModel):
     eligible_plans: Optional[List[str]] = None
     audience_categories_id_list: Optional[List[str]] = None
     
-    # v1.4 fields - Metadata fields
-    friendly_url: Optional[str] = None
-    human_keywords_text_list: Optional[List[str]] = None
+    # v1.4 fields - Metadata fields (v1.9 renamed)
+    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
+    tag_text_list: Optional[List[str]] = Field(None, description="Human-readable tags/keywords")
     
     # v1.4 fields - Image fields
     image_fullscreen: Optional[UUID] = None
@@ -164,9 +164,9 @@ class MediaDescriptionUpdate(BaseModel):
     eligible_plans: Optional[List[str]] = None
     audience_categories_id_list: Optional[List[str]] = None
     
-    # v1.4 fields - Metadata fields
-    friendly_url: Optional[str] = None
-    human_keywords_text_list: Optional[List[str]] = None
+    # v1.4 fields - Metadata fields (v1.9 renamed)
+    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
+    tag_text_list: Optional[List[str]] = Field(None, description="Human-readable tags/keywords")
     
     # v1.4 fields - Image fields
     image_fullscreen: Optional[UUID] = None

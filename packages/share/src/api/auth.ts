@@ -4,7 +4,7 @@ import { authTokenStorage } from '../utils/storage';
 
 // Extract getCurrentUser as a separate function to avoid 'this' context issues
 const getCurrentUser = async (): Promise<User> => {
-  const response = await apiClient.get<User>('/api/v1/users/me');
+  const response = await apiClient.get<User>('/users/me');
   return response.data;
 };
 
@@ -25,7 +25,7 @@ export const authApi = {
     formData.append('username', credentials.email);
     formData.append('password', credentials.password);
 
-    const response = await apiClient.post<AuthTokens>('/api/v1/auth/login', formData, {
+    const response = await apiClient.post<AuthTokens>('/auth/login', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -59,7 +59,7 @@ export const authApi = {
 
   // Register new user (admin only)
   async register(userData: RegisterRequest): Promise<User> {
-    const response = await apiClient.post<User>('/api/v1/users/', userData);
+    const response = await apiClient.post<User>('/users/', userData);
     return response.data;
   },
 
@@ -82,7 +82,7 @@ export const authApi = {
 
     // Try to notify server about logout (optional - don't fail if server is unavailable)
     try {
-      await apiClient.post('/api/v1/auth/logout');
+      await apiClient.post('/auth/logout');
     } catch (serverError) {
       // This is expected behavior - not all servers have logout endpoints
       // The important thing is that we've cleared local tokens above
@@ -127,13 +127,13 @@ export const authApi = {
 
   // Update user profile
   async updateUser(userId: string, userData: Partial<User>): Promise<User> {
-    const response = await apiClient.put<User>(`/api/v1/users/${userId}`, userData);
+    const response = await apiClient.put<User>(`/users/${userId}`, userData);
     return response.data;
   },
 
   // Get user by ID (admin only)
   async getUserById(userId: string): Promise<User> {
-    const response = await apiClient.get<User>(`/api/v1/users/${userId}`);
+    const response = await apiClient.get<User>(`/users/${userId}`);
     return response.data;
   },
 
@@ -156,7 +156,7 @@ export const authApi = {
         throw new Error('No refresh token available');
       }
 
-      const response = await apiClient.post<AuthTokens>('/api/v1/auth/refresh', {
+      const response = await apiClient.post<AuthTokens>('/auth/refresh', {
         refresh_token: refreshToken,
       });
 

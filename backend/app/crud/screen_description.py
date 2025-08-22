@@ -4,23 +4,23 @@ from sqlalchemy import desc, asc, func, and_
 from uuid import UUID
 
 from app.crud.base import CRUDBase
-from app.models.screen_content import ScreenContent
-from app.schemas.screen_content import ScreenContentCreate, ScreenContentUpdate
+from app.models.screen_description import ScreenDescription
+from app.schemas.screen_description import ScreenDescriptionCreate, ScreenDescriptionUpdate
 
 
-class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenContentUpdate]):
-    def get_by_title(self, db: Session, *, title: str) -> Optional[ScreenContent]:
+class CRUDScreenDescription(CRUDBase[ScreenDescription, ScreenDescriptionCreate, ScreenDescriptionUpdate]):
+    def get_by_title(self, db: Session, *, title: str) -> Optional[ScreenDescription]:
         """Get screen content by title."""
-        return db.query(ScreenContent).filter(ScreenContent.title == title).first()
+        return db.query(ScreenDescription).filter(ScreenDescription.title == title).first()
 
     def get_active_screens(
         self, db: Session, *, skip: int = 0, limit: int = 100
-    ) -> List[ScreenContent]:
+    ) -> List[ScreenDescription]:
         """Get only active screen contents ordered by display_order."""
         return (
-            db.query(ScreenContent)
-            .filter(ScreenContent.is_active == True)
-            .order_by(asc(ScreenContent.display_order), asc(ScreenContent.title))
+            db.query(ScreenDescription)
+            .filter(ScreenDescription.is_active == True)
+            .order_by(asc(ScreenDescription.display_order), asc(ScreenDescription.title))
             .offset(skip)
             .limit(limit)
             .all()
@@ -28,13 +28,13 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
 
     def get_by_screen_type(
         self, db: Session, *, screen_type: str, skip: int = 0, limit: int = 100
-    ) -> List[ScreenContent]:
+    ) -> List[ScreenDescription]:
         """Get screen contents by screen type."""
         return (
-            db.query(ScreenContent)
-            .filter(ScreenContent.screen_type == screen_type)
-            .filter(ScreenContent.is_active == True)
-            .order_by(asc(ScreenContent.display_order), asc(ScreenContent.title))
+            db.query(ScreenDescription)
+            .filter(ScreenDescription.screen_type == screen_type)
+            .filter(ScreenDescription.is_active == True)
+            .order_by(asc(ScreenDescription.display_order), asc(ScreenDescription.title))
             .offset(skip)
             .limit(limit)
             .all()
@@ -42,16 +42,16 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
 
     def get_multi_ordered(
         self, db: Session, *, skip: int = 0, limit: int = 100, active_only: bool = False
-    ) -> List[ScreenContent]:
+    ) -> List[ScreenDescription]:
         """Get screen contents ordered by display_order and title."""
-        query = db.query(ScreenContent)
+        query = db.query(ScreenDescription)
         
         if active_only:
-            query = query.filter(ScreenContent.is_active == True)
+            query = query.filter(ScreenDescription.is_active == True)
             
         return (
             query
-            .order_by(asc(ScreenContent.display_order), asc(ScreenContent.title))
+            .order_by(asc(ScreenDescription.display_order), asc(ScreenDescription.title))
             .offset(skip)
             .limit(limit)
             .all()
@@ -59,12 +59,12 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
 
     def search_by_title(
         self, db: Session, *, search_term: str, skip: int = 0, limit: int = 100
-    ) -> List[ScreenContent]:
+    ) -> List[ScreenDescription]:
         """Search screen contents by title."""
         return (
-            db.query(ScreenContent)
-            .filter(ScreenContent.title.ilike(f"%{search_term}%"))
-            .order_by(asc(ScreenContent.display_order), asc(ScreenContent.title))
+            db.query(ScreenDescription)
+            .filter(ScreenDescription.title.ilike(f"%{search_term}%"))
+            .order_by(asc(ScreenDescription.display_order), asc(ScreenDescription.title))
             .offset(skip)
             .limit(limit)
             .all()
@@ -72,18 +72,18 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
 
     def count_active(self, db: Session) -> int:
         """Count active screen contents."""
-        return db.query(ScreenContent).filter(ScreenContent.is_active == True).count()
+        return db.query(ScreenDescription).filter(ScreenDescription.is_active == True).count()
 
     def count_by_screen_type(self, db: Session, *, screen_type: str) -> int:
         """Count screen contents by screen type."""
         return (
-            db.query(ScreenContent)
-            .filter(ScreenContent.screen_type == screen_type)
-            .filter(ScreenContent.is_active == True)
+            db.query(ScreenDescription)
+            .filter(ScreenDescription.screen_type == screen_type)
+            .filter(ScreenDescription.is_active == True)
             .count()
         )
 
-    def update_json_cache(self, db: Session, *, screen_content: ScreenContent) -> Optional[Dict[str, Any]]:
+    def update_json_cache(self, db: Session, *, screen_content: ScreenDescription) -> Optional[Dict[str, Any]]:
         """Update JSON cache for a screen content."""
         json_data = screen_content.update_json(db_session=db)
         return json_data
@@ -112,8 +112,8 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
         return results
 
     def add_content_list(
-        self, db: Session, *, screen_content: ScreenContent, content_list_id: str, position: Optional[int] = None
-    ) -> ScreenContent:
+        self, db: Session, *, screen_content: ScreenDescription, content_list_id: str, position: Optional[int] = None
+    ) -> ScreenDescription:
         """Add a content list to the screen content."""
         screen_content.add_content_list(content_list_id, position)
         db.add(screen_content)
@@ -126,8 +126,8 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
         return screen_content
 
     def remove_content_list(
-        self, db: Session, *, screen_content: ScreenContent, content_list_id: str
-    ) -> ScreenContent:
+        self, db: Session, *, screen_content: ScreenDescription, content_list_id: str
+    ) -> ScreenDescription:
         """Remove a content list from the screen content."""
         screen_content.remove_content_list(content_list_id)
         
@@ -145,8 +145,8 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
         return screen_content
 
     def reorder_content_lists(
-        self, db: Session, *, screen_content: ScreenContent, new_content_lists: List[str]
-    ) -> ScreenContent:
+        self, db: Session, *, screen_content: ScreenDescription, new_content_lists: List[str]
+    ) -> ScreenDescription:
         """Reorder content lists in the screen content."""
         screen_content.reorder_content_lists(new_content_lists)
         db.add(screen_content)
@@ -160,9 +160,9 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
 
     def get_screens_containing_content_list(
         self, db: Session, *, content_list_id: str
-    ) -> List[ScreenContent]:
+    ) -> List[ScreenDescription]:
         """Find screen contents that contain a specific content list."""
-        screen_contents = db.query(ScreenContent).filter(ScreenContent.is_active == True).all()
+        screen_contents = db.query(ScreenDescription).filter(ScreenDescription.is_active == True).all()
         
         matching_screens = []
         for screen_content in screen_contents:
@@ -176,7 +176,7 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
 
     def get_screen_types_with_counts(self, db: Session) -> Dict[str, int]:
         """Get screen types with their counts."""
-        screen_contents = db.query(ScreenContent).filter(ScreenContent.is_active == True).all()
+        screen_contents = db.query(ScreenDescription).filter(ScreenDescription.is_active == True).all()
         
         type_counts = {}
         for screen_content in screen_contents:
@@ -185,7 +185,7 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
         
         return type_counts
 
-    def create_with_json_cache(self, db: Session, *, obj_in: ScreenContentCreate) -> ScreenContent:
+    def create_with_json_cache(self, db: Session, *, obj_in: ScreenDescriptionCreate) -> ScreenDescription:
         """Create a screen content and generate its JSON cache."""
         screen_content = self.create(db, obj_in=obj_in)
         
@@ -195,8 +195,8 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
         return screen_content
 
     def update_with_json_cache(
-        self, db: Session, *, db_obj: ScreenContent, obj_in: ScreenContentUpdate
-    ) -> ScreenContent:
+        self, db: Session, *, db_obj: ScreenDescription, obj_in: ScreenDescriptionUpdate
+    ) -> ScreenDescription:
         """Update a screen content and regenerate its JSON cache."""
         screen_content = self.update(db, db_obj=db_obj, obj_in=obj_in)
         
@@ -205,23 +205,23 @@ class CRUDScreenContent(CRUDBase[ScreenContent, ScreenContentCreate, ScreenConte
         
         return screen_content
 
-    def get_homepage_screens(self, db: Session) -> List[ScreenContent]:
+    def get_homepage_screens(self, db: Session) -> List[ScreenDescription]:
         """Get screens specifically for homepage."""
         return self.get_by_screen_type(db, screen_type="homepage", skip=0, limit=100)
 
-    def get_category_screens(self, db: Session) -> List[ScreenContent]:
+    def get_category_screens(self, db: Session) -> List[ScreenDescription]:
         """Get screens specifically for category browsing."""
         return self.get_by_screen_type(db, screen_type="category", skip=0, limit=100)
 
-    def get_primary_screen_by_type(self, db: Session, *, screen_type: str) -> Optional[ScreenContent]:
+    def get_primary_screen_by_type(self, db: Session, *, screen_type: str) -> Optional[ScreenDescription]:
         """Get the primary (lowest display_order) screen for a given type."""
         return (
-            db.query(ScreenContent)
-            .filter(ScreenContent.screen_type == screen_type)
-            .filter(ScreenContent.is_active == True)
-            .order_by(asc(ScreenContent.display_order))
+            db.query(ScreenDescription)
+            .filter(ScreenDescription.screen_type == screen_type)
+            .filter(ScreenDescription.is_active == True)
+            .order_by(asc(ScreenDescription.display_order))
             .first()
         )
 
 
-screen_content = CRUDScreenContent(ScreenContent)
+screen_description = CRUDScreenDescription(ScreenDescription)

@@ -48,6 +48,13 @@ class ContentList(Base):
     content_items = Column(JSONArray(), nullable=True, default=list)  # Array of UUIDs
     content_types = Column(JSONArray(), nullable=True, default=list)  # Array of content types corresponding to content_items
     
+    # NEW v1.9 fields - Content filtering and organization
+    media_type = Column(String, nullable=True)  # Filter by media type
+    media_categories_id_list = Column(JSONArray(), nullable=True)  # Filter by category IDs
+    themes_and_genres_id_list = Column(JSONArray(), nullable=True)  # Filter by theme/genre IDs
+    latest_first = Column(Boolean, default=True, nullable=False)  # Order items by latest first
+    slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
+    
     # JSON cache for performance
     json_content = Column(Text, nullable=True)  # Cached JSON representation
     json_last_updated = Column(DateTime(timezone=True), nullable=True)

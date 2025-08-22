@@ -72,6 +72,9 @@ export interface MediaDescription {
   image_mobile_home?: string;
   image_desktop_home?: string;
   additional_images_id_list?: string[];
+  // v1.9 breaking changes
+  tag_text_list?: string[]; // renamed from human_keywords_text_list
+  slug?: string; // renamed from friendly_url
   translation_share?: number;
   sacem_share?: number;
   other_share?: number;
@@ -120,6 +123,10 @@ export interface VideoFile {
   audio_languages_id_list?: string[];
   resolutions_id_list?: string[];
   accessibilities_id_list?: string[];
+  // v1.9 new fields
+  environment_key?: string;
+  protection_key?: string;
+  slug?: string;
 }
 
 export interface PublicPerson {
@@ -288,6 +295,43 @@ export interface VideoFileFilters {
   skip?: number;
   limit?: number;
   media_description_id?: string;
+  encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
+}
+
+// v1.9 new interfaces for video file operations
+export interface VideoFileCreate {
+  media_description_id?: string;
+  file_name?: string;
+  upload_method?: 'new_upload' | 'existing_url';
+  external_url?: string;
+  environment_key?: string;
+  protection_key?: string;
+  slug?: string;
+}
+
+export interface VideoFileUpdate {
+  media_description_id?: string;
+  file_name?: string;
+  encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
+  upload_status?: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed';
+  duration_seconds?: number;
+  file_size_bytes?: number;
+  video_codec?: string;
+  audio_codec?: string;
+  file_format?: string;
+  resolution_width?: number;
+  resolution_height?: number;
+  bitrate_kbps?: number;
+  frame_rate?: number;
+  aspect_ratio?: string;
+  audio_sample_rate?: number;
+  audio_channels?: number;
+  mux_asset_id?: string;
+  mux_playback_id?: string;
+  drm_protection?: boolean;
+  environment_key?: string;
+  protection_key?: string;
+  slug?: string;
 }
 
 // Description Report types
@@ -363,6 +407,9 @@ export interface MediaDescriptionCreate {
   image_mobile_home?: string;
   image_desktop_home?: string;
   additional_images_id_list?: string[];
+  // v1.9 breaking changes
+  tag_text_list?: string[]; // renamed from human_keywords_text_list
+  slug?: string; // renamed from friendly_url
   translation_share?: number;
   sacem_share?: number;
   other_share?: number;
@@ -589,9 +636,15 @@ export interface ContentList {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
+  latest_first: boolean; // v1.9 new required field
   description?: string;
   content_items?: string[];
   content_types?: string[];
+  // v1.9 new filtering fields
+  media_type?: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
+  media_categories_id_list?: string[];
+  themes_and_genres_id_list?: string[];
+  slug?: string; // v1.9 new field
   json_content?: string;
   json_last_updated?: string;
 }
@@ -601,9 +654,15 @@ export interface ContentListCreate {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
+  latest_first: boolean; // v1.9 new required field
   description?: string;
   content_items?: string[];
   content_types?: string[];
+  // v1.9 new filtering fields
+  media_type?: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
+  media_categories_id_list?: string[];
+  themes_and_genres_id_list?: string[];
+  slug?: string; // v1.9 new field
 }
 
 export interface ContentListUpdate {
@@ -611,9 +670,15 @@ export interface ContentListUpdate {
   thumbnail_format?: ThumbnailFormatEnum;
   is_active?: boolean;
   display_order?: number;
+  latest_first?: boolean; // v1.9 field
   description?: string;
   content_items?: string[];
   content_types?: string[];
+  // v1.9 new filtering fields
+  media_type?: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
+  media_categories_id_list?: string[];
+  themes_and_genres_id_list?: string[];
+  slug?: string; // v1.9 field
 }
 
 export interface ContentListJSON {
@@ -633,7 +698,8 @@ export interface ContentListItemJSON {
   display_order: number;
 }
 
-export interface ScreenContent {
+// v1.9 Breaking change: ScreenContent renamed to ScreenDescription
+export interface ScreenDescription {
   id: string;
   creation_date_utc: string;
   last_updated_utc: string;
@@ -643,29 +709,44 @@ export interface ScreenContent {
   description?: string;
   content_lists?: string[];
   screen_type?: string;
+  slug?: string; // v1.9 new field
   json_content?: string;
   json_last_updated?: string;
 }
 
-export interface ScreenContentCreate {
+// Keep ScreenContent as alias for backward compatibility
+export interface ScreenContent extends ScreenDescription {}
+
+// v1.9 Breaking change: ScreenContent renamed to ScreenDescription
+export interface ScreenDescriptionCreate {
   title: string;
   is_active: boolean;
   display_order: number;
   description?: string;
   content_lists?: string[];
   screen_type?: string;
+  slug?: string; // v1.9 new field
 }
 
-export interface ScreenContentUpdate {
+// Keep ScreenContentCreate as alias for backward compatibility
+export interface ScreenContentCreate extends ScreenDescriptionCreate {}
+
+// v1.9 Breaking change: ScreenContent renamed to ScreenDescription
+export interface ScreenDescriptionUpdate {
   title?: string;
   is_active?: boolean;
   display_order?: number;
   description?: string;
   content_lists?: string[];
   screen_type?: string;
+  slug?: string; // v1.9 new field
 }
 
-export interface ScreenContentJSON {
+// Keep ScreenContentUpdate as alias for backward compatibility
+export interface ScreenContentUpdate extends ScreenDescriptionUpdate {}
+
+// v1.9 Breaking change: ScreenContent renamed to ScreenDescription
+export interface ScreenDescriptionJSON {
   id: string;
   title: string;
   description?: string;
@@ -674,6 +755,9 @@ export interface ScreenContentJSON {
   content_lists: ContentListJSON[];
 }
 
+// Keep ScreenContentJSON as alias for backward compatibility
+export interface ScreenContentJSON extends ScreenDescriptionJSON {}
+
 export interface ContentListFilters {
   skip?: number;
   limit?: number;
@@ -681,15 +765,23 @@ export interface ContentListFilters {
   thumbnail_format?: ThumbnailFormatEnum;
 }
 
-export interface ScreenContentFilters {
+// v1.9 Breaking change: ScreenContent renamed to ScreenDescription
+export interface ScreenDescriptionFilters {
   skip?: number;
   limit?: number;
   is_active?: boolean;
   screen_type?: string;
 }
 
+// Keep ScreenContentFilters as alias for backward compatibility
+export interface ScreenContentFilters extends ScreenDescriptionFilters {}
+
 export interface ContentListListResponse extends PaginatedResponse<ContentList> {}
-export interface ScreenContentListResponse extends PaginatedResponse<ScreenContent> {}
+// v1.9 Breaking change: ScreenContent renamed to ScreenDescription
+export interface ScreenDescriptionListResponse extends PaginatedResponse<ScreenDescription> {}
+
+// Keep ScreenContentListResponse as alias for backward compatibility
+export interface ScreenContentListResponse extends PaginatedResponse<ScreenDescription> {}
 
 export interface ReorderContentRequest {
   content_items: string[];

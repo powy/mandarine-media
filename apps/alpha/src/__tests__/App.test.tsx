@@ -46,12 +46,18 @@ jest.mock('share', () => ({
   contentListsApi: {
     getContentLists: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }),
   },
+  screenDescriptionsApi: {
+    getScreenDescriptions: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }),
+  },
   screenContentsApi: {
     getScreenContents: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }),
   },
   videoFileReportsApi: {
     getReports: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }),
   },
+  getContentLists: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }),
+  getScreenDescriptions: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }),
+  getScreenContents: jest.fn().mockResolvedValue({ data: [], pagination: { total: 0 } }), // Legacy v1.8 support
   initApiClient: jest.fn(),
   // MISSING: useAuth hook mock - this is what causes the QueryClient error
   useAuth: jest.fn().mockReturnValue({

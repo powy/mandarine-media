@@ -109,15 +109,15 @@ from .content_list import (
     ThumbnailFormatEnum,
     ContentTypeEnum
 )
-from .screen_content import (
-    ScreenContent,
-    ScreenContentCreate,
-    ScreenContentUpdate,
-    ScreenContentInDB,
-    ScreenContentWithJSON,
-    ScreenContentResponse,
-    ScreenContentReorderRequest,
-    ScreenContentJSONResponse,
-    ScreenContentByTypeResponse,
+from .screen_description import (
+    ScreenDescription,
+    ScreenDescriptionCreate,
+    ScreenDescriptionUpdate,
+    ScreenDescriptionInDB,
+    ScreenDescriptionWithJSON,
+    ScreenDescriptionResponse,
+    ScreenDescriptionReorderRequest,
+    ScreenDescriptionJSONResponse,
+    ScreenDescriptionByTypeResponse,
     ScreenTypeEnum
 )

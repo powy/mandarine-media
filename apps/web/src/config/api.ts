@@ -10,11 +10,12 @@ export const initializeApi = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
   
   // Log the API configuration for debugging
-  console.log('🔧 Web App API initialized with URL:', backendURL);
+  console.log('🔧 Web App API initialized with URL:', `${backendURL}/api/v1`);
 
   // Then initialize the API client
+  // v1.9: Updated to include /api/v1 in base URL as per OpenAPI spec
   initApiClient({
-    baseURL: backendURL,
+    baseURL: `${backendURL}/api/v1`,
     onAuthError: () => {
       // Handle auth errors by redirecting to login
       // The auth system will automatically clear tokens

@@ -1,0 +1,4125 @@
+openapi: 3.0.3
+info:
+  title: KYOOL Media Platform API
+  description: |
+    Comprehensive media management API for the KYOOL platform, supporting video content, web comics, 
+    user management, content organization, and subscription services.
+  version: 1.9.0
+  contact:
+    name: KYOOL API Support
+    url: https://kyool.com/support
+    email: api-support@kyool.com
+  license:
+    name: Proprietary
+    url: https://kyool.com/license
+
+servers:
+  - url: https://api.kyool.com/v1
+    description: Production server
+  - url: https://staging-api.kyool.com/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Authentication
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Users
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List all users (Admin only)
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: is_admin
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsersResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Users
+      summary: Create user (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID (Admin only)
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Users
+      summary: Update user (Admin only)
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # Media Descriptions
+  /media-descriptions:
+    get:
+      tags:
+        - Media Descriptions
+      summary: Get all media descriptions
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: media_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/MediaTypeEnum'
+        - name: is_featured
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of media descriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMediaDescriptionsResponse'
+    post:
+      tags:
+        - Media Descriptions
+      summary: Create media description (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaDescriptionCreate'
+      responses:
+        '201':
+          description: Media description created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDescription'
+
+  /media-descriptions/{id}:
+    get:
+      tags:
+        - Media Descriptions
+      summary: Get media description by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Media description details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDescription'
+        '404':
+          description: Media description not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Media Descriptions
+      summary: Update media description (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaDescriptionUpdate'
+      responses:
+        '200':
+          description: Media description updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDescription'
+    delete:
+      tags:
+        - Media Descriptions
+      summary: Delete media description (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Media description deleted successfully
+        '404':
+          description: Media description not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /media-descriptions/bulk:
+    post:
+      tags:
+        - Media Descriptions
+      summary: Bulk create media descriptions (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMediaDescriptionRequest'
+      responses:
+        '201':
+          description: Bulk creation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMediaDescriptionResponse'
+
+  # Video Files
+  /video-files:
+    get:
+      tags:
+        - Video Files
+      summary: Get all video files
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: media_description_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: encoding_status
+          in: query
+          schema:
+            $ref: '#/components/schemas/EncodingStatusEnum'
+      responses:
+        '200':
+          description: List of video files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVideoFilesResponse'
+    post:
+      tags:
+        - Video Files
+      summary: Create video file (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoFileCreate'
+      responses:
+        '201':
+          description: Video file created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoFile'
+
+  /video-files/{id}:
+    get:
+      tags:
+        - Video Files
+      summary: Get video file by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video file details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoFile'
+        '404':
+          description: Video file not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Video Files
+      summary: Update video file (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoFileUpdate'
+      responses:
+        '200':
+          description: Video file updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoFile'
+    delete:
+      tags:
+        - Video Files
+      summary: Delete video file (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Video file deleted successfully
+
+  # Content Lists
+  /content-lists:
+    get:
+      tags:
+        - Content Lists
+      summary: Get all content lists
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: thumbnail_format
+          in: query
+          schema:
+            $ref: '#/components/schemas/ThumbnailFormatEnum'
+      responses:
+        '200':
+          description: List of content lists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContentListsResponse'
+    post:
+      tags:
+        - Content Lists
+      summary: Create content list (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentListCreate'
+      responses:
+        '201':
+          description: Content list created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentList'
+
+  /content-lists/{id}:
+    get:
+      tags:
+        - Content Lists
+      summary: Get content list by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Content list details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentList'
+        '404':
+          description: Content list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Content Lists
+      summary: Update content list (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentListUpdate'
+      responses:
+        '200':
+          description: Content list updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentList'
+    delete:
+      tags:
+        - Content Lists
+      summary: Delete content list (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Content list deleted successfully
+
+  /content-lists/{id}/json:
+    get:
+      tags:
+        - Content Lists
+      summary: Get content list JSON cache
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Content list JSON representation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentListJSON'
+
+  /content-lists/{id}/regenerate-json:
+    post:
+      tags:
+        - Content Lists
+      summary: Regenerate content list JSON cache (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: JSON cache regenerated successfully
+
+  /content-lists/{id}/reorder:
+    put:
+      tags:
+        - Content Lists
+      summary: Reorder content list items (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderContentRequest'
+      responses:
+        '200':
+          description: Content list reordered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentList'
+
+  # Screen Descriptions
+  /screen-descriptions:
+    get:
+      tags:
+        - Screen Descriptions
+      summary: Get all screen descriptions
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: screen_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of screen descriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedScreenDescriptionsResponse'
+    post:
+      tags:
+        - Screen Descriptions
+      summary: Create screen description (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScreenDescriptionCreate'
+      responses:
+        '201':
+          description: Screen description created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenDescription'
+
+  /screen-descriptions/{id}:
+    get:
+      tags:
+        - Screen Descriptions
+      summary: Get screen description by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Screen description details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenDescription'
+        '404':
+          description: Screen description not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Screen Descriptions
+      summary: Update screen description (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScreenDescriptionUpdate'
+      responses:
+        '200':
+          description: Screen description updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenDescription'
+    delete:
+      tags:
+        - Screen Descriptions
+      summary: Delete screen description (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Screen description deleted successfully
+
+  /screen-descriptions/{id}/json:
+    get:
+      tags:
+        - Screen Descriptions
+      summary: Get screen description JSON cache
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Screen description JSON representation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenDescriptionJSON'
+
+  /screen-descriptions/{id}/regenerate-json:
+    post:
+      tags:
+        - Screen Descriptions
+      summary: Regenerate screen description JSON cache (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: JSON cache regenerated successfully
+
+  /screen-descriptions/{id}/reorder-lists:
+    put:
+      tags:
+        - Screen Descriptions
+      summary: Reorder screen description content lists (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderListsRequest'
+      responses:
+        '200':
+          description: Screen description content lists reordered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenDescription'
+
+  /screen-descriptions/by-type/{screen_type}:
+    get:
+      tags:
+        - Screen Descriptions
+      summary: Get screen description by type
+      parameters:
+        - name: screen_type
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Screen description for the specified type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScreenDescription'
+        '404':
+          description: Screen description not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Programs
+  /programs:
+    get:
+      tags:
+        - Programs
+      summary: Get all programs
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of programs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProgramsResponse'
+    post:
+      tags:
+        - Programs
+      summary: Create program (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramCreate'
+      responses:
+        '201':
+          description: Program created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+
+  /programs/{id}:
+    get:
+      tags:
+        - Programs
+      summary: Get program by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Program details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '404':
+          description: Program not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Programs
+      summary: Update program (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgramUpdate'
+      responses:
+        '200':
+          description: Program updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+    delete:
+      tags:
+        - Programs
+      summary: Delete program (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Program deleted successfully
+
+  # Seasons
+  /seasons:
+    get:
+      tags:
+        - Seasons
+      summary: Get all seasons
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: program_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of seasons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSeasonsResponse'
+    post:
+      tags:
+        - Seasons
+      summary: Create season (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonCreate'
+      responses:
+        '201':
+          description: Season created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Season'
+
+  /seasons/{id}:
+    get:
+      tags:
+        - Seasons
+      summary: Get season by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Season details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Season'
+        '404':
+          description: Season not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Seasons
+      summary: Update season (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonUpdate'
+      responses:
+        '200':
+          description: Season updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Season'
+    delete:
+      tags:
+        - Seasons
+      summary: Delete season (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Season deleted successfully
+
+  # Public Persons
+  /persons:
+    get:
+      tags:
+        - Public Persons
+      summary: Get all public persons
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: profession
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of public persons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPublicPersonsResponse'
+    post:
+      tags:
+        - Public Persons
+      summary: Create public person (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicPersonCreate'
+      responses:
+        '201':
+          description: Public person created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPerson'
+
+  /persons/{id}:
+    get:
+      tags:
+        - Public Persons
+      summary: Get public person by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Public person details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPerson'
+        '404':
+          description: Public person not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Public Persons
+      summary: Update public person (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicPersonUpdate'
+      responses:
+        '200':
+          description: Public person updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPerson'
+    delete:
+      tags:
+        - Public Persons
+      summary: Delete public person (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Public person deleted successfully
+
+  # Languages
+  /languages:
+    get:
+      tags:
+        - Languages
+      summary: Get all languages
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of languages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLanguagesResponse'
+    post:
+      tags:
+        - Languages
+      summary: Create language (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LanguageCreate'
+      responses:
+        '201':
+          description: Language created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Language'
+
+  /languages/{id}:
+    get:
+      tags:
+        - Languages
+      summary: Get language by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Language details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Language'
+        '404':
+          description: Language not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Languages
+      summary: Update language (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LanguageUpdate'
+      responses:
+        '200':
+          description: Language updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Language'
+    delete:
+      tags:
+        - Languages
+      summary: Delete language (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Language deleted successfully
+
+  # Countries
+  /countries:
+    get:
+      tags:
+        - Countries
+      summary: Get all countries
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of countries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCountriesResponse'
+    post:
+      tags:
+        - Countries
+      summary: Create country (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryCreate'
+      responses:
+        '201':
+          description: Country created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+
+  /countries/{id}:
+    get:
+      tags:
+        - Countries
+      summary: Get country by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Country details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+        '404':
+          description: Country not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Countries
+      summary: Update country (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryUpdate'
+      responses:
+        '200':
+          description: Country updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+    delete:
+      tags:
+        - Countries
+      summary: Delete country (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Country deleted successfully
+
+  # Territories
+  /territories:
+    get:
+      tags:
+        - Territories
+      summary: Get all territories
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: country_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of territories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTerritoriesResponse'
+    post:
+      tags:
+        - Territories
+      summary: Create territory (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerritoryCreate'
+      responses:
+        '201':
+          description: Territory created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Territory'
+
+  /territories/{id}:
+    get:
+      tags:
+        - Territories
+      summary: Get territory by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Territory details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Territory'
+        '404':
+          description: Territory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Territories
+      summary: Update territory (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerritoryUpdate'
+      responses:
+        '200':
+          description: Territory updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Territory'
+    delete:
+      tags:
+        - Territories
+      summary: Delete territory (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Territory deleted successfully
+
+  # Pictures
+  /pictures:
+    get:
+      tags:
+        - Pictures
+      summary: Get all pictures
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of pictures
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPicturesResponse'
+    post:
+      tags:
+        - Pictures
+      summary: Create picture (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PictureCreate'
+      responses:
+        '201':
+          description: Picture created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Picture'
+
+  /pictures/{id}:
+    get:
+      tags:
+        - Pictures
+      summary: Get picture by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Picture details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Picture'
+        '404':
+          description: Picture not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Pictures
+      summary: Update picture (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PictureUpdate'
+      responses:
+        '200':
+          description: Picture updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Picture'
+    delete:
+      tags:
+        - Pictures
+      summary: Delete picture (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Picture deleted successfully
+
+  /pictures/upload:
+    post:
+      tags:
+        - Pictures
+      summary: Upload picture file (Admin only)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                alt_text:
+                  type: string
+      responses:
+        '201':
+          description: Picture uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Picture'
+
+  # Subscription Plans
+  /subscription-plans:
+    get:
+      tags:
+        - Subscription Plans
+      summary: Get all subscription plans
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List of subscription plans
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubscriptionPlansResponse'
+    post:
+      tags:
+        - Subscription Plans
+      summary: Create subscription plan (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanCreate'
+      responses:
+        '201':
+          description: Subscription plan created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+
+  /subscription-plans/{id}:
+    get:
+      tags:
+        - Subscription Plans
+      summary: Get subscription plan by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscription plan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+        '404':
+          description: Subscription plan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Subscription Plans
+      summary: Update subscription plan (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanUpdate'
+      responses:
+        '200':
+          description: Subscription plan updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+    delete:
+      tags:
+        - Subscription Plans
+      summary: Delete subscription plan (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Subscription plan deleted successfully
+
+  # Audience Categories
+  /audience-categories:
+    get:
+      tags:
+        - Audience Categories
+      summary: Get all audience categories
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List of audience categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAudienceCategoriesResponse'
+    post:
+      tags:
+        - Audience Categories
+      summary: Create audience category (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AudienceCategoryCreate'
+      responses:
+        '201':
+          description: Audience category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AudienceCategory'
+
+  /audience-categories/{id}:
+    get:
+      tags:
+        - Audience Categories
+      summary: Get audience category by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Audience category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AudienceCategory'
+        '404':
+          description: Audience category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Audience Categories
+      summary: Update audience category (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AudienceCategoryUpdate'
+      responses:
+        '200':
+          description: Audience category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AudienceCategory'
+    delete:
+      tags:
+        - Audience Categories
+      summary: Delete audience category (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Audience category deleted successfully
+
+  # Category Lists
+  /category-lists:
+    get:
+      tags:
+        - Category Lists
+      summary: Get all category lists
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of category lists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryListsResponse'
+    post:
+      tags:
+        - Category Lists
+      summary: Create category list (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryListCreate'
+      responses:
+        '201':
+          description: Category list created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+
+  /category-lists/{id}:
+    get:
+      tags:
+        - Category Lists
+      summary: Get category list by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Category list details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+        '404':
+          description: Category list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Category Lists
+      summary: Update category list (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryListUpdate'
+      responses:
+        '200':
+          description: Category list updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+    delete:
+      tags:
+        - Category Lists
+      summary: Delete category list (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Category list deleted successfully
+
+  /category-lists/{name}/json:
+    get:
+      tags:
+        - Category Lists
+      summary: Get category list JSON cache by name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category list JSON representation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListJSON'
+
+  # Upload Endpoints
+  /upload/video:
+    post:
+      tags:
+        - Upload
+      summary: Upload video file (Admin only)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                media_description_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Video file uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoFile'
+
+  /upload/webcomic:
+    post:
+      tags:
+        - Upload
+      summary: Upload webcomic files (Admin only)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                media_description_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Webcomic files uploaded successfully
+
+  /upload/backends:
+    get:
+      tags:
+        - Upload
+      summary: Get available storage backends (Admin only)
+      responses:
+        '200':
+          description: List of storage backends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    type:
+                      type: string
+                    enabled:
+                      type: boolean
+
+  /upload/file:
+    delete:
+      tags:
+        - Upload
+      summary: Delete uploaded file (Admin only)
+      parameters:
+        - name: file_url
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: File deleted successfully
+
+  # Reports
+  /description-reports:
+    get:
+      tags:
+        - Description Reports
+      summary: Get description reports (Admin only)
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List of description reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDescriptionReportsResponse'
+
+  /description-reports/{id}:
+    get:
+      tags:
+        - Description Reports
+      summary: Get description report by ID (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Description report details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescriptionReport'
+        '404':
+          description: Description report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /video-file-reports:
+    get:
+      tags:
+        - Video File Reports
+      summary: Get video file reports (Admin only)
+      parameters:
+        - $ref: '#/components/parameters/Skip'
+        - $ref: '#/components/parameters/Limit'
+        - name: event
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of video file reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVideoFileReportsResponse'
+
+  /video-file-reports/{id}:
+    get:
+      tags:
+        - Video File Reports
+      summary: Get video file report by ID (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Video file report details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoFileReport'
+        '404':
+          description: Video file report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Skip:
+      name: skip
+      in: query
+      description: Number of records to skip
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of records to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    # Base Models
+    User:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - email
+        - full_name
+        - is_active
+        - is_admin
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        is_active:
+          type: boolean
+        is_admin:
+          type: boolean
+
+    MediaDescription:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - file_number
+        - episode_title
+        - media_type
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        file_number:
+          type: integer
+        episode_title:
+          type: string
+        media_type:
+          $ref: '#/components/schemas/MediaTypeEnum'
+        file_name:
+          type: string
+          nullable: true
+        program_id:
+          type: string
+          format: uuid
+          nullable: true
+        season_id:
+          type: string
+          format: uuid
+          nullable: true
+        episode_number:
+          type: integer
+          nullable: true
+        media_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        themes_and_genres_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        descriptive_summary_text:
+          type: string
+          nullable: true
+        synopsis_text:
+          type: string
+          nullable: true
+        contract_start_date_utc:
+          type: string
+          format: date-time
+          nullable: true
+        contract_end_date_utc:
+          type: string
+          format: date-time
+          nullable: true
+        production_year:
+          type: integer
+          nullable: true
+        actors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        directors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        productor_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        authors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        origin_country_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        original_languages_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        copyright_owner_id:
+          type: string
+          nullable: true
+        available_countries_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        eligible_plans:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        audience_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+          description: SEO-friendly URL slug (auto-generated from title if empty)
+        image_fullscreen:
+          type: string
+          format: uuid
+          nullable: true
+        image_thumbnail1:
+          type: string
+          format: uuid
+          nullable: true
+        image_thumbnail2:
+          type: string
+          format: uuid
+          nullable: true
+        image_mobile_home:
+          type: string
+          format: uuid
+          nullable: true
+        image_desktop_home:
+          type: string
+          format: uuid
+          nullable: true
+        additional_images_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        tag_text_list:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Human-readable tags/keywords
+        translation_share:
+          type: number
+          format: float
+          nullable: true
+        sacem_share:
+          type: number
+          format: float
+          nullable: true
+        other_share:
+          type: number
+          format: float
+          nullable: true
+        revenue_share:
+          type: number
+          format: float
+          nullable: true
+        paid_token_cost:
+          type: integer
+          nullable: true
+        expected_filename:
+          type: string
+          nullable: true
+
+    VideoFile:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        media_description_id:
+          type: string
+          format: uuid
+          nullable: true
+        encodage_date_utc:
+          type: string
+          format: date-time
+          nullable: true
+        duration_seconds:
+          type: integer
+          nullable: true
+        subtitle_languages_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        audio_languages_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        resolutions_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        accessibilities_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        file_url:
+          type: string
+          nullable: true
+        file_name:
+          type: string
+          nullable: true
+        encoding_status:
+          $ref: '#/components/schemas/EncodingStatusEnum'
+        upload_method:
+          $ref: '#/components/schemas/UploadMethodEnum'
+        upload_status:
+          $ref: '#/components/schemas/UploadStatusEnum'
+        file_size_bytes:
+          type: integer
+          nullable: true
+        video_codec:
+          type: string
+          nullable: true
+        audio_codec:
+          type: string
+          nullable: true
+        file_format:
+          type: string
+          nullable: true
+        upload_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        external_url:
+          type: string
+          nullable: true
+        resolution_width:
+          type: integer
+          nullable: true
+        resolution_height:
+          type: integer
+          nullable: true
+        bitrate_kbps:
+          type: integer
+          nullable: true
+        frame_rate:
+          type: number
+          format: float
+          nullable: true
+        aspect_ratio:
+          type: string
+          nullable: true
+        audio_sample_rate:
+          type: integer
+          nullable: true
+        audio_channels:
+          type: integer
+          nullable: true
+        subtitle_tracks:
+          type: array
+          items:
+            type: string
+          nullable: true
+        thumbnail_timestamps:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        chapter_markers:
+          type: string
+          nullable: true
+        encoding_profile:
+          type: string
+          nullable: true
+        cdn_url:
+          type: string
+          nullable: true
+        mux_asset_id:
+          type: string
+          nullable: true
+        mux_playback_id:
+          type: string
+          nullable: true
+        drm_protection:
+          type: boolean
+          nullable: true
+        geo_restrictions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        quality_variants:
+          type: array
+          items:
+            type: string
+          nullable: true
+        processing_logs:
+          type: string
+          nullable: true
+        environment_key:
+          type: string
+          nullable: true
+          description: Environment identifier key
+        protection_key:
+          type: string
+          nullable: true
+          description: Content protection key
+        slug:
+          type: string
+          nullable: true
+          description: SEO-friendly URL slug (auto-generated from file_name if empty)
+
+    Program:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - program_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        program_name:
+          type: string
+        general_media_description:
+          type: string
+          format: uuid
+          nullable: true
+
+    Season:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - program_id
+        - season_number
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        program_id:
+          type: string
+          format: uuid
+        season_number:
+          type: integer
+        general_media_description:
+          type: string
+          format: uuid
+          nullable: true
+        season_name:
+          type: string
+          nullable: true
+        episodes_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+
+    PublicPerson:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - stage_name_roman
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        stage_name_roman:
+          type: string
+        profession_list:
+          type: array
+          items:
+            type: string
+          nullable: true
+        face_image_id:
+          type: string
+          format: uuid
+          nullable: true
+        first_name_hangul:
+          type: string
+          nullable: true
+        last_name_hangul:
+          type: string
+          nullable: true
+        first_name_roman:
+          type: string
+          nullable: true
+        last_name_roman:
+          type: string
+          nullable: true
+        stage_name_hangul:
+          type: string
+          nullable: true
+
+    Language:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - name
+        - sigle
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        name:
+          type: string
+        sigle:
+          type: string
+
+    Country:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        name:
+          type: string
+
+    Territory:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        name:
+          type: string
+        country:
+          type: string
+          format: uuid
+          nullable: true
+
+    Picture:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - photo_url
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        photo_url:
+          type: string
+        file_name:
+          type: string
+          nullable: true
+        file_size_bytes:
+          type: integer
+          nullable: true
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        alt_text:
+          type: string
+          nullable: true
+
+    SubscriptionPlan:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        name:
+          type: string
+
+    AudienceCategory:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        name:
+          type: string
+
+    ContentList:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - last_updated_utc
+        - title
+        - thumbnail_format
+        - is_active
+        - display_order
+        - latest_first
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        last_updated_utc:
+          type: string
+          format: date-time
+        title:
+          type: string
+        thumbnail_format:
+          $ref: '#/components/schemas/ThumbnailFormatEnum'
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        latest_first:
+          type: boolean
+          description: Order items by latest first (default true)
+        description:
+          type: string
+          nullable: true
+        content_items:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        content_types:
+          type: array
+          items:
+            type: string
+          nullable: true
+        media_type:
+          $ref: '#/components/schemas/MediaTypeEnum'
+          nullable: true
+        media_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        themes_and_genres_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+          description: SEO-friendly URL slug (unique, auto-generated from filters if empty)
+        json_content:
+          type: string
+          nullable: true
+        json_last_updated:
+          type: string
+          format: date-time
+          nullable: true
+
+    ScreenDescription:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - last_updated_utc
+        - title
+        - is_active
+        - display_order
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        last_updated_utc:
+          type: string
+          format: date-time
+        title:
+          type: string
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        description:
+          type: string
+          nullable: true
+        content_lists:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        screen_type:
+          type: string
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+          description: SEO-friendly URL slug (unique, auto-generated from title if empty)
+        json_content:
+          type: string
+          nullable: true
+        json_last_updated:
+          type: string
+          format: date-time
+          nullable: true
+
+    CategoryList:
+      type: object
+      required:
+        - id
+        - creation_date_utc
+        - last_updated_utc
+        - name
+        - title
+        - is_active
+        - display_order
+      properties:
+        id:
+          type: string
+          format: uuid
+        creation_date_utc:
+          type: string
+          format: date-time
+        last_updated_utc:
+          type: string
+          format: date-time
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        json_content:
+          type: string
+          nullable: true
+        json_last_updated:
+          type: string
+          format: date-time
+          nullable: true
+
+    DescriptionReport:
+      type: object
+      required:
+        - id
+        - description_id
+        - title
+        - success_associated_file
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        description_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        success_associated_file:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+        batch_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    VideoFileReport:
+      type: object
+      required:
+        - id
+        - event
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        video_file_id:
+          type: string
+          format: uuid
+          nullable: true
+        video_file_name:
+          type: string
+          nullable: true
+        video_file_url:
+          type: string
+          nullable: true
+        upload_method:
+          type: string
+          nullable: true
+        file_size:
+          type: string
+          nullable: true
+        duration:
+          type: string
+          nullable: true
+        media_description_id:
+          type: string
+          format: uuid
+          nullable: true
+        media_description_title:
+          type: string
+          nullable: true
+        event:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        additional_info:
+          type: string
+          nullable: true
+
+    # Request/Response schemas
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthTokens:
+      type: object
+      required:
+        - access_token
+        - token_type
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+
+    # Create schemas
+    UserCreate:
+      type: object
+      required:
+        - email
+        - password
+        - full_name
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        full_name:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+        is_admin:
+          type: boolean
+          default: false
+
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        is_active:
+          type: boolean
+        is_admin:
+          type: boolean
+        password:
+          type: string
+
+    MediaDescriptionCreate:
+      type: object
+      required:
+        - file_number
+        - episode_title
+        - media_type
+      properties:
+        file_number:
+          type: integer
+        episode_title:
+          type: string
+        media_type:
+          $ref: '#/components/schemas/MediaTypeEnum'
+        file_name:
+          type: string
+        program_id:
+          type: string
+          format: uuid
+        season_id:
+          type: string
+          format: uuid
+        episode_number:
+          type: integer
+        media_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        themes_and_genres_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        descriptive_summary_text:
+          type: string
+        synopsis_text:
+          type: string
+        contract_start_date_utc:
+          type: string
+          format: date-time
+        contract_end_date_utc:
+          type: string
+          format: date-time
+        production_year:
+          type: integer
+        actors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        directors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        productor_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        authors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        origin_country_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        original_languages_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+        copyright_owner_id:
+          type: string
+        available_countries_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        eligible_plans:
+          type: array
+          items:
+            type: string
+            format: uuid
+        audience_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        slug:
+          type: string
+        image_fullscreen:
+          type: string
+          format: uuid
+        image_thumbnail1:
+          type: string
+          format: uuid
+        image_thumbnail2:
+          type: string
+          format: uuid
+        image_mobile_home:
+          type: string
+          format: uuid
+        image_desktop_home:
+          type: string
+          format: uuid
+        additional_images_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        tag_text_list:
+          type: array
+          items:
+            type: string
+        translation_share:
+          type: number
+          format: float
+        sacem_share:
+          type: number
+          format: float
+        other_share:
+          type: number
+          format: float
+        revenue_share:
+          type: number
+          format: float
+        paid_token_cost:
+          type: integer
+        expected_filename:
+          type: string
+
+    MediaDescriptionUpdate:
+      type: object
+      properties:
+        episode_title:
+          type: string
+        media_type:
+          $ref: '#/components/schemas/MediaTypeEnum'
+        file_name:
+          type: string
+        program_id:
+          type: string
+          format: uuid
+        season_id:
+          type: string
+          format: uuid
+        episode_number:
+          type: integer
+        media_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        themes_and_genres_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        descriptive_summary_text:
+          type: string
+        synopsis_text:
+          type: string
+        contract_start_date_utc:
+          type: string
+          format: date-time
+        contract_end_date_utc:
+          type: string
+          format: date-time
+        production_year:
+          type: integer
+        actors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        directors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        productor_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        authors_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        origin_country_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        original_languages_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+        copyright_owner_id:
+          type: string
+        available_countries_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        eligible_plans:
+          type: array
+          items:
+            type: string
+            format: uuid
+        audience_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        slug:
+          type: string
+        image_fullscreen:
+          type: string
+          format: uuid
+        image_thumbnail1:
+          type: string
+          format: uuid
+        image_thumbnail2:
+          type: string
+          format: uuid
+        image_mobile_home:
+          type: string
+          format: uuid
+        image_desktop_home:
+          type: string
+          format: uuid
+        additional_images_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        tag_text_list:
+          type: array
+          items:
+            type: string
+        translation_share:
+          type: number
+          format: float
+        sacem_share:
+          type: number
+          format: float
+        other_share:
+          type: number
+          format: float
+        revenue_share:
+          type: number
+          format: float
+        paid_token_cost:
+          type: integer
+        expected_filename:
+          type: string
+
+    VideoFileCreate:
+      type: object
+      properties:
+        media_description_id:
+          type: string
+          format: uuid
+        file_name:
+          type: string
+        upload_method:
+          $ref: '#/components/schemas/UploadMethodEnum'
+        external_url:
+          type: string
+        environment_key:
+          type: string
+        protection_key:
+          type: string
+        slug:
+          type: string
+
+    VideoFileUpdate:
+      type: object
+      properties:
+        media_description_id:
+          type: string
+          format: uuid
+        file_name:
+          type: string
+        encoding_status:
+          $ref: '#/components/schemas/EncodingStatusEnum'
+        upload_status:
+          $ref: '#/components/schemas/UploadStatusEnum'
+        duration_seconds:
+          type: integer
+        file_size_bytes:
+          type: integer
+        video_codec:
+          type: string
+        audio_codec:
+          type: string
+        file_format:
+          type: string
+        resolution_width:
+          type: integer
+        resolution_height:
+          type: integer
+        bitrate_kbps:
+          type: integer
+        frame_rate:
+          type: number
+          format: float
+        aspect_ratio:
+          type: string
+        audio_sample_rate:
+          type: integer
+        audio_channels:
+          type: integer
+        mux_asset_id:
+          type: string
+        mux_playback_id:
+          type: string
+        drm_protection:
+          type: boolean
+        environment_key:
+          type: string
+        protection_key:
+          type: string
+        slug:
+          type: string
+
+    ContentListCreate:
+      type: object
+      required:
+        - title
+        - thumbnail_format
+        - is_active
+        - display_order
+        - latest_first
+      properties:
+        title:
+          type: string
+        thumbnail_format:
+          $ref: '#/components/schemas/ThumbnailFormatEnum'
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        latest_first:
+          type: boolean
+          default: true
+        description:
+          type: string
+        content_items:
+          type: array
+          items:
+            type: string
+            format: uuid
+        content_types:
+          type: array
+          items:
+            type: string
+        media_type:
+          $ref: '#/components/schemas/MediaTypeEnum'
+        media_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        themes_and_genres_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        slug:
+          type: string
+
+    ContentListUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        thumbnail_format:
+          $ref: '#/components/schemas/ThumbnailFormatEnum'
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        latest_first:
+          type: boolean
+        description:
+          type: string
+        content_items:
+          type: array
+          items:
+            type: string
+            format: uuid
+        content_types:
+          type: array
+          items:
+            type: string
+        media_type:
+          $ref: '#/components/schemas/MediaTypeEnum'
+        media_categories_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        themes_and_genres_id_list:
+          type: array
+          items:
+            type: string
+            format: uuid
+        slug:
+          type: string
+
+    ScreenDescriptionCreate:
+      type: object
+      required:
+        - title
+        - is_active
+        - display_order
+      properties:
+        title:
+          type: string
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        description:
+          type: string
+        content_lists:
+          type: array
+          items:
+            type: string
+            format: uuid
+        screen_type:
+          type: string
+        slug:
+          type: string
+
+    ScreenDescriptionUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        description:
+          type: string
+        content_lists:
+          type: array
+          items:
+            type: string
+            format: uuid
+        screen_type:
+          type: string
+        slug:
+          type: string
+
+    ProgramCreate:
+      type: object
+      required:
+        - program_name
+      properties:
+        program_name:
+          type: string
+        general_media_description:
+          type: string
+          format: uuid
+
+    ProgramUpdate:
+      type: object
+      properties:
+        program_name:
+          type: string
+        general_media_description:
+          type: string
+          format: uuid
+
+    SeasonCreate:
+      type: object
+      required:
+        - program_id
+        - season_number
+      properties:
+        program_id:
+          type: string
+          format: uuid
+        season_number:
+          type: integer
+
+    SeasonUpdate:
+      type: object
+      properties:
+        season_number:
+          type: integer
+
+    PublicPersonCreate:
+      type: object
+      required:
+        - stage_name_roman
+      properties:
+        stage_name_roman:
+          type: string
+        profession_list:
+          type: array
+          items:
+            type: string
+        face_image_id:
+          type: string
+          format: uuid
+        first_name_hangul:
+          type: string
+        last_name_hangul:
+          type: string
+        first_name_roman:
+          type: string
+        last_name_roman:
+          type: string
+        stage_name_hangul:
+          type: string
+
+    PublicPersonUpdate:
+      type: object
+      properties:
+        stage_name_roman:
+          type: string
+        profession_list:
+          type: array
+          items:
+            type: string
+        face_image_id:
+          type: string
+          format: uuid
+        first_name_hangul:
+          type: string
+        last_name_hangul:
+          type: string
+        first_name_roman:
+          type: string
+        last_name_roman:
+          type: string
+        stage_name_hangul:
+          type: string
+
+    LanguageCreate:
+      type: object
+      required:
+        - name
+        - sigle
+      properties:
+        name:
+          type: string
+        sigle:
+          type: string
+
+    LanguageUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        sigle:
+          type: string
+
+    CountryCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    CountryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+
+    TerritoryCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+          format: uuid
+
+    TerritoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+          format: uuid
+
+    PictureCreate:
+      type: object
+      required:
+        - photo_url
+      properties:
+        photo_url:
+          type: string
+        file_name:
+          type: string
+        file_size_bytes:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+        alt_text:
+          type: string
+
+    PictureUpdate:
+      type: object
+      properties:
+        photo_url:
+          type: string
+        file_name:
+          type: string
+        file_size_bytes:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+        alt_text:
+          type: string
+
+    SubscriptionPlanCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    SubscriptionPlanUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+
+    AudienceCategoryCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    AudienceCategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+
+    CategoryListCreate:
+      type: object
+      required:
+        - name
+        - title
+        - is_active
+        - display_order
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+
+    CategoryListUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+
+    # JSON Response schemas
+    ContentListJSON:
+      type: object
+      required:
+        - id
+        - title
+        - thumbnail_format
+        - last_updated
+        - items
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        thumbnail_format:
+          $ref: '#/components/schemas/ThumbnailFormatEnum'
+        description:
+          type: string
+        last_updated:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentListItemJSON'
+
+    ContentListItemJSON:
+      type: object
+      required:
+        - content_id
+        - content_type
+        - title
+        - display_order
+      properties:
+        content_id:
+          type: string
+          format: uuid
+        content_type:
+          type: string
+          enum: [program, season, media_description]
+        title:
+          type: string
+        thumbnail_url:
+          type: string
+        display_order:
+          type: integer
+
+    ScreenDescriptionJSON:
+      type: object
+      required:
+        - id
+        - title
+        - last_updated
+        - content_lists
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        screen_type:
+          type: string
+        last_updated:
+          type: string
+          format: date-time
+        content_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentListJSON'
+
+    CategoryListJSON:
+      type: object
+      required:
+        - id
+        - name
+        - title
+        - is_active
+        - display_order
+        - items
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+        last_updated:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            type: object
+
+    # Request schemas for reordering
+    ReorderContentRequest:
+      type: object
+      required:
+        - content_items
+        - content_types
+      properties:
+        content_items:
+          type: array
+          items:
+            type: string
+            format: uuid
+        content_types:
+          type: array
+          items:
+            type: string
+
+    ReorderListsRequest:
+      type: object
+      required:
+        - content_lists
+      properties:
+        content_lists:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    # Bulk operations
+    BulkMediaDescriptionRequest:
+      type: object
+      required:
+        - descriptions
+      properties:
+        descriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaDescriptionCreate'
+
+    BulkMediaDescriptionResponse:
+      type: object
+      required:
+        - created_count
+        - failed_count
+        - batch_id
+        - reports
+      properties:
+        created_count:
+          type: integer
+        failed_count:
+          type: integer
+        batch_id:
+          type: string
+          format: uuid
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/DescriptionReport'
+
+    # Pagination
+    PaginationInfo:
+      type: object
+      required:
+        - skip
+        - limit
+        - total
+        - page
+        - pages
+      properties:
+        skip:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+
+    # Paginated responses
+    PaginatedUsersResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedMediaDescriptionsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaDescription'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedVideoFilesResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoFile'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedProgramsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Program'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedSeasonsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Season'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedPublicPersonsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPerson'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedLanguagesResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Language'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedCountriesResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Country'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedTerritoriesResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Territory'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedPicturesResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Picture'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedSubscriptionPlansResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionPlan'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedAudienceCategoriesResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AudienceCategory'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedContentListsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentList'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedScreenDescriptionsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScreenDescription'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedCategoryListsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryList'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedDescriptionReportsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DescriptionReport'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedVideoFileReportsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoFileReport'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    # Enums
+    MediaTypeEnum:
+      type: string
+      enum:
+        - video
+        - webtoon
+        - trailer
+        - teaser
+        - excerpt
+
+    ThumbnailFormatEnum:
+      type: string
+      enum:
+        - small_square
+        - medium_portrait
+        - large_landscape
+        - vertical_mobile
+
+    EncodingStatusEnum:
+      type: string
+      enum:
+        - pending
+        - processing
+        - completed
+        - failed
+
+    UploadMethodEnum:
+      type: string
+      enum:
+        - new_upload
+        - existing_url
+
+    UploadStatusEnum:
+      type: string
+      enum:
+        - metadata_only
+        - file_uploading
+        - upload_completed
+        - upload_failed
+
+    # Error response
+    Error:
+      type: object
+      required:
+        - error
+        - timestamp
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+        request_id:
+          type: string
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: Users
+    description: User management operations
+  - name: Media Descriptions
+    description: Media content metadata operations
+  - name: Video Files
+    description: Video file management operations
+  - name: Programs
+    description: Program/Show management operations
+  - name: Seasons
+    description: Season management operations
+  - name: Public Persons
+    description: Cast and crew management operations
+  - name: Languages
+    description: Language management operations
+  - name: Countries
+    description: Country management operations
+  - name: Territories
+    description: Territory management operations
+  - name: Pictures
+    description: Image management operations
+  - name: Subscription Plans
+    description: Subscription plan management operations
+  - name: Audience Categories
+    description: Audience category management operations
+  - name: Content Lists
+    description: Content list management operations
+  - name: Screen Descriptions
+    description: Screen description management operations
+  - name: Category Lists
+    description: Category list management operations
+  - name: Upload
+    description: File upload operations
+  - name: Description Reports
+    description: Description report operations
+  - name: Video File Reports
+    description: Video file report operations

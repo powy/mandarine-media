@@ -47,7 +47,7 @@ export const usersApi = {
       searchParams.append('q', q);
     }
     
-    const response = await apiClient.get(`/api/v1/users?${searchParams.toString()}`);
+    const response = await apiClient.get(`/users/?${searchParams.toString()}`);
     return response.data as PaginatedUsersResponse;
   },
 
@@ -62,27 +62,27 @@ export const usersApi = {
     if (filters?.role && filters.role !== '') params.append('role', filters.role);
     if (filters?.search && filters.search !== '') params.append('search', filters.search);
 
-    const response = await apiClient.get(`/api/v1/users?${params}`);
+    const response = await apiClient.get(`/users/?${params}`);
     return response.data as UserListResponse;
   },
 
   getById: async (id: string): Promise<User> => {
-    const response = await apiClient.get(`/api/v1/users/${id}`);
+    const response = await apiClient.get(`/users/${id}`);
     return response.data as User;
   },
 
   create: async (data: UserCreate): Promise<User> => {
-    const response = await apiClient.post('/api/v1/users', data);
+    const response = await apiClient.post('/users', data);
     return response.data as User;
   },
 
   update: async (id: string, data: UserUpdate): Promise<User> => {
-    const response = await apiClient.put(`/api/v1/users/${id}`, data);
+    const response = await apiClient.put(`/users/${id}`, data);
     return response.data as User;
   },
 
   delete: async (id: string): Promise<User> => {
-    const response = await apiClient.delete(`/api/v1/users/${id}`);
+    const response = await apiClient.delete(`/users/${id}`);
     return response.data as User;
   },
 
@@ -92,7 +92,7 @@ export const usersApi = {
   },
 
   async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>('/api/v1/users/me');
+    const response = await apiClient.get<User>('/users/me');
     return response.data;
   },
 
@@ -109,12 +109,12 @@ export const usersApi = {
   },
 
   async activateUser(id: string): Promise<User> {
-    const response = await apiClient.patch<User>(`/api/v1/users/${id}/activate`);
+    const response = await apiClient.patch<User>(`/users/${id}/activate`);
     return response.data;
   },
 
   async deactivateUser(id: string): Promise<User> {
-    const response = await apiClient.patch<User>(`/api/v1/users/${id}/deactivate`);
+    const response = await apiClient.patch<User>(`/users/${id}/deactivate`);
     return response.data;
   },
 };

@@ -14,4 +14,4 @@ from .territory import territory
 from .picture import picture
 from .category_list import category_list, category_list_item
 from .content_list import content_list
-from .screen_content import screen_content
+from .screen_description import screen_description
