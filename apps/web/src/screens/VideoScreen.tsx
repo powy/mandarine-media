@@ -134,7 +134,6 @@ const VideoScreen: React.FC = () => {
               <MuxPlayer
                 playbackId={playbackId}
                 streamType="on-demand"
-                controls
                 style={{ width: '100%', height: '100%' }}
                 className="w-full h-full"
               />

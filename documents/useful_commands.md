@@ -1,5 +1,11 @@
 # Project Setup Guide
 
+## Build share package (prod or dev)
+```bash
+npm run build:share
+npm run dev:share
+```
+
 ## Mobile App
 
 ```bash
@@ -18,6 +24,13 @@ npx nx run alpha:start --reset-cache
 npx nx run alpha:android
 ```
 
+
+## Web App
+
+```bash
+npm install
+npx nx serve web
+```
 
 ## Back Office
 
