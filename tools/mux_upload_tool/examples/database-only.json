@@ -1,0 +1,64 @@
+{
+  "auth": {
+    "mux_token_id": "YOUR_MUX_TOKEN_ID",
+    "mux_token_secret": "YOUR_MUX_TOKEN_SECRET"
+  },
+  "video": {
+    "filepath": "/path/to/your/video.mp4",
+    "title": "Database Integration Example",
+    "description": "Example focusing on database integration"
+  },
+  "settings": {
+    "playback_policy": ["public"],
+    "video_quality": "plus",
+    "max_resolution_tier": "1440p",
+    "normalize_audio": true,
+    "master_access": "none",
+    "mp4_support": "capped-1080p",
+    "passthrough": "db-integration-001"
+  },
+  "metadata": {
+    "title": "Database Integration Video",
+    "external_id": "db-vid-001",
+    "upload_batch": "batch-2024-001",
+    "department": "marketing",
+    "approval_status": "pending",
+    "upload_date": "2024-01-15",
+    "uploader_id": "user-123"
+  },
+  "database": {
+    "type": "postgresql",
+    "connection": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "media_platform",
+      "user": "media_user",
+      "password": "your_secure_password"
+    },
+    "table": "mux_assets",
+    "save_playback_ids": true,
+    "save_tracks": true,
+    "save_metadata": true
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": "./logs/database-upload.log",
+    "console": true,
+    "format": "json"
+  },
+  "webhook": {
+    "enabled": true,
+    "url": "https://yourdomain.com/api/webhooks/mux-status",
+    "events": [
+      "video.asset.ready",
+      "video.asset.errored"
+    ]
+  },
+  "options": {
+    "timeout": 3600000,
+    "retry_attempts": 3,
+    "retry_delay": 5000,
+    "chunk_size": 31457280
+  }
+}

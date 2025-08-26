@@ -1,0 +1,154 @@
+{
+  "analysis_date": "2025-08-24T11:30:57.901Z",
+  "root_path": "tests/05-movie-trailers-clips/videos",
+  "media_type": "movie_collection",
+  "structure_type": "flat",
+  "global_images": [
+    {
+      "filepath": "tests/05-movie-trailers-clips/images/fanart.jpg",
+      "filename": "fanart.jpg",
+      "type": "fanart",
+      "dimensions": null,
+      "size": 0
+    },
+    {
+      "filepath": "tests/05-movie-trailers-clips/images/poster.jpg",
+      "filename": "poster.jpg",
+      "type": "poster",
+      "dimensions": null,
+      "size": 0
+    },
+    {
+      "filepath": "tests/05-movie-trailers-clips/images/The Matrix 1920x1080.jpg",
+      "filename": "The Matrix 1920x1080.jpg",
+      "type": "unknown",
+      "dimensions": null,
+      "size": 0
+    }
+  ],
+  "media_items": [
+    {
+      "episode_number": null,
+      "season_number": null,
+      "title": null,
+      "video": {
+        "filepath": "tests/05-movie-trailers-clips/videos/EX Behind Scenes.mkv",
+        "filename": "EX Behind Scenes.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "clip",
+        "is_trailer": false,
+        "is_clip": true,
+        "associated_episode": null
+      },
+      "subtitles": [],
+      "images": []
+    },
+    {
+      "episode_number": null,
+      "season_number": null,
+      "title": null,
+      "video": {
+        "filepath": "tests/05-movie-trailers-clips/videos/EX Making Of.mp4",
+        "filename": "EX Making Of.mp4",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "clip",
+        "is_trailer": false,
+        "is_clip": true,
+        "associated_episode": null
+      },
+      "subtitles": [],
+      "images": []
+    },
+    {
+      "episode_number": null,
+      "season_number": null,
+      "title": null,
+      "video": {
+        "filepath": "tests/05-movie-trailers-clips/videos/Matrix-trailer.mkv",
+        "filename": "Matrix-trailer.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "trailer",
+        "is_trailer": true,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [],
+      "images": []
+    },
+    {
+      "episode_number": null,
+      "season_number": null,
+      "title": null,
+      "video": {
+        "filepath": "tests/05-movie-trailers-clips/videos/The Matrix Trailer.mp4",
+        "filename": "The Matrix Trailer.mp4",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "trailer",
+        "is_trailer": true,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [],
+      "images": []
+    },
+    {
+      "episode_number": null,
+      "season_number": null,
+      "title": null,
+      "video": {
+        "filepath": "tests/05-movie-trailers-clips/videos/The Matrix.mkv",
+        "filename": "The Matrix.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "movie",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [],
+      "images": []
+    }
+  ],
+  "statistics": {
+    "total_videos": 5,
+    "total_subtitles": 4,
+    "total_images": 3,
+    "matched_subtitles": 0,
+    "unmatched_subtitles": 4,
+    "languages_found": [],
+    "subtitle_formats": []
+  },
+  "unmatched_files": {
+    "subtitles": [
+      "tests/05-movie-trailers-clips/subtitles/EX Making Of.en.srt",
+      "tests/05-movie-trailers-clips/subtitles/The Matrix Trailer.en.srt",
+      "tests/05-movie-trailers-clips/subtitles/The Matrix.en.srt",
+      "tests/05-movie-trailers-clips/subtitles/The Matrix.fr.srt"
+    ],
+    "images": []
+  },
+  "input_paths": {
+    "videoPath": "tests/05-movie-trailers-clips/videos",
+    "subtitlePath": "tests/05-movie-trailers-clips/subtitles",
+    "imagePath": "tests/05-movie-trailers-clips/images"
+  }
+}

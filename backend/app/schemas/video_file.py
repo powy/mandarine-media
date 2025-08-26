@@ -22,6 +22,7 @@ class UploadStatusEnum(str, enum.Enum):
     file_uploading = "file_uploading"
     upload_completed = "upload_completed"
     upload_failed = "upload_failed"
+    ready_no_subtitles = "ready_no_subtitles"
 
 
 class VideoFileBase(BaseModel):

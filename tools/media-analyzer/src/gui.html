@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Analyzer Tool</title>
+    <link rel="stylesheet" href="gui.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🎬 Media Analyzer Tool</h1>
+            <p>Analyze and organize your media files with automatic association</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <h2>📁 Select Input Paths</h2>
+                <div class="path-selection">
+                    <div class="path-group">
+                        <label for="video-path">Video Files Path:</label>
+                        <div class="path-input-group">
+                            <input type="text" id="video-path" placeholder="Type or browse folder path containing video files...">
+                            <button id="browse-video" class="browse-btn">📂 Browse</button>
+                        </div>
+                    </div>
+
+                    <div class="path-group">
+                        <label for="subtitle-path">Subtitle Files Path (Optional):</label>
+                        <div class="path-input-group">
+                            <input type="text" id="subtitle-path" placeholder="Type or browse folder path containing subtitle files...">
+                            <button id="browse-subtitle" class="browse-btn">📂 Browse</button>
+                        </div>
+                    </div>
+
+                    <div class="path-group">
+                        <label for="image-path">Image Files Path (Optional):</label>
+                        <div class="path-input-group">
+                            <input type="text" id="image-path" placeholder="Type or browse folder path containing image files...">
+                            <button id="browse-image" class="browse-btn">📂 Browse</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <h3>⚙️ Analysis Options</h3>
+                    <div class="options-grid">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="read-metadata" checked>
+                            <span class="checkmark"></span>
+                            Read video metadata (slower but more detailed)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="export-upload">
+                            <span class="checkmark"></span>
+                            Generate upload format
+                        </label>
+                    </div>
+                </div>
+
+                <button id="start-analysis" class="start-btn" disabled>🚀 Start Analysis</button>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="progress-section" style="display: none;">
+                <h2>📊 Analysis Progress</h2>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="progress-stage">Initializing...</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <p id="progress-message">Preparing analysis...</p>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2>📋 Analysis Results</h2>
+                    <div class="results-actions">
+                        <button id="close-results" class="close-btn">✕ Close Report</button>
+                    </div>
+                </div>
+                
+                <div class="results-content" id="results-content">
+                    <!-- Results will be populated here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="gui-frontend.js"></script>
+</body>
+</html>

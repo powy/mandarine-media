@@ -1,0 +1,222 @@
+{
+  "analysis_date": "2025-08-24T11:30:42.847Z",
+  "root_path": "tests/03-series-global-images/videos",
+  "media_type": "series",
+  "structure_type": "flat",
+  "global_images": [
+    {
+      "filepath": "tests/03-series-global-images/images/banner.png",
+      "filename": "banner.png",
+      "type": "banner",
+      "dimensions": null,
+      "size": 0
+    },
+    {
+      "filepath": "tests/03-series-global-images/images/fanart.jpg",
+      "filename": "fanart.jpg",
+      "type": "fanart",
+      "dimensions": null,
+      "size": 0
+    },
+    {
+      "filepath": "tests/03-series-global-images/images/logo.png",
+      "filename": "logo.png",
+      "type": "logo",
+      "dimensions": null,
+      "size": 0
+    },
+    {
+      "filepath": "tests/03-series-global-images/images/poster.jpg",
+      "filename": "poster.jpg",
+      "type": "poster",
+      "dimensions": null,
+      "size": 0
+    }
+  ],
+  "media_items": [
+    {
+      "episode_number": 1,
+      "season_number": 1,
+      "title": null,
+      "video": {
+        "filepath": "tests/03-series-global-images/videos/S01E01.mkv",
+        "filename": "S01E01.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "unknown",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E03.en.srt",
+          "filename": "S01E03.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": 2,
+      "season_number": 1,
+      "title": null,
+      "video": {
+        "filepath": "tests/03-series-global-images/videos/S01E02.mkv",
+        "filename": "S01E02.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "unknown",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E03.en.srt",
+          "filename": "S01E03.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": 3,
+      "season_number": 1,
+      "title": null,
+      "video": {
+        "filepath": "tests/03-series-global-images/videos/S01E03.mkv",
+        "filename": "S01E03.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "unknown",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/03-series-global-images/subtitles/S01E03.en.srt",
+          "filename": "S01E03.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    }
+  ],
+  "statistics": {
+    "total_videos": 3,
+    "total_subtitles": 3,
+    "total_images": 4,
+    "matched_subtitles": 9,
+    "unmatched_subtitles": -6,
+    "languages_found": [
+      "en"
+    ],
+    "subtitle_formats": [
+      "srt"
+    ]
+  },
+  "unmatched_files": {
+    "subtitles": [],
+    "images": []
+  },
+  "input_paths": {
+    "videoPath": "tests/03-series-global-images/videos",
+    "subtitlePath": "tests/03-series-global-images/subtitles",
+    "imagePath": "tests/03-series-global-images/images"
+  }
+}

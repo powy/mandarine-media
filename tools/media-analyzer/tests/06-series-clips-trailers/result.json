@@ -1,0 +1,313 @@
+{
+  "analysis_date": "2025-08-24T11:31:16.781Z",
+  "root_path": "tests/06-series-clips-trailers/videos",
+  "media_type": "series",
+  "structure_type": "flat",
+  "global_images": [],
+  "media_items": [
+    {
+      "episode_number": 1,
+      "season_number": 1,
+      "title": "EX  Preview",
+      "video": {
+        "filepath": "tests/06-series-clips-trailers/videos/EX S01E01 Preview.mkv",
+        "filename": "EX S01E01 Preview.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "trailer",
+        "is_trailer": true,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/EX S01E01 Preview.en.srt",
+          "filename": "EX S01E01 Preview.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": 2,
+      "season_number": 1,
+      "title": "EX  Deleted",
+      "video": {
+        "filepath": "tests/06-series-clips-trailers/videos/EX S01E02 Deleted.mp4",
+        "filename": "EX S01E02 Deleted.mp4",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "clip",
+        "is_trailer": false,
+        "is_clip": true,
+        "associated_episode": {
+          "filepath": "tests/06-series-clips-trailers/videos/S01E02.mkv",
+          "filename": "S01E02.mkv",
+          "season": 1,
+          "episode": 2,
+          "score": 95
+        }
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": 1,
+      "season_number": 1,
+      "title": null,
+      "video": {
+        "filepath": "tests/06-series-clips-trailers/videos/S01E01.mkv",
+        "filename": "S01E01.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "unknown",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/EX S01E01 Preview.en.srt",
+          "filename": "EX S01E01 Preview.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E03.en.srt",
+          "filename": "S01E03.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": 2,
+      "season_number": 1,
+      "title": null,
+      "video": {
+        "filepath": "tests/06-series-clips-trailers/videos/S01E02.mkv",
+        "filename": "S01E02.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "unknown",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E03.en.srt",
+          "filename": "S01E03.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": 3,
+      "season_number": 1,
+      "title": null,
+      "video": {
+        "filepath": "tests/06-series-clips-trailers/videos/S01E03.mkv",
+        "filename": "S01E03.mkv",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "unknown",
+        "is_trailer": false,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E01.en.srt",
+          "filename": "S01E01.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E02.en.srt",
+          "filename": "S01E02.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        },
+        {
+          "filepath": "tests/06-series-clips-trailers/subtitles/S01E03.en.srt",
+          "filename": "S01E03.en.srt",
+          "language_code": "en",
+          "language_name": "English",
+          "format": "srt",
+          "is_forced": false,
+          "is_sdh": false,
+          "is_commentary": false,
+          "size": 0
+        }
+      ],
+      "images": []
+    },
+    {
+      "episode_number": null,
+      "season_number": null,
+      "title": null,
+      "video": {
+        "filepath": "tests/06-series-clips-trailers/videos/Season 1 Trailer.mp4",
+        "filename": "Season 1 Trailer.mp4",
+        "size": 0,
+        "duration": null,
+        "resolution": null,
+        "codec": null,
+        "bitrate": null,
+        "video_type": "trailer",
+        "is_trailer": true,
+        "is_clip": false,
+        "associated_episode": null
+      },
+      "subtitles": [],
+      "images": [
+        {
+          "filepath": "tests/06-series-clips-trailers/images/poster.jpg",
+          "filename": "poster.jpg",
+          "type": "poster",
+          "dimensions": null,
+          "size": 0
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "total_videos": 6,
+    "total_subtitles": 4,
+    "total_images": 1,
+    "matched_subtitles": 13,
+    "unmatched_subtitles": -9,
+    "languages_found": [
+      "en"
+    ],
+    "subtitle_formats": [
+      "srt"
+    ]
+  },
+  "unmatched_files": {
+    "subtitles": [],
+    "images": []
+  },
+  "input_paths": {
+    "videoPath": "tests/06-series-clips-trailers/videos",
+    "subtitlePath": "tests/06-series-clips-trailers/subtitles",
+    "imagePath": "tests/06-series-clips-trailers/images"
+  }
+}

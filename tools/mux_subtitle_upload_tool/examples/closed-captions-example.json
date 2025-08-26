@@ -1,0 +1,52 @@
+{
+  "auth": {
+    "mux_token_id": "YOUR_MUX_TOKEN_ID",
+    "mux_token_secret": "YOUR_MUX_TOKEN_SECRET"
+  },
+  "s3": {
+    "access_key_id": "YOUR_AWS_ACCESS_KEY_ID",
+    "secret_access_key": "YOUR_AWS_SECRET_ACCESS_KEY",
+    "region": "us-east-1",
+    "bucket_name": "your-mux-subtitles-bucket",
+    "presigned_url_expiry": 3600
+  },
+  "mux_asset_id": "your-existing-mux-asset-id",
+  "subtitles": [
+    {
+      "file_path": "/path/to/subtitles/english.srt",
+      "language_code": "en",
+      "name": "English Subtitles",
+      "text_type": "subtitles",
+      "closed_captions": false,
+      "passthrough": "en-subtitles"
+    },
+    {
+      "file_path": "/path/to/captions/english-cc.vtt",
+      "language_code": "en",
+      "name": "English Closed Captions",
+      "text_type": "captions",
+      "closed_captions": true,
+      "passthrough": "en-closed-captions"
+    },
+    {
+      "file_path": "/path/to/subtitles/spanish.srt",
+      "language_code": "es",
+      "name": "Subtítulos en Español",
+      "text_type": "subtitles",
+      "closed_captions": false,
+      "passthrough": "es-subtitles"
+    }
+  ],
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "console": true,
+    "format": "simple"
+  },
+  "options": {
+    "cleanup_delay_minutes": 120,
+    "max_retry_attempts": 3,
+    "validate_before_upload": true,
+    "monitoring_timeout": 60000
+  }
+}

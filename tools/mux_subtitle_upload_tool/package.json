@@ -1,0 +1,46 @@
+{
+  "name": "mux-subtitle-upload-tool",
+  "version": "1.0.0",
+  "description": "A Node.js command-line tool for uploading subtitles to existing Mux assets via S3",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "mux-subtitle-upload": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node src/test/testTool.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "keywords": [
+    "mux",
+    "subtitles",
+    "captions",
+    "upload",
+    "cli",
+    "s3",
+    "streaming"
+  ],
+  "author": "KYOOL Media Platform",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@mux/mux-node": "^12.4.1",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "joi": "^17.11.0",
+    "ora": "^7.0.1",
+    "winston": "^3.11.0",
+    "fs-extra": "^11.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyool-media/mux-subtitle-upload-tool"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "picturePath": "/path/to/your/picture.png",
+  "s3": {
+    "accessKeyId": "YOUR_AWS_ACCESS_KEY_ID",
+    "secretAccessKey": "YOUR_AWS_SECRET_ACCESS_KEY",
+    "region": "us-west-2",
+    "bucket": "my-pictures-bucket"
+  },
+  "api": {
+    "baseUrl": "https://api.example.com",
+    "username": "admin",
+    "password": "password123"
+  }
+}

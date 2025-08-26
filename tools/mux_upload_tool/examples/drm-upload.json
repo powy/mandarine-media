@@ -1,0 +1,54 @@
+{
+  "auth": {
+    "mux_token_id": "YOUR_MUX_TOKEN_ID",
+    "mux_token_secret": "YOUR_MUX_TOKEN_SECRET"
+  },
+  "video": {
+    "filepath": "/path/to/your/video.mp4",
+    "title": "DRM Protected Video",
+    "description": "Example of DRM-protected video upload"
+  },
+  "settings": {
+    "playback_policy": ["drm"],
+    "video_quality": "plus",
+    "max_resolution_tier": "2160p",
+    "normalize_audio": true,
+    "master_access": "temporary",
+    "mp4_support": "capped-1080p",
+    "passthrough": "drm-video-001"
+  },
+  "metadata": {
+    "title": "DRM Protected Content",
+    "content_type": "premium",
+    "protection_level": "high",
+    "external_id": "drm-001"
+  },
+  "drm": {
+    "enabled": true,
+    "configuration_id": "YOUR_DRM_CONFIG_ID",
+    "license_url": "https://your-license-server.com/license",
+    "certificate_url": "https://your-license-server.com/certificate"
+  },
+  "subtitles": [
+    {
+      "url": "https://example.com/subtitles/english.srt",
+      "language_code": "en-US",
+      "name": "English",
+      "text_type": "subtitles",
+      "closed_captions": false,
+      "passthrough": "en-sub-drm"
+    }
+  ],
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": "./logs/drm-upload.log",
+    "console": true,
+    "format": "json"
+  },
+  "options": {
+    "timeout": 7200000,
+    "retry_attempts": 5,
+    "retry_delay": 10000
+  }
+}
