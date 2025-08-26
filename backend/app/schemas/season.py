@@ -8,7 +8,7 @@ class SeasonBase(BaseModel):
     program_id: UUID
     season_number: int = Field(..., gt=0, le=9999)
     season_name: Optional[str] = None
-    general_media_description: Optional[str] = None
+    general_media_description_id: Optional[UUID] = None
     episodes_id_list: Optional[List[str]] = None
     
     @field_validator('season_name')
@@ -26,7 +26,7 @@ class SeasonCreate(SeasonBase):
 class SeasonUpdate(BaseModel):
     season_number: Optional[int] = Field(None, gt=0, le=9999)
     season_name: Optional[str] = None
-    general_media_description: Optional[str] = None
+    general_media_description_id: Optional[UUID] = None
     episodes_id_list: Optional[List[str]] = None
     
     @field_validator('season_name')

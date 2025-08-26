@@ -15,7 +15,7 @@ def read_programs(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve programs.
@@ -42,6 +42,15 @@ def create_program(
             detail=f"Program with name '{program_in.program_name}' already exists",
         )
     
+    # Validate general_media_description_id exists if provided
+    if program_in.general_media_description_id is not None:
+        media_desc = crud.media_description.get(db=db, id=program_in.general_media_description_id)
+        if not media_desc:
+            raise HTTPException(
+                status_code=404,
+                detail=f"MediaDescription with ID '{program_in.general_media_description_id}' not found",
+            )
+    
     program = crud.program.create(db=db, obj_in=program_in)
     return program
 
@@ -51,7 +60,7 @@ def read_program(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get program by ID.
@@ -84,6 +93,15 @@ def update_program(
             raise HTTPException(
                 status_code=409,
                 detail=f"Program with name '{program_in.program_name}' already exists",
+            )
+    
+    # Validate general_media_description_id exists if provided
+    if program_in.general_media_description_id is not None:
+        media_desc = crud.media_description.get(db=db, id=program_in.general_media_description_id)
+        if not media_desc:
+            raise HTTPException(
+                status_code=404,
+                detail=f"MediaDescription with ID '{program_in.general_media_description_id}' not found",
             )
     
     program = crud.program.update(db=db, db_obj=program, obj_in=program_in)

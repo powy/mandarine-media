@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,7 +15,7 @@ def read_countries(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve countries.
@@ -51,7 +51,7 @@ def read_country(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get country by ID.

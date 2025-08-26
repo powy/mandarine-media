@@ -91,19 +91,12 @@ export const PictureList = () => (
       />
       <TextField source="file_name" label="File Name" sortable />
       <TextField source="alt_text" label="Alt Text" />
+      <TextField source="description" label="Description" />
       <FunctionField 
         label="Dimensions" 
         render={record => 
           record.width && record.height 
             ? `${record.width}x${record.height}`
-            : 'N/A'
-        } 
-      />
-      <FunctionField 
-        label="Size" 
-        render={record => 
-          record.file_size_bytes 
-            ? `${Math.round(record.file_size_bytes / 1024)} KB`
             : 'N/A'
         } 
       />
@@ -135,6 +128,12 @@ export const PictureCreate = () => (
         fullWidth 
         multiline
       />
+      <TextInput 
+        source="description" 
+        label="Description"
+        fullWidth 
+        multiline
+      />
       <NumberInput 
         source="width" 
         label="Width (pixels)"
@@ -144,11 +143,6 @@ export const PictureCreate = () => (
         source="height" 
         label="Height (pixels)"
         min={1}
-      />
-      <NumberInput 
-        source="file_size_bytes" 
-        label="File Size (bytes)"
-        min={0}
       />
     </SimpleForm>
   </Create>
@@ -174,6 +168,12 @@ export const PictureEdit = () => (
         fullWidth 
         multiline
       />
+      <TextInput 
+        source="description" 
+        label="Description"
+        fullWidth 
+        multiline
+      />
       <NumberInput 
         source="width" 
         label="Width (pixels)"
@@ -183,11 +183,6 @@ export const PictureEdit = () => (
         source="height" 
         label="Height (pixels)"
         min={1}
-      />
-      <NumberInput 
-        source="file_size_bytes" 
-        label="File Size (bytes)"
-        min={0}
       />
     </SimpleForm>
   </Edit>
@@ -201,9 +196,9 @@ export const PictureShow = () => (
       <UrlField source="photo_url" label="Photo URL" />
       <TextField source="file_name" label="File Name" />
       <TextField source="alt_text" label="Alt Text" />
+      <TextField source="description" label="Description" />
       <TextField source="width" label="Width (pixels)" />
       <TextField source="height" label="Height (pixels)" />
-      <TextField source="file_size_bytes" label="File Size (bytes)" />
       <DateField source="created_at" label="Created" />
     </SimpleShowLayout>
   </Show>

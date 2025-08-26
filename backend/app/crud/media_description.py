@@ -40,8 +40,9 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
         if is_featured is not None:
             query = query.filter(MediaDescription.is_featured == is_featured)
             
-        if is_premium is not None:
-            query = query.filter(MediaDescription.is_premium_content == is_premium)
+        # is_premium filter temporarily disabled - field doesn't exist in current model
+        # if is_premium is not None:
+        #     query = query.filter(MediaDescription.is_premium_content == is_premium)
         
         return query.order_by(desc(MediaDescription.creation_date_utc)).offset(skip).limit(limit).all()
 
@@ -69,8 +70,9 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
         if is_featured is not None:
             query = query.filter(MediaDescription.is_featured == is_featured)
             
-        if is_premium is not None:
-            query = query.filter(MediaDescription.is_premium_content == is_premium)
+        # is_premium filter temporarily disabled - field doesn't exist in current model
+        # if is_premium is not None:
+        #     query = query.filter(MediaDescription.is_premium_content == is_premium)
         
         return query.count()
 

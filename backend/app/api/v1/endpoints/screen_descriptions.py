@@ -17,7 +17,7 @@ def get_screen_descriptions(
     limit: int = Query(100, ge=1, le=1000),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     screen_type: Optional[schemas.ScreenTypeEnum] = Query(None, description="Filter by screen type"),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve screen descriptions.
@@ -67,7 +67,7 @@ def get_screen_descriptions(
 def get_screen_description(
     screen_description_id: UUID,
     db: Session = Depends(deps.get_db),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get screen content by ID.
@@ -185,7 +185,7 @@ def reorder_content_lists(
 def get_screen_description_json(
     screen_description_id: UUID,
     db: Session = Depends(deps.get_db),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get cached JSON content for a screen content.
@@ -255,7 +255,7 @@ def regenerate_all_json(
 def get_screen_descriptions_by_type(
     screen_type: schemas.ScreenTypeEnum,
     db: Session = Depends(deps.get_db),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get screen descriptions by type.
@@ -279,7 +279,7 @@ def search_screen_descriptions_by_title(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Search screen descriptions by title.
@@ -329,7 +329,7 @@ def get_screen_descriptions_stats(
 @router.get("/homepage/primary", response_model=schemas.ScreenDescription)
 def get_primary_homepage_screen(
     db: Session = Depends(deps.get_db),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get the primary homepage screen (lowest display_order).

@@ -22,7 +22,7 @@ def read_media_descriptions(
     status: Optional[str] = Query(None),
     is_featured: Optional[bool] = Query(None),
     is_premium: Optional[bool] = Query(None),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve media descriptions with optional filtering.
@@ -153,7 +153,7 @@ def read_media_description(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get media description by ID.
@@ -162,8 +162,8 @@ def read_media_description(
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
     
-    # Increment view count for non-admin users
-    if not current_user.is_admin:
+    # Increment view count for non-admin users (including unauthenticated users)
+    if not current_user or not current_user.is_admin:
         crud.media_description.increment_view_count(db=db, id=id)
     
     return media_description
@@ -220,7 +220,7 @@ def read_featured_media(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve featured media descriptions.
@@ -233,7 +233,7 @@ def read_trending_media(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve trending media descriptions.

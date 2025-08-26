@@ -47,7 +47,7 @@ export const usersApi = {
       searchParams.append('q', q);
     }
     
-    const response = await apiClient.get(`/users/?${searchParams.toString()}`);
+    const response = await apiClient.get(`/users?${searchParams.toString()}`);
     return response.data as PaginatedUsersResponse;
   },
 
@@ -62,7 +62,7 @@ export const usersApi = {
     if (filters?.role && filters.role !== '') params.append('role', filters.role);
     if (filters?.search && filters.search !== '') params.append('search', filters.search);
 
-    const response = await apiClient.get(`/users/?${params}`);
+    const response = await apiClient.get(`/users?${params}`);
     return response.data as UserListResponse;
   },
 

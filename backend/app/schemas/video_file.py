@@ -29,9 +29,6 @@ class VideoFileBase(BaseModel):
     file_name: str = Field(..., description="Original filename")
     file_size_bytes: Optional[int] = Field(None, description="File size in bytes")
     encoding_status: EncodingStatusEnum = Field(default=EncodingStatusEnum.pending)
-    video_codec: Optional[str] = Field(None, description="Video codec used")
-    audio_codec: Optional[str] = Field(None, description="Audio codec used")
-    file_format: Optional[str] = Field(None, description="Container format")
     
     # New fields for dual upload functionality
     upload_method: UploadMethodEnum = Field(default=UploadMethodEnum.new_upload, description="Upload method used")
@@ -41,28 +38,20 @@ class VideoFileBase(BaseModel):
     media_description_id: Optional[UUID] = None
     encodage_date_utc: Optional[datetime] = None
     duration_seconds: Optional[int] = None
-    resolution_width: Optional[int] = None
-    resolution_height: Optional[int] = None
+    max_resolution_width: Optional[int] = None
+    max_resolution_height: Optional[int] = None
     bitrate_kbps: Optional[int] = None
     frame_rate: Optional[float] = None
     aspect_ratio: Optional[str] = None
     audio_sample_rate: Optional[int] = None
-    audio_channels: Optional[int] = None
     subtitle_tracks: Optional[List[str]] = None
-    thumbnail_timestamps: Optional[List[int]] = None
-    chapter_markers: Optional[str] = None
     encoding_profile: Optional[str] = None
-    cdn_url: Optional[str] = None
     mux_asset_id: Optional[str] = None
     mux_playback_id: Optional[str] = None
     drm_protection: Optional[bool] = False
-    geo_restrictions: Optional[List[str]] = None
-    quality_variants: Optional[List[str]] = None
-    processing_logs: Optional[str] = None
     
     # v1.9 fields - New environment and protection fields
     environment_key: Optional[str] = Field(None, description="Environment identifier key")
-    protection_key: Optional[str] = Field(None, description="Content protection key")
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
 
 
@@ -75,9 +64,6 @@ class VideoFileUpdate(BaseModel):
     file_name: Optional[str] = None
     file_size_bytes: Optional[int] = None
     encoding_status: Optional[EncodingStatusEnum] = None
-    video_codec: Optional[str] = None
-    audio_codec: Optional[str] = None
-    file_format: Optional[str] = None
     upload_method: Optional[UploadMethodEnum] = None
     upload_status: Optional[UploadStatusEnum] = None
     upload_timestamp: Optional[datetime] = None
@@ -85,28 +71,20 @@ class VideoFileUpdate(BaseModel):
     media_description_id: Optional[UUID] = None
     encodage_date_utc: Optional[datetime] = None
     duration_seconds: Optional[int] = None
-    resolution_width: Optional[int] = None
-    resolution_height: Optional[int] = None
+    max_resolution_width: Optional[int] = None
+    max_resolution_height: Optional[int] = None
     bitrate_kbps: Optional[int] = None
     frame_rate: Optional[float] = None
     aspect_ratio: Optional[str] = None
     audio_sample_rate: Optional[int] = None
-    audio_channels: Optional[int] = None
     subtitle_tracks: Optional[List[str]] = None
-    thumbnail_timestamps: Optional[List[int]] = None
-    chapter_markers: Optional[str] = None
     encoding_profile: Optional[str] = None
-    cdn_url: Optional[str] = None
     mux_asset_id: Optional[str] = None
     mux_playback_id: Optional[str] = None
     drm_protection: Optional[bool] = None
-    geo_restrictions: Optional[List[str]] = None
-    quality_variants: Optional[List[str]] = None
-    processing_logs: Optional[str] = None
     
     # v1.9 fields - New environment and protection fields
     environment_key: Optional[str] = Field(None, description="Environment identifier key")
-    protection_key: Optional[str] = Field(None, description="Content protection key")
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
 
 

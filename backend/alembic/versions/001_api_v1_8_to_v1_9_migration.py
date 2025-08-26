@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '001_v1_8_to_v1_9'
-down_revision = 'fac6d36c6107'  # Chain from your current migration
+down_revision = 'fac6d36c6107'  # References the initial schema migration
 branch_labels = None
 depends_on = None
 

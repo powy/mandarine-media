@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,7 +18,7 @@ def read_public_persons(
     limit: int = Query(20, ge=1, le=100),
     search: str = Query(None, description="Search by name"),
     profession: str = Query(None, description="Filter by profession"),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve public persons with optional filtering (v1.5).
@@ -63,7 +63,7 @@ def read_public_person(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get public person by ID.
@@ -118,7 +118,7 @@ def search_public_persons_by_name(
     name: str = Query(..., description="Name to search for"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Search public persons by name.
@@ -133,7 +133,7 @@ def read_public_persons_by_profession(
     profession: str,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get public persons by profession.

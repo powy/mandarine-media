@@ -51,5 +51,31 @@ def get_current_admin_user(
     return current_user
 
 
+# Optional authentication - returns None if no valid authentication is provided
+def get_current_user_optional(
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> Optional[User]:
+    """
+    Get current user if authenticated, otherwise return None.
+    This allows endpoints to be accessed without authentication while still
+    providing user context when available.
+    """
+    if not credentials:
+        return None
+    
+    try:
+        token = credentials.credentials.strip()
+        user_email = verify_token(token)
+        if not user_email:
+            return None
+        user = crud_user.get_by_email(db, email=user_email)
+        if not user or not crud_user.is_active(user):
+            return None
+        return user
+    except Exception:
+        return None
+
+
 # Alias for consistency with endpoint naming
 get_current_active_admin = get_current_admin_user

@@ -89,7 +89,7 @@ describe('Screen Contents API (v1.9 with Screen Descriptions)', () => {
       {
         id: 'list1',
         title: 'Trending K-Dramas',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         description: 'Popular Korean dramas this week',
         last_updated: '2024-01-15T14:30:00Z',
         items: [
@@ -239,7 +239,7 @@ describe('Screen Contents API (v1.9 with Screen Descriptions)', () => {
   describe('getScreenContentByType', () => {
     it('should fetch screen contents by type', async () => {
       const mockScreenContents = [mockScreenContent];
-      mockApiClient.get.mockResolvedValue({ data: mockScreenContents });
+      mockApiClient.get.mockResolvedValue({ data: mockScreenContent }); // Single object, not array
 
       const result = await getScreenContentByType('homepage');
 

@@ -28,8 +28,21 @@ import {
   ChipField,
   SingleFieldList,
   FunctionField,
+  ReferenceField,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
+
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// UUID validator for face_image_id
+const validateUUID = (value) => {
+  if (!value) return undefined; // Optional field
+  if (!UUID_REGEX.test(value)) {
+    return 'Invalid UUID format. Example: f1a2b3c4-d5e6-7890-abcd-ef1234567890';
+  }
+  return undefined;
+};
 
 // Define filters for the public persons list
 // API supports: q (search) and profession (filter by profession)
@@ -104,6 +117,14 @@ export const PublicPersonList = () => (
             : 'No professions'
         } 
       />
+      <ReferenceField 
+        source="face_image_id" 
+        reference="pictures"
+        label="Face Image"
+        link={false}
+      >
+        <TextField source="file_name" />
+      </ReferenceField>
       <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
       <ShowButton />
@@ -153,6 +174,14 @@ export const PublicPersonCreate = () => (
         fullWidth
         multiline
       />
+      <TextInput 
+        source="face_image_id" 
+        label="Face Image ID"
+        helperText="Enter the UUID of the picture for this person's face"
+        validate={[validateUUID]}
+        placeholder="e.g. ac172ba3-e510-492b-9e1d-972f644a1cb0"
+        fullWidth
+      />
     </SimpleForm>
   </Create>
 );
@@ -198,6 +227,14 @@ export const PublicPersonEdit = () => (
         fullWidth
         multiline
       />
+      <TextInput 
+        source="face_image_id" 
+        label="Face Image ID"
+        helperText="Enter the UUID of the picture for this person's face"
+        validate={[validateUUID]}
+        placeholder="e.g. ac172ba3-e510-492b-9e1d-972f644a1cb0"
+        fullWidth
+      />
     </SimpleForm>
   </Edit>
 );
@@ -220,6 +257,14 @@ export const PublicPersonShow = () => (
             : 'No professions'
         } 
       />
+      <ReferenceField 
+        source="face_image_id" 
+        reference="pictures"
+        label="Face Image"
+        link="show"
+      >
+        <TextField source="file_name" />
+      </ReferenceField>
       <DateField source="creation_date_utc" label="Created" />
     </SimpleShowLayout>
   </Show>

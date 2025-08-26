@@ -63,7 +63,7 @@ describe('Integration Tests (v1.6)', () => {
       // Step 2: Create content list mixing different content types
       const contentListData = {
         title: 'Featured K-Entertainment',
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
         is_active: true,
         display_order: 1,
         latest_first: true, // v1.9 required field
@@ -127,7 +127,7 @@ describe('Integration Tests (v1.6)', () => {
       const mockUpdatedList = {
         id: 'content-list-1',
         title: 'Reordered List',
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
         is_active: true,
         display_order: 1,
         latest_first: true, // v1.9 required field
@@ -152,7 +152,7 @@ describe('Integration Tests (v1.6)', () => {
       const mockContentList = {
         id: 'content-list-1',
         title: 'Cached List',
-        thumbnail_format: 'large_landscape' as const,
+        thumbnail_format: '1920x1080' as const,
         is_active: true,
         display_order: 1,
         latest_first: true, // v1.9 required field
@@ -171,7 +171,7 @@ describe('Integration Tests (v1.6)', () => {
       const mockJSONResponse = {
         id: 'content-list-1',
         title: 'Cached List',
-        thumbnail_format: 'large_landscape' as const,
+        thumbnail_format: '1920x1080' as const,
         description: undefined,
         last_updated: '2024-01-15T14:30:00Z',
         items: [
@@ -220,7 +220,7 @@ describe('Integration Tests (v1.6)', () => {
           {
             id: 'list-1',
             title: 'Trending',
-            thumbnail_format: 'medium_portrait' as const,
+            thumbnail_format: '810x1080' as const,
             last_updated: '2024-01-15T14:30:00Z',
             items: [
               {
@@ -234,7 +234,7 @@ describe('Integration Tests (v1.6)', () => {
           {
             id: 'list-2',
             title: 'Recent Episodes',
-            thumbnail_format: 'small_square' as const,
+            thumbnail_format: '1080x1080' as const,
             last_updated: '2024-01-15T14:30:00Z',
             items: [],
           },
@@ -334,7 +334,7 @@ describe('Integration Tests (v1.6)', () => {
       // Create content list that references this existing content
       const contentListData = {
         title: 'Integrated Content',
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
         is_active: true,
         display_order: 1,
         content_items: [programs[0].id, seasons[0].id, media.data[0].id],
@@ -403,7 +403,7 @@ describe('Integration Tests (v1.6)', () => {
               message: 'Invalid thumbnail format',
               details: {
                 field: 'thumbnail_format',
-                allowed_values: ['small_square', 'medium_portrait', 'large_landscape', 'vertical_mobile'],
+                allowed_values: ['1080x1080', '810x1080', '1920x1080', '1080x1920', '1920x720'],
               },
             },
           },

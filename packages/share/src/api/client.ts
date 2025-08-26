@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { authTokenStorage } from '../utils/storage';
+import { isTokenExpired } from '../utils/token-utils';
 
 // Configuration interface for platform-specific settings
 interface ApiConfig {
@@ -83,15 +84,26 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Import authApi here to avoid circular dependency
-        const { authApi } = await import('./auth');
         const currentToken = await authTokenStorage.getAccessToken();
         
-        if (currentToken && authApi.isTokenExpired(currentToken)) {
+        if (currentToken && isTokenExpired(currentToken)) {
           // Try to refresh the token
-          const newTokens = await authApi.refreshToken();
-          const newAccessToken = newTokens.access_token;
-          
+          const refreshToken = await authTokenStorage.getRefreshToken();
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
+          const response = await apiClient.post('/auth/refresh', {
+            refresh_token: refreshToken,
+          });
+
+          // Store new tokens
+          await authTokenStorage.setAccessToken(response.data.access_token);
+          if (response.data.refresh_token) {
+            await authTokenStorage.setRefreshToken(response.data.refresh_token);
+          }
+
+          const newAccessToken = response.data.access_token;
           processQueue(null, newAccessToken);
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return apiClient(originalRequest);

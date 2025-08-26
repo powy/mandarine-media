@@ -40,7 +40,9 @@ class MuxStorageBackend(BaseStorageBackend):
                 timeout=3600,  # 1 hour timeout
                 new_asset_settings=mux_python.CreateAssetRequest(
                     playback_policy=[mux_python.PlaybackPolicy.SIGNED],
-                    encoding_tier=self.config.get('encoding_tier', 'baseline')
+                    encoding_tier=self.config.get('encoding_tier', 'baseline'),
+                    # Enable DRM if specified in config
+                    mp4_support='capped_1080p'  # Standard MP4 support
                 )
             )
             
@@ -63,9 +65,11 @@ class MuxStorageBackend(BaseStorageBackend):
                 metadata={
                     'mux_upload_id': upload.id,
                     'mux_asset_id': None,  # Will be set once processing is complete
+                    'mux_playback_id': None,  # Will be set once processing is complete
                     'upload_url': upload.url,
                     'backend': self.backend_name,
-                    'status': 'uploading'
+                    'status': 'uploading',
+                    'playback_policy': 'signed'
                 }
             )
             
@@ -109,14 +113,19 @@ class MuxStorageBackend(BaseStorageBackend):
             response = self.assets_api.get_asset(asset_id)
             asset = response.data
             
+            playback_ids = [pb.id for pb in asset.playback_ids] if asset.playback_ids else []
+            primary_playback_id = playback_ids[0] if playback_ids else None
+            
             return {
                 'asset_id': asset.id,
                 'status': asset.status,
                 'duration': asset.duration,
                 'created_at': asset.created_at,
-                'playback_ids': [pb.id for pb in asset.playback_ids] if asset.playback_ids else [],
+                'playback_ids': playback_ids,
+                'primary_playback_id': primary_playback_id,
                 'tracks': len(asset.tracks) if asset.tracks else 0,
-                'exists': True
+                'exists': True,
+                'playback_policy': 'signed' if asset.playback_ids and hasattr(asset.playback_ids[0], 'policy') else None
             }
             
         except ApiException as e:

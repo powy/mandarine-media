@@ -19,6 +19,16 @@ class UploadMethodEnum(enum.Enum):
     new_upload = "new_upload"
 
 
+class ResolutionEnum(enum.Enum):
+    r4320p = "4320p"
+    r2160p = "2160p"
+    r1440p = "1440p"
+    r1080p = "1080p"
+    r720p = "720p"
+    r480p = "480p"
+    r360p = "360p"
+
+
 class UploadStatusEnum(enum.Enum):
     metadata_only = "metadata_only"
     file_uploading = "file_uploading"
@@ -36,12 +46,8 @@ class VideoFile(Base):
     file_name = Column(String, nullable=True)
     file_size_bytes = Column(Integer, nullable=True)  # Now nullable for two-step upload
     encoding_status = Column(String, nullable=False, default="pending")  # Will use enum validation in schemas
-    video_codec = Column(String, nullable=True)  # Now nullable for two-step upload
-    audio_codec = Column(String, nullable=True)  # Now nullable for two-step upload
-    file_format = Column(String, nullable=True)  # Now nullable for two-step upload
     
     # New fields for dual upload functionality
-    upload_method = Column(String, nullable=False, default="new_upload")  # Will use enum validation in schemas
     upload_status = Column(String, nullable=False, default="metadata_only")  # Will use enum validation in schemas
     upload_timestamp = Column(DateTime(timezone=True), nullable=True)  # When file upload was initiated
     external_url = Column(String, nullable=True)  # For existing media URL method
@@ -50,35 +56,29 @@ class VideoFile(Base):
     media_description_id = Column(GUID(), ForeignKey("media_description.id"), nullable=True)
     encodage_date_utc = Column(DateTime(timezone=True), nullable=True)
     duration_seconds = Column(Integer, nullable=True)
-    resolution_width = Column(Integer, nullable=True)
-    resolution_height = Column(Integer, nullable=True)
+    max_resolution_width = Column(Integer, nullable=True)
+    max_resolution_height = Column(Integer, nullable=True)
     bitrate_kbps = Column(Integer, nullable=True)
     frame_rate = Column(Float, nullable=True)
     aspect_ratio = Column(String, nullable=True)
     audio_sample_rate = Column(Integer, nullable=True)
-    audio_channels = Column(Integer, nullable=True)
     subtitle_tracks = Column(JSONArray(), nullable=True)
-    thumbnail_timestamps = Column(JSONArray(), nullable=True)
-    chapter_markers = Column(Text, nullable=True)
     encoding_profile = Column(String, nullable=True)
-    cdn_url = Column(String, nullable=True)
     mux_asset_id = Column(String, nullable=True)
     mux_playback_id = Column(String, nullable=True)
     drm_protection = Column(Boolean, default=False, nullable=True)
-    geo_restrictions = Column(JSONArray(), nullable=True)
-    quality_variants = Column(JSONArray(), nullable=True)
-    processing_logs = Column(Text, nullable=True)
+    
+    # NEW v1.10-C fields
+    playback_policy = Column(String, nullable=True)
+    subtitle_tracks_text_list = Column(JSONArray(), nullable=True)  # List of strings
+    resolutions_list = Column(JSONArray(), nullable=True)  # List of resolution enum
+    accessibilities_list = Column(JSONArray(), nullable=True)  # List of enum 'accessibility'
     
     # NEW v1.4 fields - Language and technical fields
-    subtitle_languages_id_list = Column(JSONArray(), nullable=True)
     audio_languages_id_list = Column(JSONArray(), nullable=True)
-    resolutions_id_list = Column(JSONArray(), nullable=True)
-    accessibilities_id_list = Column(JSONArray(), nullable=True)
-    encodage_date_utc = Column(DateTime(timezone=True), nullable=True)
     
     # NEW v1.9 fields
     environment_key = Column(String, nullable=True, default="")  # Environment identifier
-    protection_key = Column(String, nullable=True, default="")  # Content protection key
     slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
     
     # Relationships

@@ -150,7 +150,6 @@ export const mediaApi = {
   // Dual upload functionality
   async createVideoFileMetadata(data: {
     file_name: string;
-    upload_method: 'new_upload' | 'existing_url';
     media_description_id?: string;
     external_url?: string;
   }): Promise<{

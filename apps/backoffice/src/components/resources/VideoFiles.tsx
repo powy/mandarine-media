@@ -32,13 +32,6 @@ const VideoFileFilters = (props: any) => (
   <Filter {...props}>
     <TextInput label="Search" source="q" alwaysOn />
     <SelectInput 
-      source="upload_method" 
-      choices={[
-        { id: 'new_upload', name: 'New Upload' },
-        { id: 'existing_url', name: 'Existing URL' },
-      ]} 
-    />
-    <SelectInput 
       source="upload_status" 
       choices={[
         { id: 'metadata_only', name: 'Metadata Only' },
@@ -61,8 +54,7 @@ export const VideoFileList = () => (
   <List filters={<VideoFileFilters />} actions={<VideoFileListActions />}>
     <Datagrid>
       <TextField source="id" />
-      <TextField source="filename" />
-      <TextField source="upload_method" label="Method" />
+      <TextField source="file_name" />
       <TextField source="upload_status" label="Status" />
       <FunctionField
         label="URL/File"
@@ -74,9 +66,8 @@ export const VideoFileList = () => (
       />
       <NumberField source="duration_seconds" label="Duration (s)" />
       <NumberField source="file_size_bytes" label="Size (bytes)" />
-      <BooleanField source="is_processed" label="Processed" />
       <TextField source="media_description_id" label="Linked Media" />
-      <DateField source="created_at" />
+      <DateField source="creation_date_utc" />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -87,17 +78,7 @@ export const VideoFileList = () => (
 export const VideoFileCreate = () => (
   <Create redirect="list">
     <SimpleForm>
-      <SelectInput 
-        source="upload_method" 
-        choices={[
-          { id: 'new_upload', name: 'New Upload' },
-          { id: 'existing_url', name: 'Existing URL' },
-        ]}
-        validate={[required()]}
-        defaultValue="existing_url"
-      />
-      
-      <TextInput source="filename" validate={[required()]} fullWidth />
+      <TextInput source="file_name" validate={[required()]} fullWidth />
       <TextInput 
         source="external_url" 
         label="Video URL" 
@@ -112,12 +93,10 @@ export const VideoFileCreate = () => (
       <NumberInput source="duration_seconds" />
       <NumberInput source="file_size_bytes" />
       
-      <TextInput source="resolution" placeholder="1920x1080" />
+      <NumberInput source="max_resolution_width" />
+      <NumberInput source="max_resolution_height" />
       <NumberInput source="bitrate_kbps" />
       <NumberInput source="frame_rate" />
-      
-      <TextInput source="video_codec" />
-      <TextInput source="audio_codec" />
       
       <SelectInput 
         source="upload_status" 
@@ -128,9 +107,6 @@ export const VideoFileCreate = () => (
         defaultValue="upload_completed"
         helperText="For existing URLs, typically set to 'Completed'"
       />
-      
-      <BooleanInput source="is_processed" defaultValue={true} />
-      <BooleanInput source="is_public" defaultValue={false} />
     </SimpleForm>
   </Create>
 );
@@ -138,7 +114,7 @@ export const VideoFileCreate = () => (
 export const VideoFileEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="filename" validate={[required()]} fullWidth />
+      <TextInput source="file_name" validate={[required()]} fullWidth />
       <TextInput source="external_url" label="Video URL" fullWidth />
       
       <ReferenceInput source="media_description_id" reference="media-descriptions" allowEmpty>
@@ -148,12 +124,10 @@ export const VideoFileEdit = () => (
       <NumberInput source="duration_seconds" />
       <NumberInput source="file_size_bytes" />
       
-      <TextInput source="resolution" />
+      <NumberInput source="max_resolution_width" />
+      <NumberInput source="max_resolution_height" />
       <NumberInput source="bitrate_kbps" />
       <NumberInput source="frame_rate" />
-      
-      <TextInput source="video_codec" />
-      <TextInput source="audio_codec" />
       
       <SelectInput 
         source="upload_status" 
@@ -164,9 +138,6 @@ export const VideoFileEdit = () => (
           { id: 'upload_failed', name: 'Failed' },
         ]}
       />
-      
-      <BooleanInput source="is_processed" />
-      <BooleanInput source="is_public" />
       
       {/* Mux integration fields - read only */}
       <TextInput source="mux_asset_id" disabled />
@@ -180,8 +151,7 @@ export const VideoFileShow = () => (
   <Show>
     <SimpleShowLayout>
       <TextField source="id" />
-      <TextField source="filename" />
-      <TextField source="upload_method" label="Upload Method" />
+      <TextField source="file_name" />
       <TextField source="upload_status" label="Status" />
       <TextField source="external_url" label="External URL" />
       <TextField source="file_url" label="File URL" />
@@ -190,24 +160,16 @@ export const VideoFileShow = () => (
       <NumberField source="duration_seconds" label="Duration (seconds)" />
       <NumberField source="file_size_bytes" label="File Size (bytes)" />
       
-      <TextField source="resolution" />
+      <NumberField source="max_resolution_width" label="Max Width" />
+      <NumberField source="max_resolution_height" label="Max Height" />
       <NumberField source="bitrate_kbps" label="Bitrate (kbps)" />
       <NumberField source="frame_rate" label="Frame Rate" />
-      
-      <TextField source="video_codec" />
-      <TextField source="audio_codec" />
-      
-      <BooleanField source="is_processed" label="Processed" />
-      <BooleanField source="is_public" label="Public" />
       
       <TextField source="mux_asset_id" label="Mux Asset ID" />
       <TextField source="mux_playback_id" label="Mux Playback ID" />
       
       <DateField source="upload_timestamp" label="Upload Time" />
-      <DateField source="created_at" />
-      <DateField source="last_updated_utc" />
-      
-      <TextField source="encoding_logs" label="Encoding Logs" />
+      <DateField source="creation_date_utc" />
     </SimpleShowLayout>
   </Show>
 );

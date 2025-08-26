@@ -90,7 +90,6 @@ export class VideoUploadManager {
 
       const metadataResponse = await mediaApi.createVideoFileMetadata({
         file_name: options.fileName,
-        upload_method: 'new_upload',
         media_description_id: options.mediaDescriptionId,
       });
 

@@ -16,7 +16,11 @@ def sample_content_list_data():
     return {
         "title": "Test Content List",
         "description": "A test content list for unit testing",
-        "thumbnail_format": ThumbnailFormatEnum.medium_portrait,
+        "thumbnail_format": ThumbnailFormatEnum.format_810x1080,
+        "list_type": "classic",
+        "percentage_width": 100,
+        "percentage_height": 80,
+        "latest_first": True,
         "is_active": True,
         "display_order": 1,
         "content_items": [],
@@ -30,7 +34,7 @@ def sample_content_list_update_data():
     return {
         "title": "Updated Test Content List",
         "description": "An updated test content list",
-        "thumbnail_format": ThumbnailFormatEnum.large_landscape,
+        "thumbnail_format": ThumbnailFormatEnum.format_1920x1080,
         "is_active": False,
         "display_order": 2
     }
@@ -137,22 +141,22 @@ class TestContentListCRUD:
         """Test retrieving content lists by thumbnail format."""
         # Create content list with medium_portrait format
         medium_data = sample_content_list_data.copy()
-        medium_data["thumbnail_format"] = ThumbnailFormatEnum.medium_portrait
+        medium_data["thumbnail_format"] = ThumbnailFormatEnum.format_810x1080
         medium_content_list_in = ContentListCreate(**medium_data)
         crud_content_list.create(db=db, obj_in=medium_content_list_in)
         
         # Create content list with large_landscape format
         large_data = sample_content_list_data.copy()
         large_data["title"] = "Large Landscape Content List"
-        large_data["thumbnail_format"] = ThumbnailFormatEnum.large_landscape
+        large_data["thumbnail_format"] = ThumbnailFormatEnum.format_1920x1080
         large_content_list_in = ContentListCreate(**large_data)
         crud_content_list.create(db=db, obj_in=large_content_list_in)
         
         medium_lists = crud_content_list.get_by_thumbnail_format(
-            db=db, thumbnail_format=ThumbnailFormatEnum.medium_portrait
+            db=db, thumbnail_format=ThumbnailFormatEnum.format_810x1080
         )
         assert len(medium_lists) == 1
-        assert medium_lists[0].thumbnail_format == ThumbnailFormatEnum.medium_portrait
+        assert medium_lists[0].thumbnail_format == ThumbnailFormatEnum.format_810x1080
 
     def test_add_content_item(self, db, sample_content_list_data, sample_program_data):
         """Test adding a content item to a content list."""
@@ -276,10 +280,13 @@ class TestContentListCRUD:
 
 
 class TestContentListAPI:
-    def test_get_content_lists_unauthorized(self, client):
-        """Test that getting content lists without authentication fails."""
+    def test_get_content_lists_unauthenticated(self, client):
+        """Test that getting content lists without authentication is now allowed."""
         response = client.get("/api/v1/content-lists/")
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "data" in data
+        assert "pagination" in data
 
     def test_get_content_lists_user_access(self, client, user_token, db, sample_content_list_data):
         """Test that regular users can read content lists."""
@@ -511,7 +518,7 @@ class TestContentListEdgeCases:
         """Test creating content list with empty title."""
         invalid_data = {
             "title": "",
-            "thumbnail_format": ThumbnailFormatEnum.medium_portrait,
+            "thumbnail_format": ThumbnailFormatEnum.format_810x1080,
             "is_active": True
         }
         headers = {"Authorization": f"Bearer {admin_token}"}

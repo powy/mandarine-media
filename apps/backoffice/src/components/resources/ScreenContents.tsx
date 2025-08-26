@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   List,
   Datagrid,
@@ -36,17 +36,14 @@ import {
   SingleFieldList,
   ChipField,
   ArrayField,
+  useRecordContext,
+  useNotify,
+  useRefresh,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box } from '@mui/material';
+import { getScreenDescriptionJSON, regenerateScreenDescriptionJSON, reorderScreenDescriptionLists } from 'share';
 
-// Define screen type choices
-const screenTypeChoices = [
-  { id: 'homepage', name: 'Homepage' },
-  { id: 'category', name: 'Category' },
-  { id: 'search', name: 'Search' },
-  { id: 'profile', name: 'Profile' },
-  { id: 'discover', name: 'Discover' },
-];
 
 // Define filters for the screen content list
 const screenContentFilters = [
@@ -55,12 +52,6 @@ const screenContentFilters = [
     placeholder="Search screen contents..." 
     alwaysOn 
     key="search"
-  />,
-  <SelectInput 
-    source="screen_type" 
-    label="Screen Type"
-    choices={screenTypeChoices}
-    key="screen_type"
   />,
 ];
 
@@ -91,10 +82,103 @@ const ScreenContentListActions = () => (
   </TopToolbar>
 );
 
+// JSON Dialog Component for Screen Descriptions
+const ScreenJsonDialog = ({ open, onClose, title, jsonData }) => (
+  <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <DialogTitle>{title}</DialogTitle>
+    <DialogContent>
+      <Box
+        component="pre"
+        sx={{
+          backgroundColor: '#f5f5f5',
+          padding: 2,
+          borderRadius: 1,
+          overflow: 'auto',
+          maxHeight: '60vh',
+          fontSize: '0.875rem',
+          fontFamily: 'monospace',
+        }}
+      >
+        {JSON.stringify(jsonData, null, 2)}
+      </Box>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={onClose}>Close</Button>
+    </DialogActions>
+  </Dialog>
+);
+
+// View Screen Description JSON Button
+const ViewScreenJsonButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [jsonData, setJsonData] = useState(null);
+
+  const handleViewJson = async () => {
+    if (!record?.id) return;
+    
+    try {
+      const json = await getScreenDescriptionJSON(record.id);
+      setJsonData(json);
+      setDialogOpen(true);
+    } catch (error) {
+      notify(`Error fetching JSON: ${error.message}`, { type: 'error' });
+    }
+  };
+
+  return (
+    <>
+      <Button
+        onClick={handleViewJson}
+        label="View JSON"
+        variant="outlined"
+        color="primary"
+      />
+      <ScreenJsonDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title="Screen Description JSON"
+        jsonData={jsonData}
+      />
+    </>
+  );
+};
+
+// Regenerate Screen Description JSON Button
+const RegenerateScreenJsonButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const handleRegenerateJson = async () => {
+    if (!record?.id) return;
+    
+    try {
+      await regenerateScreenDescriptionJSON(record.id);
+      notify('JSON cache regenerated successfully', { type: 'success' });
+      refresh();
+    } catch (error) {
+      notify(`Error regenerating JSON: ${error.message}`, { type: 'error' });
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRegenerateJson}
+      label="Regenerate JSON"
+      variant="outlined"
+      color="secondary"
+    />
+  );
+};
+
 const ScreenContentShowActions = () => (
   <TopToolbar>
     <ListButton label="Back to Screen Contents" />
     <EditButton />
+    <ViewScreenJsonButton />
+    <RegenerateScreenJsonButton />
   </TopToolbar>
 );
 
@@ -118,13 +202,7 @@ export const ScreenContentList = () => (
             : 'No description'
         } 
       />
-      <FunctionField 
-        label="Screen Type" 
-        render={record => {
-          const type = screenTypeChoices.find(choice => choice.id === record.screen_type);
-          return type ? type.name : record.screen_type || 'Not set';
-        }}
-      />
+      <TextField source="slug" label="Slug" />
       <BooleanField source="is_active" label="Active" />
       <TextField source="display_order" label="Order" />
       <FunctionField 
@@ -138,6 +216,12 @@ export const ScreenContentList = () => (
       <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
       <ShowButton />
+      <FunctionField
+        label="JSON"
+        render={() => (
+          <ViewScreenJsonButton />
+        )}
+      />
       <DeleteButton />
     </Datagrid>
   </List>
@@ -156,10 +240,9 @@ export const ScreenContentCreate = () => (
         multiline
         fullWidth 
       />
-      <SelectInput
-        source="screen_type"
-        choices={screenTypeChoices}
-        helperText="Choose the type of screen this content is for"
+      <TextInput 
+        source="slug" 
+        fullWidth 
       />
       <BooleanInput source="is_active" defaultValue={true} />
       <NumberInput 
@@ -169,10 +252,9 @@ export const ScreenContentCreate = () => (
       />
       <ArrayInput source="content_lists" label="Related Content Lists">
         <SimpleFormIterator>
-          <ReferenceInput source="content_list_id" reference="content-lists">
+          <ReferenceInput source="" reference="content-lists">
             <AutocompleteInput optionText="title" />
           </ReferenceInput>
-          <NumberInput source="display_order" label="Order" defaultValue={0} />
         </SimpleFormIterator>
       </ArrayInput>
     </SimpleForm>
@@ -192,10 +274,9 @@ export const ScreenContentEdit = () => (
         multiline
         fullWidth 
       />
-      <SelectInput
-        source="screen_type"
-        choices={screenTypeChoices}
-        helperText="Choose the type of screen this content is for"
+      <TextInput 
+        source="slug" 
+        fullWidth 
       />
       <BooleanInput source="is_active" />
       <NumberInput 
@@ -204,10 +285,9 @@ export const ScreenContentEdit = () => (
       />
       <ArrayInput source="content_lists" label="Related Content Lists">
         <SimpleFormIterator>
-          <ReferenceInput source="content_list_id" reference="content-lists">
+          <ReferenceInput source="" reference="content-lists">
             <AutocompleteInput optionText="title" />
           </ReferenceInput>
-          <NumberInput source="display_order" label="Order" defaultValue={0} />
         </SimpleFormIterator>
       </ArrayInput>
     </SimpleForm>
@@ -220,13 +300,7 @@ export const ScreenContentShow = () => (
       <TextField source="id" />
       <TextField source="title" />
       <TextField source="description" />
-      <FunctionField 
-        label="Screen Type" 
-        render={record => {
-          const type = screenTypeChoices.find(choice => choice.id === record.screen_type);
-          return type ? type.name : record.screen_type || 'Not set';
-        }}
-      />
+      <TextField source="slug" label="Slug" />
       <BooleanField source="is_active" label="Active" />
       <TextField source="display_order" label="Display Order" />
       <ArrayField source="content_lists" label="Related Content Lists">

@@ -173,6 +173,8 @@ export const authTokenStorage = {
           localStorage.removeItem(USER_KEY);
         } catch (error) {
           console.warn('Failed to clear tokens:', error);
+          // If all cleanup methods fail, this is a critical error
+          throw new Error('All token cleanup methods failed');
         }
       }
     }

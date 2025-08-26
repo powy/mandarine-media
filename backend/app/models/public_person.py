@@ -22,7 +22,6 @@ class PublicPerson(Base):
     stage_name_hangul = Column(String, nullable=True)
     
     # v1.5 fields
-    profession_list = Column(JSONArray(), nullable=True)
     face_image_id = Column(GUID(), ForeignKey("pictures.id"), nullable=True)
     
     # Relationships

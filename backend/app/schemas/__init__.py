@@ -46,21 +46,6 @@ from .video_file_report import (
     VideoFileReportInDB,
     VideoFileReportList
 )
-from .category_list import (
-    CategoryList,
-    CategoryListCreate,
-    CategoryListUpdate,
-    CategoryListWithItemCount,
-    CategoryListItem,
-    CategoryListItemCreate,
-    CategoryListItemUpdate,
-    CategoryListJSON,
-    CategoryListListResponse,
-    CategoryListItemListResponse,
-    BulkUpdateCategoryListsRequest,
-    BulkUpdateCategoryListsResponse,
-    UpdateCategoryListItemsOrderRequest
-)
 from .program import (
     Program,
     ProgramCreate,
@@ -84,12 +69,6 @@ from .country import (
     CountryCreate,
     CountryUpdate,
     CountryInDB
-)
-from .territory import (
-    Territory,
-    TerritoryCreate,
-    TerritoryUpdate,
-    TerritoryInDB
 )
 from .picture import (
     Picture,

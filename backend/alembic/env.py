@@ -14,8 +14,8 @@ from app.core.config import settings
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import (
     user, media_description, video_file, public_person, subscription_plan, 
-    audience_category, description_report, video_file_report, category_list,
-    program, season, language, country, territory, picture, content_list, screen_description
+    audience_category, description_report, video_file_report,
+    program, season, language, country, picture, content_list, screen_description
 )
 
 # this is the Alembic Config object, which provides

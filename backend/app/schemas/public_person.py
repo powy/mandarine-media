@@ -16,7 +16,6 @@ class PublicPersonBase(BaseModel):
     stage_name_hangul: Optional[str] = Field(None, description="Korean stage name")
     
     # v1.5 fields
-    profession_list: Optional[List[str]] = Field(None, description="List of professions")
     face_image_id: Optional[UUID] = Field(None, description="Face image ID reference")
 
     @field_validator('stage_name_roman')
@@ -47,7 +46,6 @@ class PublicPersonUpdate(BaseModel):
     first_name_roman: Optional[str] = Field(None, description="Romanized first name")
     last_name_roman: Optional[str] = Field(None, description="Romanized last name")
     stage_name_hangul: Optional[str] = Field(None, description="Korean stage name")
-    profession_list: Optional[List[str]] = Field(None, description="List of professions")
     face_image_id: Optional[UUID] = Field(None, description="Face image ID reference")
     
     @field_validator('stage_name_roman', 'first_name_hangul', 'last_name_hangul', 'first_name_roman', 'last_name_roman', 'stage_name_hangul')

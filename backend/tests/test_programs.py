@@ -8,7 +8,7 @@ def sample_program_data():
     """Sample program data for testing."""
     return {
         "program_name": "Test Program",
-        "general_media_description": "This is a test program description"
+        "general_media_description_id": None  # Optional UUID field
     }
 
 
@@ -17,7 +17,7 @@ def sample_program_update_data():
     """Sample program update data for testing."""
     return {
         "program_name": "Updated Test Program",
-        "general_media_description": "This is an updated test program description"
+        "general_media_description_id": None  # Optional UUID field
     }
 
 
@@ -42,11 +42,13 @@ class TestProgramsList:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
-    def test_list_programs_unauthorized(self, client):
-        """Test programs list without authentication."""
+    def test_list_programs_unauthenticated(self, client):
+        """Test programs list without authentication (now allowed)."""
         response = client.get("/api/v1/programs")
         
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
 
 
 class TestProgramsCreate:
@@ -61,7 +63,7 @@ class TestProgramsCreate:
         assert response.status_code == 200
         data = response.json()
         assert data["program_name"] == sample_program_data["program_name"]
-        assert data["general_media_description"] == sample_program_data["general_media_description"]
+        assert data["general_media_description_id"] == sample_program_data["general_media_description_id"]
         assert "id" in data
         assert "creation_date_utc" in data
 
@@ -75,7 +77,7 @@ class TestProgramsCreate:
         assert response.status_code == 200
         data = response.json()
         assert data["program_name"] == minimal_data["program_name"]
-        assert data["general_media_description"] is None
+        assert data["general_media_description_id"] is None
 
     def test_create_program_duplicate_name(self, client, admin_token, sample_program_data):
         """Test program creation with duplicate name fails."""
@@ -142,13 +144,14 @@ class TestProgramsDetail:
         
         assert response.status_code == 404
 
-    def test_get_program_unauthorized(self, client):
-        """Test program retrieval without authentication."""
+    def test_get_program_unauthenticated(self, client):
+        """Test program retrieval without authentication (now allowed)."""
         fake_id = str(uuid.uuid4())
         
         response = client.get(f"/api/v1/programs/{fake_id}")
         
-        assert response.status_code == 401
+        # Should get 404 (not found) instead of 401 (unauthorized)
+        assert response.status_code == 404
 
 
 class TestProgramsUpdate:
@@ -168,7 +171,7 @@ class TestProgramsUpdate:
         assert response.status_code == 200
         data = response.json()
         assert data["program_name"] == sample_program_update_data["program_name"]
-        assert data["general_media_description"] == sample_program_update_data["general_media_description"]
+        assert data["general_media_description_id"] == sample_program_update_data["general_media_description_id"]
 
     def test_update_program_partial(self, client, admin_token, sample_program_data):
         """Test partial program update."""
@@ -185,7 +188,7 @@ class TestProgramsUpdate:
         assert response.status_code == 200
         data = response.json()
         assert data["program_name"] == update_data["program_name"]
-        assert data["general_media_description"] == sample_program_data["general_media_description"]
+        assert data["general_media_description_id"] == sample_program_data["general_media_description_id"]
 
     def test_update_program_duplicate_name(self, client, admin_token, sample_program_data):
         """Test program update with duplicate name fails."""
@@ -286,3 +289,117 @@ class TestProgramsDelete:
         response = client.delete(f"/api/v1/programs/{fake_id}")
         
         assert response.status_code == 401
+
+
+class TestProgramsUuidValidation:
+    """Test programs UUID validation for general_media_description_id."""
+    
+    def test_create_program_with_valid_media_description_id(self, client, admin_token, sample_media_description):
+        """Test creating program with valid media description ID."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        program_data = {
+            "program_name": "Test Program with Valid Media Description",
+            "general_media_description_id": str(sample_media_description.id)
+        }
+        
+        response = client.post("/api/v1/programs", json=program_data, headers=headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["program_name"] == program_data["program_name"]
+        assert data["general_media_description_id"] == program_data["general_media_description_id"]
+    
+    def test_create_program_with_invalid_media_description_id(self, client, admin_token):
+        """Test creating program with non-existent media description ID fails."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Use a valid UUID format but non-existent ID
+        fake_media_id = str(uuid.uuid4())
+        program_data = {
+            "program_name": "Test Program with Invalid Media Description",
+            "general_media_description_id": fake_media_id
+        }
+        
+        response = client.post("/api/v1/programs", json=program_data, headers=headers)
+        
+        assert response.status_code == 404
+        assert "MediaDescription" in response.json()["detail"]
+        assert "not found" in response.json()["detail"]
+    
+    def test_create_program_with_null_media_description_id(self, client, admin_token):
+        """Test creating program with null media description ID succeeds."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        program_data = {
+            "program_name": "Test Program with Null Media Description",
+            "general_media_description_id": None
+        }
+        
+        response = client.post("/api/v1/programs", json=program_data, headers=headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["general_media_description_id"] is None
+    
+    def test_update_program_with_valid_media_description_id(self, client, admin_token, sample_program_data, sample_media_description):
+        """Test updating program with valid media description ID."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create program first
+        create_response = client.post("/api/v1/programs", json=sample_program_data, headers=headers)
+        program_id = create_response.json()["id"]
+        
+        # Update with valid media description ID
+        update_data = {
+            "general_media_description_id": str(sample_media_description.id)
+        }
+        
+        response = client.put(f"/api/v1/programs/{program_id}", json=update_data, headers=headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["general_media_description_id"] == str(sample_media_description.id)
+    
+    def test_update_program_with_invalid_media_description_id(self, client, admin_token, sample_program_data):
+        """Test updating program with non-existent media description ID fails."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create program first
+        create_response = client.post("/api/v1/programs", json=sample_program_data, headers=headers)
+        program_id = create_response.json()["id"]
+        
+        # Try to update with invalid media description ID
+        fake_media_id = str(uuid.uuid4())
+        update_data = {
+            "general_media_description_id": fake_media_id
+        }
+        
+        response = client.put(f"/api/v1/programs/{program_id}", json=update_data, headers=headers)
+        
+        assert response.status_code == 404
+        assert "MediaDescription" in response.json()["detail"]
+        assert "not found" in response.json()["detail"]
+    
+    def test_update_program_clear_media_description_id(self, client, admin_token, sample_media_description):
+        """Test updating program to clear media description ID."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create program with media description
+        program_data = {
+            "program_name": "Test Program to Clear Media Description",
+            "general_media_description_id": str(sample_media_description.id)
+        }
+        create_response = client.post("/api/v1/programs", json=program_data, headers=headers)
+        program_id = create_response.json()["id"]
+        
+        # Update to clear media description ID
+        update_data = {
+            "general_media_description_id": None
+        }
+        
+        response = client.put(f"/api/v1/programs/{program_id}", json=update_data, headers=headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["general_media_description_id"] is None

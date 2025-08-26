@@ -4,13 +4,11 @@ import {
   countriesApi,
   mediaApi,
   languagesApi,
-  territoriesApi,
   picturesApi,
   programsApi,
   seasonsApi,
   personsApi,
   usersApi,
-  categoryListsApi,
   getContentLists,
   getContentList,
   createContentList,
@@ -78,22 +76,6 @@ export const dataProvider: DataProvider = {
             total: languagesTotal,
           };
 
-        case 'territories':
-          const { q: territoryQuery, country_id, ...otherTerritoryFilters } = filters;
-          const territoriesResponse = await territoriesApi.getAll({ 
-            skip, 
-            limit: perPage,
-            q: territoryQuery,
-            country_id,
-            ...otherTerritoryFilters 
-          });
-          // Handle both direct array and paginated response formats
-          const territoriesData = Array.isArray(territoriesResponse) ? territoriesResponse : territoriesResponse.data || [];
-          const territoriesTotal = Array.isArray(territoriesResponse) ? territoriesData.length : territoriesResponse.pagination?.total || territoriesData.length;
-          return {
-            data: resourceMappers.territories.mapList(territoriesData),
-            total: territoriesTotal,
-          };
 
         case 'pictures':
           const { q: pictureQuery, ...otherPictureFilters } = filters;
@@ -179,20 +161,6 @@ export const dataProvider: DataProvider = {
             total: usersTotal,
           };
 
-        case 'category-lists':
-          const { q: categoryQuery, ...otherCategoryFilters } = filters;
-          const categoryLists = await categoryListsApi.getCategoryLists({ 
-            skip, 
-            limit: perPage,
-            ...otherCategoryFilters 
-          });
-          // Handle both direct array and paginated response formats
-          const categoryListsData = Array.isArray(categoryLists) ? categoryLists : categoryLists.data || [];
-          const categoryListsTotal = Array.isArray(categoryLists) ? categoryListsData.length : categoryLists.pagination?.total || categoryListsData.length;
-          return {
-            data: resourceMappers.categoryLists.mapList(categoryListsData),
-            total: categoryListsTotal,
-          };
 
         case 'content-lists':
           const contentLists = await getContentLists({ skip, limit: perPage });
@@ -228,6 +196,7 @@ export const dataProvider: DataProvider = {
             total: videoFilesTotal,
           };
 
+
         default:
           throw new Error(`Unknown resource: ${resource}`);
       }
@@ -254,9 +223,6 @@ export const dataProvider: DataProvider = {
           const language = await languagesApi.getById(id);
           return { data: resourceMappers.languages.mapOne(language) };
 
-        case 'territories':
-          const territory = await territoriesApi.getById(id);
-          return { data: resourceMappers.territories.mapOne(territory) };
 
         case 'pictures':
           const picture = await picturesApi.getById(id);
@@ -278,21 +244,19 @@ export const dataProvider: DataProvider = {
           const user = await usersApi.getById(id); // Keep as string UUID
           return { data: resourceMappers.users.mapOne(user) };
 
-        case 'category-lists':
-          const categoryList = await categoryListsApi.getCategoryList(id);
-          return { data: resourceMappers.categoryLists.mapOne(categoryList) };
 
         case 'content-lists':
           const contentList = await getContentList(id);
           return { data: resourceMappers.contentLists.mapOne(contentList) };
 
         case 'screen-descriptions':
-          const screenDescription = await getScreenDescription(id);
+          const screenDescription = await getScreenDescription(String(id));
           return { data: resourceMappers.screenContents.mapOne(screenDescription) };
 
         case 'video-files':
           const videoFile = await mediaApi.getVideoFile(id);
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
+
 
         default:
           throw new Error(`Unknown resource: ${resource}`);
@@ -386,9 +350,6 @@ export const dataProvider: DataProvider = {
           const language = await languagesApi.create(resourceMappers.languages.mapToCreate(data));
           return { data: resourceMappers.languages.mapOne(language) };
 
-        case 'territories':
-          const territory = await territoriesApi.create(resourceMappers.territories.mapToCreate(data));
-          return { data: resourceMappers.territories.mapOne(territory) };
 
         case 'pictures':
           const picture = await picturesApi.create(resourceMappers.pictures.mapToCreate(data));
@@ -410,9 +371,6 @@ export const dataProvider: DataProvider = {
           const newUser = await authApi.register(resourceMappers.users.mapToCreate(data));
           return { data: resourceMappers.users.mapOne(newUser) };
 
-        case 'category-lists':
-          const categoryList = await categoryListsApi.createCategoryList(resourceMappers.categoryLists.mapToCreate(data));
-          return { data: resourceMappers.categoryLists.mapOne(categoryList) };
 
         case 'content-lists':
           const contentList = await createContentList(resourceMappers.contentLists.mapToCreate(data));
@@ -425,6 +383,7 @@ export const dataProvider: DataProvider = {
         case 'video-files':
           const videoFile = await mediaApi.createVideoFile(resourceMappers.videoFiles.mapToCreate(data));
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
+
 
         default:
           throw new Error(`Create not implemented for resource: ${resource}`);
@@ -452,9 +411,6 @@ export const dataProvider: DataProvider = {
           const language = await languagesApi.update(id, resourceMappers.languages.mapToUpdate(data));
           return { data: resourceMappers.languages.mapOne(language) };
 
-        case 'territories':
-          const territory = await territoriesApi.update(id, resourceMappers.territories.mapToUpdate(data));
-          return { data: resourceMappers.territories.mapOne(territory) };
 
         case 'pictures':
           const picture = await picturesApi.update(id, resourceMappers.pictures.mapToUpdate(data));
@@ -476,21 +432,19 @@ export const dataProvider: DataProvider = {
           const updatedUser = await usersApi.update(id, resourceMappers.users.mapToUpdate(data)); // Keep as string UUID
           return { data: resourceMappers.users.mapOne(updatedUser) };
 
-        case 'category-lists':
-          const categoryList = await categoryListsApi.updateCategoryList(id, resourceMappers.categoryLists.mapToUpdate(data));
-          return { data: resourceMappers.categoryLists.mapOne(categoryList) };
 
         case 'content-lists':
           const contentList = await updateContentList(id, resourceMappers.contentLists.mapToUpdate(data));
           return { data: resourceMappers.contentLists.mapOne(contentList) };
 
         case 'screen-descriptions':
-          const screenDescription = await updateScreenDescription(id, resourceMappers.screenContents.mapToUpdate(data));
+          const screenDescription = await updateScreenDescription(String(id), resourceMappers.screenContents.mapToUpdate(data));
           return { data: resourceMappers.screenContents.mapOne(screenDescription) };
 
         case 'video-files':
           const videoFile = await mediaApi.updateVideoFile(id, resourceMappers.videoFiles.mapToUpdate(data));
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
+
 
         default:
           throw new Error(`Update not implemented for resource: ${resource}`);
@@ -527,9 +481,6 @@ export const dataProvider: DataProvider = {
           const language = await languagesApi.delete(id);
           return { data: resourceMappers.languages.mapOne(language) };
 
-        case 'territories':
-          const territory = await territoriesApi.delete(id);
-          return { data: resourceMappers.territories.mapOne(territory) };
 
         case 'pictures':
           const picture = await picturesApi.delete(id);
@@ -547,21 +498,19 @@ export const dataProvider: DataProvider = {
           const person = await personsApi.delete(id);
           return { data: resourceMappers.publicPersons.mapOne(person) };
 
-        case 'category-lists':
-          const categoryList = await categoryListsApi.deleteCategoryList(id);
-          return { data: resourceMappers.categoryLists.mapOne(categoryList) };
 
         case 'content-lists':
           await deleteContentList(id);
           return { data: { id } }; // deleteContentList returns void
 
         case 'screen-descriptions':
-          await deleteScreenDescription(id);
+          await deleteScreenDescription(String(id));
           return { data: { id } }; // deleteScreenDescription returns void
 
         case 'video-files':
           const deletedVideoFile = await mediaApi.deleteVideoFile(id);
           return { data: resourceMappers.videoFiles.mapOne(deletedVideoFile) };
+
 
         default:
           throw new Error(`Delete not implemented for resource: ${resource}`);

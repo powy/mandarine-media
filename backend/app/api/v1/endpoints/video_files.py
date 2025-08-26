@@ -1,6 +1,7 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 from datetime import datetime
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from app import crud, schemas
 from app.api import deps
 from app.core.config import settings
 from app.services.upload_service import MediaUploadService
+from app.services.mux_token_service import mux_token_service
 
 router = APIRouter()
 
@@ -18,7 +20,7 @@ def read_video_files(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve video files.
@@ -57,7 +59,7 @@ def read_video_file(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get video file by ID.
@@ -162,9 +164,6 @@ async def upload_video_file(
             file_name=file.filename or "unknown",
             file_size_bytes=upload_result.file_size or 0,
             encoding_status="pending",
-            video_codec="unknown",  # Will be updated during processing
-            audio_codec="unknown",  # Will be updated during processing
-            file_format="unknown",  # Will be updated during processing
         )
         
         video_file = crud.video_file.create(db=db, obj_in=video_file_data)
@@ -239,7 +238,7 @@ def read_video_files_by_media(
     *,
     db: Session = Depends(deps.get_db),
     media_id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get video files by media description ID.
@@ -406,9 +405,6 @@ async def upload_file_to_existing_metadata(
             "file_size_bytes": upload_result.file_size or 0,
             "upload_status": schemas.video_file.UploadStatusEnum.upload_completed,
             "encoding_status": "pending",
-            "video_codec": "unknown",  # Will be updated during processing
-            "audio_codec": "unknown",  # Will be updated during processing
-            "file_format": "unknown",  # Will be updated during processing
         }
         
         # Add metadata if available
@@ -450,7 +446,7 @@ def test_video_file_playback(
     *,
     db: Session = Depends(deps.get_db),
     file_id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Test video file playback. Returns playback URL or error message.
@@ -506,3 +502,157 @@ def test_video_file_playback(
             playback_url=None,
             mux_playback_id=video_file.mux_playback_id
         )
+
+
+@router.post("/{id}/playback-token", response_model=dict)
+def generate_playback_token(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
+    current_user: schemas.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Generate signed JWT token for secure video playback.
+    
+    This endpoint generates a JWT token required for accessing Mux videos 
+    with signed playback policies.
+    """
+    # Get video file
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(status_code=404, detail="Video file not found")
+    
+    # Check if video file has Mux playback ID
+    if not video_file.mux_playback_id:
+        raise HTTPException(
+            status_code=400, 
+            detail="Video file does not have a MUX playback ID"
+        )
+    
+    try:
+        # Generate playback token
+        token = mux_token_service.generate_playback_token(
+            playback_id=video_file.mux_playback_id,
+            expiration_minutes=expiration_minutes,
+            audience="v"  # "v" for video
+        )
+        
+        # Generate signed playback URL
+        signed_url = mux_token_service.generate_signed_playback_url(
+            playback_id=video_file.mux_playback_id,
+            expiration_minutes=expiration_minutes
+        )
+        
+        return {
+            "success": True,
+            "token": token,
+            "playback_url": signed_url,
+            "playback_id": video_file.mux_playback_id,
+            "expires_in_minutes": expiration_minutes,
+            "expires_at": int(time.time()) + (expiration_minutes * 60)
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to generate playback token: {str(e)}"
+        )
+
+
+@router.post("/{id}/drm-token", response_model=dict)
+def generate_drm_token(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
+    drm_key_id: Optional[str] = Query(None),
+    current_user: schemas.User = Depends(deps.get_current_active_admin),  # Admin only for DRM
+) -> Any:
+    """
+    Generate JWT token for DRM license requests. Admin only.
+    
+    This endpoint generates a DRM-specific JWT token for accessing 
+    DRM-protected content through Mux's license server.
+    """
+    # Get video file
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(status_code=404, detail="Video file not found")
+    
+    # Check if video file has Mux playback ID
+    if not video_file.mux_playback_id:
+        raise HTTPException(
+            status_code=400, 
+            detail="Video file does not have a MUX playback ID"
+        )
+    
+    # Check if video file is DRM protected (this would need to be tracked in your video_file model)
+    # For now, we'll assume any video with a mux_playback_id can potentially be DRM protected
+    
+    try:
+        # Generate DRM token
+        token = mux_token_service.generate_drm_token(
+            playback_id=video_file.mux_playback_id,
+            expiration_minutes=expiration_minutes,
+            key_id=drm_key_id
+        )
+        
+        return {
+            "success": True,
+            "drm_token": token,
+            "playback_id": video_file.mux_playback_id,
+            "drm_key_id": drm_key_id,
+            "expires_in_minutes": expiration_minutes,
+            "expires_at": int(time.time()) + (expiration_minutes * 60)
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to generate DRM token: {str(e)}"
+        )
+
+
+@router.get("/{id}/token-info", response_model=dict)
+def get_token_info(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    token: str = Query(..., description="JWT token to analyze"),
+    current_user: schemas.User = Depends(deps.get_current_active_admin),  # Admin only
+) -> Any:
+    """
+    Get information about a JWT token (for debugging). Admin only.
+    
+    This endpoint decodes and analyzes a JWT token without validating 
+    the signature, useful for debugging token issues.
+    """
+    # Verify video file exists (for context)
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(status_code=404, detail="Video file not found")
+    
+    try:
+        # Get token information
+        token_info = mux_token_service.get_token_info(token)
+        
+        # Add video file context
+        token_info["video_file_id"] = str(id)
+        token_info["video_file_playback_id"] = video_file.mux_playback_id
+        
+        return {
+            "success": True,
+            "token_info": token_info
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to analyze token: {str(e)}",
+            "video_file_id": str(id)
+        }

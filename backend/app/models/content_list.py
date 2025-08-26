@@ -11,11 +11,12 @@ from app.models.common import GUID, JSONArray
 
 
 class ThumbnailFormatEnum(enum.Enum):
-    """Enum defining standardized thumbnail formats for consistent image sizing"""
-    small_square = "small_square"          # 1080x1080 - User avatars, compact lists
-    medium_portrait = "medium_portrait"    # 810x1080 - Content cards, mobile displays
-    large_landscape = "large_landscape"    # 1920x1080 - Homepage banners, desktop displays
-    vertical_mobile = "vertical_mobile"    # 1080x1920 - Mobile app screens, stories
+    """Enum defining standardized thumbnail formats using dimension-based naming"""
+    format_1920x1080 = "1920x1080"  # Large landscape - Homepage banners, desktop displays
+    format_1920x720 = "1920x720"    # Wide landscape - Cinema format
+    format_1080x1080 = "1080x1080"  # Square - User avatars, compact lists
+    format_810x1080 = "810x1080"    # Portrait - Content cards, mobile displays
+    format_1080x1920 = "1080x1920"  # Vertical mobile - Mobile app screens, stories
 
 
 class ContentTypeEnum(enum.Enum):
@@ -37,12 +38,15 @@ class ContentList(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     
-    # Thumbnail format specification
-    thumbnail_format = Column(String, nullable=False)  # Will use enum validation in schemas
+    # Thumbnail format specification  
+    thumbnail_format = Column(String, nullable=False)  # enum using ThumbnailFormatEnum: 1920x1080, 1920x720, 1080x1080, 810x1080, 1080x1920
     
     # Display properties
     is_active = Column(Boolean, default=True, nullable=False)
     display_order = Column(Integer, default=0, nullable=False)
+    list_type = Column(String, nullable=False)  # enum between classic and carrousel (might be extended later)
+    percentage_width = Column(Integer, nullable=False)
+    percentage_height = Column(Integer, nullable=False)
     
     # Content organization - arrays of content IDs and their types
     content_items = Column(JSONArray(), nullable=True, default=list)  # Array of UUIDs
@@ -53,7 +57,7 @@ class ContentList(Base):
     media_categories_id_list = Column(JSONArray(), nullable=True)  # Filter by category IDs
     themes_and_genres_id_list = Column(JSONArray(), nullable=True)  # Filter by theme/genre IDs
     latest_first = Column(Boolean, default=True, nullable=False)  # Order items by latest first
-    slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
+    slug = Column(String, nullable=True, unique=True)
     
     # JSON cache for performance
     json_content = Column(Text, nullable=True)  # Cached JSON representation

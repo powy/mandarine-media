@@ -39,7 +39,11 @@ def sample_content_list_data():
     return {
         "title": "Test Content List for Screen",
         "description": "A test content list for screen content testing",
-        "thumbnail_format": ThumbnailFormatEnum.medium_portrait,
+        "thumbnail_format": ThumbnailFormatEnum.format_810x1080,
+        "list_type": "classic",
+        "percentage_width": 100,
+        "percentage_height": 80,
+        "latest_first": True,
         "is_active": True,
         "display_order": 1,
         "content_items": [],
@@ -284,10 +288,13 @@ class TestScreenContentCRUD:
 
 
 class TestScreenContentAPI:
-    def test_get_screen_descriptions_unauthorized(self, client):
-        """Test that getting screen contents without authentication fails."""
+    def test_get_screen_descriptions_unauthenticated(self, client):
+        """Test that getting screen contents without authentication is now allowed."""
         response = client.get("/api/v1/screen-descriptions/")
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "data" in data
+        assert "pagination" in data
 
     def test_get_screen_descriptions_user_access(self, client, user_token, db, sample_screen_description_data):
         """Test that regular users can read screen contents."""

@@ -7,9 +7,6 @@ import {
   Language,
   LanguageCreate,
   LanguageUpdate,
-  Territory,
-  TerritoryCreate,
-  TerritoryUpdate,
   Picture,
   PictureCreate,
   PictureUpdate,
@@ -23,14 +20,13 @@ import {
   PublicPersonCreate,
   PublicPersonUpdate,
   User,
-  CategoryList,
   ContentList,
   ContentListCreate,
   ContentListUpdate,
   ScreenContent,
   ScreenContentCreate,
   ScreenContentUpdate,
-  VideoFile
+  VideoFile,
 } from 'share';
 
 // React Admin expects 'id' field and ISO date strings work well with date inputs
@@ -70,23 +66,6 @@ const countries = createBaseMapper<Country, CountryCreate, CountryUpdate>();
 
 const languages = createBaseMapper<Language, LanguageCreate, LanguageUpdate>();
 
-const territories = {
-  ...createBaseMapper<Territory, TerritoryCreate, TerritoryUpdate>(),
-  mapOne: (item: Territory): ReactAdminRecord => ({
-    ...item,
-    id: item.id,
-    created_at: item.creation_date_utc,
-    country_id: item.country_id || null,
-  }),
-
-  mapList: (items: Territory[]): ReactAdminRecord[] => 
-    (items || []).map((item) => ({
-      ...item,
-      id: item.id,
-      created_at: item.creation_date_utc,
-      country_id: item.country_id || null,
-    })),
-};
 
 const pictures = createBaseMapper<Picture, PictureCreate, PictureUpdate>();
 
@@ -252,41 +231,6 @@ const mediaDescriptions = {
   },
 };
 
-const categoryLists = {
-  mapOne: (item: CategoryList): ReactAdminRecord => ({
-    ...item,
-    id: item.id,
-    created_at: item.creation_date_utc,
-    updated_at: item.last_updated_utc,
-    items_count: item.items?.length || 0,
-  }),
-
-  mapList: (items: CategoryList[]): ReactAdminRecord[] => 
-    (items || []).map((item) => ({
-      ...item,
-      id: item.id,
-      created_at: item.creation_date_utc,
-      updated_at: item.last_updated_utc,
-      items_count: item.items?.length || 0,
-    })),
-
-  mapToCreate: (data: ReactAdminRecord) => {
-    const { id, created_at, creation_date_utc, updated_at, last_updated_utc, items_count, ...rest } = data;
-    return {
-      name: data.name || '',
-      title: data.title || '',
-      description: data.description || null,
-      is_active: data.is_active !== false,
-      display_order: data.display_order || 0,
-      ...rest
-    };
-  },
-
-  mapToUpdate: (data: ReactAdminRecord) => {
-    const { id, created_at, creation_date_utc, updated_at, last_updated_utc, items_count, ...rest } = data;
-    return rest;
-  },
-};
 
 const contentLists = {
   mapOne: (item: ContentList): ReactAdminRecord => {
@@ -330,7 +274,7 @@ const contentLists = {
     
     return {
       title: data.title || '',
-      thumbnail_format: data.thumbnail_format || 'small_square',
+      thumbnail_format: data.thumbnail_format || '1080x1080',
       is_active: data.is_active !== false,
       display_order: data.display_order || 0,
       content_items,
@@ -414,7 +358,6 @@ const videoFiles = {
     const { id, created_at, updated_at, last_updated_utc, filename, ...rest } = data;
     return {
       file_name: data.filename || '',
-      upload_method: data.upload_method || 'existing_url',
       external_url: data.external_url || null,
       media_description_id: data.media_description_id || null,
       upload_status: data.upload_status || 'upload_completed',
@@ -436,17 +379,16 @@ const videoFiles = {
   },
 };
 
+
 export const resourceMappers = {
   countries,
   languages,
-  territories,
   pictures,
   programs,
   seasons,
   publicPersons,
   users,
   mediaDescriptions,
-  categoryLists,
   contentLists,
   screenContents,
   videoFiles,

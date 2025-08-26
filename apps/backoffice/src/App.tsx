@@ -9,9 +9,7 @@ import { PublicPersonList, PublicPersonCreate, PublicPersonEdit, PublicPersonSho
 import { ProgramList, ProgramCreate, ProgramEdit, ProgramShow } from './components/resources/Programs';
 import { SeasonList, SeasonCreate, SeasonEdit, SeasonShow } from './components/resources/Seasons';
 import { PictureList, PictureCreate, PictureEdit, PictureShow } from './components/resources/Pictures';
-import { TerritoryList, TerritoryCreate, TerritoryEdit, TerritoryShow } from './components/resources/Territories';
 import { UserList, UserCreate, UserEdit, UserShow } from './components/resources/Users';
-import { CategoryListList, CategoryListCreate, CategoryListEdit, CategoryListShow } from './components/resources/CategoryLists';
 import { ContentListList, ContentListCreate, ContentListEdit, ContentListShow } from './components/resources/ContentLists';
 import { ScreenContentList, ScreenContentCreate, ScreenContentEdit, ScreenContentShow } from './components/resources/ScreenContents';
 import { VideoFileList, VideoFileCreate, VideoFileEdit, VideoFileShow } from './components/resources/VideoFiles';
@@ -43,12 +41,6 @@ const CustomMenu = () => {
       />
       
       {/* Content Organization */}
-      <MenuItemLink
-        to="/category-lists"
-        primaryText="Category Lists"
-        leftIcon={<span>📂</span>}
-        dense={!open}
-      />
       <MenuItemLink
         to="/content-lists"
         primaryText="Content Lists"
@@ -95,10 +87,12 @@ const CustomMenu = () => {
         leftIcon={<span>🗣️</span>}
         dense={!open}
       />
+      
+      {/* Reports */}
       <MenuItemLink
-        to="/territories"
-        primaryText="Territories"
-        leftIcon={<span>🗺️</span>}
+        to="/video-file-reports"
+        primaryText="Video File Reports"
+        leftIcon={<span>📊</span>}
         dense={!open}
       />
       
@@ -219,14 +213,6 @@ export const App = () => (
       options={{ label: 'Pictures' }}
     />
     
-    <Resource
-      name="territories"
-      list={TerritoryList}
-      create={TerritoryCreate}
-      edit={TerritoryEdit}
-      show={TerritoryShow}
-      options={{ label: 'Territories' }}
-    />
     
     <Resource
       name="users"
@@ -238,14 +224,6 @@ export const App = () => (
     />
 
     {/* Content organization resources */}
-    <Resource
-      name="category-lists"
-      list={CategoryListList}
-      create={CategoryListCreate}
-      edit={CategoryListEdit}
-      show={CategoryListShow}
-      options={{ label: 'Category Lists' }}
-    />
     
     <Resource
       name="content-lists"
@@ -274,5 +252,6 @@ export const App = () => (
       show={VideoFileShow}
       options={{ label: 'Video Files' }}
     />
+    
   </Admin>
 );

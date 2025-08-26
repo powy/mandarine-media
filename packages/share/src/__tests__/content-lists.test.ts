@@ -40,7 +40,10 @@ describe('Content Lists API', () => {
     creation_date_utc: '2024-01-15T10:30:00Z',
     last_updated_utc: '2024-01-15T14:30:00Z',
     title: 'Trending K-Dramas',
-    thumbnail_format: 'medium_portrait',
+    thumbnail_format: '810x1080',
+    list_type: 'classic',
+    percentage_width: 100,
+    percentage_height: 50,
     is_active: true,
     display_order: 1,
     latest_first: true, // v1.9 required field
@@ -52,7 +55,7 @@ describe('Content Lists API', () => {
   const mockContentListJSON: ContentListJSON = {
     id: 'content-list-1',
     title: 'Trending K-Dramas',
-    thumbnail_format: 'medium_portrait',
+    thumbnail_format: '810x1080',
     description: 'Popular Korean dramas this week',
     last_updated: '2024-01-15T14:30:00Z',
     items: [
@@ -91,13 +94,13 @@ describe('Content Lists API', () => {
         skip: 0,
         limit: 10,
         is_active: true,
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
       };
 
       const result = await getContentLists(filters);
 
       expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/content-lists?skip=0&limit=10&is_active=true&thumbnail_format=medium_portrait'
+        '/content-lists?skip=0&limit=10&is_active=true&thumbnail_format=810x1080'
       );
       expect(result).toEqual(mockResponse);
     });
@@ -118,7 +121,10 @@ describe('Content Lists API', () => {
     it('should create a new content list', async () => {
       const createData: ContentListCreate = {
         title: 'New Content List',
-        thumbnail_format: 'large_landscape',
+        thumbnail_format: '1920x1080',
+        list_type: 'carrousel',
+        percentage_width: 80,
+        percentage_height: 60,
         is_active: true,
         display_order: 2,
         latest_first: true, // v1.9 required field
@@ -210,7 +216,10 @@ describe('Content Lists API', () => {
     it('should handle empty content_items arrays', async () => {
       const createData: ContentListCreate = {
         title: 'Empty List',
-        thumbnail_format: 'small_square',
+        thumbnail_format: '1080x1080',
+        list_type: 'classic',
+        percentage_width: 100,
+        percentage_height: 100,
         is_active: true,
         display_order: 1,
         latest_first: true, // v1.9 required field
@@ -230,7 +239,10 @@ describe('Content Lists API', () => {
     it('should handle missing optional fields', async () => {
       const minimalCreateData: ContentListCreate = {
         title: 'Minimal List',
-        thumbnail_format: 'vertical_mobile',
+        thumbnail_format: '1080x1920',
+        list_type: 'classic',
+        percentage_width: 100,
+        percentage_height: 100,
         is_active: true,
         display_order: 1,
         latest_first: true, // v1.9 required field

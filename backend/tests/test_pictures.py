@@ -9,10 +9,10 @@ def sample_picture_data():
     return {
         "photo_url": "https://example.com/test-image.jpg",
         "file_name": "test-image.jpg",
-        "file_size_bytes": 1024000,
         "width": 1920,
         "height": 1080,
-        "alt_text": "Test image description"
+        "alt_text": "Test image description",
+        "description": "A test image for unit tests"
     }
 
 
@@ -47,10 +47,10 @@ class TestPicturesCRUD:
         data = response.json()
         assert data["photo_url"] == sample_picture_data["photo_url"]
         assert data["file_name"] == sample_picture_data["file_name"]
-        assert data["file_size_bytes"] == sample_picture_data["file_size_bytes"]
         assert data["width"] == sample_picture_data["width"]
         assert data["height"] == sample_picture_data["height"]
         assert data["alt_text"] == sample_picture_data["alt_text"]
+        assert data["description"] == sample_picture_data["description"]
         assert "id" in data
         assert "creation_date_utc" in data
 
@@ -64,10 +64,10 @@ class TestPicturesCRUD:
         data = response.json()
         assert data["photo_url"] == minimal_picture_data["photo_url"]
         assert data["file_name"] is None
-        assert data["file_size_bytes"] is None
         assert data["width"] is None
         assert data["height"] is None
         assert data["alt_text"] is None
+        assert data["description"] is None
 
     def test_create_picture_duplicate_url(self, client, admin_token, sample_picture_data):
         """Test picture creation with duplicate URL fails."""

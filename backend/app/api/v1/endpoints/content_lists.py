@@ -17,7 +17,7 @@ def get_content_lists(
     limit: int = Query(100, ge=1, le=1000),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     thumbnail_format: Optional[schemas.ThumbnailFormatEnum] = Query(None, description="Filter by thumbnail format"),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve content lists.
@@ -67,7 +67,7 @@ def get_content_lists(
 def get_content_list(
     content_list_id: UUID,
     db: Session = Depends(deps.get_db),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get content list by ID.
@@ -152,8 +152,8 @@ def delete_content_list(
     if not content_list:
         raise HTTPException(status_code=404, detail="Content list not found")
     
-    # Check if content list is used in any screen contents
-    screens_using_list = crud.screen_content.get_screens_containing_content_list(
+    # Check if content list is used in any screen descriptions
+    screens_using_list = crud.screen_description.get_screens_containing_content_list(
         db=db, content_list_id=str(content_list_id)
     )
     if screens_using_list:
@@ -197,7 +197,7 @@ def reorder_content_items(
 def get_content_list_json(
     content_list_id: UUID,
     db: Session = Depends(deps.get_db),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get cached JSON content for a content list.
@@ -269,7 +269,7 @@ def search_content_lists_by_title(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Search content lists by title.

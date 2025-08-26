@@ -1,6 +1,7 @@
 export * from './client';
 export * from './auth';
 export * from './media';
+export * from './media-uploads';
 export * from './users';
 export * from './persons';
 export * from './video-file-reports';

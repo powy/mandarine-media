@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { AuthTokens, LoginRequest, RegisterRequest, User } from '../types';
 import { authTokenStorage } from '../utils/storage';
+import { isTokenExpired } from '../utils/token-utils';
 
 // Extract getCurrentUser as a separate function to avoid 'this' context issues
 const getCurrentUser = async (): Promise<User> => {
@@ -8,15 +9,6 @@ const getCurrentUser = async (): Promise<User> => {
   return response.data;
 };
 
-// Extract isTokenExpired as a separate function to avoid 'this' context issues
-const isTokenExpired = (token: string): boolean => {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true; // Assume expired if we can't parse
-  }
-};
 
 export const authApi = {
   // Login with email/password
@@ -177,7 +169,5 @@ export const authApi = {
   },
 
   // Check if token is expired (basic JWT check)
-  isTokenExpired(token: string): boolean {
-    return isTokenExpired(token);
-  },
+  isTokenExpired,
 };

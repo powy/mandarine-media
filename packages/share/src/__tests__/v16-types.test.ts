@@ -19,15 +19,15 @@ describe('v1.6 Types Validation', () => {
   describe('ThumbnailFormatEnum', () => {
     it('should accept all valid thumbnail format values', () => {
       const validFormats: ThumbnailFormatEnum[] = [
-        'small_square',
-        'medium_portrait',
-        'large_landscape',
-        'vertical_mobile',
+        '1080x1080',
+        '810x1080',
+        '1920x1080',
+        '1080x1920',
       ];
 
       validFormats.forEach(format => {
         expect(typeof format).toBe('string');
-        expect(['small_square', 'medium_portrait', 'large_landscape', 'vertical_mobile']).toContain(format);
+        expect(['1080x1080', '810x1080', '1920x1080', '1080x1920']).toContain(format);
       });
     });
   });
@@ -39,7 +39,7 @@ describe('v1.6 Types Validation', () => {
         creation_date_utc: '2024-01-15T10:30:00Z',
         last_updated_utc: '2024-01-15T14:30:00Z',
         title: 'Trending K-Dramas',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         description: 'Popular Korean dramas this week',
@@ -72,7 +72,7 @@ describe('v1.6 Types Validation', () => {
         creation_date_utc: '2024-01-15T10:30:00Z',
         last_updated_utc: '2024-01-15T14:30:00Z',
         title: 'Minimal List',
-        thumbnail_format: 'small_square',
+        thumbnail_format: '1080x1080',
         is_active: true,
         display_order: 1,
       };
@@ -87,7 +87,7 @@ describe('v1.6 Types Validation', () => {
     it('should have correct ContentListCreate structure', () => {
       const createData: ContentListCreate = {
         title: 'New Content List',
-        thumbnail_format: 'large_landscape',
+        thumbnail_format: '1920x1080',
         is_active: true,
         display_order: 2,
         description: 'Test description',
@@ -144,7 +144,7 @@ describe('v1.6 Types Validation', () => {
       const jsonResponse: ContentListJSON = {
         id: 'list-1',
         title: 'JSON List',
-        thumbnail_format: 'vertical_mobile',
+        thumbnail_format: '1080x1920',
         description: 'JSON description',
         last_updated: '2024-01-15T14:30:00Z',
         items: [
@@ -176,7 +176,7 @@ describe('v1.6 Types Validation', () => {
           {
             id: 'list-1',
             title: 'List Title',
-            thumbnail_format: 'medium_portrait',
+            thumbnail_format: '810x1080',
             last_updated: '2024-01-15T14:30:00Z',
             items: [],
           },
@@ -186,7 +186,7 @@ describe('v1.6 Types Validation', () => {
       expect(typeof screenJSON.id).toBe('string');
       expect(typeof screenJSON.title).toBe('string');
       expect(Array.isArray(screenJSON.content_lists)).toBe(true);
-      expect(screenJSON.content_lists[0].thumbnail_format).toBe('medium_portrait');
+      expect(screenJSON.content_lists[0].thumbnail_format).toBe('810x1080');
     });
   });
 
@@ -242,7 +242,7 @@ describe('v1.6 Types Validation', () => {
         creation_date_utc: '2024-01-15T10:30:00Z',
         last_updated_utc: '2024-01-15T14:30:00Z',
         title: 'Empty List',
-        thumbnail_format: 'small_square',
+        thumbnail_format: '1080x1080',
         is_active: true,
         display_order: 1,
         content_items: [],
@@ -255,10 +255,10 @@ describe('v1.6 Types Validation', () => {
 
     it('should support all thumbnail formats', () => {
       const formats: ThumbnailFormatEnum[] = [
-        'small_square',
-        'medium_portrait', 
-        'large_landscape',
-        'vertical_mobile',
+        '1080x1080',
+        '810x1080', 
+        '1920x1080',
+        '1080x1920',
       ];
 
       formats.forEach(format => {
@@ -304,7 +304,7 @@ describe('v1.6 Types Validation', () => {
         creation_date_utc: '2024-01-15T10:30:00Z',
         last_updated_utc: '2024-01-15T14:30:00Z',
         title: 'Large List',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         content_items: largeContentItems,

@@ -20,8 +20,6 @@ def sample_media_data():
         "descriptive_summary_text": "This is a test episode",
         "synopsis_text": "Test synopsis",
         "production_year": 2025,
-        "duration_seconds": 3600,
-        "is_premium_content": False,
         "is_featured": False,
         "content_status": "published"
     }
@@ -82,8 +80,7 @@ class TestMediaDescriptionsList:
             params={
                 "media_type": "video",
                 "status": "published",
-                "is_featured": True,
-                "is_premium": False
+                "is_featured": True
             }
         )
         
@@ -120,10 +117,14 @@ class TestMediaDescriptionsList:
         )
         assert response.status_code == 422
     
-    def test_list_media_descriptions_unauthorized(self, client):
-        """Test media descriptions list without authentication."""
+    def test_list_media_descriptions_unauthenticated(self, client):
+        """Test media descriptions list without authentication (now allowed)."""
         response = client.get("/api/v1/media-descriptions")
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "pagination" in data
+        assert isinstance(data["data"], list)
 
 
 class TestMediaDescriptionCreate:
@@ -308,11 +309,38 @@ class TestMediaDescriptionRead:
         
         assert response.status_code == 422
     
-    def test_read_media_description_unauthorized(self, client):
-        """Test reading without authentication."""
+    def test_read_media_description_unauthenticated(self, client):
+        """Test reading without authentication (now allowed)."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/media-descriptions/{fake_id}")
-        assert response.status_code == 401
+        # Should get 404 (not found) instead of 401 (unauthorized) since auth is optional
+        assert response.status_code == 404
+    
+    def test_read_media_description_unauthenticated_view_increment(self, client, admin_token, sample_media_data):
+        """Test that unauthenticated users increment view count."""
+        # Create media description as admin
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        create_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=sample_media_data
+        )
+        assert create_response.status_code == 200
+        media_id = create_response.json()["id"]
+        initial_view_count = create_response.json()["view_count"]
+        
+        # Read as unauthenticated user (should increment view count)
+        response = client.get(f"/api/v1/media-descriptions/{media_id}")
+        
+        assert response.status_code == 200
+        # Note: We need to check the view count via another request since it's incremented in the database
+        # Let's check by reading again as admin (admin reads don't increment)
+        admin_read_response = client.get(
+            f"/api/v1/media-descriptions/{media_id}",
+            headers=admin_headers
+        )
+        assert admin_read_response.status_code == 200
+        assert admin_read_response.json()["view_count"] == initial_view_count + 1
 
 
 class TestMediaDescriptionUpdate:
@@ -585,10 +613,12 @@ class TestFeaturedMedia:
         )
         assert response.status_code == 422
     
-    def test_get_featured_media_unauthorized(self, client):
-        """Test featured media without authentication."""
+    def test_get_featured_media_unauthenticated(self, client):
+        """Test featured media without authentication (now allowed)."""
         response = client.get("/api/v1/media-descriptions/featured/list")
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
 
 
 class TestTrendingMedia:
@@ -622,10 +652,12 @@ class TestTrendingMedia:
         assert isinstance(data, list)
         assert len(data) <= 10
     
-    def test_get_trending_media_unauthorized(self, client):
-        """Test trending media without authentication."""
+    def test_get_trending_media_unauthenticated(self, client):
+        """Test trending media without authentication (now allowed)."""
         response = client.get("/api/v1/media-descriptions/trending/list")
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
 
 
 class TestMediaInteractions:

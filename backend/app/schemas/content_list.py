@@ -6,11 +6,12 @@ import enum
 
 
 class ThumbnailFormatEnum(str, enum.Enum):
-    """Enum defining standardized thumbnail formats for consistent image sizing"""
-    small_square = "small_square"          # 1080x1080 - User avatars, compact lists
-    medium_portrait = "medium_portrait"    # 810x1080 - Content cards, mobile displays
-    large_landscape = "large_landscape"    # 1920x1080 - Homepage banners, desktop displays
-    vertical_mobile = "vertical_mobile"    # 1080x1920 - Mobile app screens, stories
+    """Enum defining standardized thumbnail formats using dimension-based naming"""
+    format_1920x1080 = "1920x1080"  # Large landscape - Homepage banners, desktop displays
+    format_1920x720 = "1920x720"    # Wide landscape - Cinema format
+    format_1080x1080 = "1080x1080"  # Square - User avatars, compact lists
+    format_810x1080 = "810x1080"    # Portrait - Content cards, mobile displays
+    format_1080x1920 = "1080x1920"  # Vertical mobile - Mobile app screens, stories
 
 
 class ContentTypeEnum(str, enum.Enum):
@@ -27,6 +28,9 @@ class ContentListBase(BaseModel):
     thumbnail_format: ThumbnailFormatEnum = Field(..., description="Thumbnail format for all items in this list")
     is_active: bool = Field(True, description="Whether the content list is active")
     display_order: int = Field(0, description="Order in which content list appears", ge=0)
+    list_type: str = Field(..., description="List type: classic or carrousel")
+    percentage_width: int = Field(..., description="Percentage width", ge=0, le=100)
+    percentage_height: int = Field(..., description="Percentage height", ge=0, le=100)
     content_items: Optional[List[str]] = Field(default_factory=list, description="List of content IDs (UUIDs as strings)")
     content_types: Optional[List[ContentTypeEnum]] = Field(default_factory=list, description="List of content types corresponding to content_items")
     
@@ -35,7 +39,7 @@ class ContentListBase(BaseModel):
     media_categories_id_list: Optional[List[str]] = Field(None, description="Filter by category IDs")
     themes_and_genres_id_list: Optional[List[str]] = Field(None, description="Filter by theme/genre IDs")
     latest_first: bool = Field(True, description="Order items by latest first")
-    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
+    slug: Optional[str] = Field(None, description="URL slug (auto-generated from title if empty)")
 
     @field_validator('content_items')
     @classmethod
@@ -74,6 +78,9 @@ class ContentListUpdate(BaseModel):
     thumbnail_format: Optional[ThumbnailFormatEnum] = Field(None, description="Thumbnail format for all items in this list")
     is_active: Optional[bool] = Field(None, description="Whether the content list is active")
     display_order: Optional[int] = Field(None, description="Order in which content list appears", ge=0)
+    list_type: Optional[str] = Field(None, description="List type: classic or carrousel")
+    percentage_width: Optional[int] = Field(None, description="Percentage width", ge=0, le=100)
+    percentage_height: Optional[int] = Field(None, description="Percentage height", ge=0, le=100)
     content_items: Optional[List[str]] = Field(None, description="List of content IDs (UUIDs as strings)")
     content_types: Optional[List[ContentTypeEnum]] = Field(None, description="List of content types corresponding to content_items")
     
@@ -82,7 +89,7 @@ class ContentListUpdate(BaseModel):
     media_categories_id_list: Optional[List[str]] = Field(None, description="Filter by category IDs")
     themes_and_genres_id_list: Optional[List[str]] = Field(None, description="Filter by theme/genre IDs")
     latest_first: Optional[bool] = Field(None, description="Order items by latest first")
-    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
+    slug: Optional[str] = Field(None, description="URL slug (auto-generated from title if empty)")
 
     @field_validator('content_items')
     @classmethod

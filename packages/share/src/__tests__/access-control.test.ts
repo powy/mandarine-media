@@ -100,7 +100,7 @@ describe('Access Control Tests (v1.6)', () => {
     it('should deny simple users from creating content lists', async () => {
       const createData = {
         title: 'Test List',
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
         is_active: true,
         display_order: 1,
       };
@@ -239,7 +239,7 @@ describe('Access Control Tests (v1.6)', () => {
     it('should allow Manager/Admin to create content lists', async () => {
       const createData = {
         title: 'Admin List',
-        thumbnail_format: 'large_landscape' as const,
+        thumbnail_format: '1920x1080' as const,
         is_active: true,
         display_order: 1,
         latest_first: true, // v1.9 required field
@@ -363,7 +363,7 @@ describe('Access Control Tests (v1.6)', () => {
 
       const createData = {
         title: 'Test List',
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
         is_active: true,
         display_order: 1,
       };
@@ -395,7 +395,7 @@ describe('Access Control Tests (v1.6)', () => {
       
       const createData = {
         title: 'Test',
-        thumbnail_format: 'medium_portrait' as const,
+        thumbnail_format: '810x1080' as const,
         is_active: true,
         display_order: 1,
       };
@@ -415,7 +415,7 @@ describe('Access Control Tests (v1.6)', () => {
       
       const createData = {
         title: 'Admin Test',
-        thumbnail_format: 'large_landscape' as const,
+        thumbnail_format: '1920x1080' as const,
         is_active: true,
         display_order: 1,
       };

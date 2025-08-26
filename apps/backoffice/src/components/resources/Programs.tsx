@@ -23,8 +23,12 @@ import {
   SearchInput,
   FilterButton,
   ExportButton,
+  ReferenceInput,
+  AutocompleteInput,
+  ReferenceField,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
+import { MediaDescriptionInput } from '../inputs/MediaDescriptionInput';
 
 // Define filters for the program list
 // Note: Backend doesn't support search yet, but keeping filter structure for consistency
@@ -81,8 +85,15 @@ export const ProgramList = () => (
     <Datagrid>
       <TextField source="id" sortable />
       <TextField source="program_name" label="Program Name" sortable />
-      <TextField source="general_media_description" label="Description" />
-      <DateField source="created_at" label="Created" sortable />
+      <ReferenceField 
+        source="general_media_description_id" 
+        reference="media-descriptions" 
+        label="Media Description"
+        link="show"
+      >
+        <TextField source="episode_title" />
+      </ReferenceField>
+      <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -99,11 +110,10 @@ export const ProgramCreate = () => (
         validate={[required()]} 
         fullWidth 
       />
-      <TextInput 
-        source="general_media_description" 
-        label="General Description"
-        fullWidth 
-        multiline
+      <MediaDescriptionInput
+        source="general_media_description_id"
+        label="Media Description (Optional)"
+        allowDirectUUID={true}
       />
     </SimpleForm>
   </Create>
@@ -118,11 +128,10 @@ export const ProgramEdit = () => (
         validate={[required()]} 
         fullWidth 
       />
-      <TextInput 
-        source="general_media_description" 
-        label="General Description"
-        fullWidth 
-        multiline
+      <MediaDescriptionInput
+        source="general_media_description_id"
+        label="Media Description (Optional)"
+        allowDirectUUID={true}
       />
     </SimpleForm>
   </Edit>
@@ -133,8 +142,15 @@ export const ProgramShow = () => (
     <SimpleShowLayout>
       <TextField source="id" />
       <TextField source="program_name" label="Program Name" />
-      <TextField source="general_media_description" label="General Description" />
-      <DateField source="created_at" label="Created" />
+      <ReferenceField 
+        source="general_media_description_id" 
+        reference="media-descriptions" 
+        label="Media Description"
+        link="show"
+      >
+        <TextField source="episode_title" />
+      </ReferenceField>
+      <DateField source="creation_date_utc" label="Created" />
     </SimpleShowLayout>
   </Show>
 );

@@ -6,7 +6,7 @@ from datetime import datetime
 
 class ProgramBase(BaseModel):
     program_name: str = Field(..., min_length=1)
-    general_media_description: Optional[str] = None
+    general_media_description_id: Optional[UUID] = None
     
     @field_validator('program_name')
     @classmethod
@@ -22,7 +22,7 @@ class ProgramCreate(ProgramBase):
 
 class ProgramUpdate(BaseModel):
     program_name: Optional[str] = Field(None, min_length=1)
-    general_media_description: Optional[str] = None
+    general_media_description_id: Optional[UUID] = None
     
     @field_validator('program_name')
     @classmethod

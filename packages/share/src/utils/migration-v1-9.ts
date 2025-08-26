@@ -126,9 +126,10 @@ export const getEndpointPath = (fullUrl: string): string => {
 export const generateSlugFromText = (text: string): string => {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/[-\s]+/g, '_')  // Replace spaces and hyphens with underscores
-    .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+    .replace(/[.\s-]+/g, '_')  // Replace dots, spaces and hyphens with underscores
+    .replace(/[^\w_]/g, '')    // Remove other special characters
+    .replace(/_+/g, '_')       // Collapse multiple underscores
+    .replace(/^_+|_+$/g, '');  // Remove leading/trailing underscores
 };
 
 /**
@@ -154,16 +155,20 @@ export const generateSlugFromContentListFilters = (data: {
   // Add categories (use last part of ID if it's a UUID)
   if (data.media_categories_id_list) {
     data.media_categories_id_list.forEach(id => {
-      const cleanId = id.includes('-') ? id.split('-').pop() || id : id;
-      parts.push(cleanId.toLowerCase());
+      if (id.trim()) { // Skip empty strings
+        const cleanId = id.includes('-') ? id.split('-').pop() || id : id;
+        parts.push(cleanId.toLowerCase());
+      }
     });
   }
 
   // Add themes/genres
   if (data.themes_and_genres_id_list) {
     data.themes_and_genres_id_list.forEach(id => {
-      const cleanId = id.includes('-') ? id.split('-').pop() || id : id;
-      parts.push(cleanId.toLowerCase());
+      if (id.trim()) { // Skip empty strings
+        const cleanId = id.includes('-') ? id.split('-').pop() || id : id;
+        parts.push(cleanId.toLowerCase());
+      }
     });
   }
 

@@ -14,5 +14,3 @@ class Country(Base):
     creation_date_utc = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     name = Column(String, nullable=False, unique=True)
     
-    # Relationships
-    territories = relationship("Territory", back_populates="country")

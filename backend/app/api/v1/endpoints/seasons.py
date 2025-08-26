@@ -16,7 +16,7 @@ def read_seasons(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     program_id: Optional[UUID] = Query(None),
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve seasons.
@@ -64,7 +64,7 @@ def read_season(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Get season by ID.

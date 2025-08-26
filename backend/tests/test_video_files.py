@@ -118,10 +118,13 @@ class TestVideoFilesList:
         )
         assert response.status_code == 422
     
-    def test_list_video_files_unauthorized(self, client):
-        """Test video files list without authentication."""
+    def test_list_video_files_unauthenticated(self, client):
+        """Test video files list without authentication (now allowed)."""
         response = client.get("/api/v1/video-files")
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "pagination" in data
 
 
 class TestVideoFileCreate:
@@ -248,11 +251,12 @@ class TestVideoFileRead:
         
         assert response.status_code == 422
     
-    def test_read_video_file_unauthorized(self, client):
-        """Test reading without authentication."""
+    def test_read_video_file_unauthenticated(self, client):
+        """Test reading without authentication (now allowed)."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/video-files/{fake_id}")
-        assert response.status_code == 401
+        # Should get 404 (not found) instead of 401 (unauthorized)
+        assert response.status_code == 404
 
 
 class TestVideoFileUpdate:
@@ -709,11 +713,12 @@ class TestVideoFilesByMedia:
         assert response.status_code == 404
         assert "Media description not found" in response.json()["detail"]
     
-    def test_get_video_files_by_media_unauthorized(self, client):
-        """Test getting video files without authentication."""
+    def test_get_video_files_by_media_unauthenticated(self, client):
+        """Test getting video files without authentication (now allowed)."""
         fake_media_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/video-files/by-media/{fake_media_id}")
-        assert response.status_code == 401
+        # Should get 404 (media not found) instead of 401 (unauthorized)
+        assert response.status_code == 404
 
 
 class TestEncodingStatusUpdate:

@@ -108,3 +108,18 @@ def admin_token(test_admin_user):
 def user_token(test_regular_user):
     """Create access token for regular user."""
     return create_access_token(subject=test_regular_user.email)
+
+
+@pytest.fixture
+def sample_media_description(db):
+    """Create a sample media description for testing."""
+    from app import crud
+    from app.schemas.media_description import MediaDescriptionCreate
+    
+    media_data = MediaDescriptionCreate(
+        episode_title="Test Media Description",
+        media_type="video",
+        file_number=999  # Use high number to avoid conflicts
+    )
+    
+    return crud.media_description.create(db=db, obj_in=media_data)

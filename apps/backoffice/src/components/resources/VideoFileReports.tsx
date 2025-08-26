@@ -88,7 +88,6 @@ export const VideoFileReportShow = () => (
       <TextField source="video_file_id" label="Video File ID" />
       <TextField source="video_file_name" label="Video File Name" />
       <TextField source="video_file_url" label="Video File URL" />
-      <TextField source="upload_method" label="Upload Method" />
       <TextField source="file_size" label="File Size" />
       <TextField source="duration" />
       <TextField source="media_description_id" label="Media Description ID" />

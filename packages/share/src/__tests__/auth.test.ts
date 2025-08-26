@@ -41,13 +41,13 @@ describe('Auth API', () => {
   });
 
   const mockUser: User = {
-    id: 'user-1',
-    creation_date_utc: '2024-01-15T10:30:00Z',
+    id: 1,
     email: 'user@example.com',
     full_name: 'Test User',
     is_active: true,
     is_admin: false,
-    hashed_password: '$2b$12$...',
+    created_at: '2024-01-15T10:30:00Z',
+    updated_at: '2024-01-15T10:30:00Z',
   };
 
   const mockAuthTokens: AuthTokens = {
@@ -59,6 +59,7 @@ describe('Auth API', () => {
   describe('login', () => {
     it('should login successfully with valid credentials', async () => {
       mockApiClient.post.mockResolvedValue({ data: mockAuthTokens });
+      mockApiClient.get.mockResolvedValue({ data: mockUser });
 
       const credentials = {
         email: 'user@example.com',
@@ -195,7 +196,12 @@ describe('Auth API', () => {
 
   describe('isAuthenticated', () => {
     it('should return true when valid token exists', async () => {
-      localStorageMock.getItem.mockReturnValue('valid-token');
+      // Create a valid-looking JWT token that won't be expired
+      const futureTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+      const mockPayload = JSON.stringify({ exp: futureTime });
+      const mockToken = `header.${btoa(mockPayload)}.signature`;
+      
+      localStorageMock.getItem.mockReturnValue(mockToken);
 
       const result = await authApi.isAuthenticated();
 
@@ -373,26 +379,26 @@ describe('Auth API', () => {
       await expect(authApi.login({ email: 'user@example.com', password: 'password123' })).resolves.toEqual(mockAuthTokens);
       
       // Verify that warning was logged
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store token in localStorage:', expect.any(Error));
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store authentication data:', expect.any(Error));
       
       consoleWarnSpy.mockRestore();
     });
 
     it('should handle token removal failure gracefully', async () => {
-      // Mock console.warn to suppress expected warning output
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // Mock console.error for critical failures
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       localStorageMock.removeItem.mockImplementation(() => {
         throw new Error('Cannot remove item');
       });
 
-      // Should not throw even if token removal fails
-      await expect(authApi.logout()).resolves.toBeUndefined();
+      // Should throw when critical token clearing fails
+      await expect(authApi.logout()).rejects.toThrow('Failed to clear local authentication data');
       
-      // Verify that warning was logged
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to remove token from localStorage:', expect.any(Error));
+      // Verify that error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to clear authentication data:', expect.any(Error));
       
-      consoleWarnSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
     });
   });
 });

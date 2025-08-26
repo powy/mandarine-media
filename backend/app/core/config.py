@@ -11,14 +11,20 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "local"
     
     # CORS
-    CORS_ORIGINS: str = ""
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002"
     
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS_ORIGINS string into a list."""
         if not self.CORS_ORIGINS.strip():
             return []
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        
+        # In development/local mode, add wildcard for permissive CORS
+        if self.ENVIRONMENT.lower() in ["local", "development", "dev"]:
+            origins.append("*")
+            
+        return origins
     
     # Database
     POSTGRES_SERVER: Optional[str] = None
@@ -65,6 +71,10 @@ class Settings(BaseSettings):
     UPLOAD_MUX_TOKEN_SECRET: Optional[str] = None
     UPLOAD_MUX_WEBHOOK_URL: Optional[str] = None
     UPLOAD_MUX_ENCODING_TIER: str = "baseline"
+    
+    # Mux Signing Keys (Critical for Security)
+    MUX_SIGNING_KEY_ID: Optional[str] = None
+    MUX_PRIVATE_KEY: Optional[str] = None
     
     # Backend Selection for Media Types
     UPLOAD_VIDEO_BACKEND: str = "local"  # local, s3, mux

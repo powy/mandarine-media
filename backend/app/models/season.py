@@ -17,7 +17,7 @@ class Season(Base):
     
     # Optional fields
     season_name = Column(String, nullable=True)
-    general_media_description = Column(String, nullable=True)
+    general_media_description_id = Column(GUID(), nullable=True)  # link to media_description
     episodes_id_list = Column(JSONArray(), nullable=True)
     
     # Relationships

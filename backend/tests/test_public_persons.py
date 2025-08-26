@@ -139,10 +139,13 @@ class TestPublicPersonsList:
         )
         assert response.status_code == 422
     
-    def test_list_public_persons_unauthorized(self, client):
-        """Test public persons list without authentication."""
+    def test_list_public_persons_unauthenticated(self, client):
+        """Test public persons list without authentication (now allowed)."""
         response = client.get("/api/v1/persons")
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "pagination" in data
 
 
 class TestPublicPersonCreate:
@@ -309,11 +312,12 @@ class TestPublicPersonRead:
         
         assert response.status_code == 422
     
-    def test_read_public_person_unauthorized(self, client):
-        """Test reading without authentication."""
+    def test_read_public_person_unauthenticated(self, client):
+        """Test reading without authentication (now allowed)."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/persons/{fake_id}")
-        assert response.status_code == 401
+        # Should get 404 (not found) instead of 401 (unauthorized)
+        assert response.status_code == 404
 
 
 class TestPublicPersonUpdate:
@@ -590,10 +594,12 @@ class TestPublicPersonByProfession:
         data = response.json()
         assert isinstance(data, list)
     
-    def test_get_by_profession_unauthorized(self, client):
-        """Test get by profession without authentication."""
+    def test_get_by_profession_unauthenticated(self, client):
+        """Test get by profession without authentication (now allowed)."""
         response = client.get("/api/v1/persons/profession/Singer")
-        assert response.status_code == 401
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
 
 
 

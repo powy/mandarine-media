@@ -295,67 +295,85 @@ describe('v1.4 Types', () => {
     });
   });
 
-  describe('Updated PublicPerson v1.4', () => {
-    it('should have required Korean name fields', () => {
+  describe('Updated PublicPerson v1.5', () => {
+    it('should have required stage_name_roman field', () => {
       const mockPublicPerson: PublicPerson = {
         id: 'test-person-id',
         creation_date_utc: '2024-01-15T10:30:00Z',
+        stage_name_roman: 'Kim Chul-soo', // v1.5 required field
         first_name_hangul: '김',
         last_name_hangul: '철수',
         first_name_roman: 'Chul',
         last_name_roman: 'Kim',
-        full_name: '김철수',
-        birth_date: '1990-01-01',
-        biography: 'Test biography',
-        profile_image_url: 'https://example.com/profile.jpg',
+        stage_name_hangul: '김철수',
         profession_list: ['actor', 'singer'],
         face_image_id: 'face-image-id'
       };
 
+      expect(typeof mockPublicPerson.stage_name_roman).toBe('string'); // v1.5 required field
       expect(typeof mockPublicPerson.first_name_hangul).toBe('string');
       expect(typeof mockPublicPerson.last_name_hangul).toBe('string');
       expect(typeof mockPublicPerson.first_name_roman).toBe('string');
       expect(typeof mockPublicPerson.last_name_roman).toBe('string');
+      expect(typeof mockPublicPerson.stage_name_hangul).toBe('string');
       expect(Array.isArray(mockPublicPerson.profession_list)).toBe(true);
       expect(typeof mockPublicPerson.face_image_id).toBe('string');
     });
 
-    it('should allow optional fields except Korean names', () => {
+    it('should allow optional name fields except stage_name_roman', () => {
       const minimalPublicPerson: PublicPerson = {
         id: 'test-person-id',
         creation_date_utc: '2024-01-15T10:30:00Z',
-        first_name_hangul: '김',
-        last_name_hangul: '철수',
-        first_name_roman: 'Chul',
-        last_name_roman: 'Kim'
+        stage_name_roman: 'Kim Chul-soo' // Only required field in v1.5
       };
 
-      expect(minimalPublicPerson.full_name).toBeUndefined();
-      expect(minimalPublicPerson.birth_date).toBeUndefined();
-      expect(minimalPublicPerson.biography).toBeUndefined();
-      expect(minimalPublicPerson.profile_image_url).toBeUndefined();
+      expect(typeof minimalPublicPerson.stage_name_roman).toBe('string');
+      expect(minimalPublicPerson.first_name_hangul).toBeUndefined();
+      expect(minimalPublicPerson.last_name_hangul).toBeUndefined();
+      expect(minimalPublicPerson.first_name_roman).toBeUndefined();
+      expect(minimalPublicPerson.last_name_roman).toBeUndefined();
+      expect(minimalPublicPerson.stage_name_hangul).toBeUndefined();
       expect(minimalPublicPerson.profession_list).toBeUndefined();
       expect(minimalPublicPerson.face_image_id).toBeUndefined();
     });
 
+    it('should handle null values properly for optional fields', () => {
+      const personWithNullValues: PublicPerson = {
+        id: 'test-person-id',
+        creation_date_utc: '2024-01-15T10:30:00Z',
+        stage_name_roman: 'Kim Chul-soo',
+        first_name_hangul: null,
+        last_name_hangul: null,
+        first_name_roman: null,
+        last_name_roman: null,
+        stage_name_hangul: null,
+        profession_list: null,
+        face_image_id: null
+      };
+
+      expect(personWithNullValues.first_name_hangul).toBeNull();
+      expect(personWithNullValues.profession_list).toBeNull();
+      expect(personWithNullValues.face_image_id).toBeNull();
+    });
+
     it('should have correct PublicPersonCreate interface', () => {
       const createData: PublicPersonCreate = {
+        stage_name_roman: 'Kim Chul-soo', // v1.5 required field
         first_name_hangul: '김',
         last_name_hangul: '철수',
         first_name_roman: 'Chul',
         last_name_roman: 'Kim',
-        full_name: '김철수',
-        birth_date: '1990-01-01',
-        biography: 'Test biography',
-        profile_image_url: 'https://example.com/profile.jpg',
+        stage_name_hangul: '김철수',
         profession_list: ['actor', 'singer'],
         face_image_id: 'face-image-id'
       };
 
+      expect(typeof createData.stage_name_roman).toBe('string');
       expect(typeof createData.first_name_hangul).toBe('string');
       expect(typeof createData.last_name_hangul).toBe('string');
       expect(typeof createData.first_name_roman).toBe('string');
       expect(typeof createData.last_name_roman).toBe('string');
+      expect(typeof createData.stage_name_hangul).toBe('string');
       expect(Array.isArray(createData.profession_list)).toBe(true);
       expect(typeof createData.face_image_id).toBe('string');
     });

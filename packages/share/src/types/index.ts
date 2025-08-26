@@ -97,7 +97,6 @@ export interface VideoFile {
   encoding_status: string;
   encoding_logs?: string | null;
   // Dual upload support fields
-  upload_method: 'new_upload' | 'existing_url';
   upload_status: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed';
   upload_timestamp?: string;
   external_url?: string;
@@ -302,7 +301,6 @@ export interface VideoFileFilters {
 export interface VideoFileCreate {
   media_description_id?: string;
   file_name?: string;
-  upload_method?: 'new_upload' | 'existing_url';
   external_url?: string;
   environment_key?: string;
   protection_key?: string;
@@ -539,7 +537,6 @@ export interface VideoFileReport {
   video_file_id?: string;
   video_file_name: string;
   video_file_url?: string;
-  upload_method?: string;
   file_size?: string;
   duration?: string;
   media_description_id?: string;
@@ -625,8 +622,8 @@ export interface CategoryListItemJSON {
   media_type?: string;
 }
 
-// v1.6 New Types
-export type ThumbnailFormatEnum = 'small_square' | 'medium_portrait' | 'large_landscape' | 'vertical_mobile';
+// v1.6 New Types - Updated to dimension-based naming
+export type ThumbnailFormatEnum = '1920x1080' | '1920x720' | '1080x1080' | '810x1080' | '1080x1920';
 
 export interface ContentList {
   id: string;
@@ -636,6 +633,9 @@ export interface ContentList {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
+  list_type: 'classic' | 'carrousel'; // Required field
+  percentage_width: number; // Required field (0-100)
+  percentage_height: number; // Required field (0-100)
   latest_first: boolean; // v1.9 new required field
   description?: string;
   content_items?: string[];
@@ -654,6 +654,9 @@ export interface ContentListCreate {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
+  list_type: 'classic' | 'carrousel'; // Required field
+  percentage_width: number; // Required field (0-100)
+  percentage_height: number; // Required field (0-100)
   latest_first: boolean; // v1.9 new required field
   description?: string;
   content_items?: string[];
@@ -670,6 +673,9 @@ export interface ContentListUpdate {
   thumbnail_format?: ThumbnailFormatEnum;
   is_active?: boolean;
   display_order?: number;
+  list_type?: 'classic' | 'carrousel'; // Optional field
+  percentage_width?: number; // Optional field (0-100)
+  percentage_height?: number; // Optional field (0-100)
   latest_first?: boolean; // v1.9 field
   description?: string;
   content_items?: string[];
@@ -790,4 +796,43 @@ export interface ReorderContentRequest {
 
 export interface ReorderListsRequest {
   content_lists: string[];
+}
+
+// Media Upload Types
+export interface VideoUploadResponse {
+  success: boolean;
+  message: string;
+  video_file_id: string;
+  file_url: string;
+  backend?: string;
+  encoding_status: string;
+  linked_to_media: boolean;
+}
+
+export interface WebcomicUploadResponse {
+  success: boolean;
+  message: string;
+  files: WebcomicFileInfo[];
+  total_pages: number;
+  backend?: string;
+  linked_to_media: boolean;
+  chapter_number?: number;
+}
+
+export interface WebcomicFileInfo {
+  id: string;
+  file_url: string;
+  file_name: string;
+  page_number: number;
+}
+
+export interface StorageBackendsResponse {
+  available_backends: string[];
+  backend_details: Record<string, any>;
+  media_type_routing: Record<string, any>;
+}
+
+export interface DeleteFileResponse {
+  success: boolean;
+  message: string;
 }

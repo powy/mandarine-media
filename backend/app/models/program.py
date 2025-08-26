@@ -15,7 +15,7 @@ class Program(Base):
     program_name = Column(String, nullable=False, unique=True)
     
     # Optional fields
-    general_media_description = Column(String, nullable=True)
+    general_media_description_id = Column(GUID(), nullable=True)  # link to media_description
     
     # Relationships
     seasons = relationship("Season", back_populates="program")

@@ -91,7 +91,7 @@ describe('Migration v1.9 Utilities', () => {
         const v18Data = {
           id: 'list-1',
           title: 'Korean Dramas',
-          thumbnail_format: 'medium_portrait',
+          thumbnail_format: '810x1080',
           is_active: true,
           display_order: 1,
         };
@@ -455,7 +455,7 @@ describe('Migration v1.9 Utilities', () => {
 
       const slug = generateSlugFromContentListFilters(filterData);
       
-      expect(slug).toBe('_category');
+      expect(slug).toBe('category');
     });
   });
 
@@ -494,7 +494,7 @@ describe('Migration v1.9 Utilities', () => {
       const v18ContentList = {
         id: 'list-1',
         title: 'Trending Korean Dramas',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         description: 'Popular K-dramas this week',
@@ -505,7 +505,7 @@ describe('Migration v1.9 Utilities', () => {
       expect(migrated).toEqual({
         id: 'list-1',
         title: 'Trending Korean Dramas',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         description: 'Popular K-dramas this week',

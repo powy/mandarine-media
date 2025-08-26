@@ -36,7 +36,7 @@ describe('Content Lists API v1.9 Features', () => {
     creation_date_utc: '2024-01-15T10:30:00Z',
     last_updated_utc: '2024-01-15T14:30:00Z',
     title: 'Trending K-Dramas',
-    thumbnail_format: 'medium_portrait' as ThumbnailFormatEnum,
+    thumbnail_format: '810x1080' as ThumbnailFormatEnum,
     is_active: true,
     display_order: 1,
     latest_first: true, // v1.9 required field
@@ -55,7 +55,7 @@ describe('Content Lists API v1.9 Features', () => {
       it('should create content list with latest_first field (required)', async () => {
         const createData: ContentListCreate = {
           title: 'New Content List',
-          thumbnail_format: 'medium_portrait',
+          thumbnail_format: '810x1080',
           is_active: true,
           display_order: 1,
           latest_first: true, // v1.9 required field
@@ -72,7 +72,7 @@ describe('Content Lists API v1.9 Features', () => {
       it('should create content list with filtering capabilities', async () => {
         const createData: ContentListCreate = {
           title: 'Korean Drama Videos',
-          thumbnail_format: 'medium_portrait',
+          thumbnail_format: '810x1080',
           is_active: true,
           display_order: 1,
           latest_first: true,
@@ -105,7 +105,7 @@ describe('Content Lists API v1.9 Features', () => {
       it('should create content list with auto-generated slug', async () => {
         const createData: ContentListCreate = {
           title: 'Auto Generated Slug List',
-          thumbnail_format: 'large_landscape',
+          thumbnail_format: '1920x1080',
           is_active: true,
           display_order: 2,
           latest_first: false,
@@ -170,7 +170,7 @@ describe('Content Lists API v1.9 Features', () => {
       for (const mediaType of mediaTypes) {
         const createData: ContentListCreate = {
           title: `${mediaType} Content`,
-          thumbnail_format: 'small_square',
+          thumbnail_format: '1080x1080',
           is_active: true,
           display_order: 1,
           latest_first: true,
@@ -196,7 +196,7 @@ describe('Content Lists API v1.9 Features', () => {
     it('should handle empty slug with filtering (auto-generated)', async () => {
       const createData: ContentListCreate = {
         title: 'Drama Collection',
-        thumbnail_format: 'vertical_mobile',
+        thumbnail_format: '1080x1920',
         is_active: true,
         display_order: 1,
         latest_first: true,
@@ -221,7 +221,7 @@ describe('Content Lists API v1.9 Features', () => {
     it('should handle empty slug without filtering (auto-generated from title)', async () => {
       const createData: ContentListCreate = {
         title: 'My Favorite Shows',
-        thumbnail_format: 'large_landscape',
+        thumbnail_format: '1920x1080',
         is_active: true,
         display_order: 1,
         latest_first: true,
@@ -251,7 +251,7 @@ describe('Content Lists API v1.9 Features', () => {
       // TypeScript should enforce this at compile time
       const createData: ContentListCreate = {
         title: 'Test List',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         latest_first: true, // This is required in v1.9
@@ -263,7 +263,7 @@ describe('Content Lists API v1.9 Features', () => {
 
     it('should handle all thumbnail formats', async () => {
       const formats: ThumbnailFormatEnum[] = [
-        'small_square', 'medium_portrait', 'large_landscape', 'vertical_mobile'
+        '1080x1080', '810x1080', '1920x1080', '1080x1920', '1920x720'
       ];
 
       for (const format of formats) {
@@ -296,7 +296,7 @@ describe('Content Lists API v1.9 Features', () => {
         creation_date_utc: '2024-01-01T00:00:00Z',
         last_updated_utc: '2024-01-01T00:00:00Z',
         title: 'Legacy List',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         latest_first: true, // Required in v1.9 but wasn't in v1.8
@@ -327,7 +327,7 @@ describe('Content Lists API v1.9 Features', () => {
       mockApiClient.post.mockResolvedValue({ data: mockContentListV19 });
       await createContentList({
         title: 'Test',
-        thumbnail_format: 'medium_portrait',
+        thumbnail_format: '810x1080',
         is_active: true,
         display_order: 1,
         latest_first: true,
