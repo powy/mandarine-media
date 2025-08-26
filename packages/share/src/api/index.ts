@@ -14,6 +14,6 @@ export * from './pictures';
 export * from './content-lists';
 export * from './screen-contents'; // Note: now includes screen-descriptions exports
 
-export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData } from './media';
+export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData, getSeasonScreenData, getProgramScreenData } from './media';
 export { getSeason, getSeasonsByProgram } from './seasons';
 export { getProgram } from './programs';

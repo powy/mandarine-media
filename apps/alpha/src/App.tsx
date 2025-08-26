@@ -39,19 +39,14 @@ const App: React.FC = () => {
   }
 
   
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <LoginScreen />;
-  }
-
-  // Show main app if authenticated
+  // Show main app with navigation available to all users
   return (
-        <NavigationContainer>
+    <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
         }}
-        initialRouteName={isAuthenticated ? 'Welcome' : 'Login'}
+        initialRouteName="Content"
       >
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />

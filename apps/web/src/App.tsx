@@ -8,6 +8,8 @@ import LoginScreen from './screens/LoginScreen';
 import WelcomeScreen from './screens/WelcomeScreen';
 import ContentScreen from './screens/ContentScreen';
 import VideoScreen from './screens/VideoScreen';
+import SeasonScreen from './screens/SeasonScreen';
+import ProgramScreen from './screens/ProgramScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import WipScreen from './screens/WipScreen';
 
@@ -36,6 +38,8 @@ function App() {
               <Route path="/login" element={<LoginScreen />} />
               <Route path="/content" element={<ContentScreen />} />
               <Route path="/video/:id" element={<VideoScreen />} />
+              <Route path="/season/:id" element={<SeasonScreen />} />
+              <Route path="/program/:id" element={<ProgramScreen />} />
               <Route path="/error" element={<ErrorScreen />} />
               <Route path="/films" element={<WipScreen />} />
               <Route path="/dramas" element={<WipScreen />} />

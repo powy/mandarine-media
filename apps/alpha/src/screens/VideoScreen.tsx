@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Image,
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -15,7 +16,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import { AppLayout } from '../components/AppLayout';
 import MuxPlayerViewBuiltIn from '../components/MuxPlayerViewBuiltIn';
-import { mediaApi, seasonsApi } from 'share';
+import { mediaApi, seasonsApi, useAuth } from 'share';
 import type { MediaDescription, VideoFile, Season, MediaDescription as EpisodeMedia } from 'share';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Video'>;
@@ -69,6 +70,7 @@ interface VideoScreenState {
 
 export const VideoScreen: React.FC<Props> = ({ route, navigation }) => {
   const { mediaId } = route.params;
+  const { isAuthenticated } = useAuth();
   
   const [state, setState] = useState<VideoScreenState>({
     media: null,
@@ -255,8 +257,21 @@ export const VideoScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Video Player Section with Mux Built-in Controls */}
-        {playbackId && !videoPlayerError ? (
+        {/* Video Player Section with Authentication Check */}
+        {!isAuthenticated ? (
+          <View style={styles.authPlaceholderContainer}>
+            <Image
+              source={{ uri: 'https://picsum.photos/1920/1080' }}
+              style={styles.placeholderImage}
+              resizeMode="cover"
+            />
+            <View style={styles.authWarningOverlay}>
+              <Text style={styles.authWarningText}>
+                Vous devez être connecté pour regarder ce contenu.
+              </Text>
+            </View>
+          </View>
+        ) : playbackId && !videoPlayerError ? (
           <MuxPlayerViewBuiltIn
             playbackId={playbackId}
             title={media.episode_title}
@@ -461,5 +476,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 20,
+  },
+  authPlaceholderContainer: {
+    width: screenWidth,
+    height: screenWidth / (16 / 9), // Same aspect ratio as video player
+    position: 'relative',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+  },
+  authWarningOverlay: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  authWarningText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });

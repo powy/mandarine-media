@@ -30,7 +30,7 @@ interface ContentListData {
 }
 
 export const ContentScreen: React.FC<Props> = ({ route }) => {
-  const { screenContentId } = route.params;
+  const { screenContentId } = route.params || { screenContentId: 'homepage' };
   const [isLoading, setIsLoading] = useState(true);
   const [contentLists, setContentLists] = useState<ContentListData[]>([]);
   const [screenTitle, setScreenTitle] = useState('Content Screen');
