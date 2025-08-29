@@ -2,11 +2,13 @@
   "id": "550e8400-e29b-41d4-a716-446655440012",
   "title": "Animation",
   "description": "Webtoon animés en formats courts",
-  "thumbnail_format": "large_landscape",
-  "thumbnail_width": 128,
-  "thumbnail_height": 128,
+  "thumbnail_format": "1920x1080",
+  "percentage_width": 90,
+  "percentage_height": 50,
+  "list_type": "classic",
   "is_active": true,
   "display_order": 10,
+  "latest_first": true,
   "last_updated": "2025-01-09T10:30:00Z",
   "items": [
     {
@@ -14,6 +16,7 @@
       "content_type": "media_description",
       "title": "Becoming The Monarch EP1",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "image_alt_text": "Becoming The Monarch Episode 1",
       "display_order": 1
     },
     {
@@ -21,6 +24,7 @@
       "content_type": "media_description",
       "title": "Becoming The Monarch EP2",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "image_alt_text": "Becoming The Monarch Episode 2",
       "display_order": 2
     },
     {
@@ -28,6 +32,7 @@
       "content_type": "media_description",
       "title": "Becoming The Monarch EP3",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
+      "image_alt_text": "Becoming The Monarch Episode 3",
       "display_order": 3
     },
     {
@@ -35,21 +40,24 @@
       "content_type": "media_description",
       "title": "Becoming The Monarch EP4",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
-      "display_order": 3
+      "image_alt_text": "Becoming The Monarch Episode 4",
+      "display_order": 4
     },
     {
       "content_id": "ad49a954-dfad-431b-82d4-1acf3bbcad4b",
       "content_type": "media_description",
       "title": "Becoming The Monarch EP5",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
-      "display_order": 3
+      "image_alt_text": "Becoming The Monarch Episode 5",
+      "display_order": 5
     },
     {
       "content_id": "21395718-e238-441d-9268-758ae3c3f270",
       "content_type": "media_description",
       "title": "Becoming The Monarch EP6",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/BecomingTheMonarch_1080_1080.jpg",
-      "display_order": 3
+      "image_alt_text": "Becoming The Monarch Episode 6",
+      "display_order": 6
     }
   ]
 }

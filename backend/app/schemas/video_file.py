@@ -36,7 +36,6 @@ class VideoFileBase(BaseModel):
     upload_status: UploadStatusEnum = Field(default=UploadStatusEnum.metadata_only, description="Current upload status")
     upload_timestamp: Optional[datetime] = Field(None, description="When file upload was initiated")
     external_url: Optional[str] = Field(None, description="External media URL for existing files")
-    media_description_id: Optional[UUID] = None
     encodage_date_utc: Optional[datetime] = None
     duration_seconds: Optional[int] = None
     max_resolution_width: Optional[int] = None
@@ -54,6 +53,15 @@ class VideoFileBase(BaseModel):
     # v1.9 fields - New environment and protection fields
     environment_key: Optional[str] = Field(None, description="Environment identifier key")
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
+    
+    # NEW v1.10-C fields
+    playback_policy: Optional[str] = None
+    subtitle_tracks_text_list: Optional[List[str]] = None
+    resolutions_list: Optional[List[str]] = None
+    accessibilities_list: Optional[List[str]] = None
+    
+    # NEW v1.4 fields - Language fields
+    audio_languages_id_list: Optional[List[str]] = None
 
 
 class VideoFileCreate(VideoFileBase):
@@ -69,7 +77,6 @@ class VideoFileUpdate(BaseModel):
     upload_status: Optional[UploadStatusEnum] = None
     upload_timestamp: Optional[datetime] = None
     external_url: Optional[str] = None
-    media_description_id: Optional[UUID] = None
     encodage_date_utc: Optional[datetime] = None
     duration_seconds: Optional[int] = None
     max_resolution_width: Optional[int] = None
@@ -87,6 +94,15 @@ class VideoFileUpdate(BaseModel):
     # v1.9 fields - New environment and protection fields
     environment_key: Optional[str] = Field(None, description="Environment identifier key")
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
+    
+    # NEW v1.10-C fields
+    playback_policy: Optional[str] = None
+    subtitle_tracks_text_list: Optional[List[str]] = None
+    resolutions_list: Optional[List[str]] = None
+    accessibilities_list: Optional[List[str]] = None
+    
+    # NEW v1.4 fields - Language fields
+    audio_languages_id_list: Optional[List[str]] = None
 
 
 class VideoFileInDB(VideoFileBase):
@@ -110,7 +126,6 @@ class VideoFileMetadataCreate(BaseModel):
     """Schema for creating video file metadata only (first step of two-step upload)"""
     file_name: str = Field(..., description="Original filename")
     upload_method: UploadMethodEnum = Field(default=UploadMethodEnum.new_upload)
-    media_description_id: Optional[UUID] = None
     external_url: Optional[str] = Field(None, description="External media URL for existing files")
 
 
@@ -118,7 +133,6 @@ class VideoFileExistingUrlCreate(BaseModel):
     """Schema for creating video file with existing URL"""
     file_name: str = Field(..., description="Display name for the file")
     external_url: str = Field(..., description="External media URL")
-    media_description_id: Optional[UUID] = None
 
 
 class VideoFileUploadResponse(BaseModel):

@@ -11,13 +11,17 @@ from app.crud.video_file_report import video_file_report
 
 
 class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
-    def get_by_media_description_id(self, db: Session, *, media_description_id: UUID) -> List[VideoFile]:
-        return db.query(VideoFile).filter(VideoFile.media_description_id == media_description_id).all()
-
     def get_unlinked(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[VideoFile]:
+        """Get video files that don't have any media descriptions linked to them"""
+        from app.models.media_description import MediaDescription
+        # Get video files that don't have any media descriptions pointing to them
+        subquery = db.query(MediaDescription.main_video_file_id).filter(
+            MediaDescription.main_video_file_id.isnot(None)
+        ).subquery()
+        
         return (
             db.query(self.model)
-            .filter(VideoFile.media_description_id.is_(None))
+            .filter(~VideoFile.id.in_(subquery))
             .order_by(desc(VideoFile.creation_date_utc))
             .offset(skip)
             .limit(limit)
@@ -39,13 +43,20 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
     def link_to_media(
         self, db: Session, *, file_id: UUID, media_description_id: UUID
     ) -> Optional[VideoFile]:
-        obj = db.query(self.model).filter(self.model.id == file_id).first()
-        if obj:
-            obj.media_description_id = media_description_id
-            db.add(obj)
+        """Link a video file to a media description by updating the media description"""
+        from app.models.media_description import MediaDescription
+        
+        # Update the media description to point to this video file
+        media_desc = db.query(MediaDescription).filter(MediaDescription.id == media_description_id).first()
+        if media_desc:
+            media_desc.main_video_file_id = file_id
+            db.add(media_desc)
             db.commit()
-            db.refresh(obj)
-        return obj
+            db.refresh(media_desc)
+            
+            # Return the video file for consistency with the old API
+            return db.query(self.model).filter(self.model.id == file_id).first()
+        return None
 
     def update_encoding_status(
         self, db: Session, *, file_id: UUID, status: str, logs: Optional[str] = None
@@ -117,9 +128,18 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
         obj = db.query(self.model).filter(self.model.id == id).first()
         if obj:
             # Get related media description info if exists
+            from app.models.media_description import MediaDescription
             media_description_title = None
-            if obj.media_description:
-                media_description_title = obj.media_description.episode_title
+            media_description_id = None
+            
+            # Find any media description that points to this video file
+            media_desc = db.query(MediaDescription).filter(
+                MediaDescription.main_video_file_id == obj.id
+            ).first()
+            
+            if media_desc:
+                media_description_title = media_desc.episode_title
+                media_description_id = media_desc.id
             
             # Create orphan report
             report_data = VideoFileReportCreate(
@@ -129,7 +149,7 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
                 upload_method=obj.upload_method,
                 file_size=f"{obj.file_size_bytes} bytes" if obj.file_size_bytes else None,
                 duration=f"{obj.duration_seconds} seconds" if obj.duration_seconds else None,
-                media_description_id=obj.media_description_id,
+                media_description_id=media_description_id,
                 media_description_title=media_description_title,
                 event="possible_orphan",
                 additional_info=f"Video file object deleted but actual file preserved. Original encoding status: {obj.encoding_status}, upload status: {obj.upload_status}"
@@ -152,9 +172,18 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
         obj = db.query(self.model).filter(self.model.id == id).first()
         if obj:
             # Get related media description info if exists
+            from app.models.media_description import MediaDescription
             media_description_title = None
-            if obj.media_description:
-                media_description_title = obj.media_description.episode_title
+            media_description_id = None
+            
+            # Find any media description that points to this video file
+            media_desc = db.query(MediaDescription).filter(
+                MediaDescription.main_video_file_id == obj.id
+            ).first()
+            
+            if media_desc:
+                media_description_title = media_desc.episode_title
+                media_description_id = media_desc.id
             
             # Create destruction report
             report_data = VideoFileReportCreate(
@@ -164,7 +193,7 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
                 upload_method=obj.upload_method,
                 file_size=f"{obj.file_size_bytes} bytes" if obj.file_size_bytes else None,
                 duration=f"{obj.duration_seconds} seconds" if obj.duration_seconds else None,
-                media_description_id=obj.media_description_id,
+                media_description_id=media_description_id,
                 media_description_title=media_description_title,
                 event="file_delete",
                 additional_info=f"File destruction requested. For now, this is logged only. Original encoding status: {obj.encoding_status}, upload status: {obj.upload_status}"

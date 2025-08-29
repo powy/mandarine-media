@@ -78,8 +78,8 @@ describe('v1.9 Type Changes and New Fields', () => {
     });
 
     it('should support all media types', () => {
-      const mediaTypes: Array<'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt'> = [
-        'video', 'webtoon', 'trailer', 'teaser', 'excerpt'
+      const mediaTypes: Array<'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt' | 'season' | 'program'> = [
+        'video', 'webtoon', 'trailer', 'teaser', 'excerpt', 'season', 'program'
       ];
 
       mediaTypes.forEach(mediaType => {

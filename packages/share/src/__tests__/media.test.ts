@@ -38,6 +38,7 @@ describe('Media API', () => {
     episode_title: 'Running Man - EP 730',
     media_type: 'video',
     file_name: 'SBS_runningman_730',
+    main_video_file_id: 'video-1',
     program_id: 'program-1',
     season_id: 'season-1',
     episode_number: 730,
@@ -46,7 +47,6 @@ describe('Media API', () => {
   const mockVideoFile: VideoFile = {
     id: 'video-1',
     creation_date_utc: '2024-01-15T10:30:00Z',
-    media_description_id: 'media-1',
     encodage_date_utc: '2024-01-15T12:00:00Z',
     duration_seconds: 3600,
     file_url: 'https://s3.aws.com/bucket/video.mp4',
@@ -311,7 +311,6 @@ describe('Media API', () => {
 
         const createData = {
           file_name: 'test_video.mp4',
-          media_description_id: 'media-1',
         };
 
         const result = await mediaApi.createVideoFile(createData);
@@ -355,6 +354,17 @@ describe('Media API', () => {
 
         expect(mockApiClient.get).toHaveBeenCalledWith('/video-files/by-media/media-1');
         expect(result).toEqual([mockVideoFile]);
+      });
+    });
+
+    describe('getMediaDescriptionsByVideo', () => {
+      it('should fetch media descriptions by video file ID', async () => {
+        mockApiClient.get.mockResolvedValue({ data: [mockMediaDescription] });
+
+        const result = await mediaApi.getMediaDescriptionsByVideo('video-1');
+
+        expect(mockApiClient.get).toHaveBeenCalledWith('/media-descriptions/by-video/video-1');
+        expect(result).toEqual([mockMediaDescription]);
       });
     });
 
@@ -467,7 +477,6 @@ describe('Media API', () => {
         const data = {
           file_name: 'test_video.mp4',
           upload_method: 'new_upload' as const,
-          media_description_id: 'media-1',
         };
 
         const result = await mediaApi.createVideoFileMetadata(data);
@@ -505,7 +514,6 @@ describe('Media API', () => {
         const data = {
           file_name: 'existing_video.mp4',
           external_url: 'https://example.com/video.mp4',
-          media_description_id: 'media-1',
         };
 
         const result = await mediaApi.createVideoFileWithExistingUrl(data);

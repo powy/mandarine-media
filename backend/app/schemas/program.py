@@ -16,6 +16,21 @@ class ProgramBase(BaseModel):
         return v.strip()
 
 
+class ProgramCreateRequest(BaseModel):
+    """Schema that accepts legacy field names for backward compatibility"""
+    program_name: str = Field(..., min_length=1)
+    general_media_description_id: Optional[UUID] = None
+    # Legacy field support
+    general_media_description: Optional[str] = None
+    
+    @field_validator('program_name')
+    @classmethod
+    def validate_program_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Program name cannot be empty or only whitespace')
+        return v.strip()
+
+
 class ProgramCreate(ProgramBase):
     pass
 

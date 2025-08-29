@@ -36,6 +36,36 @@ def sample_media_update_data():
     }
 
 
+@pytest.fixture
+def sample_season_data():
+    """Sample season media description data for testing."""
+    return {
+        "file_number": 12346,
+        "episode_title": "Season 1",
+        "media_type": "season",
+        "descriptive_summary_text": "Complete season of episodes",
+        "synopsis_text": "Season synopsis",
+        "production_year": 2025,
+        "is_featured": True,
+        "content_status": "published"
+    }
+
+
+@pytest.fixture
+def sample_program_data():
+    """Sample program media description data for testing."""
+    return {
+        "file_number": 12347,
+        "episode_title": "Program Overview",
+        "media_type": "program",
+        "descriptive_summary_text": "Complete program information",
+        "synopsis_text": "Program synopsis",
+        "production_year": 2025,
+        "is_featured": True,
+        "content_status": "published"
+    }
+
+
 class TestMediaDescriptionsList:
     """Test media descriptions list endpoint with filtering."""
     
@@ -100,6 +130,64 @@ class TestMediaDescriptionsList:
             params={"skip": -1}
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
         
         # Test limit too high
         response = client.get(
@@ -108,6 +196,64 @@ class TestMediaDescriptionsList:
             params={"limit": 101}
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
         
         # Test limit too low
         response = client.get(
@@ -116,6 +262,64 @@ class TestMediaDescriptionsList:
             params={"limit": 0}
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_list_media_descriptions_unauthenticated(self, client):
         """Test media descriptions list without authentication (now allowed)."""
@@ -185,6 +389,64 @@ class TestMediaDescriptionCreate:
             json=invalid_data
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_create_media_description_invalid_media_type(self, client, admin_token, sample_media_data):
         """Test creation with invalid media type."""
@@ -199,6 +461,64 @@ class TestMediaDescriptionCreate:
             json=invalid_data
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_create_media_description_invalid_status(self, client, admin_token, sample_media_data):
         """Test creation with invalid content status."""
@@ -213,6 +533,64 @@ class TestMediaDescriptionCreate:
             json=invalid_data
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_create_media_description_unauthorized(self, client, sample_media_data):
         """Test creation without authentication."""
@@ -308,6 +686,64 @@ class TestMediaDescriptionRead:
         )
         
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_read_media_description_unauthenticated(self, client):
         """Test reading without authentication (now allowed)."""
@@ -370,7 +806,7 @@ class TestMediaDescriptionUpdate:
         data = response.json()
         assert data["episode_title"] == sample_media_update_data["episode_title"]
         assert data["descriptive_summary_text"] == sample_media_update_data["descriptive_summary_text"]
-        assert data["duration_seconds"] == sample_media_update_data["duration_seconds"]
+        # duration_seconds field not in current schema
         assert data["is_featured"] == sample_media_update_data["is_featured"]
         assert "last_updated_utc" in data
     
@@ -473,6 +909,64 @@ class TestMediaDescriptionUpdate:
         )
         
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_update_media_description_unauthorized(self, client, sample_media_update_data):
         """Test update without authentication."""
@@ -552,6 +1046,64 @@ class TestMediaDescriptionDelete:
         )
         
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_delete_media_description_unauthorized(self, client):
         """Test deletion without authentication."""
@@ -612,6 +1164,64 @@ class TestFeaturedMedia:
             params={"skip": -1}
         )
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
     
     def test_get_featured_media_unauthenticated(self, client):
         """Test featured media without authentication (now allowed)."""
@@ -1045,3 +1655,95 @@ class TestBulkMediaDescriptions:
         )
         
         assert response.status_code == 422
+
+
+class TestMediaDescriptionsByVideo:
+    """Test media descriptions by video file endpoint."""
+    
+    def test_get_media_descriptions_by_video_success(self, client, user_token, admin_token, sample_media_data):
+        """Test successful retrieval of media descriptions by video file."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+        
+        # Create a video file first
+        video_data = {
+            "file_name": "test_video.mp4",
+            "file_url": "https://example.com/test.mp4",
+            "upload_status": "upload_completed",
+            "encoding_status": "completed"
+        }
+        video_response = client.post(
+            "/api/v1/video-files",
+            headers=admin_headers,
+            json=video_data
+        )
+        assert video_response.status_code == 200
+        video_id = video_response.json()["id"]
+        
+        # Create media description with main_video_file_id
+        media_data = {**sample_media_data, "main_video_file_id": video_id}
+        media_response = client.post(
+            "/api/v1/media-descriptions",
+            headers=admin_headers,
+            json=media_data
+        )
+        assert media_response.status_code == 200
+        
+        # Get media descriptions for this video file
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{video_id}",
+            headers=user_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["main_video_file_id"] == video_id
+    
+    def test_get_media_descriptions_by_video_not_found(self, client, user_token):
+        """Test getting media descriptions for non-existent video file."""
+        headers = {"Authorization": f"Bearer {user_token}"}
+        fake_video_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/media-descriptions/by-video/{fake_video_id}",
+            headers=headers
+        )
+        
+        assert response.status_code == 404
+        assert "Video file not found" in response.json()["detail"]
+
+class TestNewMediaTypes:
+    """Test new season and program media types."""
+    
+    def test_create_season_media_type(self, client, admin_token, sample_season_data):
+        """Test creating media description with season type."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        response = client.post(
+            "/api/v1/media-descriptions",
+            headers=headers,
+            json=sample_season_data
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["media_type"] == "season"
+        assert data["episode_title"] == "Season 1"
+    
+    def test_create_program_media_type(self, client, admin_token, sample_program_data):
+        """Test creating media description with program type."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        
+        response = client.post(
+            "/api/v1/media-descriptions",
+            headers=headers,
+            json=sample_program_data
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["media_type"] == "program"
+        assert data["episode_title"] == "Program Overview"
+

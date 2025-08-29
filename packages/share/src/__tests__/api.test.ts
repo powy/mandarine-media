@@ -40,7 +40,6 @@ describe('API Types', () => {
     // Optional fields should be allowed to be undefined
     expect(minimalVideoFile.file_url).toBeUndefined();
     expect(minimalVideoFile.file_size_bytes).toBeUndefined();
-    expect(minimalVideoFile.media_description_id).toBeUndefined();
   });
 
   it('should support both upload methods', () => {

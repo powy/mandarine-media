@@ -9,6 +9,8 @@ import {
   seasonsApi,
   personsApi,
   usersApi,
+  audienceCategoriesApi,
+  subscriptionPlansApi,
   getContentLists,
   getContentList,
   createContentList,
@@ -126,6 +128,7 @@ export const dataProvider: DataProvider = {
             total: seasonsTotal,
           };
 
+        case 'persons':  // Add support for 'persons' reference used in React Admin components
         case 'public-persons':
           const { q: personQuery, profession, ...otherPersonFilters } = filters;
           const personsResponse = await personsApi.getAll({ 
@@ -196,6 +199,48 @@ export const dataProvider: DataProvider = {
             total: videoFilesTotal,
           };
 
+        case 'themes':
+          // For now, use a simple fetch - will need to update when themes API is available in shared package
+          const themesResponse = await fetch(`http://localhost:8000/api/v1/themes?skip=${skip}&limit=${perPage}`);
+          const themesData = await themesResponse.json();
+          return {
+            data: resourceMappers.themes.mapList(Array.isArray(themesData) ? themesData : []),
+            total: Array.isArray(themesData) ? themesData.length : 0,
+          };
+
+        case 'audience-categories':
+        case 'audience-category':
+          const { q: audienceCategoryQuery, ...otherAudienceCategoryFilters } = filters;
+          const audienceCategoriesResponse = await audienceCategoriesApi.getAll({ 
+            skip, 
+            limit: perPage,
+            q: audienceCategoryQuery,
+            ...otherAudienceCategoryFilters 
+          });
+          // Handle both direct array and paginated response formats
+          const audienceCategoriesData = Array.isArray(audienceCategoriesResponse) ? audienceCategoriesResponse : audienceCategoriesResponse.data || [];
+          const audienceCategoriesTotal = Array.isArray(audienceCategoriesResponse) ? audienceCategoriesData.length : audienceCategoriesResponse.pagination?.total || audienceCategoriesData.length;
+          return {
+            data: resourceMappers.audienceCategories.mapList(audienceCategoriesData),
+            total: audienceCategoriesTotal,
+          };
+
+        case 'subscription-plans':
+        case 'subscription-plan':
+          const { q: subscriptionPlanQuery, ...otherSubscriptionPlanFilters } = filters;
+          const subscriptionPlansResponse = await subscriptionPlansApi.getAll({ 
+            skip, 
+            limit: perPage,
+            q: subscriptionPlanQuery,
+            ...otherSubscriptionPlanFilters 
+          });
+          // Handle both direct array and paginated response formats
+          const subscriptionPlansData = Array.isArray(subscriptionPlansResponse) ? subscriptionPlansResponse : subscriptionPlansResponse.data || [];
+          const subscriptionPlansTotal = Array.isArray(subscriptionPlansResponse) ? subscriptionPlansData.length : subscriptionPlansResponse.pagination?.total || subscriptionPlansData.length;
+          return {
+            data: resourceMappers.subscriptionPlans.mapList(subscriptionPlansData),
+            total: subscriptionPlansTotal,
+          };
 
         default:
           throw new Error(`Unknown resource: ${resource}`);
@@ -236,6 +281,7 @@ export const dataProvider: DataProvider = {
           const season = await seasonsApi.getById(id);
           return { data: resourceMappers.seasons.mapOne(season) };
 
+        case 'persons':  // Support for 'persons' reference
         case 'public-persons':
           const person = await personsApi.getById(id);
           return { data: resourceMappers.publicPersons.mapOne(person) };
@@ -257,6 +303,20 @@ export const dataProvider: DataProvider = {
           const videoFile = await mediaApi.getVideoFile(id);
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
+        case 'themes':
+          const themeResponse = await fetch(`http://localhost:8000/api/v1/themes/${id}`);
+          const themeData = await themeResponse.json();
+          return { data: resourceMappers.themes.mapOne(themeData) };
+
+        case 'audience-categories':
+        case 'audience-category':
+          const audienceCategory = await audienceCategoriesApi.getById(id);
+          return { data: resourceMappers.audienceCategories.mapOne(audienceCategory) };
+
+        case 'subscription-plans':
+        case 'subscription-plan':
+          const subscriptionPlan = await subscriptionPlansApi.getById(id);
+          return { data: resourceMappers.subscriptionPlans.mapOne(subscriptionPlan) };
 
         default:
           throw new Error(`Unknown resource: ${resource}`);
@@ -363,6 +423,7 @@ export const dataProvider: DataProvider = {
           const season = await seasonsApi.create(resourceMappers.seasons.mapToCreate(data));
           return { data: resourceMappers.seasons.mapOne(season) };
 
+        case 'persons':  // Support for 'persons' reference
         case 'public-persons':
           const person = await personsApi.create(resourceMappers.publicPersons.mapToCreate(data));
           return { data: resourceMappers.publicPersons.mapOne(person) };
@@ -384,6 +445,24 @@ export const dataProvider: DataProvider = {
           const videoFile = await mediaApi.createVideoFile(resourceMappers.videoFiles.mapToCreate(data));
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
+        case 'themes':
+          const createResponse = await fetch('http://localhost:8000/api/v1/themes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(resourceMappers.themes.mapToCreate(data))
+          });
+          const newTheme = await createResponse.json();
+          return { data: resourceMappers.themes.mapOne(newTheme) };
+
+        case 'audience-categories':
+        case 'audience-category':
+          const audienceCategory = await audienceCategoriesApi.create(resourceMappers.audienceCategories.mapToCreate(data));
+          return { data: resourceMappers.audienceCategories.mapOne(audienceCategory) };
+
+        case 'subscription-plans':
+        case 'subscription-plan':
+          const subscriptionPlan = await subscriptionPlansApi.create(resourceMappers.subscriptionPlans.mapToCreate(data));
+          return { data: resourceMappers.subscriptionPlans.mapOne(subscriptionPlan) };
 
         default:
           throw new Error(`Create not implemented for resource: ${resource}`);
@@ -424,6 +503,7 @@ export const dataProvider: DataProvider = {
           const season = await seasonsApi.update(id, resourceMappers.seasons.mapToUpdate(data));
           return { data: resourceMappers.seasons.mapOne(season) };
 
+        case 'persons':  // Support for 'persons' reference
         case 'public-persons':
           const person = await personsApi.update(id, resourceMappers.publicPersons.mapToUpdate(data));
           return { data: resourceMappers.publicPersons.mapOne(person) };
@@ -445,6 +525,24 @@ export const dataProvider: DataProvider = {
           const videoFile = await mediaApi.updateVideoFile(id, resourceMappers.videoFiles.mapToUpdate(data));
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
+        case 'themes':
+          const updateResponse = await fetch(`http://localhost:8000/api/v1/themes/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(resourceMappers.themes.mapToUpdate(data))
+          });
+          const updatedTheme = await updateResponse.json();
+          return { data: resourceMappers.themes.mapOne(updatedTheme) };
+
+        case 'audience-categories':
+        case 'audience-category':
+          const audienceCategory = await audienceCategoriesApi.update(id, resourceMappers.audienceCategories.mapToUpdate(data));
+          return { data: resourceMappers.audienceCategories.mapOne(audienceCategory) };
+
+        case 'subscription-plans':
+        case 'subscription-plan':
+          const subscriptionPlan = await subscriptionPlansApi.update(id, resourceMappers.subscriptionPlans.mapToUpdate(data));
+          return { data: resourceMappers.subscriptionPlans.mapOne(subscriptionPlan) };
 
         default:
           throw new Error(`Update not implemented for resource: ${resource}`);
@@ -494,6 +592,7 @@ export const dataProvider: DataProvider = {
           const season = await seasonsApi.delete(id);
           return { data: resourceMappers.seasons.mapOne(season) };
 
+        case 'persons':  // Support for 'persons' reference
         case 'public-persons':
           const person = await personsApi.delete(id);
           return { data: resourceMappers.publicPersons.mapOne(person) };
@@ -511,6 +610,22 @@ export const dataProvider: DataProvider = {
           const deletedVideoFile = await mediaApi.deleteVideoFile(id);
           return { data: resourceMappers.videoFiles.mapOne(deletedVideoFile) };
 
+        case 'themes':
+          const deleteResponse = await fetch(`http://localhost:8000/api/v1/themes/${id}`, {
+            method: 'DELETE'
+          });
+          const deletedTheme = await deleteResponse.json();
+          return { data: resourceMappers.themes.mapOne(deletedTheme) };
+
+        case 'audience-categories':
+        case 'audience-category':
+          const deletedAudienceCategory = await audienceCategoriesApi.delete(id);
+          return { data: resourceMappers.audienceCategories.mapOne(deletedAudienceCategory) };
+
+        case 'subscription-plans':
+        case 'subscription-plan':
+          const deletedSubscriptionPlan = await subscriptionPlansApi.delete(id);
+          return { data: resourceMappers.subscriptionPlans.mapOne(deletedSubscriptionPlan) };
 
         default:
           throw new Error(`Delete not implemented for resource: ${resource}`);

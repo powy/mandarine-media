@@ -524,3 +524,140 @@ class TestContentListEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         response = client.post("/api/v1/content-lists/", json=invalid_data, headers=headers)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+# New tests for enhanced JSON format functionality
+class TestContentListJSONEnhancements:
+    """Test enhanced JSON format with new fields and thumbnail selection logic."""
+
+    def test_json_format_includes_width_height_percentage(self, db, sample_content_list_data):
+        """Test that JSON format includes width_percentage and height_percentage."""
+        content_list_in = ContentListCreate(**sample_content_list_data)
+        content_list = crud_content_list.create_with_json_cache(db=db, obj_in=content_list_in)
+        
+        # Get the JSON data
+        json_data = content_list.get_json_data()
+        
+        assert json_data is not None
+        assert "width_percentage" in json_data
+        assert "height_percentage" in json_data
+        assert json_data["width_percentage"] == sample_content_list_data["percentage_width"]
+        assert json_data["height_percentage"] == sample_content_list_data["percentage_height"]
+
+    def test_thumbnail_format_mapping(self, db, sample_content_list_data):
+        """Test thumbnail format mapping to MediaDescription image fields."""
+        content_list_in = ContentListCreate(**sample_content_list_data)
+        content_list = crud_content_list.create(db=db, obj_in=content_list_in)
+        
+        # Test all thumbnail format mappings
+        format_mappings = {
+            ThumbnailFormatEnum.format_1920x1080: "image_1920_1080_id",
+            ThumbnailFormatEnum.format_1920x720: "image_1920_720_id",
+            ThumbnailFormatEnum.format_1080x1080: "image_1080_1080_id",
+            ThumbnailFormatEnum.format_810x1080: "image_810_1080_id",
+            ThumbnailFormatEnum.format_1080x1920: "image_1080_1920_id"
+        }
+        
+        for thumbnail_format, expected_field in format_mappings.items():
+            content_list.thumbnail_format = thumbnail_format
+            
+            # Test that the mapping works correctly
+            # Note: We can't easily test the actual image fetching without setting up media descriptions
+            # and pictures, but we can verify the format is supported
+            json_data = content_list.update_json(db_session=db)
+            assert json_data is not None
+            assert json_data["thumbnail_format"] == thumbnail_format
+
+    def test_media_description_with_enhanced_fields(self, db, sample_content_list_data):
+        """Test content list JSON with media description includes enhanced fields."""
+        # Create a media description
+        media_desc_data = MediaDescriptionCreate(
+            file_number=12345,
+            episode_title="Test Episode",
+            media_type="video",
+            descriptive_summary_text="This is a test episode with a description for testing purposes"
+        )
+        media_desc = crud_media_description.create(db=db, obj_in=media_desc_data)
+        
+        # Create content list with the media description
+        sample_content_list_data["content_items"] = [str(media_desc.id)]
+        sample_content_list_data["content_types"] = ["media_description"]
+        
+        content_list_in = ContentListCreate(**sample_content_list_data)
+        content_list = crud_content_list.create_with_json_cache(db=db, obj_in=content_list_in)
+        
+        # Get the JSON data
+        json_data = content_list.get_json_data()
+        
+        assert json_data is not None
+        assert "items" in json_data
+        assert len(json_data["items"]) == 1
+        
+        item = json_data["items"][0]
+        assert "description" in item
+        assert "short_summary" in item
+        assert "image_alt_text" in item
+        assert item["title"] == "Test Episode"
+        assert item["description"] == "This is a test episode with a description for testing purposes"
+        assert item["image_alt_text"] == "Test Episode - This is a test episode with a description for testing purposes"
+
+    def test_short_summary_truncation(self, db, sample_content_list_data):
+        """Test that short_summary is properly truncated for long descriptions."""
+        # Create a media description with a long description
+        long_description = "This is a very long description " * 10  # > 150 characters
+        media_desc_data = MediaDescriptionCreate(
+            file_number=12346,
+            episode_title="Long Description Episode",
+            media_type="video",
+            descriptive_summary_text=long_description
+        )
+        media_desc = crud_media_description.create(db=db, obj_in=media_desc_data)
+        
+        # Create content list with the media description
+        sample_content_list_data["content_items"] = [str(media_desc.id)]
+        sample_content_list_data["content_types"] = ["media_description"]
+        
+        content_list_in = ContentListCreate(**sample_content_list_data)
+        content_list = crud_content_list.create_with_json_cache(db=db, obj_in=content_list_in)
+        
+        # Get the JSON data
+        json_data = content_list.get_json_data()
+        
+        assert json_data is not None
+        item = json_data["items"][0]
+        
+        # Check that description is full but short_summary is truncated
+        assert len(item["description"]) > 150
+        assert len(item["short_summary"]) <= 153  # 150 + "..."
+        assert item["short_summary"].endswith("...")
+
+    def test_error_handling_invalid_thumbnail_format(self, db, sample_content_list_data):
+        """Test error handling for invalid thumbnail formats."""
+        content_list_in = ContentListCreate(**sample_content_list_data)
+        content_list = crud_content_list.create(db=db, obj_in=content_list_in)
+        
+        # Set an invalid thumbnail format
+        content_list.thumbnail_format = "invalid_format"
+        
+        # Should still generate JSON but with default format
+        json_data = content_list.update_json(db_session=db)
+        assert json_data is not None
+        assert json_data["thumbnail_format"] == "invalid_format"  # Preserves original format in JSON
+
+    def test_json_backwards_compatibility(self, db, sample_content_list_data):
+        """Test that enhanced JSON format maintains backwards compatibility."""
+        content_list_in = ContentListCreate(**sample_content_list_data)
+        content_list = crud_content_list.create_with_json_cache(db=db, obj_in=content_list_in)
+        
+        json_data = content_list.get_json_data()
+        
+        # Check that all original fields are still present
+        assert json_data is not None
+        assert "id" in json_data
+        assert "title" in json_data
+        assert "description" in json_data
+        assert "thumbnail_format" in json_data
+        assert "is_active" in json_data
+        assert "display_order" in json_data
+        assert "last_updated" in json_data
+        assert "items" in json_data

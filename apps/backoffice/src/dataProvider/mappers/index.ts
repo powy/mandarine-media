@@ -165,34 +165,32 @@ const users = {
 };
 
 const mediaDescriptions = {
-  mapOne: (item: MediaDescription): ReactAdminRecord => ({
+  mapOne: (item: any): ReactAdminRecord => ({
     ...item,
     id: item.id,
     created_at: item.creation_date_utc,
-    // Convert array fields for React Admin
-    media_categories_id_list: item.media_categories_id_list || [],
-    themes_and_genres_id_list: item.themes_and_genres_id_list || [],
-    subscription_plan_id_list: item.subscription_plan_id_list || [],
-    public_person_id_list: item.public_person_id_list || [],
-    subtitle_languages_available: item.subtitle_languages_available || [],
-    audio_languages_available: item.audio_languages_available || [],
-    seo_keywords: item.seo_keywords || [],
-    social_media_hashtags: item.social_media_hashtags || [],
-    distribution_territories: item.distribution_territories || [],
-    // v1.4 fields
-    actors_id_list: item.actors_id_list || [],
-    directors_id_list: item.directors_id_list || [],
-    productor_id_list: item.productor_id_list || [],
-    authors_id_list: item.authors_id_list || [],
-    origin_country_id_list: item.origin_country_id_list || [],
-    original_languages_id: item.original_languages_id || [],
-    available_countries_list: item.available_countries_list || [],
-    eligible_plans: item.eligible_plans || [],
-    audience_categories_id_list: item.audience_categories_id_list || [],
+    // Convert relationship arrays to ID arrays for React Admin inputs
+    actor_ids: item.actors ? item.actors.map((a: any) => a.id) : [],
+    director_ids: item.directors ? item.directors.map((d: any) => d.id) : [],
+    producer_ids: item.producers ? item.producers.map((p: any) => p.id) : [],
+    author_ids: item.authors ? item.authors.map((a: any) => a.id) : [],
+    origin_country_ids: item.origin_countries ? item.origin_countries.map((c: any) => c.id) : [],
+    available_country_ids: item.available_countries ? item.available_countries.map((c: any) => c.id) : [],
+    original_language_ids: item.original_languages ? item.original_languages.map((l: any) => l.id) : [],
+    audience_category_ids: item.audience_categories ? item.audience_categories.map((a: any) => a.id) : [],
+    theme_ids: item.themes ? item.themes.map((t: any) => t.id) : [],
+    eligible_plan_id_list: item.eligible_plan_id_list ? item.eligible_plan_id_list.map((p: any) => p.id) : [],
+    trailer_ids: item.trailers ? item.trailers.map((v: any) => v.id) : [],
+    excerpt_ids: item.excerpts ? item.excerpts.map((v: any) => v.id) : [],
+    // Convert single fields
+    media_categories: item.media_categories || [],
+    seo_keywords_text_list: item.seo_keywords_text_list || [],
+    hashtags_text_list: item.hashtags_text_list || [],
+    human_keywords_text_list: item.human_keywords_text_list || [],
     additional_images_id_list: item.additional_images_id_list || [],
   }),
 
-  mapList: (items: MediaDescription[]): ReactAdminRecord[] => 
+  mapList: (items: any[]): ReactAdminRecord[] => 
     (items || []).map((item) => ({
       ...item,
       id: item.id,
@@ -202,30 +200,53 @@ const mediaDescriptions = {
       type: item.media_type,
       status: item.content_status || 'draft',
       featured: item.is_featured || false,
-      premium: item.is_premium_content || false,
     })),
 
-  mapToCreate: (data: ReactAdminRecord): MediaDescriptionCreate => {
-    const { id, created_at, creation_date_utc, title, type, status, featured, premium, ...rest } = data;
+  mapToCreate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, title, type, status, featured, ...rest } = data;
     return {
       file_number: data.file_number || 0,
       episode_title: data.episode_title || data.title || '',
       media_type: data.media_type || data.type || 'video',
-      content_status: data.content_status || data.status,
-      is_featured: data.is_featured || data.featured,
-      is_premium_content: data.is_premium_content || data.premium,
+      content_status: data.content_status || data.status || 'draft',
+      is_featured: data.is_featured || data.featured || false,
+      // Map relationship ID arrays
+      actor_ids: data.actor_ids || [],
+      director_ids: data.director_ids || [],
+      producer_ids: data.producer_ids || [],
+      author_ids: data.author_ids || [],
+      origin_country_ids: data.origin_country_ids || [],
+      available_country_ids: data.available_country_ids || [],
+      original_language_ids: data.original_language_ids || [],
+      audience_category_ids: data.audience_category_ids || [],
+      theme_ids: data.theme_ids || [],
+      eligible_plan_id_list: data.eligible_plan_id_list || [],
+      trailer_ids: data.trailer_ids || [],
+      excerpt_ids: data.excerpt_ids || [],
       ...rest
-    } as MediaDescriptionCreate;
+    };
   },
 
-  mapToUpdate: (data: ReactAdminRecord): Partial<MediaDescription> => {
-    const { id, created_at, creation_date_utc, title, type, status, featured, premium, ...rest } = data;
+  mapToUpdate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, title, type, status, featured, ...rest } = data;
     return {
       episode_title: data.episode_title || data.title,
       media_type: data.media_type || data.type,
       content_status: data.content_status || data.status,
       is_featured: data.is_featured !== undefined ? data.is_featured : data.featured,
-      is_premium_content: data.is_premium_content !== undefined ? data.is_premium_content : data.premium,
+      // Map relationship ID arrays
+      actor_ids: data.actor_ids || [],
+      director_ids: data.director_ids || [],
+      producer_ids: data.producer_ids || [],
+      author_ids: data.author_ids || [],
+      origin_country_ids: data.origin_country_ids || [],
+      available_country_ids: data.available_country_ids || [],
+      original_language_ids: data.original_language_ids || [],
+      audience_category_ids: data.audience_category_ids || [],
+      theme_ids: data.theme_ids || [],
+      eligible_plan_id_list: data.eligible_plan_id_list || [],
+      trailer_ids: data.trailer_ids || [],
+      excerpt_ids: data.excerpt_ids || [],
       ...rest
     };
   },
@@ -379,6 +400,83 @@ const videoFiles = {
   },
 };
 
+// Simple theme mapper - themes have: id, name, description, category, creation_date_utc
+const themes = {
+  mapOne: (item: any): ReactAdminRecord => ({
+    ...item,
+    id: item.id,
+    created_at: item.creation_date_utc,
+  }),
+
+  mapList: (items: any[]): ReactAdminRecord[] => 
+    (items || []).map((item) => ({
+      ...item,
+      id: item.id,
+      created_at: item.creation_date_utc,
+    })),
+
+  mapToCreate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+
+  mapToUpdate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+};
+
+// Simple audience categories mapper
+const audienceCategories = {
+  mapOne: (item: any): ReactAdminRecord => ({
+    ...item,
+    id: item.id,
+    created_at: item.creation_date_utc,
+  }),
+
+  mapList: (items: any[]): ReactAdminRecord[] => 
+    (items || []).map((item) => ({
+      ...item,
+      id: item.id,
+      created_at: item.creation_date_utc,
+    })),
+
+  mapToCreate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+
+  mapToUpdate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+};
+
+// Simple subscription plans mapper
+const subscriptionPlans = {
+  mapOne: (item: any): ReactAdminRecord => ({
+    ...item,
+    id: item.id,
+    created_at: item.creation_date_utc,
+  }),
+
+  mapList: (items: any[]): ReactAdminRecord[] => 
+    (items || []).map((item) => ({
+      ...item,
+      id: item.id,
+      created_at: item.creation_date_utc,
+    })),
+
+  mapToCreate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+
+  mapToUpdate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+};
 
 export const resourceMappers = {
   countries,
@@ -392,4 +490,7 @@ export const resourceMappers = {
   contentLists,
   screenContents,
   videoFiles,
+  themes,
+  audienceCategories,
+  subscriptionPlans,
 };

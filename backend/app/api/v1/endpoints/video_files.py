@@ -242,12 +242,19 @@ def read_video_files_by_media(
 ) -> Any:
     """
     Get video files by media description ID.
+    Returns the main video file linked to this media description.
     """
     media_description = crud.media_description.get(db=db, id=media_id)
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
     
-    return crud.video_file.get_by_media_description_id(db=db, media_description_id=media_id)
+    # With the reversed relationship, return the main video file if it exists
+    if media_description.main_video_file_id:
+        video_file = crud.video_file.get(db=db, id=media_description.main_video_file_id)
+        if video_file:
+            return [video_file]  # Return as list for API compatibility
+    
+    return []  # Return empty list if no video file linked
 
 
 @router.put("/{id}/encoding-status", response_model=schemas.video_file.VideoFile)
@@ -292,7 +299,6 @@ def create_video_file_metadata(
             file_name=video_file_in.file_name,
             upload_method=video_file_in.upload_method,
             upload_status=schemas.video_file.UploadStatusEnum.metadata_only,
-            media_description_id=video_file_in.media_description_id,
             external_url=video_file_in.external_url,
         )
         
@@ -335,7 +341,6 @@ def create_video_file_with_existing_url(
             external_url=video_file_in.external_url,
             upload_method=schemas.video_file.UploadMethodEnum.existing_url,
             upload_status=schemas.video_file.UploadStatusEnum.upload_completed,
-            media_description_id=video_file_in.media_description_id,
             file_url=video_file_in.external_url,  # Use external URL as file URL
         )
         
@@ -518,29 +523,51 @@ def generate_playback_token(
     This endpoint generates a JWT token required for accessing Mux videos 
     with signed playback policies.
     """
+    import re
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
     # Get video file
     video_file = crud.video_file.get(db=db, id=id)
     if not video_file:
         raise HTTPException(status_code=404, detail="Video file not found")
     
-    # Check if video file has Mux playback ID
-    if not video_file.mux_playback_id:
+    logger.info(f"Generating token for video file {id}")
+    logger.info(f"mux_playback_id: {video_file.mux_playback_id}")
+    logger.info(f"external_url: {video_file.external_url}")
+    
+    # Get playback ID from mux_playback_id or extract from external_url
+    playback_id = video_file.mux_playback_id
+    
+    if not playback_id and video_file.external_url:
+        # Try to extract playback ID from external URL
+        # Pattern: https://stream.mux.com/{playback_id}.m3u8
+        match = re.search(r'stream\.mux\.com/([^/.]+)(?:\.m3u8)?', video_file.external_url)
+        if match:
+            playback_id = match.group(1)
+            logger.info(f"Extracted playback ID from URL: {playback_id}")
+    
+    if not playback_id:
+        logger.error(f"Could not extract playback ID from video file {id}")
         raise HTTPException(
             status_code=400, 
-            detail="Video file does not have a MUX playback ID"
+            detail="Video file does not have a MUX playback ID and cannot extract one from external URL"
         )
     
     try:
+        logger.info(f"Attempting to generate token for playback ID: {playback_id}")
         # Generate playback token
         token = mux_token_service.generate_playback_token(
-            playback_id=video_file.mux_playback_id,
+            playback_id=playback_id,
             expiration_minutes=expiration_minutes,
             audience="v"  # "v" for video
         )
+        logger.info(f"Token generated successfully")
         
         # Generate signed playback URL
         signed_url = mux_token_service.generate_signed_playback_url(
-            playback_id=video_file.mux_playback_id,
+            playback_id=playback_id,
             expiration_minutes=expiration_minutes
         )
         
@@ -548,14 +575,16 @@ def generate_playback_token(
             "success": True,
             "token": token,
             "playback_url": signed_url,
-            "playback_id": video_file.mux_playback_id,
+            "playback_id": playback_id,
             "expires_in_minutes": expiration_minutes,
             "expires_at": int(time.time()) + (expiration_minutes * 60)
         }
         
     except ValueError as e:
+        logger.error(f"ValueError in token generation: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.error(f"Exception in token generation: {str(e)}")
         raise HTTPException(
             status_code=500, 
             detail=f"Failed to generate playback token: {str(e)}"
@@ -569,33 +598,51 @@ def generate_drm_token(
     id: UUID,
     expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
     drm_key_id: Optional[str] = Query(None),
-    current_user: schemas.User = Depends(deps.get_current_active_admin),  # Admin only for DRM
+    current_user: schemas.User = Depends(deps.get_current_active_user),  # Regular users can get DRM tokens
 ) -> Any:
     """
-    Generate JWT token for DRM license requests. Admin only.
+    Generate JWT token for DRM license requests.
     
     This endpoint generates a DRM-specific JWT token for accessing 
     DRM-protected content through Mux's license server.
     """
+    import re
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
     # Get video file
     video_file = crud.video_file.get(db=db, id=id)
     if not video_file:
         raise HTTPException(status_code=404, detail="Video file not found")
     
-    # Check if video file has Mux playback ID
-    if not video_file.mux_playback_id:
+    logger.info(f"Generating DRM token for video file {id}")
+    logger.info(f"mux_playback_id: {video_file.mux_playback_id}")
+    logger.info(f"external_url: {video_file.external_url}")
+    
+    # Get playback ID from mux_playback_id or extract from external_url
+    playback_id = video_file.mux_playback_id
+    
+    if not playback_id and video_file.external_url:
+        # Try to extract playback ID from external URL
+        # Pattern: https://stream.mux.com/{playback_id}.m3u8
+        match = re.search(r'stream\.mux\.com/([^/.]+)(?:\.m3u8)?', video_file.external_url)
+        if match:
+            playback_id = match.group(1)
+    
+    if not playback_id:
         raise HTTPException(
             status_code=400, 
-            detail="Video file does not have a MUX playback ID"
+            detail="Video file does not have a MUX playback ID and cannot extract one from external URL"
         )
     
     # Check if video file is DRM protected (this would need to be tracked in your video_file model)
-    # For now, we'll assume any video with a mux_playback_id can potentially be DRM protected
+    # For now, we'll assume any video with a playback ID can potentially be DRM protected
     
     try:
         # Generate DRM token
         token = mux_token_service.generate_drm_token(
-            playback_id=video_file.mux_playback_id,
+            playback_id=playback_id,
             expiration_minutes=expiration_minutes,
             key_id=drm_key_id
         )
@@ -603,7 +650,7 @@ def generate_drm_token(
         return {
             "success": True,
             "drm_token": token,
-            "playback_id": video_file.mux_playback_id,
+            "playback_id": playback_id,
             "drm_key_id": drm_key_id,
             "expires_in_minutes": expiration_minutes,
             "expires_at": int(time.time()) + (expiration_minutes * 60)

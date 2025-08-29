@@ -199,7 +199,7 @@ def get_screen_description_json(
     json_data = screen_description.get_json_data()
     if not json_data:
         # Generate JSON if not available
-        json_data = crud.screen_description.update_json_cache(db=db, screen_description=screen_description)
+        json_data = crud.screen_description.update_json_cache(db=db, screen_content=screen_description)
         if not json_data:
             raise HTTPException(status_code=500, detail="Failed to generate JSON content")
     
@@ -222,7 +222,7 @@ def regenerate_screen_description_json(
     if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
     
-    json_data = crud.screen_description.update_json_cache(db=db, screen_description=screen_description)
+    json_data = crud.screen_description.update_json_cache(db=db, screen_content=screen_description)
     if not json_data:
         raise HTTPException(status_code=500, detail="Failed to regenerate JSON content")
     

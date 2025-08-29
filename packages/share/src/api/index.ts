@@ -14,7 +14,9 @@ export * from './territories';
 export * from './pictures';
 export * from './content-lists';
 export * from './screen-contents'; // Note: now includes screen-descriptions exports
+export * from './audience-categories';
+export * from './subscription-plans';
 
-export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData, getSeasonScreenData, getProgramScreenData } from './media';
+export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData, getSeasonScreenData, getProgramScreenData, getProgramScreenDataByProgramId } from './media';
 export { getSeason, getSeasonsByProgram } from './seasons';
 export { getProgram } from './programs';

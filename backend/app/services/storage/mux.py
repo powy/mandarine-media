@@ -42,7 +42,7 @@ class MuxStorageBackend(BaseStorageBackend):
                     playback_policy=[mux_python.PlaybackPolicy.SIGNED],
                     encoding_tier=self.config.get('encoding_tier', 'baseline'),
                     # Enable DRM if specified in config
-                    mp4_support='capped_1080p'  # Standard MP4 support
+                    mp4_support='capped-1080p'  # Standard MP4 support
                 )
             )
             

@@ -9,7 +9,7 @@ interface ApiConfig {
 }
 
 let apiConfig: ApiConfig = {
-  baseURL: 'http://localhost:8000',
+  baseURL: 'http://localhost:8000/api/v1',  // Default with /api/v1 prefix
 };
 
 // Initialize API configuration
@@ -20,6 +20,7 @@ export const initApiClient = (config: ApiConfig): void => {
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: apiConfig.baseURL,
+  timeout: 10000, // 10 second timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,19 +29,33 @@ export const apiClient: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   async (config) => {
+    // Enhanced logging for debugging
+    console.log('🔍 API Client: Making request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullUrl: `${config.baseURL}${config.url}`,
+      params: config.params,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       const token = await authTokenStorage.getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('🔑 API Client: Auth token added to request');
       } else {
-        console.warn('API Client: No auth token found for request:', config.url);
+        console.warn('⚠️ API Client: No auth token found for request:', config.url);
       }
     } catch (error) {
-      console.warn('Failed to get token from storage:', error);
+      console.warn('❌ API Client: Failed to get token from storage:', error);
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('❌ API Client: Request interceptor error:', error);
+    return Promise.reject(error);
+  }
 );
 
 // Track refresh token requests to avoid multiple simultaneous requests
@@ -61,10 +76,28 @@ const processQueue = (error: any, token: string | null = null) => {
 
 // Response interceptor for auth errors with token refresh
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Log successful responses for debugging
+    console.log('✅ API Client: Response received:', {
+      status: response.status,
+      url: response.config?.url,
+      method: response.config?.method?.toUpperCase(),
+      dataSize: typeof response.data === 'object' ? Object.keys(response.data).length : 'N/A',
+      timestamp: new Date().toISOString()
+    });
+    return response;
+  },
   async (error) => {
-    console.log('API Client: Error intercepted:', error.response?.status, error.response?.data);
-    console.log('API Client: Error URL:', error.config?.url);
+    console.error('❌ API Client: Error intercepted:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      method: error.config?.method?.toUpperCase(),
+      errorData: error.response?.data,
+      errorMessage: error.message,
+      timestamp: new Date().toISOString()
+    });
+    
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

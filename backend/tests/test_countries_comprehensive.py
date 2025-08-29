@@ -336,23 +336,26 @@ class TestCountriesEdgeCases:
 
     def test_country_operations_with_expired_token(self, client, admin_token):
         """Test country operations with various token issues."""
-        # Invalid token format
+        fake_id = "550e8400-e29b-41d4-a716-446655440000"
+        country_data = {"name": "Test Country"}
+        
+        # Invalid token format - testing admin operation (create)
         invalid_headers = {"Authorization": "Bearer invalid-token"}
-        response1 = client.get("/api/v1/countries", headers=invalid_headers)
+        response1 = client.post("/api/v1/countries", json=country_data, headers=invalid_headers)
         assert response1.status_code == 401
         
-        # Missing Bearer prefix
+        # Missing Bearer prefix - testing admin operation (update)
         invalid_headers2 = {"Authorization": admin_token}
-        response2 = client.get("/api/v1/countries", headers=invalid_headers2)
+        response2 = client.put(f"/api/v1/countries/{fake_id}", json=country_data, headers=invalid_headers2)
         assert response2.status_code in [401, 403]
         
-        # Empty token
+        # Empty token - testing admin operation (delete)
         invalid_headers3 = {"Authorization": "Bearer "}
-        response3 = client.get("/api/v1/countries", headers=invalid_headers3)
+        response3 = client.delete(f"/api/v1/countries/{fake_id}", headers=invalid_headers3)
         assert response3.status_code in [401, 403]
         
-        # No Authorization header
-        response4 = client.get("/api/v1/countries")
+        # No Authorization header - testing admin operation (create)
+        response4 = client.post("/api/v1/countries", json=country_data)
         assert response4.status_code in [401, 403]
 
     def test_country_name_with_leading_trailing_spaces(self, client, admin_token):

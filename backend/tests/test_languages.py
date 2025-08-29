@@ -121,9 +121,7 @@ class TestLanguagesCreate:
         """Test language creation without authentication."""
         response = client.post("/api/v1/languages", json=sample_language_data)
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
+        assert response.status_code == 401
 
 
 class TestLanguagesDetail:
@@ -248,9 +246,7 @@ class TestLanguagesUpdate:
         
         response = client.put(f"/api/v1/languages/{fake_id}", json=sample_language_update_data)
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
+        assert response.status_code == 401
 
 
 class TestLanguagesDelete:
@@ -301,6 +297,4 @@ class TestLanguagesDelete:
         
         response = client.delete(f"/api/v1/languages/{fake_id}")
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
+        assert response.status_code == 401

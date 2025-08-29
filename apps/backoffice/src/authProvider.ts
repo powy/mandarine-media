@@ -8,7 +8,19 @@ export const authProvider: AuthProvider = {
       // Auth tokens are now automatically stored by the enhanced auth system
       return Promise.resolve();
     } catch (error) {
-      return Promise.reject(new Error('Invalid credentials'));
+      // Better error handling with proper type checking
+      if (error && typeof error === 'object' && 'code' in error) {
+        const axiosError = error as { code?: string; response?: { status?: number }; message?: string };
+        if (axiosError.code === 'ECONNABORTED' || axiosError.code === 'ERR_NETWORK' || !axiosError.response) {
+          return Promise.reject(new Error('Cannot connect to server. Please check if the backend is running.'));
+        }
+        if (axiosError.response?.status === 401) {
+          return Promise.reject(new Error('Invalid credentials'));
+        }
+        return Promise.reject(new Error(axiosError.message || 'Login failed'));
+      }
+      // Handle unknown error types
+      return Promise.reject(new Error('Login failed'));
     }
   },
 
@@ -24,16 +36,22 @@ export const authProvider: AuthProvider = {
   },
 
   checkAuth: async () => {
-    const isAuthenticated = await authApi.isAuthenticated();
-    if (!isAuthenticated) {
-      return Promise.reject(new Error('Not authenticated'));
+    try {
+      const isAuthenticated = await authApi.isAuthenticated();
+      if (!isAuthenticated) {
+        return Promise.reject(new Error('Not authenticated'));
+      }
+      return Promise.resolve();
+    } catch (error) {
+      // If there's a network error or timeout, reject to force login
+      console.error('Auth check failed:', error);
+      return Promise.reject(new Error('Authentication check failed'));
     }
-
-    return Promise.resolve();
   },
 
-  checkError: async (error: any) => {
-    const status = error?.status || error?.response?.status;
+  checkError: async (error: unknown) => {
+    const status = (error as { status?: number; response?: { status?: number } })?.status || 
+                   (error as { status?: number; response?: { status?: number } })?.response?.status;
     
     if (status === 401 || status === 403) {
       // Auth system will automatically handle token clearing via interceptors

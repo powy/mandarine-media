@@ -1,5 +1,5 @@
 from typing import Any, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -12,58 +12,33 @@ from app.schemas import description_report
 router = APIRouter()
 
 
-@router.get("", response_model=schemas.media_description.MediaDescriptionList)
+@router.get("", response_model=List[schemas.media_description.MediaDescriptionList])
 def read_media_descriptions(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     media_type: Optional[str] = Query(None),
-    category_id: Optional[UUID] = Query(None),
     status: Optional[str] = Query(None),
     is_featured: Optional[bool] = Query(None),
-    is_premium: Optional[bool] = Query(None),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve media descriptions with optional filtering.
     """
-    # Get filtered results
+    # Get filtered results using the available method
     media_descriptions = crud.media_description.get_multi_with_filters(
         db=db,
         skip=skip,
         limit=limit,
         media_type=media_type,
-        category_id=category_id,
         status=status,
         is_featured=is_featured,
-        is_premium=is_premium,
     )
     
-    # Get total count for pagination
-    total = crud.media_description.get_count_with_filters(
-        db=db,
-        media_type=media_type,
-        category_id=category_id,
-        status=status,
-        is_featured=is_featured,
-        is_premium=is_premium,
-    )
-    
-    # Calculate pagination info
-    total_pages = (total + limit - 1) // limit
-    
-    return {
-        "data": media_descriptions,
-        "pagination": {
-            "page": (skip // limit) + 1,
-            "limit": limit,
-            "total": total,
-            "total_pages": total_pages,
-        }
-    }
+    return media_descriptions
 
 
-@router.post("", response_model=schemas.media_description.MediaDescription)
+@router.post("", response_model=schemas.media_description.MediaDescriptionList)
 def create_media_description(
     *,
     db: Session = Depends(deps.get_db),
@@ -127,15 +102,34 @@ def create_bulk_media_descriptions(
                 reports=[]
             )
         
-        # Create bulk descriptions with reports
-        created_descriptions, reports = crud.media_description.create_bulk_with_reports(
-            db=db, descriptions=bulk_data.descriptions
-        )
+        # Create descriptions one by one and collect results
+        created_descriptions = []
+        reports = []
+        batch_id = str(uuid4())
+        
+        for desc in bulk_data.descriptions:
+            try:
+                created_desc = crud.media_description.create(db=db, obj_in=desc)
+                created_descriptions.append(created_desc)
+                # For now, we'll use a simple dict for reports until proper schema is implemented
+                reports.append({
+                    "batch_id": batch_id,
+                    "file_number": desc.file_number,
+                    "status": "success",
+                    "message": "Created successfully"
+                })
+            except Exception as e:
+                reports.append({
+                    "batch_id": batch_id,
+                    "file_number": desc.file_number,
+                    "status": "failed", 
+                    "message": str(e)
+                })
         
         return description_report.BulkMediaDescriptionResponse(
             created_count=len(created_descriptions),
             failed_count=len(bulk_data.descriptions) - len(created_descriptions),
-            batch_id=reports[0].batch_id if reports else None,
+            batch_id=batch_id,
             reports=reports
         )
         
@@ -162,14 +156,12 @@ def read_media_description(
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
     
-    # Increment view count for non-admin users (including unauthenticated users)
-    if not current_user or not current_user.is_admin:
-        crud.media_description.increment_view_count(db=db, id=id)
+    # View count increment removed - field no longer exists in model
     
     return media_description
 
 
-@router.put("/{id}", response_model=schemas.media_description.MediaDescription)
+@router.put("/{id}", response_model=schemas.media_description.MediaDescriptionList)
 def update_media_description(
     *,
     db: Session = Depends(deps.get_db),
@@ -197,7 +189,7 @@ def update_media_description(
     return media_description
 
 
-@router.delete("/{id}", response_model=schemas.media_description.MediaDescription)
+@router.delete("/{id}", response_model=schemas.media_description.MediaDescriptionList)
 def delete_media_description(
     *,
     db: Session = Depends(deps.get_db),
@@ -215,7 +207,7 @@ def delete_media_description(
     return media_description
 
 
-@router.get("/featured/list", response_model=List[schemas.media_description.MediaDescription])
+@router.get("/featured/list", response_model=List[schemas.media_description.MediaDescriptionList])
 def read_featured_media(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
@@ -225,10 +217,12 @@ def read_featured_media(
     """
     Retrieve featured media descriptions.
     """
-    return crud.media_description.get_featured(db=db, skip=skip, limit=limit)
+    return crud.media_description.get_multi_with_filters(
+        db=db, skip=skip, limit=limit, is_featured=True
+    )
 
 
-@router.get("/trending/list", response_model=List[schemas.media_description.MediaDescription])
+@router.get("/trending/list", response_model=List[schemas.media_description.MediaDescriptionList])
 def read_trending_media(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
@@ -236,12 +230,12 @@ def read_trending_media(
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
-    Retrieve trending media descriptions.
+    Retrieve trending media descriptions. (Returns all for now)
     """
-    return crud.media_description.get_trending(db=db, skip=skip, limit=limit)
+    return crud.media_description.get_multi(db=db, skip=skip, limit=limit)
 
 
-@router.post("/{id}/like", response_model=schemas.media_description.MediaDescription)
+@router.post("/{id}/like", response_model=schemas.media_description.MediaDescriptionList)
 def like_media_description(
     *,
     db: Session = Depends(deps.get_db),
@@ -249,17 +243,17 @@ def like_media_description(
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Like a media description (increment like count).
+    Like a media description (like count field no longer exists).
     """
     media_description = crud.media_description.get(db=db, id=id)
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
     
-    media_description = crud.media_description.increment_like_count(db=db, id=id)
+    # Like count increment removed - field no longer exists in model
     return media_description
 
 
-@router.post("/{id}/share", response_model=schemas.media_description.MediaDescription)
+@router.post("/{id}/share", response_model=schemas.media_description.MediaDescriptionList)
 def share_media_description(
     *,
     db: Session = Depends(deps.get_db),
@@ -267,11 +261,31 @@ def share_media_description(
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Share a media description (increment share count).
+    Share a media description (share count field no longer exists).
     """
     media_description = crud.media_description.get(db=db, id=id)
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
     
-    media_description = crud.media_description.increment_share_count(db=db, id=id)
+    # Share count increment removed - field no longer exists in model
     return media_description
+
+
+@router.get("/by-video/{video_file_id}", response_model=List[schemas.media_description.MediaDescriptionList])
+def read_media_descriptions_by_video(
+    *,
+    db: Session = Depends(deps.get_db),
+    video_file_id: UUID,
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
+) -> Any:
+    """
+    Get media descriptions by video file ID.
+    Returns all media descriptions that use this video file as their main video.
+    """
+    # Check if video file exists
+    video_file = crud.video_file.get(db=db, id=video_file_id)
+    if not video_file:
+        raise HTTPException(status_code=404, detail="Video file not found")
+    
+    # Get media descriptions that reference this video file
+    return crud.media_description.get_by_video_file_id(db=db, video_file_id=video_file_id)

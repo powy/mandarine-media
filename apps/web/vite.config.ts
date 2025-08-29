@@ -12,6 +12,8 @@ export default defineConfig({
   server: {
     port: 3001,
     host: true,
+    // Handle client-side routing - serve index.html for all routes
+    historyApiFallback: true,
   },
   build: {
     outDir: '../../dist/apps/web',

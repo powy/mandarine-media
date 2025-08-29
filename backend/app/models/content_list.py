@@ -72,12 +72,14 @@ class ContentList(Base):
             from app.crud.season import season as crud_season  
             from app.crud.media_description import media_description as crud_media_description
             
-            # Build the JSON structure
+            # Build the JSON structure with new width/height percentage fields
             json_data = {
                 "id": str(self.id),
                 "title": self.title,
                 "description": self.description,
                 "thumbnail_format": self.thumbnail_format,
+                "width_percentage": self.percentage_width,
+                "height_percentage": self.percentage_height,
                 "is_active": self.is_active,
                 "display_order": self.display_order,
                 "last_updated": self.last_updated_utc.isoformat() if self.last_updated_utc else None,
@@ -111,7 +113,10 @@ class ContentList(Base):
                             "content_id": str(content_id),
                             "content_type": content_type,
                             "title": self._get_content_title(content_obj, content_type),
-                            "thumbnail_url": self._get_content_thumbnail(content_obj, content_type),
+                            "thumbnail_url": self._get_content_thumbnail(content_obj, content_type, db_session),
+                            "description": self._get_content_description(content_obj, content_type),
+                            "short_summary": self._get_content_short_summary(content_obj, content_type),
+                            "image_alt_text": self._generate_image_alt_text(content_obj, content_type),
                             "display_order": i + 1
                         }
                         json_data["items"].append(item_data)
@@ -145,12 +150,73 @@ class ContentList(Base):
             return getattr(content_obj, 'episode_title', 'Unknown Episode')
         return 'Unknown Content'
 
-    def _get_content_thumbnail(self, content_obj, content_type: str) -> Optional[str]:
-        """Extract thumbnail URL from content object based on type"""
-        if content_type == ContentTypeEnum.media_description.value:
-            return getattr(content_obj, 'main_thumbnail_url', None)
+    def _get_content_thumbnail(self, content_obj, content_type: str, db_session=None) -> Optional[str]:
+        """Extract thumbnail URL from content object using format-specific image selection"""
+        if content_type == ContentTypeEnum.media_description.value and db_session:
+            return self._select_thumbnail_by_format(content_obj, db_session)
         # For programs and seasons, we'd need to implement thumbnail logic
         return None
+    
+    def _select_thumbnail_by_format(self, media_obj, db_session) -> Optional[str]:
+        """Select thumbnail based on content list's thumbnail format"""
+        try:
+            # Import here to avoid circular imports
+            from app.crud.picture import picture as crud_picture
+            
+            # Map thumbnail format to MediaDescription image field
+            format_to_field = {
+                "1920x1080": "image_1920_1080_id",
+                "1920x720": "image_1920_720_id",
+                "1080x1080": "image_1080_1080_id",
+                "810x1080": "image_810_1080_id",
+                "1080x1920": "image_1080_1920_id"
+            }
+            
+            # Get the appropriate image field
+            image_field = format_to_field.get(self.thumbnail_format)
+            if not image_field:
+                # Log error and default to 1080x1080
+                print(f"Warning: Unknown thumbnail_format '{self.thumbnail_format}', defaulting to 1080x1080")
+                image_field = "image_1080_1080_id"
+            
+            # Get image ID from the media object
+            image_id = getattr(media_obj, image_field, None)
+            if not image_id:
+                return None
+            
+            # Fetch the Picture record and return image URL
+            picture = crud_picture.get(db_session, id=image_id)
+            if picture and hasattr(picture, 'image_url'):
+                return picture.image_url
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error selecting thumbnail by format: {str(e)}")
+            return None
+    
+    def _get_content_description(self, content_obj, content_type: str) -> Optional[str]:
+        """Extract description from content object based on type"""
+        if content_type == ContentTypeEnum.media_description.value:
+            return getattr(content_obj, 'descriptive_summary_text', None)
+        # For programs and seasons, we'd need to implement description logic
+        return None
+    
+    def _get_content_short_summary(self, content_obj, content_type: str) -> Optional[str]:
+        """Extract short summary from content object (truncated description)"""
+        description = self._get_content_description(content_obj, content_type)
+        if description and len(description) > 150:
+            return description[:150] + "..."
+        return description
+    
+    def _generate_image_alt_text(self, content_obj, content_type: str) -> str:
+        """Generate appropriate alt text for the image"""
+        title = self._get_content_title(content_obj, content_type)
+        description = self._get_content_short_summary(content_obj, content_type)
+        
+        if description:
+            return f"{title} - {description}"
+        return title
 
     def get_json_data(self) -> Optional[Dict[str, Any]]:
         """

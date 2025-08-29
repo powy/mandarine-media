@@ -1,4 +1,9 @@
 import { apiClient } from './client';
+import { seasonsApi } from './seasons';
+import { programsApi } from './programs';
+import { personsApi } from './persons';
+import { languagesApi } from './languages';
+import { countriesApi } from './countries';
 import { 
   MediaDescription, 
   VideoFile, 
@@ -9,7 +14,8 @@ import {
   BulkMediaDescriptionRequest,
   BulkMediaDescriptionResponse,
   DescriptionReport,
-  DescriptionReportListResponse
+  DescriptionReportListResponse,
+  Season
 } from '../types';
 
 export const mediaApi = {
@@ -113,6 +119,11 @@ export const mediaApi = {
   // Video file management
   async getVideoFilesByMedia(mediaId: string): Promise<VideoFile[]> {
     const response = await apiClient.get<VideoFile[]>(`/video-files/by-media/${mediaId}`);
+    return response.data;
+  },
+
+  async getMediaDescriptionsByVideo(videoFileId: string): Promise<MediaDescription[]> {
+    const response = await apiClient.get<MediaDescription[]>(`/media-descriptions/by-video/${videoFileId}`);
     return response.data;
   },
 
@@ -245,12 +256,46 @@ export const mediaApi = {
 // Video screen detailed data function
 export const getVideoScreenData = async (mediaDescriptionId: string) => {
   try {
-    // Get the main media description
-    const mediaDescription = await mediaApi.getMediaDescription(mediaDescriptionId);
+    console.log('🔍 getVideoScreenData: Starting data fetch for media ID:', mediaDescriptionId);
     
-    // Get associated video file
-    const videoFiles = await mediaApi.getVideoFilesByMedia(mediaDescriptionId);
-    const mainVideoFile = videoFiles.length > 0 ? videoFiles[0] : null;
+    // Get the main media description
+    console.log('🔍 getVideoScreenData: Fetching media description...');
+    const mediaDescription = await mediaApi.getMediaDescription(mediaDescriptionId);
+    console.log('✅ getVideoScreenData: Media description received:', {
+      id: mediaDescription.id,
+      title: mediaDescription.episode_title,
+      hasMainVideoFileId: !!mediaDescription.main_video_file_id,
+      mainVideoFileId: mediaDescription.main_video_file_id,
+      seasonId: mediaDescription.season_id,
+      episodeNumber: mediaDescription.episode_number
+    });
+    
+    // Get main video file using the new relationship structure
+    let mainVideoFile = null;
+    if (mediaDescription.main_video_file_id) {
+      try {
+        console.log('🔍 getVideoScreenData: Fetching video file:', mediaDescription.main_video_file_id);
+        mainVideoFile = await mediaApi.getVideoFile(mediaDescription.main_video_file_id);
+        console.log('✅ getVideoScreenData: Video file received:', {
+          id: mainVideoFile.id,
+          fileName: mainVideoFile.file_name,
+          hasExternalUrl: !!mainVideoFile.external_url,
+          hasMuxPlaybackId: !!mainVideoFile.mux_playback_id,
+          playbackPolicy: mainVideoFile.playback_policy,
+          uploadStatus: mainVideoFile.upload_status,
+          encodingStatus: mainVideoFile.encoding_status
+        });
+      } catch (error) {
+        console.error('❌ getVideoScreenData: Failed to fetch main video file:', {
+          videoFileId: mediaDescription.main_video_file_id,
+          error: error instanceof Error ? error.message : error,
+          errorDetails: error
+        });
+        mainVideoFile = null;
+      }
+    } else {
+      console.warn('⚠️ getVideoScreenData: No main_video_file_id found in media description');
+    }
     
     let relatedEpisodes: MediaDescription[] = [];
     let program = null;
@@ -264,9 +309,6 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
     
     // If this media is part of a season, get other episodes and program info
     if (mediaDescription.season_id) {
-      // Import season and program APIs here to avoid circular dependencies
-      const { seasonsApi } = await import('./seasons');
-      const { programsApi } = await import('./programs');
       
       // Get season info
       season = await seasonsApi.getById(mediaDescription.season_id);
@@ -291,7 +333,6 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
     
     // Get cast and crew information
     if (mediaDescription.actors_id_list?.length || mediaDescription.directors_id_list?.length || mediaDescription.productor_id_list?.length) {
-      const { personsApi } = await import('./persons');
       
       // Get actors
       if (mediaDescription.actors_id_list?.length) {
@@ -335,7 +376,6 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
     
     // Get language information
     if (mediaDescription.original_languages_id?.length || mainVideoFile?.audio_languages_id_list?.length || mainVideoFile?.subtitle_languages_id_list?.length) {
-      const { languagesApi } = await import('./languages');
       
       // Get audio languages
       const audioLanguageIds = mainVideoFile?.audio_languages_id_list || [];
@@ -368,7 +408,6 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
     
     // Get origin countries
     if (mediaDescription.origin_country_id_list?.length) {
-      const { countriesApi } = await import('./countries');
       
       try {
         originCountries = await Promise.all(
@@ -381,6 +420,17 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
       }
     }
     
+    console.log('✅ getVideoScreenData: Final result summary:', {
+      hasMediaDescription: !!mediaDescription,
+      hasVideoFile: !!mainVideoFile,
+      hasRelatedEpisodes: relatedEpisodes.length > 0,
+      hasSeason: !!season,
+      hasProgram: !!program,
+      actorsCount: actors.length,
+      directorsCount: directors.length,
+      producersCount: producers.length
+    });
+
     return {
       mediaDescription,
       videoFile: mainVideoFile,
@@ -396,6 +446,11 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
       originCountries
     };
   } catch (error) {
+    console.error('❌ getVideoScreenData: Critical error occurred:', {
+      mediaDescriptionId,
+      error: error instanceof Error ? error.message : error,
+      errorDetails: error
+    });
     throw new Error(`Failed to fetch video screen data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -404,9 +459,6 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
 export const getSeasonScreenData = async (seasonId: string) => {
   try {
     console.log('🔍 getSeasonScreenData: Starting for season ID:', seasonId);
-    // Import APIs here to avoid circular dependencies
-    const { seasonsApi } = await import('./seasons');
-    const { programsApi } = await import('./programs');
     
     console.log('🔍 getSeasonScreenData: Fetching season data...');
     // Get the season information
@@ -493,7 +545,6 @@ export const getSeasonScreenData = async (seasonId: string) => {
     
     // Fetch person and country data if any IDs exist
     if (actorIds.size || directorIds.size || producerIds.size) {
-      const { personsApi } = await import('./persons');
       
       if (actorIds.size) {
         try {
@@ -533,7 +584,6 @@ export const getSeasonScreenData = async (seasonId: string) => {
     }
     
     if (countryIds.size) {
-      const { countriesApi } = await import('./countries');
       
       try {
         originCountries = await Promise.all(
@@ -576,9 +626,6 @@ export const getSeasonScreenData = async (seasonId: string) => {
 export const getProgramScreenData = async (seasonId: string) => {
   try {
     console.log('🔍 getProgramScreenData: Starting for season ID:', seasonId);
-    // Import APIs here to avoid circular dependencies
-    const { seasonsApi } = await import('./seasons');
-    const { programsApi } = await import('./programs');
     
     console.log('🔍 getProgramScreenData: Fetching season data...');
     // Get the season information to get the program_id
@@ -688,7 +735,6 @@ export const getProgramScreenData = async (seasonId: string) => {
     
     // Fetch person and country data if any IDs exist
     if (actorIds.size || directorIds.size || producerIds.size) {
-      const { personsApi } = await import('./persons');
       
       if (actorIds.size) {
         try {
@@ -728,7 +774,6 @@ export const getProgramScreenData = async (seasonId: string) => {
     }
     
     if (countryIds.size) {
-      const { countriesApi } = await import('./countries');
       
       try {
         originCountries = await Promise.all(
@@ -750,7 +795,7 @@ export const getProgramScreenData = async (seasonId: string) => {
       programImageUrl,
       synopsis: firstEpisode?.synopsis_text || null,
       description: firstEpisode?.descriptive_summary_text || null,
-      genres: firstEpisode?.themes_and_genres_id_list || [],
+      genres: firstEpisode?.media_categories || [],
       audioLanguages,
       subtitleLanguages,
       releaseDate: firstEpisode?.production_year || null,
@@ -769,6 +814,147 @@ export const getProgramScreenData = async (seasonId: string) => {
       data: error?.response?.data
     });
     throw new Error(`Failed to fetch program screen data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Program screen detailed data function by program ID
+export const getProgramScreenDataByProgramId = async (programId: string) => {
+  try {
+    console.log('🔍 getProgramScreenDataByProgramId: Starting for program ID:', programId);
+    
+    console.log('🔍 getProgramScreenDataByProgramId: Fetching program data...');
+    // Get program information directly
+    const program = await programsApi.getById(programId);
+    console.log('✅ getProgramScreenDataByProgramId: Program data received:', program);
+    
+    // Get all seasons for this program
+    const seasonsResponse = await seasonsApi.getAll({ 
+      program_id: programId, 
+      skip: 0, 
+      limit: 100 // Get all seasons
+    });
+    console.log('✅ getProgramScreenDataByProgramId: Seasons data received:', seasonsResponse);
+    
+    const allSeasons = seasonsResponse.data || [];
+    
+    // Get the first season as the current season (or the first available season)
+    let currentSeason: Season | null = null;
+    if (allSeasons.length > 0) {
+      // Sort seasons by season_number and take the first one
+      const sortedSeasons = [...allSeasons].sort((a, b) => a.season_number - b.season_number);
+      currentSeason = sortedSeasons[0];
+    }
+
+    if (!currentSeason) {
+      throw new Error('No seasons found for this program');
+    }
+
+    console.log('✅ getProgramScreenDataByProgramId: Current season selected:', currentSeason);
+
+    // Get episodes from the first season to extract metadata
+    const mediaDescriptionsResponse = await mediaApi.getMediaDescriptions({
+      skip: 0,
+      limit: 100,
+      season_id: currentSeason.id
+    });
+    console.log('✅ getProgramScreenDataByProgramId: Media descriptions received:', mediaDescriptionsResponse);
+    
+    const episodes = mediaDescriptionsResponse.data || [];
+
+    // Extract common metadata from episodes
+    const firstEpisode = episodes[0];
+    const synopsis = firstEpisode?.synopsis_text || null;
+    const description = firstEpisode?.descriptive_summary_text || null;
+    const genres = firstEpisode?.media_categories || [];
+    const releaseDate = firstEpisode?.production_year || null;
+
+    // Get program image from the first episode or season
+    const programImageUrl = firstEpisode?.main_thumbnail_url || null;
+
+    // Collect unique person IDs across all roles
+    const actorIds = new Set<string>();
+    const directorIds = new Set<string>();
+    const producerIds = new Set<string>();
+    const audioLanguageIds = new Set<string>();
+    const subtitleLanguageIds = new Set<string>();
+    const originCountryIds = new Set<string>();
+
+    episodes.forEach(episode => {
+      // Collect person IDs
+      (episode.actors_id_list || []).forEach(id => actorIds.add(id));
+      (episode.directors_id_list || []).forEach(id => directorIds.add(id));
+      (episode.productor_id_list || []).forEach(id => producerIds.add(id));
+      
+      // Collect language and country IDs
+      (episode.original_languages_id || []).forEach(id => audioLanguageIds.add(id));
+      (episode.subtitle_languages_available || []).forEach(lang => subtitleLanguageIds.add(lang));
+      (episode.origin_country_id_list || []).forEach(id => originCountryIds.add(id));
+    });
+
+    // Use static imports for person, language, and country APIs (resolved import warnings)
+
+    // Fetch actors, directors, and producers
+    const [actors, directors, producers] = await Promise.all([
+      Promise.all(Array.from(actorIds).map(id => personsApi.getById(id).catch(() => null))),
+      Promise.all(Array.from(directorIds).map(id => personsApi.getById(id).catch(() => null))),
+      Promise.all(Array.from(producerIds).map(id => personsApi.getById(id).catch(() => null)))
+    ]);
+
+    // Fetch languages and countries
+    const [audioLanguages, subtitleLanguages, originCountries] = await Promise.all([
+      Promise.all(Array.from(audioLanguageIds).map(id => languagesApi.getById(id).catch(() => null))),
+      Promise.all(Array.from(subtitleLanguageIds).map(id => languagesApi.getById(id).catch(() => null))),
+      Promise.all(Array.from(originCountryIds).map(id => countriesApi.getById(id).catch(() => null)))
+    ]);
+
+    // Create enhanced seasons data with thumbnails and episode counts
+    const seasonsWithThumbnails = await Promise.all(
+      allSeasons.map(async (season) => {
+        // Get episodes for this season to calculate episode count and get thumbnail
+        const seasonEpisodes = await mediaApi.getMediaDescriptions({
+          skip: 0,
+          limit: 1, // Just need the first episode for thumbnail
+          season_id: season.id
+        });
+        
+        const episodeCount = seasonEpisodes.pagination?.total || 0;
+        const thumbnailUrl = seasonEpisodes.data?.[0]?.main_thumbnail_url || null;
+        
+        return {
+          ...season,
+          episodeCount,
+          thumbnailUrl
+        };
+      })
+    );
+
+    console.log('✅ getProgramScreenDataByProgramId: All data processed successfully');
+
+    return {
+      program,
+      currentSeason,
+      programImageUrl,
+      synopsis,
+      description,
+      genres,
+      audioLanguages: audioLanguages.filter(Boolean),
+      subtitleLanguages: subtitleLanguages.filter(Boolean),
+      releaseDate,
+      originCountries: originCountries.filter(Boolean),
+      actors: actors.filter(Boolean),
+      directors: directors.filter(Boolean),
+      producers: producers.filter(Boolean),
+      allSeasons: seasonsWithThumbnails
+    };
+  } catch (error) {
+    console.error('❌ getProgramScreenDataByProgramId: Error occurred:', error);
+    console.error('❌ getProgramScreenDataByProgramId: Error details:', {
+      message: error?.message,
+      response: error?.response,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    throw new Error(`Failed to fetch program screen data by program ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

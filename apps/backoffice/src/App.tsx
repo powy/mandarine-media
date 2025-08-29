@@ -13,6 +13,7 @@ import { UserList, UserCreate, UserEdit, UserShow } from './components/resources
 import { ContentListList, ContentListCreate, ContentListEdit, ContentListShow } from './components/resources/ContentLists';
 import { ScreenContentList, ScreenContentCreate, ScreenContentEdit, ScreenContentShow } from './components/resources/ScreenContents';
 import { VideoFileList, VideoFileCreate, VideoFileEdit, VideoFileShow } from './components/resources/VideoFiles';
+import { ThemeList, ThemeCreate, ThemeEdit, ThemeShow } from './components/resources/Themes';
 
 // Custom Menu for better organization
 const CustomMenu = () => {
@@ -85,6 +86,12 @@ const CustomMenu = () => {
         to="/languages"
         primaryText="Languages"
         leftIcon={<span>🗣️</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/themes"
+        primaryText="Themes"
+        leftIcon={<span>🎭</span>}
         dense={!open}
       />
       
@@ -174,6 +181,15 @@ export const App = () => (
       edit={LanguageEdit}
       show={LanguageShow}
       options={{ label: 'Languages' }}
+    />
+    
+    <Resource
+      name="themes"
+      list={ThemeList}
+      create={ThemeCreate}
+      edit={ThemeEdit}
+      show={ThemeShow}
+      options={{ label: 'Themes' }}
     />
     
     {/* Fully implemented resources */}

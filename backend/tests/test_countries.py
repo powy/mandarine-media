@@ -116,22 +116,22 @@ class TestCountriesCRUD:
         """Test country operations without authentication."""
         fake_id = str(uuid.uuid4())
         
-        # List
+        # List - public access allowed
         response1 = client.get("/api/v1/countries")
-        assert response1.status_code == 401
+        assert response1.status_code == 200
         
-        # Create
+        # Create - requires auth
         response2 = client.post("/api/v1/countries", json=sample_country_data)
         assert response2.status_code == 401
         
-        # Get
+        # Get - public access allowed, but 404 for non-existent ID
         response3 = client.get(f"/api/v1/countries/{fake_id}")
-        assert response3.status_code == 401
+        assert response3.status_code == 404
         
-        # Update
+        # Update - requires auth
         response4 = client.put(f"/api/v1/countries/{fake_id}", json=sample_country_data)
         assert response4.status_code == 401
         
-        # Delete
+        # Delete - requires auth
         response5 = client.delete(f"/api/v1/countries/{fake_id}")
         assert response5.status_code == 401

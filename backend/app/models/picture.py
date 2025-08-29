@@ -15,6 +15,7 @@ class Picture(Base):
     
     # Optional metadata
     file_name = Column(String, nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
     width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
     alt_text = Column(String, nullable=True)

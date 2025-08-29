@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MuxPlayer from '@mux/mux-player-react';
-import { getVideoScreenData } from 'share';
+import { getVideoScreenData, getPosterUrl, apiClient, useAuth, useRegionAccessById } from 'share';
 import type { MediaDescription, VideoFile, Program, Season, PublicPerson, Language, Country } from 'share';
 
 interface VideoScreenData {
@@ -23,6 +23,14 @@ interface VideoScreenData {
 const VideoScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [posterUrl, setPosterUrl] = useState<string | null>(null);
+  const [playbackToken, setPlaybackToken] = useState<string | null>(null);
+  const [drmToken, setDrmToken] = useState<string | null>(null);
+  
+  const { isAuthenticated } = useAuth();
+
+  // Check region access using video ID
+  const regionAccess = useRegionAccessById(id || '');
 
   const {
     data: videoData,
@@ -30,19 +38,69 @@ const VideoScreen: React.FC = () => {
     error,
   } = useQuery<VideoScreenData>({
     queryKey: ['video-screen', id],
-    queryFn: () => {
+    queryFn: async () => {
       if (!id) throw new Error('Video ID is required');
-      return getVideoScreenData(id);
+      
+      console.log('🔍 VideoScreen: Starting getVideoScreenData for ID:', id);
+      console.log('🔍 VideoScreen: Authentication state:', { isAuthenticated });
+      
+      try {
+        const result = await getVideoScreenData(id);
+        console.log('✅ VideoScreen: getVideoScreenData success:', {
+          hasMediaDescription: !!result.mediaDescription,
+          hasVideoFile: !!result.videoFile,
+          mediaDescriptionId: result.mediaDescription?.id,
+          videoFileId: result.videoFile?.id,
+          relatedEpisodesCount: result.relatedEpisodes.length,
+          hasError: false
+        });
+        return result;
+      } catch (fetchError) {
+        console.error('❌ VideoScreen: getVideoScreenData failed:', {
+          error: fetchError,
+          errorMessage: fetchError instanceof Error ? fetchError.message : 'Unknown error',
+          errorDetails: fetchError instanceof Error ? {
+            name: fetchError.name,
+            message: fetchError.message,
+            stack: fetchError.stack
+          } : fetchError,
+          videoId: id,
+          isAuthenticated
+        });
+        throw fetchError;
+      }
     },
     enabled: !!id,
   });
 
   useEffect(() => {
     if (error) {
-      // Redirect to error page for invalid IDs
-      navigate('/error', { replace: true });
+      console.error('❌ VideoScreen: Error detected, analyzing...', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorType: typeof error,
+        videoId: id,
+        isAuthenticated,
+        regionAccess: {
+          isLoading: regionAccess.isLoading,
+          isAuthorized: regionAccess.isAuthorized,
+          error: regionAccess.error
+        }
+      });
+      
+      // Only redirect to error page after logging - this helps with debugging
+      console.log('🔄 VideoScreen: Redirecting to error page due to:', error);
+      // Navigate with error state for better debugging
+      navigate('/error', { 
+        replace: true, 
+        state: { 
+          originalError: error instanceof Error ? error.message : String(error),
+          videoId: id,
+          timestamp: new Date().toISOString()
+        }
+      });
     }
-  }, [error, navigate]);
+  }, [error, navigate, id, isAuthenticated, regionAccess]);
 
   // Debug log for Mux metrics activation
   useEffect(() => {
@@ -52,6 +110,89 @@ const VideoScreen: React.FC = () => {
       console.log('No environment_key found - Mux metrics will not be activated to avoid errors');
     }
   }, [videoData?.videoFile?.environment_key]);
+
+  // Fetch poster URL when video data is available
+  useEffect(() => {
+    const fetchPoster = async () => {
+      if (videoData?.mediaDescription && videoData?.videoFile) {
+        try {
+          const url = await getPosterUrl(videoData.mediaDescription, videoData.videoFile);
+          setPosterUrl(url);
+        } catch (error) {
+          console.warn('Failed to fetch poster URL:', error);
+          setPosterUrl(null);
+        }
+      }
+    };
+    
+    fetchPoster();
+  }, [videoData?.mediaDescription, videoData?.videoFile]);
+
+  // Fetch playback token if video has signed playback policy
+  useEffect(() => {
+    const fetchTokens = async () => {
+      if (videoData?.videoFile?.id && 
+          (videoData.videoFile.playback_policy === 'signed' || 
+           videoData.videoFile.playback_policy === 'drm')) {
+        try {
+          console.log('Video requires signed playback, fetching tokens...');
+          console.log('Video file ID:', videoData.videoFile.id);
+          console.log('Playback policy:', videoData.videoFile.playback_policy);
+          
+          // Fetch playback token
+          const playbackResponse = await apiClient.post(
+            `/video-files/${videoData.videoFile.id}/playback-token`,
+            {},
+            { params: { expiration_minutes: 120 } }
+          );
+          
+          console.log('Playback token response:', playbackResponse.data);
+          
+          if (playbackResponse.data?.token) {
+            console.log('Playback token received successfully');
+            console.log('Playback token (first 50 chars):', playbackResponse.data.token.substring(0, 50) + '...');
+            setPlaybackToken(playbackResponse.data.token);
+          } else {
+            console.error('No playback token in response:', playbackResponse.data);
+          }
+          
+          // If DRM policy, also fetch DRM token
+          if (videoData.videoFile.playback_policy === 'drm') {
+            console.log('Video requires DRM, fetching DRM token...');
+            
+            const drmResponse = await apiClient.post(
+              `/video-files/${videoData.videoFile.id}/drm-token`,
+              {},
+              { params: { expiration_minutes: 120 } }
+            );
+            
+            console.log('DRM token response:', drmResponse.data);
+            
+            if (drmResponse.data?.drm_token) {
+              console.log('DRM token received successfully');
+              console.log('DRM token (first 50 chars):', drmResponse.data.drm_token.substring(0, 50) + '...');
+              setDrmToken(drmResponse.data.drm_token);
+            } else {
+              console.error('No DRM token in response:', drmResponse.data);
+            }
+          } else {
+            setDrmToken(null);
+          }
+        } catch (error) {
+          console.error('Failed to fetch tokens:', error);
+          // Try to continue without tokens (will likely fail playback)
+          setPlaybackToken(null);
+          setDrmToken(null);
+        }
+      } else {
+        // Public playback, no tokens needed
+        setPlaybackToken(null);
+        setDrmToken(null);
+      }
+    };
+    
+    fetchTokens();
+  }, [videoData?.videoFile?.id, videoData?.videoFile?.playback_policy]);
 
   const handleEpisodeClick = (episodeId: string) => {
     navigate(`/video/${episodeId}`);
@@ -94,26 +235,41 @@ const VideoScreen: React.FC = () => {
   };
 
   const getPlaybackId = (videoFile: VideoFile): string | null => {
+    console.log('getPlaybackId called with:', {
+      mux_playback_id: videoFile.mux_playback_id,
+      external_url: videoFile.external_url,
+      file_url: videoFile.file_url,
+      mux_asset_id: videoFile.mux_asset_id
+    });
+    
     // First try the mux_playback_id field
     if (videoFile.mux_playback_id) {
-      return extractPlaybackId(videoFile.mux_playback_id);
+      const id = extractPlaybackId(videoFile.mux_playback_id);
+      console.log('Extracted from mux_playback_id:', id);
+      return id;
     }
     
     // Then try extracting from external_url (key field from alpha app!)
     if (videoFile.external_url) {
-      return extractPlaybackId(videoFile.external_url);
+      const id = extractPlaybackId(videoFile.external_url);
+      console.log('Extracted from external_url:', id);
+      return id;
     }
     
     // Then try extracting from file_url
     if (videoFile.file_url) {
-      return extractPlaybackId(videoFile.file_url);
+      const id = extractPlaybackId(videoFile.file_url);
+      console.log('Extracted from file_url:', id);
+      return id;
     }
     
     // Finally try mux_asset_id as fallback
     if (videoFile.mux_asset_id) {
+      console.log('Using mux_asset_id as fallback:', videoFile.mux_asset_id);
       return videoFile.mux_asset_id;
     }
     
+    console.log('No playback ID found!');
     return null;
   };
 
@@ -151,7 +307,32 @@ const VideoScreen: React.FC = () => {
   } = videoData;
   
   const playbackId = videoFile ? getPlaybackId(videoFile) : null;
+  const needsToken = videoFile?.playback_policy === 'signed' || videoFile?.playback_policy === 'drm';
+  const needsDrmToken = videoFile?.playback_policy === 'drm';
+  const isReadyToPlay = playbackId && 
+    (!needsToken || playbackToken !== undefined) && 
+    (!needsDrmToken || drmToken !== undefined);
   
+  // Debug logging
+  console.log('Video Screen Debug:', {
+    videoFile,
+    playbackId,
+    hasVideoFile: !!videoFile,
+    hasPlaybackId: !!playbackId,
+    posterUrl,
+    playbackPolicy: videoFile?.playback_policy,
+    needsToken,
+    needsDrmToken,
+    hasPlaybackToken: !!playbackToken,
+    hasDrmToken: !!drmToken,
+    playbackTokenValue: playbackToken ? playbackToken.substring(0, 50) + '...' : null,
+    drmTokenValue: drmToken ? drmToken.substring(0, 50) + '...' : null,
+    isReadyToPlay,
+    mediaDescription: {
+      id: mediaDescription?.id,
+      title: mediaDescription?.episode_title
+    }
+  });
   
   // Helper function to find next/previous episodes
   const getCurrentEpisodeIndex = () => {
@@ -181,40 +362,145 @@ const VideoScreen: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Video Player Section */}
         <div className="mb-8">
-          {videoFile && playbackId ? (
+          {!isAuthenticated ? (
+            // 1. Authentication required - Show login message
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex flex-col items-center justify-center relative">
+              {posterUrl && (
+                <img
+                  src={posterUrl}
+                  alt={mediaDescription.episode_title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center">
+                <p className="text-white text-xl font-bold mt-4">
+                  Connectez-vous pour lire cette vidéo.
+                </p>
+              </div>
+            </div>
+          ) : regionAccess.isLoading ? (
+            // 2. Region check loading
+            <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-blue-400 text-xl mb-2">Vérification de la région...</p>
+                <p className="text-gray-400">Chargement en cours</p>
+              </div>
+            </div>
+          ) : regionAccess.isAuthorized === false ? (
+            // 3. Region blocked or verification failed - Show appropriate message with poster
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex flex-col items-center justify-center relative">
+              {posterUrl && (
+                <img
+                  src={posterUrl}
+                  alt={mediaDescription.episode_title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center">
+                <p className="text-white text-xl font-bold mt-4">
+                  {regionAccess.error === 'region_blocked' 
+                    ? "Cette vidéo n'est pas disponible dans votre région."
+                    : "Impossible de vérifier votre région. Contactez le support si le problème persiste."
+                  }
+                </p>
+              </div>
+            </div>
+          ) : videoFile && playbackId && isReadyToPlay ? (
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              <MuxPlayer
-                playbackId={playbackId}
-                streamType="on-demand"
-                style={{ width: '100%', height: '100%' }}
-                className="w-full h-full"
-                {...(videoFile?.environment_key && {
-                  envKey: videoFile.environment_key
-                })}
-              />
+              {(() => {
+                // Build tokens object with both playback and DRM tokens if needed
+                const tokens: any = {};
+                if (playbackToken) {
+                  tokens.playback = playbackToken;
+                }
+                if (drmToken) {
+                  tokens.drm = drmToken;
+                }
+                
+                const muxPlayerProps = {
+                  playbackId,
+                  streamType: "on-demand",
+                  style: { width: '100%', height: '100%' },
+                  className: "w-full h-full",
+                  ...(videoFile?.environment_key && {
+                    envKey: videoFile.environment_key
+                  }),
+                  ...(posterUrl && {
+                    poster: posterUrl
+                  }),
+                  // Pass tokens object if we have any tokens
+                  ...(Object.keys(tokens).length > 0 && { tokens })
+                };
+                
+                console.log('MuxPlayer props being passed:', {
+                  ...muxPlayerProps,
+                  tokens: muxPlayerProps.tokens ? {
+                    playback: muxPlayerProps.tokens.playback ? muxPlayerProps.tokens.playback.substring(0, 50) + '...' : undefined,
+                    drm: muxPlayerProps.tokens.drm ? muxPlayerProps.tokens.drm.substring(0, 50) + '...' : undefined
+                  } : undefined
+                });
+                
+                return <MuxPlayer {...muxPlayerProps} />;
+              })()}
+            </div>
+          ) : videoFile && playbackId && needsToken && (playbackToken === undefined || (needsDrmToken && drmToken === undefined)) ? (
+            <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-blue-400 text-xl mb-2">Chargement de l'autorisation...</p>
+                <p className="text-gray-400">
+                  {needsDrmToken 
+                    ? 'Récupération des tokens de lecture sécurisée et DRM'
+                    : 'Récupération du token de lecture sécurisée'}
+                </p>
+                {needsDrmToken && (
+                  <p className="text-gray-500 text-sm mt-2">
+                    Playback token: {playbackToken ? '✓' : '⏳'} | DRM token: {drmToken ? '✓' : '⏳'}
+                  </p>
+                )}
+              </div>
             </div>
           ) : (
             <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-red-400 text-xl mb-2">Erreur de lecture</p>
-                <p className="text-gray-400">
+              <div className="text-center p-8">
+                <p className="text-red-400 text-xl mb-2">Vidéo non disponible</p>
+                <p className="text-gray-400 mb-4">
                   {!videoFile 
-                    ? 'Aucun fichier vidéo associé trouvé'
+                    ? 'Cette vidéo n\'a pas encore été téléchargée ou associée.'
                     : !playbackId
-                    ? 'ID de lecture Mux manquant'
-                    : 'Fichier vidéo invalide ou manquant'
+                    ? 'ID de lecture Mux manquant - vidéo en cours de traitement.'
+                    : 'Fichier vidéo invalide ou en cours de traitement.'
                   }
                 </p>
-                {/* Debug info */}
-                {videoFile && (
-                  <div className="text-xs text-gray-500 mt-2">
-                    <p>Fichier ID: {videoFile.id}</p>
-                    <p>Mux Asset ID: {videoFile.mux_asset_id || 'Non défini'}</p>
-                    <p>Mux Playback ID: {videoFile.mux_playback_id || 'Non défini'}</p>
-                    <p>URL externe: {videoFile.external_url || 'Non défini'}</p>
-                    <p>URL fichier: {videoFile.file_url || 'Non défini'}</p>
-                    <p>Playback ID extrait: {playbackId || 'Non défini'}</p>
-                    <p>Statut encodage: {videoFile.encoding_status}</p>
+                
+                {/* Helpful message for missing video file */}
+                {!videoFile && (
+                  <div className="bg-blue-900 bg-opacity-50 p-4 rounded-lg mb-4">
+                    <p className="text-blue-300 text-sm">
+                      📝 Cette entrée existe dans notre catalogue mais la vidéo n'a pas encore été ajoutée.
+                      <br />
+                      Revenez plus tard pour voir ce contenu !
+                    </p>
+                  </div>
+                )}
+                
+                {/* Debug info in development only */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-gray-500 mt-4 p-3 bg-gray-900 rounded text-left">
+                    <h4 className="text-gray-400 font-semibold mb-2">Debug Info (dev only):</h4>
+                    <p>Media ID: {mediaDescription.id}</p>
+                    <p>Title: {mediaDescription.episode_title}</p>
+                    <p>Main Video File ID: {mediaDescription.main_video_file_id || 'None'}</p>
+                    {videoFile && (
+                      <>
+                        <p>Video File ID: {videoFile.id}</p>
+                        <p>Mux Asset ID: {videoFile.mux_asset_id || 'Non défini'}</p>
+                        <p>Mux Playback ID: {videoFile.mux_playback_id || 'Non défini'}</p>
+                        <p>URL externe: {videoFile.external_url || 'Non défini'}</p>
+                        <p>URL fichier: {videoFile.file_url || 'Non défini'}</p>
+                        <p>Playback ID extrait: {playbackId || 'Non défini'}</p>
+                        <p>Statut encodage: {videoFile.encoding_status}</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -2,11 +2,13 @@
   "id": "550e8400-e29b-41d4-a716-446655440501",
   "title": "Romance",
   "description": "Des romances comme seule la Corée sait les faire",
-  "thumbnail_format": "small_square",
-  "thumbnail_width": 198,
-  "thumbnail_height": 128,
+  "thumbnail_format": "1080x1080",
+  "percentage_width": 45,
+  "percentage_height": 60,
+  "list_type": "classic",
   "is_active": true,
   "display_order": 3,
+  "latest_first": false,
   "last_updated": "2025-01-09T10:30:00Z",
   "items": [
    {
@@ -14,6 +16,7 @@
       "content_type": "media_description",
       "title": "On Your Wedding Day",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/OnYourWeddingDay_1080_1080.jpg",
+      "image_alt_text": "On Your Wedding Day Romantic Movie",
       "display_order": 1
     },
     {
@@ -21,6 +24,7 @@
       "content_type": "media_description",
       "title": "Bloody Blossom",
       "thumbnail_url": "https://example-media.s3.eu-west-3.amazonaws.com/alpha/pictures/bloody_1080_1080.png",
+      "image_alt_text": "Bloody Blossom Romance Drama",
       "display_order": 2
     }
   ]

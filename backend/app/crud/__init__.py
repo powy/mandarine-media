@@ -13,3 +13,4 @@ from .country import country
 from .picture import picture
 from .content_list import content_list
 from .screen_description import screen_description
+from .theme import theme

@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 import uuid
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
+from app.models.associations import media_description_trailers, media_description_excerpts
 import enum
 
 
@@ -14,9 +15,14 @@ class EncodingStatusEnum(enum.Enum):
     failed = "failed"
 
 
-class UploadMethodEnum(enum.Enum):
-    existing_url = "existing_url"
-    new_upload = "new_upload"
+class ResolutionEnum(enum.Enum):
+    r4320p = "4320p"
+    r2160p = "2160p"
+    r1440p = "1440p"
+    r1080p = "1080p"
+    r720p = "720p"
+    r480p = "480p"
+    r360p = "360p"
 
 
 class ResolutionEnum(enum.Enum):
@@ -49,12 +55,12 @@ class VideoFile(Base):
     encoding_status = Column(String, nullable=False, default="pending")  # Will use enum validation in schemas
     
     # New fields for dual upload functionality
+    upload_method = Column(String, nullable=True, default="new_upload")  # Will use enum validation in schemas
     upload_status = Column(String, nullable=False, default="metadata_only")  # Will use enum validation in schemas
     upload_timestamp = Column(DateTime(timezone=True), nullable=True)  # When file upload was initiated
     external_url = Column(String, nullable=True)  # For existing media URL method
     
     # Optional Fields
-    media_description_id = Column(GUID(), ForeignKey("media_description.id"), nullable=True)
     encodage_date_utc = Column(DateTime(timezone=True), nullable=True)
     duration_seconds = Column(Integer, nullable=True)
     max_resolution_width = Column(Integer, nullable=True)
@@ -83,5 +89,8 @@ class VideoFile(Base):
     slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
     
     # Relationships
-    media_description = relationship("MediaDescription", backref="video_files")
     reports = relationship("VideoFileReport", back_populates="video_file")
+    
+    # Many-to-many relationships with MediaDescription
+    trailer_for = relationship("MediaDescription", secondary=media_description_trailers, back_populates="trailers")
+    excerpt_for = relationship("MediaDescription", secondary=media_description_excerpts, back_populates="excerpts")

@@ -7,3 +7,5 @@ export * from './videoUpload';
 export * from './excelParser';
 export * from './migration-v1-9';
 export * from './token-utils';
+export * from './posterSelection';
+export * from './regionValidation';

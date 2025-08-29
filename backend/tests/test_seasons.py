@@ -147,9 +147,7 @@ class TestSeasonsCreate:
         
         response = client.post("/api/v1/seasons", json=season_data)
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
+        assert response.status_code == 401
 
 
 class TestSeasonsDetail:
@@ -260,9 +258,7 @@ class TestSeasonsUpdate:
         
         response = client.put(f"/api/v1/seasons/{fake_id}", json=sample_season_update_data)
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
+        assert response.status_code == 401
 
 
 class TestSeasonsDelete:
@@ -315,6 +311,4 @@ class TestSeasonsDelete:
         
         response = client.delete(f"/api/v1/seasons/{fake_id}")
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
+        assert response.status_code == 401

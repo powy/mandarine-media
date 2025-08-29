@@ -40,5 +40,5 @@ class BulkMediaDescriptionCreate(BaseModel):
 class BulkMediaDescriptionResponse(BaseModel):
     created_count: int = Field(..., description="Number of descriptions successfully created")
     failed_count: int = Field(..., description="Number of descriptions that failed")
-    batch_id: Optional[UUID] = Field(None, description="Batch ID for tracking this operation")
-    reports: List[DescriptionReport] = Field(..., description="Detailed reports for each description")
+    batch_id: Optional[str] = Field(None, description="Batch ID for tracking this operation")
+    reports: List[dict] = Field(..., description="Detailed reports for each description")

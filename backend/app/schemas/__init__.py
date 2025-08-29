@@ -49,6 +49,7 @@ from .video_file_report import (
 from .program import (
     Program,
     ProgramCreate,
+    ProgramCreateRequest,
     ProgramUpdate,
     ProgramInDB
 )
@@ -99,4 +100,10 @@ from .screen_description import (
     ScreenDescriptionJSONResponse,
     ScreenDescriptionByTypeResponse,
     ScreenTypeEnum
+)
+from .theme import (
+    Theme,
+    ThemeCreate,
+    ThemeUpdate,
+    ThemeInDB
 )

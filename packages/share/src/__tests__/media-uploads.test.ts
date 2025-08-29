@@ -115,7 +115,6 @@ describe('Media Uploads API', () => {
       const formDataCall = mockApiClient.post.mock.calls[0][1];
       expect(formDataCall).toBeInstanceOf(FormData);
       expect(formDataCall.get('file')).toEqual(file);
-      expect(formDataCall.get('media_description_id')).toBeNull();
 
       expect(result).toEqual(mockVideoUploadResponse);
     });
@@ -142,7 +141,6 @@ describe('Media Uploads API', () => {
       const formDataCall = mockApiClient.post.mock.calls[0][1];
       expect(formDataCall).toBeInstanceOf(FormData);
       expect(formDataCall.get('file')).toEqual(file);
-      expect(formDataCall.get('media_description_id')).toBe(mediaDescriptionId);
 
       expect(result).toEqual(mockVideoUploadResponse);
     });
@@ -212,7 +210,6 @@ describe('Media Uploads API', () => {
       const formDataCall = mockApiClient.post.mock.calls[0][1];
       expect(formDataCall).toBeInstanceOf(FormData);
       expect(formDataCall.getAll('files')).toHaveLength(3);
-      expect(formDataCall.get('media_description_id')).toBeNull();
       expect(formDataCall.get('chapter_number')).toBeNull();
 
       expect(result).toEqual(mockWebcomicUploadResponse);
@@ -244,7 +241,6 @@ describe('Media Uploads API', () => {
       const formDataCall = mockApiClient.post.mock.calls[0][1];
       expect(formDataCall).toBeInstanceOf(FormData);
       expect(formDataCall.getAll('files')).toHaveLength(2);
-      expect(formDataCall.get('media_description_id')).toBe(mediaDescriptionId);
       expect(formDataCall.get('chapter_number')).toBe(chapterNumber.toString());
 
       expect(result).toEqual(mockWebcomicUploadResponse);

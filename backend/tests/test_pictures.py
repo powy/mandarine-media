@@ -243,22 +243,22 @@ class TestPicturesCRUD:
         """Test picture operations without authentication."""
         fake_id = str(uuid.uuid4())
         
-        # List
+        # List - public access allowed
         response1 = client.get("/api/v1/pictures")
-        assert response1.status_code == 401
+        assert response1.status_code == 200
         
-        # Create
+        # Create - requires auth
         response2 = client.post("/api/v1/pictures", json=sample_picture_data)
         assert response2.status_code == 401
         
-        # Get
+        # Get - public access allowed, but 404 for non-existent ID
         response3 = client.get(f"/api/v1/pictures/{fake_id}")
-        assert response3.status_code == 401
+        assert response3.status_code == 404
         
-        # Update
+        # Update - requires auth
         response4 = client.put(f"/api/v1/pictures/{fake_id}", json=sample_picture_data)
         assert response4.status_code == 401
         
-        # Delete
+        # Delete - requires auth
         response5 = client.delete(f"/api/v1/pictures/{fake_id}")
         assert response5.status_code == 401

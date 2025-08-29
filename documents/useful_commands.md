@@ -1,6 +1,7 @@
 # Project Setup Guide
 
 ## Build share package (prod or dev)
+
 ```bash
 npm run build:share
 npm run dev:share
@@ -14,16 +15,19 @@ npx nx run mobile:android
 ```
 
 ## alpha mobile app
+
 ### First terminal
+
 ```bash
 npm install
-npx nx run alpha:start --reset-cache 
+npx nx run alpha:start --reset-cache
 ```
+
 ### second terminal
+
 ```bash
 npx nx run alpha:android
 ```
-
 
 ## Web App
 
@@ -47,14 +51,22 @@ docker-compose -f docker-compose.dev.yml build
 docker-compose -f docker-compose.dev.yml up
 ```
 
+```bash
+./venv/activate
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
+```
+
 ## Android Emulator (Windows)
 
 ### List Available Emulators
+
 ```bash
 emulator -list-avds
 ```
 
 ### Start Emulator
+
 ```bash
 # Replace <your_emulator_name> with your actual emulator name
 emulator -avd <your_emulator_name>

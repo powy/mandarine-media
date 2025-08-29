@@ -7,6 +7,7 @@ from datetime import datetime
 class PictureBase(BaseModel):
     photo_url: str = Field(..., min_length=1)
     file_name: Optional[str] = None
+    file_size_bytes: Optional[int] = Field(None, ge=0)
     width: Optional[int] = Field(None, ge=0)
     height: Optional[int] = Field(None, ge=0)
     alt_text: Optional[str] = None
@@ -34,6 +35,7 @@ class PictureCreate(PictureBase):
 class PictureUpdate(BaseModel):
     photo_url: Optional[str] = Field(None, min_length=1)
     file_name: Optional[str] = None
+    file_size_bytes: Optional[int] = Field(None, ge=0)
     width: Optional[int] = Field(None, ge=0)
     height: Optional[int] = Field(None, ge=0)
     alt_text: Optional[str] = None

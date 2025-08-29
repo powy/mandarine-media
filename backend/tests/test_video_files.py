@@ -558,7 +558,14 @@ class TestVideoMediaLinking:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["media_description_id"] == media_id
+        # With the new relationship, verify the media description was updated
+        media_check_response = client.get(
+            f"/api/v1/media-descriptions/{media_id}",
+            headers=headers
+        )
+        assert media_check_response.status_code == 200
+        media_data = media_check_response.json()
+        assert media_data["main_video_file_id"] == video_id
     
     def test_link_video_to_media_video_not_found(self, client, admin_token, sample_media_description_data):
         """Test linking with non-existent video file."""

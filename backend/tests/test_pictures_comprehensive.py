@@ -539,23 +539,26 @@ class TestPicturesEdgeCases:
 
     def test_picture_operations_with_expired_token(self, client, admin_token):
         """Test picture operations with various token issues."""
-        # Invalid token format
+        fake_id = "550e8400-e29b-41d4-a716-446655440000"
+        picture_data = {"file_name": "test.jpg", "width": 800, "height": 600, "file_size": 12345, "description": "Test"}
+        
+        # Invalid token format - testing admin operation (create)
         invalid_headers = {"Authorization": "Bearer invalid-token"}
-        response1 = client.get("/api/v1/pictures", headers=invalid_headers)
+        response1 = client.post("/api/v1/pictures", json=picture_data, headers=invalid_headers)
         assert response1.status_code == 401
         
-        # Missing Bearer prefix
+        # Missing Bearer prefix - testing admin operation (update)
         invalid_headers2 = {"Authorization": admin_token}
-        response2 = client.get("/api/v1/pictures", headers=invalid_headers2)
+        response2 = client.put(f"/api/v1/pictures/{fake_id}", json=picture_data, headers=invalid_headers2)
         assert response2.status_code in [401, 403]
         
-        # Empty token
+        # Empty token - testing admin operation (delete)
         invalid_headers3 = {"Authorization": "Bearer "}
-        response3 = client.get("/api/v1/pictures", headers=invalid_headers3)
+        response3 = client.delete(f"/api/v1/pictures/{fake_id}", headers=invalid_headers3)
         assert response3.status_code in [401, 403]
         
-        # No Authorization header
-        response4 = client.get("/api/v1/pictures")
+        # No Authorization header - testing admin operation (create)
+        response4 = client.post("/api/v1/pictures", json=picture_data)
         assert response4.status_code in [401, 403]
 
     def test_picture_list_consistency(self, client, admin_token, user_token):

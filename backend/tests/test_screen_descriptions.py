@@ -162,7 +162,7 @@ class TestScreenContentCRUD:
         # Add content list to screen content
         updated_screen_description = crud_screen_description.add_content_list(
             db=db, 
-            screen_description=screen_description, 
+            screen_content=screen_description, 
             content_list_id=str(content_list.id)
         )
         
@@ -182,14 +182,14 @@ class TestScreenContentCRUD:
         # Add content list to screen content
         screen_description = crud_screen_description.add_content_list(
             db=db, 
-            screen_description=screen_description, 
+            screen_content=screen_description, 
             content_list_id=str(content_list.id)
         )
         
         # Remove content list from screen content
         updated_screen_description = crud_screen_description.remove_content_list(
             db=db, 
-            screen_description=screen_description, 
+            screen_content=screen_description, 
             content_list_id=str(content_list.id)
         )
         
@@ -220,7 +220,7 @@ class TestScreenContentCRUD:
         
         updated_screen_description = crud_screen_description.reorder_content_lists(
             db=db,
-            screen_description=screen_description,
+            screen_content=screen_description,
             new_content_lists=new_content_lists
         )
         

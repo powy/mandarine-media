@@ -77,7 +77,6 @@ def sample_media_v14_data(created_program, created_season, created_language, cre
         "file_number": 12345,
         "episode_title": "Test Episode v1.4",
         "media_type": "video",
-        "file_name": "test_episode_v14.mp4",
         "expected_filename": "test_episode_v14.mp4",
         "program_id": created_program["id"],
         "season_id": created_season["id"],
@@ -85,21 +84,19 @@ def sample_media_v14_data(created_program, created_season, created_language, cre
         "descriptive_summary_text": "This is a test episode with v1.4 fields",
         "synopsis_text": "Test synopsis with v1.4 support",
         "production_year": 2025,
-        "duration_seconds": 3600,
         "is_premium_content": False,
         "is_featured": False,
         "content_status": "published",
         # v1.4 new fields
-        "actors_id_list": [str(uuid.uuid4())],
-        "directors_id_list": [str(uuid.uuid4())],
-        "productor_id_list": [str(uuid.uuid4())],
-        "authors_id_list": [str(uuid.uuid4())],
-        "origin_country_id_list": [created_country["id"]],
-        "original_languages_id": [created_language["id"]],
-        "available_countries_list": [created_country["id"]],
-        "copyright_owner_id": str(uuid.uuid4()),
-        "eligible_plans": ["basic", "premium"],
-        "audience_categories_id_list": [str(uuid.uuid4())],
+        "actor_ids": [str(uuid.uuid4())],
+        "director_ids": [str(uuid.uuid4())],
+        "producer_ids": [str(uuid.uuid4())],
+        "author_ids": [str(uuid.uuid4())],
+        "origin_country_ids": [created_country["id"]],
+        "original_language_ids": [created_language["id"]],
+        "available_country_ids": [created_country["id"]],
+        "eligible_plan_id_list": ["basic", "premium"],
+        "audience_category_ids": [str(uuid.uuid4())],
         "image_fullscreen": str(uuid.uuid4()),
         "image_thumbnail1": str(uuid.uuid4()),
         "image_thumbnail2": str(uuid.uuid4()),
@@ -136,16 +133,15 @@ class TestMediaDescriptionsV14:
         assert data["season_id"] == sample_media_v14_data["season_id"]
         
         # Check v1.4 fields
-        assert data["actors_id_list"] == sample_media_v14_data["actors_id_list"]
-        assert data["directors_id_list"] == sample_media_v14_data["directors_id_list"]
-        assert data["productor_id_list"] == sample_media_v14_data["productor_id_list"]
-        assert data["authors_id_list"] == sample_media_v14_data["authors_id_list"]
-        assert data["origin_country_id_list"] == sample_media_v14_data["origin_country_id_list"]
-        assert data["original_languages_id"] == sample_media_v14_data["original_languages_id"]
-        assert data["available_countries_list"] == sample_media_v14_data["available_countries_list"]
-        assert data["copyright_owner_id"] == sample_media_v14_data["copyright_owner_id"]
-        assert data["eligible_plans"] == sample_media_v14_data["eligible_plans"]
-        assert data["audience_categories_id_list"] == sample_media_v14_data["audience_categories_id_list"]
+        assert data["actor_ids"] == sample_media_v14_data["actor_ids"]
+        assert data["director_ids"] == sample_media_v14_data["director_ids"]
+        assert data["producer_ids"] == sample_media_v14_data["producer_ids"]
+        assert data["author_ids"] == sample_media_v14_data["author_ids"]
+        assert data["origin_country_ids"] == sample_media_v14_data["origin_country_ids"]
+        assert data["original_language_ids"] == sample_media_v14_data["original_language_ids"]
+        assert data["available_country_ids"] == sample_media_v14_data["available_country_ids"]
+        assert data["eligible_plan_id_list"] == sample_media_v14_data["eligible_plan_id_list"]
+        assert data["audience_category_ids"] == sample_media_v14_data["audience_category_ids"]
         
         # Check image fields
         assert data["image_fullscreen"] == sample_media_v14_data["image_fullscreen"]
@@ -250,8 +246,8 @@ class TestMediaDescriptionsV14:
             "image_fullscreen": str(uuid.uuid4()),
             "translation_share": 20.0,
             "sacem_share": 15.0,
-            "eligible_plans": ["premium"],
-            "actors_id_list": [str(uuid.uuid4()), str(uuid.uuid4())]
+            "eligible_plan_id_list": ["premium"],
+            "actor_ids": [str(uuid.uuid4()), str(uuid.uuid4())]
         }
         
         response = client.put(f"/api/v1/media-descriptions/{media_id}", json=update_data, headers=headers)
@@ -261,8 +257,8 @@ class TestMediaDescriptionsV14:
         assert data["image_fullscreen"] == update_data["image_fullscreen"]
         assert data["translation_share"] == update_data["translation_share"]
         assert data["sacem_share"] == update_data["sacem_share"]
-        assert data["eligible_plans"] == update_data["eligible_plans"]
-        assert data["actors_id_list"] == update_data["actors_id_list"]
+        assert data["eligible_plan_id_list"] == update_data["eligible_plan_id_list"]
+        assert data["actor_ids"] == update_data["actor_ids"]
 
     def test_list_media_with_v14_fields(self, client, user_token, admin_token, sample_media_v14_data):
         """Test listing media descriptions includes v1.4 fields."""
@@ -352,17 +348,17 @@ class TestMediaDescriptionsV14:
             "episode_title": "Test Array Fields",
             "media_type": "video",
             "content_status": "published",
-            "actors_id_list": [],
-            "directors_id_list": [],
-            "eligible_plans": [],
-            "audience_categories_id_list": []
+            "actor_ids": [],
+            "director_ids": [],
+            "eligible_plan_id_list": [],
+            "audience_category_ids": []
         }
         
         response = client.post("/api/v1/media-descriptions", json=media_data, headers=headers)
         
         assert response.status_code == 200
         data = response.json()
-        assert data["actors_id_list"] == []
-        assert data["directors_id_list"] == []
-        assert data["eligible_plans"] == []
-        assert data["audience_categories_id_list"] == []
+        assert data["actor_ids"] == []
+        assert data["director_ids"] == []
+        assert data["eligible_plan_id_list"] == []
+        assert data["audience_category_ids"] == []

@@ -542,12 +542,13 @@ class TestPublicPersonSearch:
         assert response.status_code == 422  # Missing required parameter
     
     def test_search_by_name_unauthorized(self, client):
-        """Test search by name without authentication."""
+        """Test search by name without authentication - should succeed as it's public."""
         response = client.get(
             "/api/v1/persons/search/by-name",
             params={"name": "Kim"}
         )
-        assert response.status_code == 401
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
 
 
 class TestPublicPersonByProfession:

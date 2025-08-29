@@ -87,7 +87,15 @@ class MuxTokenService:
             ValueError: If required configuration is missing
             Exception: If token generation fails
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Generating playback token for playback_id: {playback_id}")
+        logger.info(f"Key ID configured: {self.key_id}")
+        logger.info(f"Private key loaded: {self.private_key is not None}")
+        
         if not self.key_id or not self.private_key:
+            logger.error(f"MUX signing keys missing - key_id: {self.key_id}, private_key: {self.private_key is not None}")
             raise ValueError("MUX signing keys are not properly configured")
         
         if not playback_id:
@@ -104,6 +112,8 @@ class MuxTokenService:
             "kid": self.key_id   # Key ID
         }
         
+        logger.info(f"JWT payload: {payload}")
+        
         # Generate and sign the token
         try:
             # Convert private key to PEM format for jose
@@ -119,8 +129,11 @@ class MuxTokenService:
                 algorithm="RS256",
                 headers={"kid": self.key_id}
             )
+            logger.info(f"Token generated successfully, length: {len(token)}")
+            logger.info(f"Token (first 50 chars): {token[:50]}...")
             return token
         except Exception as e:
+            logger.error(f"Failed to generate token: {str(e)}")
             raise Exception(f"Failed to generate playback token: {str(e)}")
     
     def generate_drm_token(
@@ -144,7 +157,15 @@ class MuxTokenService:
             ValueError: If required configuration is missing
             Exception: If token generation fails
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Generating DRM token for playback_id: {playback_id}")
+        logger.info(f"Key ID configured: {self.key_id}")
+        logger.info(f"Private key loaded: {self.private_key is not None}")
+        
         if not self.key_id or not self.private_key:
+            logger.error(f"MUX signing keys missing for DRM - key_id: {self.key_id}, private_key: {self.private_key is not None}")
             raise ValueError("MUX signing keys are not properly configured")
         
         if not playback_id:
@@ -165,6 +186,8 @@ class MuxTokenService:
         if key_id:
             payload["key_id"] = key_id
         
+        logger.info(f"DRM JWT payload: {payload}")
+        
         # Generate and sign the token
         try:
             # Convert private key to PEM format for jose
@@ -180,8 +203,11 @@ class MuxTokenService:
                 algorithm="RS256",
                 headers={"kid": self.key_id}
             )
+            logger.info(f"DRM token generated successfully, length: {len(token)}")
+            logger.info(f"DRM token (first 50 chars): {token[:50]}...")
             return token
         except Exception as e:
+            logger.error(f"Failed to generate DRM token: {str(e)}")
             raise Exception(f"Failed to generate DRM token: {str(e)}")
     
     def generate_signed_playback_url(
