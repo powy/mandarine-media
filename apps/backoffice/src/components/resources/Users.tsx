@@ -29,6 +29,7 @@ import {
   ExportButton,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
+import { SubscriptionPlanInput } from '../inputs/RelationshipInputs';
 
 // Define filters for the user list
 // API supports: q (search), is_active (boolean), is_admin (boolean)
@@ -108,7 +109,7 @@ export const UserList = () => (
       <TextField source="full_name" label="Full Name" sortable />
       <BooleanField source="is_active" label="Active" />
       <BooleanField source="is_admin" label="Admin" />
-      <DateField source="created_at" label="Created" sortable />
+      <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -148,6 +149,7 @@ export const UserCreate = () => (
         label="Admin"
         defaultValue={false}
       />
+      <SubscriptionPlanInput />
     </SimpleForm>
   </Create>
 );
@@ -175,6 +177,7 @@ export const UserEdit = () => (
         source="is_admin" 
         label="Admin"
       />
+      <SubscriptionPlanInput />
     </SimpleForm>
   </Edit>
 );
@@ -187,8 +190,7 @@ export const UserShow = () => (
       <TextField source="full_name" label="Full Name" />
       <BooleanField source="is_active" label="Active" />
       <BooleanField source="is_admin" label="Admin" />
-      <DateField source="created_at" label="Created" />
-      <DateField source="updated_at" label="Updated" />
+      <DateField source="creation_date_utc" label="Created" />
     </SimpleShowLayout>
   </Show>
 );

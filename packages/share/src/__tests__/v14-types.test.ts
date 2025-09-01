@@ -25,13 +25,13 @@ describe('v1.4 Types', () => {
         id: 'test-program-id',
         creation_date_utc: '2024-01-15T10:30:00Z',
         program_name: 'Test Program',
-        general_media_description: 'Test description'
+        general_media_description_id: 'test-media-desc-id'
       };
 
       expect(typeof mockProgram.id).toBe('string');
       expect(typeof mockProgram.creation_date_utc).toBe('string');
       expect(typeof mockProgram.program_name).toBe('string');
-      expect(typeof mockProgram.general_media_description).toBe('string');
+      expect(typeof mockProgram.general_media_description_id).toBe('string');
     });
 
     it('should allow optional description', () => {
@@ -41,17 +41,17 @@ describe('v1.4 Types', () => {
         program_name: 'Test Program'
       };
 
-      expect(minimalProgram.general_media_description).toBeUndefined();
+      expect(minimalProgram.general_media_description_id).toBeUndefined();
     });
 
     it('should have correct ProgramCreate interface', () => {
       const createData: ProgramCreate = {
         program_name: 'New Program',
-        general_media_description: 'New description'
+        general_media_description_id: 'new-media-desc-id'
       };
 
       expect(typeof createData.program_name).toBe('string');
-      expect(typeof createData.general_media_description).toBe('string');
+      expect(typeof createData.general_media_description_id).toBe('string');
     });
   });
 
@@ -170,7 +170,7 @@ describe('v1.4 Types', () => {
       const mockPicture: Picture = {
         id: 'test-picture-id',
         creation_date_utc: '2024-01-15T10:30:00Z',
-        photo_url: 'https://example.com/image.jpg',
+        image_url: 'https://example.com/image.jpg',
         file_name: 'image.jpg',
         file_size_bytes: 1024000,
         width: 1920,
@@ -180,7 +180,7 @@ describe('v1.4 Types', () => {
 
       expect(typeof mockPicture.id).toBe('string');
       expect(typeof mockPicture.creation_date_utc).toBe('string');
-      expect(typeof mockPicture.photo_url).toBe('string');
+      expect(typeof mockPicture.image_url).toBe('string');
       expect(typeof mockPicture.file_name).toBe('string');
       expect(typeof mockPicture.file_size_bytes).toBe('number');
       expect(typeof mockPicture.width).toBe('number');
@@ -192,7 +192,7 @@ describe('v1.4 Types', () => {
       const minimalPicture: Picture = {
         id: 'test-picture-id',
         creation_date_utc: '2024-01-15T10:30:00Z',
-        photo_url: 'https://example.com/image.jpg'
+        image_url: 'https://example.com/image.jpg'
       };
 
       expect(minimalPicture.file_name).toBeUndefined();
@@ -204,7 +204,7 @@ describe('v1.4 Types', () => {
 
     it('should have correct PictureCreate interface', () => {
       const createData: PictureCreate = {
-        photo_url: 'https://example.com/image.jpg',
+        image_url: 'https://example.com/image.jpg',
         file_name: 'image.jpg',
         file_size_bytes: 1024000,
         width: 1920,
@@ -212,7 +212,7 @@ describe('v1.4 Types', () => {
         alt_text: 'Test image'
       };
 
-      expect(typeof createData.photo_url).toBe('string');
+      expect(typeof createData.image_url).toBe('string');
       expect(typeof createData.file_name).toBe('string');
       expect(typeof createData.file_size_bytes).toBe('number');
       expect(typeof createData.width).toBe('number');

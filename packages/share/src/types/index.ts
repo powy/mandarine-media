@@ -1,12 +1,12 @@
 // API Types based on backend models
 export interface User {
-  id: number;
+  id: string;
   email: string;
   full_name: string;
   is_active: boolean;
   is_admin: boolean;
-  created_at: string;
-  updated_at: string;
+  creation_date_utc: string;
+  subscription_plans_id_list?: string[];  // v1.12 new field
 }
 
 export interface MediaDescription {
@@ -20,18 +20,14 @@ export interface MediaDescription {
   program_id?: string;
   season_id?: string;
   episode_number?: number;
-  media_categories?: string[];  // FIXED: matches backend schema
+  media_categories_list?: string[];  // v1.12: renamed from media_categories
   descriptive_summary_text?: string;
   synopsis_text?: string;
   contract_start_date_utc?: string;
   contract_end_date_utc?: string;
   production_year?: number;
   original_broadcast_date_utc?: string;
-  duration_seconds?: number;
   is_featured?: boolean;
-  view_count?: number;
-  like_count?: number;
-  share_count?: number;
   last_updated_utc?: string;
   content_status?: 'draft' | 'published' | 'archived' | 'scheduled';
   seo_title?: string;
@@ -45,7 +41,7 @@ export interface MediaDescription {
   // Person role fields (legacy format for compatibility)
   actors_id_list?: string[];
   directors_id_list?: string[];
-  productor_id_list?: string[];
+  productors_id_list?: string[];
   authors_id_list?: string[];
   origin_country_id_list?: string[];
   original_languages_id?: string[];
@@ -80,6 +76,14 @@ export interface MediaDescription {
   revenue_share?: number;
   paid_token_cost?: number;
   
+  // v1.12 new fields
+  media_themes_id_list?: string[];
+  trailer_id_list?: string[];
+  extract_id_list?: string[];
+  available_countries_id_list?: string[];
+  audience_categories_id_list?: string[];
+  eligible_plans_id_list?: string[];
+  
   // v1.10-C additional fields
   audio_languages_available?: string[];
   subtitle_languages_available?: string[];
@@ -91,58 +95,48 @@ export interface MediaDescription {
   trailer_url?: string;
   secondary_thumbnail_url?: string;
   main_thumbnail_url?: string;
-  public_person_id_list?: string[];
+  // public_person_id_list removed in v1.12
   audience_category_id?: string;
-  media_categories_id_list?: string[];
+  // media_categories_id_list removed in v1.12 (replaced by media_categories_list)
   is_premium_content?: boolean;
 }
 
 export interface VideoFile {
   id: string;
-  file_name?: string;
-  file_path?: string;
+  creation_date_utc: string;
   file_url?: string;
+  file_name?: string;
   file_size_bytes?: number;
-  resolution?: string;
-  bitrate_kbps?: number;
-  format?: string;
-  file_format?: string;
-  duration_seconds?: number;
-  encoding_status: string;
-  encoding_logs?: string | null;
+  encoding_status: 'pending' | 'processing' | 'completed' | 'failed';
   // Dual upload support fields
-  upload_status: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed';
+  upload_status: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed' | 'ready_no_subtitles';
   upload_timestamp?: string;
   external_url?: string;
-  // Technical fields
-  video_codec?: string;
-  audio_codec?: string;
-  resolution_width?: number;
-  resolution_height?: number;
+  // Optional technical fields
+  encodage_date_utc?: string;
+  duration_seconds?: number;
+  max_resolution_width?: number;
+  max_resolution_height?: number;
+  bitrate_kbps?: number;
   frame_rate?: number;
   aspect_ratio?: string;
   audio_sample_rate?: number;
-  audio_channels?: number;
+  subtitle_tracks?: string[];
+  encoding_profile?: string;
   // Mux integration
   mux_asset_id?: string;
   mux_playback_id?: string;
-  // Security and playback
-  playback_policy?: 'public' | 'signed' | 'drm';
   drm_protection?: boolean;
-  // Timestamps
-  creation_date_utc: string;
-  encodage_date_utc?: string;
-  created_at?: string;
-  updated_at?: string;
-  // v1.4 new fields
-  subtitle_languages_id_list?: string[];
-  audio_languages_id_list?: string[];
-  resolutions_id_list?: string[];
-  accessibilities_id_list?: string[];
   // v1.9 new fields
   environment_key?: string;
-  protection_key?: string;
   slug?: string;
+  // v1.10-C fields
+  playback_policy?: string;
+  subtitle_tracks_text_list?: string[];
+  resolutions_list?: string[];
+  accessibilities_list?: string[];
+  // v1.4 fields
+  audio_languages_id_list?: string[];
 }
 
 export interface PublicPerson {
@@ -166,13 +160,13 @@ export interface Program {
   id: string;
   creation_date_utc: string;
   program_name: string;
-  general_media_description?: string;
+  general_media_description_id?: string;
 }
 
 export interface Season {
   id: string;
   creation_date_utc: string;
-  program_id: string;
+  program_id?: string;  // v1.12: now nullable
   season_number: number;
 }
 
@@ -199,7 +193,7 @@ export interface Territory {
 export interface Picture {
   id: string;
   creation_date_utc: string;
-  photo_url: string;
+  image_url: string;
   file_name?: string;
   file_size_bytes?: number;
   width?: number;
@@ -328,40 +322,63 @@ export interface VideoFileFilters {
 
 // v1.9 new interfaces for video file operations
 export interface VideoFileCreate {
-  media_description_id?: string;
-  file_name?: string;
-  external_url?: string;
-  playback_policy?: 'public' | 'signed' | 'drm';
-  drm_protection?: boolean;
-  environment_key?: string;
-  protection_key?: string;
-  slug?: string;
-}
-
-export interface VideoFileUpdate {
-  media_description_id?: string;
-  file_name?: string;
-  encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
-  upload_status?: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed';
-  duration_seconds?: number;
+  file_url?: string;
+  file_name: string;
   file_size_bytes?: number;
-  video_codec?: string;
-  audio_codec?: string;
-  file_format?: string;
-  resolution_width?: number;
-  resolution_height?: number;
+  encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
+  upload_status?: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed' | 'ready_no_subtitles';
+  upload_timestamp?: string;
+  external_url?: string;
+  encodage_date_utc?: string;
+  duration_seconds?: number;
+  max_resolution_width?: number;
+  max_resolution_height?: number;
   bitrate_kbps?: number;
   frame_rate?: number;
   aspect_ratio?: string;
   audio_sample_rate?: number;
-  audio_channels?: number;
+  subtitle_tracks?: string[];
+  encoding_profile?: string;
   mux_asset_id?: string;
   mux_playback_id?: string;
-  playback_policy?: 'public' | 'signed' | 'drm';
   drm_protection?: boolean;
   environment_key?: string;
-  protection_key?: string;
   slug?: string;
+  playback_policy?: string;
+  subtitle_tracks_text_list?: string[];
+  resolutions_list?: string[];
+  accessibilities_list?: string[];
+  audio_languages_id_list?: string[];
+}
+
+export interface VideoFileUpdate {
+  file_url?: string;
+  file_name?: string;
+  file_size_bytes?: number;
+  encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
+  upload_status?: 'metadata_only' | 'file_uploading' | 'upload_completed' | 'upload_failed' | 'ready_no_subtitles';
+  upload_timestamp?: string;
+  external_url?: string;
+  encodage_date_utc?: string;
+  duration_seconds?: number;
+  max_resolution_width?: number;
+  max_resolution_height?: number;
+  bitrate_kbps?: number;
+  frame_rate?: number;
+  aspect_ratio?: string;
+  audio_sample_rate?: number;
+  subtitle_tracks?: string[];
+  encoding_profile?: string;
+  mux_asset_id?: string;
+  mux_playback_id?: string;
+  drm_protection?: boolean;
+  environment_key?: string;
+  slug?: string;
+  playback_policy?: string;
+  subtitle_tracks_text_list?: string[];
+  resolutions_list?: string[];
+  accessibilities_list?: string[];
+  audio_languages_id_list?: string[];
 }
 
 // Description Report types
@@ -380,14 +397,16 @@ export interface DescriptionReportListResponse extends PaginatedResponse<Descrip
 export interface MediaDescriptionCreate {
   file_number: number;
   episode_title: string;
-  media_type: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt' | 'season' | 'program';
+  media_type: 'video' | 'webtoon' | 'trailer' | 'excerpt' | 'season' | 'program';
   file_name?: string;
   expected_filename?: string;
   program_id?: string;
   season_id?: string;
   episode_number?: number;
-  media_categories_id_list?: string[];
-  themes_and_genres_id_list?: string[];
+  // v1.12: replaced media_categories_id_list with media_categories_list (enum values)
+  media_categories_list?: string[];
+  // v1.12: replaced themes_and_genres_id_list with media_themes_id_list
+  media_themes_id_list?: string[];
   descriptive_summary_text?: string;
   synopsis_text?: string;
   contract_start_date_utc?: string;
@@ -397,7 +416,7 @@ export interface MediaDescriptionCreate {
   duration_seconds?: number;
   audience_category_id?: string;
   subscription_plan_id_list?: string[];
-  public_person_id_list?: string[];
+  // public_person_id_list removed in v1.12
   main_thumbnail_url?: string;
   secondary_thumbnail_url?: string;
   trailer_url?: string;
@@ -408,9 +427,6 @@ export interface MediaDescriptionCreate {
   audio_languages_available?: string[];
   is_premium_content?: boolean;
   is_featured?: boolean;
-  view_count?: number;
-  like_count?: number;
-  share_count?: number;
   content_status?: 'draft' | 'published' | 'archived' | 'scheduled';
   seo_title?: string;
   seo_description?: string;
@@ -423,7 +439,7 @@ export interface MediaDescriptionCreate {
   // v1.4 new fields
   actors_id_list?: string[];
   directors_id_list?: string[];
-  productor_id_list?: string[];
+  productors_id_list?: string[];
   authors_id_list?: string[];
   origin_country_id_list?: string[];
   original_languages_id?: string[];
@@ -456,20 +472,21 @@ export interface MediaDescriptionCreate {
 // v1.4 new create/update interfaces
 export interface ProgramCreate {
   program_name: string;
-  general_media_description?: string;
+  general_media_description_id?: string;
 }
 
 export interface ProgramUpdate {
   program_name?: string;
-  general_media_description?: string;
+  general_media_description_id?: string;
 }
 
 export interface SeasonCreate {
-  program_id: string;
+  program_id?: string;  // v1.12: now optional
   season_number: number;
 }
 
 export interface SeasonUpdate {
+  program_id?: string;  // v1.12: now optional
   season_number?: number;
 }
 
@@ -502,7 +519,7 @@ export interface TerritoryUpdate {
 }
 
 export interface PictureCreate {
-  photo_url: string;
+  image_url: string;
   file_name?: string;
   file_size_bytes?: number;
   width?: number;
@@ -511,7 +528,7 @@ export interface PictureCreate {
 }
 
 export interface PictureUpdate {
-  photo_url?: string;
+  image_url?: string;
   file_name?: string;
   file_size_bytes?: number;
   width?: number;
@@ -548,6 +565,27 @@ export interface SubscriptionPlanCreate {
 export interface SubscriptionPlanUpdate {
   name?: string;
 }
+
+// v1.12 new MediaTheme interfaces
+export interface MediaTheme {
+  id: string;
+  name: string;
+  creation_date_utc: string;
+}
+
+export interface MediaThemeCreate {
+  name: string;
+}
+
+export interface MediaThemeUpdate {
+  name?: string;
+}
+
+export interface MediaThemeApiParams extends BaseApiParams {
+  q?: string;
+}
+
+export interface PaginatedMediaThemesResponse extends PaginatedResponse<MediaTheme> {}
 
 export interface PublicPersonCreate {
   // Required field in v1.5
@@ -709,9 +747,11 @@ export interface ContentList {
   content_items?: string[];
   content_types?: string[];
   // v1.9 new filtering fields
-  media_type?: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
-  // Removed: media_categories_id_list (replaced by enum-based media_categories)
-  themes_and_genres_id_list?: string[];
+  media_type?: 'video' | 'webtoon' | 'trailer' | 'excerpt';
+  // v1.12: replaced media_categories_id_list with media_categories_list (enum values)
+  media_categories_list?: string[];
+  // v1.12: replaced themes_and_genres_id_list with media_themes_id_list
+  media_themes_id_list?: string[];
   slug?: string; // v1.9 new field
   json_content?: string;
   json_last_updated?: string;
@@ -730,9 +770,11 @@ export interface ContentListCreate {
   content_items?: string[];
   content_types?: string[];
   // v1.9 new filtering fields
-  media_type?: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
-  media_categories_id_list?: string[];
-  themes_and_genres_id_list?: string[];
+  media_type?: 'video' | 'webtoon' | 'trailer' | 'excerpt';
+  // v1.12: replaced media_categories_id_list with media_categories_list (enum values)
+  media_categories_list?: string[];
+  // v1.12: replaced themes_and_genres_id_list with media_themes_id_list
+  media_themes_id_list?: string[];
   slug?: string; // v1.9 new field
 }
 
@@ -749,9 +791,11 @@ export interface ContentListUpdate {
   content_items?: string[];
   content_types?: string[];
   // v1.9 new filtering fields
-  media_type?: 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
-  media_categories_id_list?: string[];
-  themes_and_genres_id_list?: string[];
+  media_type?: 'video' | 'webtoon' | 'trailer' | 'excerpt';
+  // v1.12: replaced media_categories_id_list with media_categories_list (enum values)
+  media_categories_list?: string[];
+  // v1.12: replaced themes_and_genres_id_list with media_themes_id_list
+  media_themes_id_list?: string[];
   slug?: string; // v1.9 field
 }
 

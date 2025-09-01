@@ -204,17 +204,21 @@ class TestVideoFileDelete:
         assert media_response.status_code == 200
         media_id = media_response.json()["id"]
         
-        # Create video file linked to media
-        video_data = sample_video_file_data.copy()
-        video_data["media_description_id"] = media_id
-        
+        # Create video file 
         video_response = client.post(
             "/api/v1/video-files",
             headers=headers,
-            json=video_data
+            json=sample_video_file_data
         )
         assert video_response.status_code == 200
         video_id = video_response.json()["id"]
+        
+        # Link video file to media description
+        link_response = client.post(
+            f"/api/v1/video-files/{video_id}/link/{media_id}",
+            headers=headers
+        )
+        assert link_response.status_code == 200
         
         # Get initial report count
         reports_response = client.get(

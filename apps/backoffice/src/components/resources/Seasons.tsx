@@ -29,6 +29,7 @@ import {
   ReferenceField,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
+import { MediaDescriptionInput } from '../inputs/MediaDescriptionInput';
 
 // Define filters for the season list
 // API supports: q (search) and program_id (filter by program)
@@ -86,7 +87,7 @@ export const SeasonList = () => (
   <List 
     filters={seasonFilters}
     actions={<SeasonListActions />} 
-    sort={{ field: 'created_at', order: 'DESC' }}
+    sort={{ field: 'creation_date_utc', order: 'DESC' }}
     perPage={20}
   >
     <Datagrid>
@@ -99,7 +100,16 @@ export const SeasonList = () => (
         <TextField source="program_name" />
       </ReferenceField>
       <TextField source="season_number" label="Season #" sortable />
-      <DateField source="created_at" label="Created" sortable />
+      <TextField source="season_name" label="Season Name" />
+      <ReferenceField 
+        source="general_media_description_id" 
+        reference="media-descriptions" 
+        label="Media Description"
+        link="show"
+      >
+        <TextField source="episode_title" />
+      </ReferenceField>
+      <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -114,13 +124,23 @@ export const SeasonCreate = () => (
         source="program_id" 
         reference="programs"
       >
-        <SelectInput optionText="program_name" validate={[required()]} />
+        <SelectInput optionText="program_name" />
       </ReferenceInput>
       <NumberInput 
         source="season_number" 
         label="Season Number"
         validate={[required()]} 
         min={1}
+      />
+      <TextInput 
+        source="season_name" 
+        label="Season Name (Optional)"
+        fullWidth 
+      />
+      <MediaDescriptionInput
+        source="general_media_description_id"
+        label="Media Description (Optional)"
+        allowDirectUUID={true}
       />
     </SimpleForm>
   </Create>
@@ -133,13 +153,23 @@ export const SeasonEdit = () => (
         source="program_id" 
         reference="programs"
       >
-        <SelectInput optionText="program_name" validate={[required()]} />
+        <SelectInput optionText="program_name" />
       </ReferenceInput>
       <NumberInput 
         source="season_number" 
         label="Season Number"
         validate={[required()]} 
         min={1}
+      />
+      <TextInput 
+        source="season_name" 
+        label="Season Name (Optional)"
+        fullWidth 
+      />
+      <MediaDescriptionInput
+        source="general_media_description_id"
+        label="Media Description (Optional)"
+        allowDirectUUID={true}
       />
     </SimpleForm>
   </Edit>
@@ -153,7 +183,16 @@ export const SeasonShow = () => (
         <TextField source="program_name" />
       </ReferenceField>
       <TextField source="season_number" label="Season Number" />
-      <DateField source="created_at" label="Created" />
+      <TextField source="season_name" label="Season Name" />
+      <ReferenceField 
+        source="general_media_description_id" 
+        reference="media-descriptions" 
+        label="Media Description"
+        link="show"
+      >
+        <TextField source="episode_title" />
+      </ReferenceField>
+      <DateField source="creation_date_utc" label="Created" />
     </SimpleShowLayout>
   </Show>
 );

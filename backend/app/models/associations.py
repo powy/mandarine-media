@@ -64,13 +64,6 @@ media_description_audience_categories = Table(
     Column('audience_category_id', GUID(), ForeignKey('audience_category.id'), primary_key=True)
 )
 
-# Media Description <-> Theme associations
-media_description_themes = Table(
-    'media_description_themes',
-    Base.metadata,
-    Column('media_description_id', GUID(), ForeignKey('media_description.id'), primary_key=True),
-    Column('theme_id', GUID(), ForeignKey('themes.id'), primary_key=True)
-)
 
 # Media Description <-> SubscriptionPlan associations
 media_description_eligible_plans = Table(
@@ -93,4 +86,20 @@ media_description_excerpts = Table(
     Base.metadata,
     Column('media_description_id', GUID(), ForeignKey('media_description.id'), primary_key=True),
     Column('video_file_id', GUID(), ForeignKey('video_file.id'), primary_key=True)
+)
+
+# Media Description <-> MediaTheme associations
+media_description_media_themes = Table(
+    'media_description_media_themes',
+    Base.metadata,
+    Column('media_description_id', GUID(), ForeignKey('media_description.id'), primary_key=True),
+    Column('media_theme_id', GUID(), ForeignKey('media_themes.id'), primary_key=True)
+)
+
+# ContentList <-> MediaTheme associations
+content_list_media_themes = Table(
+    'content_list_media_themes',
+    Base.metadata,
+    Column('content_list_id', GUID(), ForeignKey('content_lists.id'), primary_key=True),
+    Column('media_theme_id', GUID(), ForeignKey('media_themes.id'), primary_key=True)
 )

@@ -36,8 +36,10 @@ class ContentListBase(BaseModel):
     
     # v1.9 fields - Content filtering and organization
     media_type: Optional[str] = Field(None, description="Filter content by media type")
-    media_categories_id_list: Optional[List[str]] = Field(None, description="Filter by category IDs")
-    themes_and_genres_id_list: Optional[List[str]] = Field(None, description="Filter by theme/genre IDs")
+    # v1.12 changes: replaced media_categories_id_list with media_categories_list (enum values)
+    media_categories_list: Optional[List[str]] = Field(None, description="Filter by category enum values")
+    # v1.12 changes: replaced themes_and_genres_id_list with media_themes_id_list
+    media_themes_id_list: Optional[List[str]] = Field(None, description="Filter by MediaTheme IDs")
     latest_first: bool = Field(True, description="Order items by latest first")
     slug: Optional[str] = Field(None, description="URL slug (auto-generated from title if empty)")
 
@@ -86,8 +88,10 @@ class ContentListUpdate(BaseModel):
     
     # v1.9 fields - Content filtering and organization
     media_type: Optional[str] = Field(None, description="Filter content by media type")
-    media_categories_id_list: Optional[List[str]] = Field(None, description="Filter by category IDs")
-    themes_and_genres_id_list: Optional[List[str]] = Field(None, description="Filter by theme/genre IDs")
+    # v1.12 changes: replaced media_categories_id_list with media_categories_list (enum values)
+    media_categories_list: Optional[List[str]] = Field(None, description="Filter by category enum values")
+    # v1.12 changes: replaced themes_and_genres_id_list with media_themes_id_list
+    media_themes_id_list: Optional[List[str]] = Field(None, description="Filter by MediaTheme IDs")
     latest_first: Optional[bool] = Field(None, description="Order items by latest first")
     slug: Optional[str] = Field(None, description="URL slug (auto-generated from title if empty)")
 

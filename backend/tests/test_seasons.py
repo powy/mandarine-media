@@ -122,12 +122,12 @@ class TestSeasonsCreate:
         """Test season creation without required fields fails."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        # Missing program_id
-        invalid_data1 = {"season_number": 1}
-        response1 = client.post("/api/v1/seasons", json=invalid_data1, headers=headers)
-        assert response1.status_code == 422
+        # v1.12: program_id is now optional, so this should succeed
+        valid_data1 = {"season_number": 1}
+        response1 = client.post("/api/v1/seasons", json=valid_data1, headers=headers)
+        assert response1.status_code == 200
         
-        # Missing season_number
+        # Missing season_number (still required)
         invalid_data2 = {"program_id": str(uuid.uuid4())}
         response2 = client.post("/api/v1/seasons", json=invalid_data2, headers=headers)
         assert response2.status_code == 422

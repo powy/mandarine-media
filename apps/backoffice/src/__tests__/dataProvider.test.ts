@@ -46,6 +46,13 @@ const mockSubscriptionPlansApi = {
   delete: vi.fn(),
 };
 
+const mockVideoFileReportsApi = {
+  getReports: vi.fn(),
+  getReport: vi.fn(),
+  getReportsByVideoFile: vi.fn(),
+  destroyVideoFile: vi.fn(),
+};
+
 vi.mock('share', () => ({
   mediaApi: mockMediaApi,
   countriesApi: mockCountriesApi,
@@ -58,6 +65,7 @@ vi.mock('share', () => ({
   authApi: { register: vi.fn() },
   audienceCategoriesApi: mockAudienceCategoriesApi,
   subscriptionPlansApi: mockSubscriptionPlansApi,
+  videoFileReportsApi: mockVideoFileReportsApi,
   getContentLists: mockContentListApi.getContentLists,
   getContentList: mockContentListApi.getContentList,
   createContentList: mockContentListApi.createContentList,
@@ -69,6 +77,9 @@ vi.mock('share', () => ({
   updateScreenDescription: vi.fn(),
   deleteScreenDescription: vi.fn(),
 }));
+
+// Mock fetch for themes and media-themes
+global.fetch = vi.fn();
 
 describe('DataProvider', () => {
   beforeEach(() => {
@@ -101,7 +112,7 @@ describe('DataProvider', () => {
           expect.objectContaining({
             id: '1',
             episode_title: 'Test Episode',
-            created_at: '2024-01-01T00:00:00Z'
+            creation_date_utc: '2024-01-01T00:00:00Z'
           })
         ]),
         total: 1,
@@ -204,7 +215,7 @@ describe('DataProvider', () => {
       expect(result.data).toEqual(expect.objectContaining({
         id: '1',
         episode_title: 'Test Episode',
-        created_at: '2024-01-01T00:00:00Z'
+        creation_date_utc: '2024-01-01T00:00:00Z'
       }));
     });
 
@@ -223,7 +234,7 @@ describe('DataProvider', () => {
       expect(result.data).toEqual(expect.objectContaining({
         id: '1',
         name: 'Family',
-        created_at: '2024-01-01T00:00:00Z'
+        creation_date_utc: '2024-01-01T00:00:00Z'
       }));
     });
 
@@ -242,7 +253,7 @@ describe('DataProvider', () => {
       expect(result.data).toEqual(expect.objectContaining({
         id: '1',
         name: 'Premium',
-        created_at: '2024-01-01T00:00:00Z'
+        creation_date_utc: '2024-01-01T00:00:00Z'
       }));
     });
 
@@ -452,6 +463,149 @@ describe('DataProvider', () => {
       expect(result.data).toEqual(expect.objectContaining({
         id: '1',
         name: 'Deleted Plan'
+      }));
+    });
+  });
+
+  describe('video-file-reports resource', () => {
+    test('should handle getList for video-file-reports', async () => {
+      const mockResponse = {
+        data: [
+          {
+            id: '1',
+            video_file_id: 'video-123',
+            video_file_name: 'test.mp4',
+            event: 'possible_orphan',
+            timestamp: '2024-01-01T00:00:00Z'
+          }
+        ],
+        pagination: { total: 1 }
+      };
+
+      mockVideoFileReportsApi.getReports.mockResolvedValue(mockResponse);
+
+      const result = await dataProvider.getList('video-file-reports', {
+        pagination: { page: 1, perPage: 20 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      });
+
+      expect(mockVideoFileReportsApi.getReports).toHaveBeenCalledWith({
+        skip: 0,
+        limit: 20,
+      });
+      expect(result.total).toBe(1);
+    });
+
+    test('should handle getOne for video-file-reports', async () => {
+      const mockResponse = {
+        id: '1',
+        video_file_id: 'video-123',
+        video_file_name: 'test.mp4',
+        event: 'possible_orphan',
+        timestamp: '2024-01-01T00:00:00Z'
+      };
+
+      mockVideoFileReportsApi.getReport.mockResolvedValue(mockResponse);
+
+      const result = await dataProvider.getOne('video-file-reports', { id: '1' });
+
+      expect(mockVideoFileReportsApi.getReport).toHaveBeenCalledWith('1');
+      expect(result.data).toEqual(expect.objectContaining({
+        id: '1',
+        video_file_id: 'video-123'
+      }));
+    });
+  });
+
+  describe('themes resource', () => {
+    test('should handle getList for themes', async () => {
+      const mockResponse = [
+        {
+          id: '1',
+          name: 'Action',
+          category: 'genre',
+          creation_date_utc: '2024-01-01T00:00:00Z'
+        }
+      ];
+
+      (global.fetch as any).mockResolvedValue({
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await dataProvider.getList('themes', {
+        pagination: { page: 1, perPage: 20 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/themes?skip=0&limit=20');
+      expect(result.total).toBe(1);
+    });
+
+    test('should handle getOne for themes', async () => {
+      const mockResponse = {
+        id: '1',
+        name: 'Action',
+        category: 'genre',
+        creation_date_utc: '2024-01-01T00:00:00Z'
+      };
+
+      (global.fetch as any).mockResolvedValue({
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await dataProvider.getOne('themes', { id: '1' });
+
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/themes/1');
+      expect(result.data).toEqual(expect.objectContaining({
+        id: '1',
+        name: 'Action'
+      }));
+    });
+  });
+
+  describe('media-themes resource', () => {
+    test('should handle getList for media-themes', async () => {
+      const mockResponse = [
+        {
+          id: '1',
+          name: 'Romantic Comedy',
+          creation_date_utc: '2024-01-01T00:00:00Z'
+        }
+      ];
+
+      (global.fetch as any).mockResolvedValue({
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await dataProvider.getList('media-themes', {
+        pagination: { page: 1, perPage: 20 },
+        sort: { field: 'id', order: 'ASC' },
+        filter: {},
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/media-themes?skip=0&limit=20');
+      expect(result.total).toBe(1);
+    });
+
+    test('should handle getOne for media-themes', async () => {
+      const mockResponse = {
+        id: '1',
+        name: 'Romantic Comedy',
+        creation_date_utc: '2024-01-01T00:00:00Z'
+      };
+
+      (global.fetch as any).mockResolvedValue({
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await dataProvider.getOne('media-themes', { id: '1' });
+
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/media-themes/1');
+      expect(result.data).toEqual(expect.objectContaining({
+        id: '1',
+        name: 'Romantic Comedy'
       }));
     });
   });

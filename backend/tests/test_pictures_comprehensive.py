@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 def sample_picture_data():
     """Sample picture data for testing."""
     return {
-        "photo_url": "https://example.com/image.jpg",
+        "image_url": "https://example.com/image.jpg",
         "file_name": "test_image.jpg",
         "file_size_bytes": 1024000,
         "width": 1920,
@@ -21,7 +21,7 @@ def sample_picture_data():
 def sample_picture_update_data():
     """Sample picture update data for testing."""
     return {
-        "photo_url": "https://example.com/updated_image.jpg",
+        "image_url": "https://example.com/updated_image.jpg",
         "file_name": "updated_image.jpg",
         "file_size_bytes": 2048000,
         "width": 3840,
@@ -33,23 +33,23 @@ def sample_picture_update_data():
 class TestPicturesEdgeCases:
     """Comprehensive edge case testing for pictures."""
     
-    def test_create_picture_empty_photo_url(self, client, admin_token):
+    def test_create_picture_empty_image_url(self, client, admin_token):
         """Test picture creation with empty photo URL fails."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Empty string
-        response1 = client.post("/api/v1/pictures", json={"photo_url": ""}, headers=headers)
+        response1 = client.post("/api/v1/pictures", json={"image_url": ""}, headers=headers)
         assert response1.status_code == 422
         
         # Whitespace only
-        response2 = client.post("/api/v1/pictures", json={"photo_url": "   "}, headers=headers)
+        response2 = client.post("/api/v1/pictures", json={"image_url": "   "}, headers=headers)
         assert response2.status_code == 422
         
         # None value
-        response3 = client.post("/api/v1/pictures", json={"photo_url": None}, headers=headers)
+        response3 = client.post("/api/v1/pictures", json={"image_url": None}, headers=headers)
         assert response3.status_code == 422
 
-    def test_create_picture_invalid_photo_url(self, client, admin_token):
+    def test_create_picture_invalid_image_url(self, client, admin_token):
         """Test picture creation with invalid photo URLs."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
@@ -69,7 +69,7 @@ class TestPicturesEdgeCases:
         ]
         
         for url in invalid_urls:
-            data = {"photo_url": url}
+            data = {"image_url": url}
             response = client.post("/api/v1/pictures", json=data, headers=headers)
             # Should either succeed (if URL is valid) or fail with validation error
             assert response.status_code in [200, 422]
@@ -78,7 +78,7 @@ class TestPicturesEdgeCases:
                 picture = response.json()
                 client.delete(f"/api/v1/pictures/{picture['id']}", headers=headers)
 
-    def test_create_picture_valid_photo_urls(self, client, admin_token):
+    def test_create_picture_valid_image_urls(self, client, admin_token):
         """Test picture creation with valid photo URLs."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
@@ -102,12 +102,12 @@ class TestPicturesEdgeCases:
         
         created_ids = []
         for url in valid_urls:
-            data = {"photo_url": url}
+            data = {"image_url": url}
             response = client.post("/api/v1/pictures", json=data, headers=headers)
             
             if response.status_code == 200:
                 picture = response.json()
-                assert picture["photo_url"] == url
+                assert picture["image_url"] == url
                 created_ids.append(picture["id"])
         
         # Clean up
@@ -119,11 +119,11 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Only required field
-        minimal_data = {"photo_url": "https://example.com/minimal.jpg"}
+        minimal_data = {"image_url": "https://example.com/minimal.jpg"}
         response = client.post("/api/v1/pictures", json=minimal_data, headers=headers)
         assert response.status_code == 200
         picture = response.json()
-        assert picture["photo_url"] == minimal_data["photo_url"]
+        assert picture["image_url"] == minimal_data["image_url"]
         assert picture["file_name"] is None
         assert picture["file_size_bytes"] is None
         assert picture["width"] is None
@@ -137,9 +137,9 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         negative_dimension_data = [
-            {"photo_url": "https://example.com/test.jpg", "width": -1920, "height": 1080},
-            {"photo_url": "https://example.com/test.jpg", "width": 1920, "height": -1080},
-            {"photo_url": "https://example.com/test.jpg", "width": -1920, "height": -1080},
+            {"image_url": "https://example.com/test.jpg", "width": -1920, "height": 1080},
+            {"image_url": "https://example.com/test.jpg", "width": 1920, "height": -1080},
+            {"image_url": "https://example.com/test.jpg", "width": -1920, "height": -1080},
         ]
         
         for data in negative_dimension_data:
@@ -151,9 +151,9 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         zero_dimension_data = [
-            {"photo_url": "https://example.com/test.jpg", "width": 0, "height": 1080},
-            {"photo_url": "https://example.com/test.jpg", "width": 1920, "height": 0},
-            {"photo_url": "https://example.com/test.jpg", "width": 0, "height": 0},
+            {"image_url": "https://example.com/test.jpg", "width": 0, "height": 1080},
+            {"image_url": "https://example.com/test.jpg", "width": 1920, "height": 0},
+            {"image_url": "https://example.com/test.jpg", "width": 0, "height": 0},
         ]
         
         for data in zero_dimension_data:
@@ -170,8 +170,8 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         large_dimension_data = [
-            {"photo_url": "https://example.com/test.jpg", "width": 999999, "height": 999999},
-            {"photo_url": "https://example.com/test.jpg", "width": 2147483647, "height": 2147483647},  # Max 32-bit int
+            {"image_url": "https://example.com/test.jpg", "width": 999999, "height": 999999},
+            {"image_url": "https://example.com/test.jpg", "width": 2147483647, "height": 2147483647},  # Max 32-bit int
         ]
         
         for data in large_dimension_data:
@@ -187,7 +187,7 @@ class TestPicturesEdgeCases:
         """Test picture creation with negative file size."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        data = {"photo_url": "https://example.com/test.jpg", "file_size_bytes": -1024}
+        data = {"image_url": "https://example.com/test.jpg", "file_size_bytes": -1024}
         response = client.post("/api/v1/pictures", json=data, headers=headers)
         assert response.status_code == 422
 
@@ -195,7 +195,7 @@ class TestPicturesEdgeCases:
         """Test picture creation with zero file size."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        data = {"photo_url": "https://example.com/test.jpg", "file_size_bytes": 0}
+        data = {"image_url": "https://example.com/test.jpg", "file_size_bytes": 0}
         response = client.post("/api/v1/pictures", json=data, headers=headers)
         # Should either succeed (if zero is allowed) or fail with validation error
         assert response.status_code in [200, 422]
@@ -214,7 +214,7 @@ class TestPicturesEdgeCases:
         ]
         
         for file_size in large_file_sizes:
-            data = {"photo_url": "https://example.com/test.jpg", "file_size_bytes": file_size}
+            data = {"image_url": "https://example.com/test.jpg", "file_size_bytes": file_size}
             response = client.post("/api/v1/pictures", json=data, headers=headers)
             # Should either succeed or fail with validation error
             assert response.status_code in [200, 422]
@@ -228,9 +228,9 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         empty_file_name_data = [
-            {"photo_url": "https://example.com/test.jpg", "file_name": ""},
-            {"photo_url": "https://example.com/test.jpg", "file_name": "   "},
-            {"photo_url": "https://example.com/test.jpg", "file_name": None},
+            {"image_url": "https://example.com/test.jpg", "file_name": ""},
+            {"image_url": "https://example.com/test.jpg", "file_name": "   "},
+            {"image_url": "https://example.com/test.jpg", "file_name": None},
         ]
         
         for data in empty_file_name_data:
@@ -286,7 +286,7 @@ class TestPicturesEdgeCases:
         
         created_ids = []
         for file_name in special_file_names:
-            data = {"photo_url": f"https://example.com/{file_name}", "file_name": file_name}
+            data = {"image_url": f"https://example.com/{file_name}", "file_name": file_name}
             response = client.post("/api/v1/pictures", json=data, headers=headers)
             
             if response.status_code == 200:
@@ -303,9 +303,9 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         empty_alt_text_data = [
-            {"photo_url": "https://example.com/test.jpg", "alt_text": ""},
-            {"photo_url": "https://example.com/test.jpg", "alt_text": "   "},
-            {"photo_url": "https://example.com/test.jpg", "alt_text": None},
+            {"image_url": "https://example.com/test.jpg", "alt_text": ""},
+            {"image_url": "https://example.com/test.jpg", "alt_text": "   "},
+            {"image_url": "https://example.com/test.jpg", "alt_text": None},
         ]
         
         for data in empty_alt_text_data:
@@ -323,7 +323,7 @@ class TestPicturesEdgeCases:
         
         # Very long alt text (5000 characters)
         long_alt_text = "A" * 5000
-        data = {"photo_url": "https://example.com/test.jpg", "alt_text": long_alt_text}
+        data = {"image_url": "https://example.com/test.jpg", "alt_text": long_alt_text}
         
         response = client.post("/api/v1/pictures", json=data, headers=headers)
         # Should either succeed or fail with validation error
@@ -357,7 +357,7 @@ class TestPicturesEdgeCases:
         
         created_ids = []
         for alt_text in special_alt_texts:
-            data = {"photo_url": f"https://example.com/test{len(created_ids)}.jpg", "alt_text": alt_text}
+            data = {"image_url": f"https://example.com/test{len(created_ids)}.jpg", "alt_text": alt_text}
             response = client.post("/api/v1/pictures", json=data, headers=headers)
             
             if response.status_code == 200:
@@ -395,12 +395,12 @@ class TestPicturesEdgeCases:
         create_response = client.post("/api/v1/pictures", json=sample_picture_data, headers=headers)
         picture_id = create_response.json()["id"]
         
-        # Update only photo_url
-        update_url = {"photo_url": "https://example.com/updated.jpg"}
+        # Update only image_url
+        update_url = {"image_url": "https://example.com/updated.jpg"}
         response1 = client.put(f"/api/v1/pictures/{picture_id}", json=update_url, headers=headers)
         assert response1.status_code == 200
         picture1 = response1.json()
-        assert picture1["photo_url"] == "https://example.com/updated.jpg"
+        assert picture1["image_url"] == "https://example.com/updated.jpg"
         assert picture1["file_name"] == sample_picture_data["file_name"]
         
         # Update only dimensions
@@ -410,7 +410,7 @@ class TestPicturesEdgeCases:
         picture2 = response2.json()
         assert picture2["width"] == 800
         assert picture2["height"] == 600
-        assert picture2["photo_url"] == "https://example.com/updated.jpg"  # Should remain unchanged
+        assert picture2["image_url"] == "https://example.com/updated.jpg"  # Should remain unchanged
         
         # Clean up
         client.delete(f"/api/v1/pictures/{picture_id}", headers=headers)
@@ -430,7 +430,7 @@ class TestPicturesEdgeCases:
         
         # Should return unchanged picture
         updated_picture = response.json()
-        assert updated_picture["photo_url"] == original_picture["photo_url"]
+        assert updated_picture["image_url"] == original_picture["image_url"]
         assert updated_picture["file_name"] == original_picture["file_name"]
         
         # Clean up
@@ -457,15 +457,15 @@ class TestPicturesEdgeCases:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         invalid_data_sets = [
-            {"photo_url": 123},  # Number instead of string
-            {"photo_url": []},   # Array instead of string
-            {"photo_url": {}},   # Object instead of string
-            {"photo_url": True}, # Boolean instead of string
-            {"photo_url": "https://example.com/test.jpg", "file_name": 123},  # Number instead of string
-            {"photo_url": "https://example.com/test.jpg", "file_size_bytes": "not-a-number"},  # String instead of number
-            {"photo_url": "https://example.com/test.jpg", "width": "not-a-number"},  # String instead of number
-            {"photo_url": "https://example.com/test.jpg", "height": "not-a-number"},  # String instead of number
-            {"photo_url": "https://example.com/test.jpg", "alt_text": 123},  # Number instead of string
+            {"image_url": 123},  # Number instead of string
+            {"image_url": []},   # Array instead of string
+            {"image_url": {}},   # Object instead of string
+            {"image_url": True}, # Boolean instead of string
+            {"image_url": "https://example.com/test.jpg", "file_name": 123},  # Number instead of string
+            {"image_url": "https://example.com/test.jpg", "file_size_bytes": "not-a-number"},  # String instead of number
+            {"image_url": "https://example.com/test.jpg", "width": "not-a-number"},  # String instead of number
+            {"image_url": "https://example.com/test.jpg", "height": "not-a-number"},  # String instead of number
+            {"image_url": "https://example.com/test.jpg", "alt_text": 123},  # Number instead of string
         ]
         
         for invalid_data in invalid_data_sets:
@@ -483,7 +483,7 @@ class TestPicturesEdgeCases:
         picture_id = created_picture["id"]
         
         # Required fields should be present
-        required_fields = ["id", "creation_date_utc", "photo_url"]
+        required_fields = ["id", "creation_date_utc", "image_url"]
         for field in required_fields:
             assert field in created_picture
             assert created_picture[field] is not None
@@ -497,7 +497,7 @@ class TestPicturesEdgeCases:
         assert set(created_picture.keys()) == set(get_picture.keys())
         
         # Update picture
-        update_data = {"photo_url": "https://example.com/updated.jpg"}
+        update_data = {"image_url": "https://example.com/updated.jpg"}
         update_response = client.put(f"/api/v1/pictures/{picture_id}", json=update_data, headers=headers)
         assert update_response.status_code == 200
         updated_picture = update_response.json()
@@ -571,7 +571,7 @@ class TestPicturesEdgeCases:
         initial_count = len(initial_response.json())
         
         # Create picture
-        data = {"photo_url": "https://example.com/consistency-test.jpg"}
+        data = {"image_url": "https://example.com/consistency-test.jpg"}
         create_response = client.post("/api/v1/pictures", json=data, headers=admin_headers)
         assert create_response.status_code == 200
         picture_id = create_response.json()["id"]

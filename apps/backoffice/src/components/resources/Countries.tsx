@@ -78,13 +78,13 @@ export const CountryList = () => (
   <List 
     filters={countryFilters}
     actions={<CountryListActions />} 
-    sort={{ field: 'created_at', order: 'DESC' }}
+    sort={{ field: 'creation_date_utc', order: 'DESC' }}
     perPage={20}
   >
     <Datagrid>
       <TextField source="id" sortable />
       <TextField source="name" sortable />
-      <DateField source="created_at" sortable />
+      <DateField source="creation_date_utc" sortable />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -113,7 +113,7 @@ export const CountryShow = () => (
     <SimpleShowLayout>
       <TextField source="id" />
       <TextField source="name" />
-      <DateField source="created_at" />
+      <DateField source="creation_date_utc" />
     </SimpleShowLayout>
   </Show>
 );

@@ -12,7 +12,7 @@ class Season(Base):
     # Required fields
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     creation_date_utc = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    program_id = Column(GUID(), ForeignKey("programs.id"), nullable=False)
+    program_id = Column(GUID(), ForeignKey("programs.id"), nullable=True)
     season_number = Column(Integer, nullable=False)
     
     # Optional fields

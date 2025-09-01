@@ -13,7 +13,10 @@ import { UserList, UserCreate, UserEdit, UserShow } from './components/resources
 import { ContentListList, ContentListCreate, ContentListEdit, ContentListShow } from './components/resources/ContentLists';
 import { ScreenContentList, ScreenContentCreate, ScreenContentEdit, ScreenContentShow } from './components/resources/ScreenContents';
 import { VideoFileList, VideoFileCreate, VideoFileEdit, VideoFileShow } from './components/resources/VideoFiles';
-import { ThemeList, ThemeCreate, ThemeEdit, ThemeShow } from './components/resources/Themes';
+import { VideoFileReportList, VideoFileReportShow } from './components/resources/VideoFileReports';
+import { MediaThemeList, MediaThemeCreate, MediaThemeEdit, MediaThemeShow } from './components/resources/MediaThemes';
+import { AudienceCategoryList, AudienceCategoryCreate, AudienceCategoryEdit, AudienceCategoryShow } from './components/resources/AudienceCategories';
+import { SubscriptionPlanList, SubscriptionPlanCreate, SubscriptionPlanEdit, SubscriptionPlanShow } from './components/resources/SubscriptionPlans';
 
 // Custom Menu for better organization
 const CustomMenu = () => {
@@ -89,9 +92,15 @@ const CustomMenu = () => {
         dense={!open}
       />
       <MenuItemLink
-        to="/themes"
-        primaryText="Themes"
-        leftIcon={<span>🎭</span>}
+        to="/audience-categories"
+        primaryText="Audience Categories"
+        leftIcon={<span>👁️</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/media-themes"
+        primaryText="Media Themes"
+        leftIcon={<span>🎨</span>}
         dense={!open}
       />
       
@@ -108,6 +117,12 @@ const CustomMenu = () => {
         to="/users"
         primaryText="Users"
         leftIcon={<span>👥</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/subscription-plans"
+        primaryText="Subscription Plans"
+        leftIcon={<span>💳</span>}
         dense={!open}
       />
     </Menu>
@@ -174,6 +189,7 @@ export const App = () => (
       options={{ label: 'Countries' }}
     />
     
+    
     <Resource
       name="languages"
       list={LanguageList}
@@ -184,12 +200,31 @@ export const App = () => (
     />
     
     <Resource
-      name="themes"
-      list={ThemeList}
-      create={ThemeCreate}
-      edit={ThemeEdit}
-      show={ThemeShow}
-      options={{ label: 'Themes' }}
+      name="audience-categories"
+      list={AudienceCategoryList}
+      create={AudienceCategoryCreate}
+      edit={AudienceCategoryEdit}
+      show={AudienceCategoryShow}
+      options={{ label: 'Audience Categories' }}
+    />
+    
+    <Resource
+      name="subscription-plans"
+      list={SubscriptionPlanList}
+      create={SubscriptionPlanCreate}
+      edit={SubscriptionPlanEdit}
+      show={SubscriptionPlanShow}
+      options={{ label: 'Subscription Plans' }}
+    />
+    
+    
+    <Resource
+      name="media-themes"
+      list={MediaThemeList}
+      create={MediaThemeCreate}
+      edit={MediaThemeEdit}
+      show={MediaThemeShow}
+      options={{ label: 'Media Themes' }}
     />
     
     {/* Fully implemented resources */}
@@ -267,6 +302,14 @@ export const App = () => (
       edit={VideoFileEdit}
       show={VideoFileShow}
       options={{ label: 'Video Files' }}
+    />
+    
+    {/* Video File Reports Resource - Read Only */}
+    <Resource
+      name="video-file-reports"
+      list={VideoFileReportList}
+      show={VideoFileReportShow}
+      options={{ label: 'Video File Reports' }}
     />
     
   </Admin>

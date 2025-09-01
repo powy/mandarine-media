@@ -35,11 +35,11 @@ def create_picture(
     Create new picture. Admin only.
     """
     # Check if picture URL already exists
-    existing = crud.picture.get_by_url(db=db, url=picture_in.photo_url)
+    existing = crud.picture.get_by_url(db=db, url=picture_in.image_url)
     if existing:
         raise HTTPException(
             status_code=409,
-            detail=f"Picture with URL '{picture_in.photo_url}' already exists",
+            detail=f"Picture with URL '{picture_in.image_url}' already exists",
         )
     
     picture = crud.picture.create(db=db, obj_in=picture_in)
@@ -77,13 +77,13 @@ def update_picture(
     if not picture:
         raise HTTPException(status_code=404, detail="Picture not found")
     
-    # Check if updating photo_url to an existing one
-    if picture_in.photo_url is not None:
-        existing = crud.picture.get_by_url(db=db, url=picture_in.photo_url)
+    # Check if updating image_url to an existing one
+    if picture_in.image_url is not None:
+        existing = crud.picture.get_by_url(db=db, url=picture_in.image_url)
         if existing and existing.id != id:
             raise HTTPException(
                 status_code=409,
-                detail=f"Picture with URL '{picture_in.photo_url}' already exists",
+                detail=f"Picture with URL '{picture_in.image_url}' already exists",
             )
     
     picture = crud.picture.update(db=db, db_obj=picture, obj_in=picture_in)

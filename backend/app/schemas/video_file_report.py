@@ -8,7 +8,6 @@ class VideoFileReportBase(BaseModel):
     video_file_id: Optional[UUID] = Field(None, description="ID of the related video file")
     video_file_name: str = Field(..., description="Name of the video file")
     video_file_url: Optional[str] = Field(None, description="URL of the video file")
-    upload_method: Optional[str] = Field(None, description="Upload method used")
     file_size: Optional[str] = Field(None, description="File size information")
     duration: Optional[str] = Field(None, description="Video duration")
     

@@ -358,12 +358,12 @@ export const ContentListCreate = () => (
         label="Slug (Optional)"
         helperText="SEO-friendly URL slug"
       />
-      <ArrayInput source="media_categories_id_list" label="Media Categories (Optional)">
+      <ArrayInput source="media_categories_list" label="Media Categories (Optional)">
         <SimpleFormIterator>
           <TextInput label="Category ID" />
         </SimpleFormIterator>
       </ArrayInput>
-      <ArrayInput source="themes_and_genres_id_list" label="Themes and Genres (Optional)">
+      <ArrayInput source="media_themes_id_list" label="Themes and Genres (Optional)">
         <SimpleFormIterator>
           <TextInput label="Theme/Genre ID" />
         </SimpleFormIterator>
@@ -453,12 +453,12 @@ export const ContentListEdit = () => (
         label="Slug (Optional)"
         helperText="SEO-friendly URL slug"
       />
-      <ArrayInput source="media_categories_id_list" label="Media Categories (Optional)">
+      <ArrayInput source="media_categories_list" label="Media Categories (Optional)">
         <SimpleFormIterator>
           <TextInput label="Category ID" />
         </SimpleFormIterator>
       </ArrayInput>
-      <ArrayInput source="themes_and_genres_id_list" label="Themes and Genres (Optional)">
+      <ArrayInput source="media_themes_id_list" label="Themes and Genres (Optional)">
         <SimpleFormIterator>
           <TextInput label="Theme/Genre ID" />
         </SimpleFormIterator>
@@ -516,12 +516,12 @@ export const ContentListShow = () => (
         }}
       />
       <TextField source="slug" label="Slug" />
-      <ArrayField source="media_categories_id_list" label="Media Categories">
+      <ArrayField source="media_categories_list" label="Media Categories">
         <SingleFieldList>
           <ChipField source="." />
         </SingleFieldList>
       </ArrayField>
-      <ArrayField source="themes_and_genres_id_list" label="Themes and Genres">
+      <ArrayField source="media_themes_id_list" label="Themes and Genres">
         <SingleFieldList>
           <ChipField source="." />
         </SingleFieldList>

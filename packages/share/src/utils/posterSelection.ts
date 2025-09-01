@@ -7,12 +7,12 @@ import { picturesApi } from '../api/pictures';
  * @returns 'horizontal' if width > height, 'vertical' if height > width, 'horizontal' (default) if unknown
  */
 export function getVideoOrientation(videoFile: VideoFile | null): 'horizontal' | 'vertical' {
-  if (!videoFile || !videoFile.resolution_width || !videoFile.resolution_height) {
+  if (!videoFile || !videoFile.max_resolution_width || !videoFile.max_resolution_height) {
     // Default to horizontal (1920x1080) when resolution data is missing
     return 'horizontal';
   }
   
-  return videoFile.resolution_width > videoFile.resolution_height ? 'horizontal' : 'vertical';
+  return videoFile.max_resolution_width > videoFile.max_resolution_height ? 'horizontal' : 'vertical';
 }
 
 /**
@@ -42,7 +42,7 @@ export async function getPosterUrl(
     
     if (imageId) {
       const picture = await picturesApi.getById(imageId);
-      return picture.photo_url;
+      return picture.image_url;
     }
   } catch (error) {
     console.warn('Failed to fetch poster image:', error);
@@ -78,7 +78,7 @@ export function getPosterUrlSync(
   }
   
   if (imageId && pictures[imageId]) {
-    return pictures[imageId].photo_url;
+    return pictures[imageId].image_url;
   }
   
   return null;

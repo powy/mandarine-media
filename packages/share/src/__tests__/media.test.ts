@@ -234,29 +234,6 @@ describe('Media API', () => {
     });
   });
 
-  describe('User Interactions', () => {
-    describe('likeMedia', () => {
-      it('should like media successfully', async () => {
-        mockApiClient.post.mockResolvedValue({ data: mockMediaDescription });
-
-        const result = await mediaApi.likeMedia('media-1');
-
-        expect(mockApiClient.post).toHaveBeenCalledWith('/media-descriptions/media-1/like');
-        expect(result).toEqual(mockMediaDescription);
-      });
-    });
-
-    describe('shareMedia', () => {
-      it('should share media successfully', async () => {
-        mockApiClient.post.mockResolvedValue({ data: mockMediaDescription });
-
-        const result = await mediaApi.shareMedia('media-1');
-
-        expect(mockApiClient.post).toHaveBeenCalledWith('/media-descriptions/media-1/share');
-        expect(result).toEqual(mockMediaDescription);
-      });
-    });
-  });
 
   describe('Video File Operations', () => {
     describe('getVideoFiles', () => {

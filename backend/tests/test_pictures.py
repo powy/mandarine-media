@@ -7,7 +7,7 @@ from fastapi import status
 def sample_picture_data():
     """Sample picture data for testing."""
     return {
-        "photo_url": "https://example.com/test-image.jpg",
+        "image_url": "https://example.com/test-image.jpg",
         "file_name": "test-image.jpg",
         "width": 1920,
         "height": 1080,
@@ -20,7 +20,7 @@ def sample_picture_data():
 def sample_picture_update_data():
     """Sample picture update data for testing."""
     return {
-        "photo_url": "https://example.com/updated-image.jpg",
+        "image_url": "https://example.com/updated-image.jpg",
         "file_name": "updated-image.jpg",
         "alt_text": "Updated image description"
     }
@@ -30,7 +30,7 @@ def sample_picture_update_data():
 def minimal_picture_data():
     """Minimal picture data for testing."""
     return {
-        "photo_url": "https://example.com/minimal.jpg"
+        "image_url": "https://example.com/minimal.jpg"
     }
 
 
@@ -45,7 +45,7 @@ class TestPicturesCRUD:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["photo_url"] == sample_picture_data["photo_url"]
+        assert data["image_url"] == sample_picture_data["image_url"]
         assert data["file_name"] == sample_picture_data["file_name"]
         assert data["width"] == sample_picture_data["width"]
         assert data["height"] == sample_picture_data["height"]
@@ -62,7 +62,7 @@ class TestPicturesCRUD:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["photo_url"] == minimal_picture_data["photo_url"]
+        assert data["image_url"] == minimal_picture_data["image_url"]
         assert data["file_name"] is None
         assert data["width"] is None
         assert data["height"] is None
@@ -84,7 +84,7 @@ class TestPicturesCRUD:
         assert "already exists" in response2.json()["detail"]
 
     def test_create_picture_missing_url(self, client, admin_token):
-        """Test picture creation without required photo_url fails."""
+        """Test picture creation without required image_url fails."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         invalid_data = {"file_name": "test.jpg"}
         
@@ -124,7 +124,7 @@ class TestPicturesCRUD:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == picture_id
-        assert data["photo_url"] == sample_picture_data["photo_url"]
+        assert data["image_url"] == sample_picture_data["image_url"]
 
     def test_get_picture_not_found(self, client, user_token):
         """Test picture retrieval with non-existent ID."""
@@ -148,7 +148,7 @@ class TestPicturesCRUD:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["photo_url"] == sample_picture_update_data["photo_url"]
+        assert data["image_url"] == sample_picture_update_data["image_url"]
         assert data["file_name"] == sample_picture_update_data["file_name"]
         assert data["alt_text"] == sample_picture_update_data["alt_text"]
 
@@ -167,7 +167,7 @@ class TestPicturesCRUD:
         assert response.status_code == 200
         data = response.json()
         assert data["alt_text"] == update_data["alt_text"]
-        assert data["photo_url"] == sample_picture_data["photo_url"]
+        assert data["image_url"] == sample_picture_data["image_url"]
 
     def test_update_picture_duplicate_url(self, client, admin_token, sample_picture_data):
         """Test picture update with duplicate URL fails."""
@@ -177,12 +177,12 @@ class TestPicturesCRUD:
         create_response1 = client.post("/api/v1/pictures", json=sample_picture_data, headers=headers)
         picture_id1 = create_response1.json()["id"]
         
-        second_picture_data = {"photo_url": "https://example.com/second.jpg"}
+        second_picture_data = {"image_url": "https://example.com/second.jpg"}
         create_response2 = client.post("/api/v1/pictures", json=second_picture_data, headers=headers)
         picture_id2 = create_response2.json()["id"]
         
         # Try to update second picture with first picture's URL
-        update_data = {"photo_url": sample_picture_data["photo_url"]}
+        update_data = {"image_url": sample_picture_data["image_url"]}
         response = client.put(f"/api/v1/pictures/{picture_id2}", json=update_data, headers=headers)
         
         assert response.status_code == 409

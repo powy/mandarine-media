@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
-from app.models.common import GUID
+from app.models.common import GUID, JSONArray
 
 
 class User(Base):
@@ -15,3 +15,4 @@ class User(Base):
     full_name = Column(String)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    subscription_plans_id_list = Column(JSONArray(), nullable=True)

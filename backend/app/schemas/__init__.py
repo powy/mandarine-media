@@ -101,9 +101,9 @@ from .screen_description import (
     ScreenDescriptionByTypeResponse,
     ScreenTypeEnum
 )
-from .theme import (
-    Theme,
-    ThemeCreate,
-    ThemeUpdate,
-    ThemeInDB
+from .media_theme import (
+    MediaTheme,
+    MediaThemeCreate,
+    MediaThemeUpdate,
+    MediaThemeInDB
 )

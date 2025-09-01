@@ -47,6 +47,7 @@ import {
   TrailerInput,
   ExcerptInput,
   MediaCategoriesInput,
+  MediaThemeInput,
 } from '../inputs/RelationshipInputs';
 
 // UUID validation regex
@@ -201,7 +202,7 @@ export const MediaDescriptionCreate = () => (
       
       {/* Categories and Themes */}
       <MediaCategoriesInput />
-      <ThemeInput source="theme_ids" />
+      <MediaThemeInput />
       
       {/* Production Information */}
       <NumberInput source="production_year" />
@@ -341,7 +342,7 @@ export const MediaDescriptionEdit = () => (
       
       {/* Categories and Themes */}
       <MediaCategoriesInput />
-      <ThemeInput source="theme_ids" />
+      <MediaThemeInput />
       
       {/* Production Information */}
       <NumberInput source="production_year" />
@@ -480,7 +481,7 @@ export const MediaDescriptionShow = () => (
         </SingleFieldList>
       </ArrayField>
       
-      <ArrayField source="themes" label="Themes">
+      <ArrayField source="media_themes" label="Media Themes">
         <SingleFieldList>
           <ChipField source="name" />
         </SingleFieldList>

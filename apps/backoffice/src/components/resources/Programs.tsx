@@ -79,7 +79,7 @@ export const ProgramList = () => (
   <List 
     filters={programFilters}
     actions={<ProgramListActions />} 
-    sort={{ field: 'created_at', order: 'DESC' }}
+    sort={{ field: 'creation_date_utc', order: 'DESC' }}
     perPage={20}
   >
     <Datagrid>

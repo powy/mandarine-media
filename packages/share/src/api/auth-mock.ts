@@ -6,13 +6,12 @@ import { AuthTokens, LoginRequest, RegisterRequest, User } from '../types';
 
 // Mock data for testing
 const MOCK_USER: User = {
-  id: 1,
+  id: '1',
   email: 'test@example.com',
   full_name: 'Test User',
   is_active: true,
   is_admin: false,
-  created_at: '2025-01-01T00:00:00Z',
-  updated_at: '2025-01-01T00:00:00Z',
+  creation_date_utc: '2025-01-01T00:00:00Z',
 };
 
 const MOCK_TOKENS: AuthTokens = {
@@ -140,7 +139,7 @@ export const authApi = {
     
     return {
       ...MOCK_USER,
-      id: parseInt(userId) || 1,
+      id: userId || '1',
     };
   },
 };

@@ -38,8 +38,7 @@ describe('useBulkDescriptions Hook', () => {
   describe('Integration Points', () => {
     it('should use correct API endpoints for bulk operations', () => {
       // Test that the hook would use the correct API methods
-      expect(mediaApi.bulkCreateMediaDescriptions).toBeDefined();
-      expect(mediaApi.bulkUpdateMediaDescriptions).toBeDefined();
+      expect(mediaApi.createBulkMediaDescriptions).toBeDefined();
     });
 
     it('should integrate with Excel parsing functionality', () => {

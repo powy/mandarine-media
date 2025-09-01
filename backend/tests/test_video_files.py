@@ -892,8 +892,7 @@ class TestVideoFileDualUpload:
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         metadata_data = {
-            "file_name": "test_video_metadata.mp4",
-            "upload_method": "new_upload"
+            "file_name": "test_video_metadata.mp4"
         }
         
         response = client.post(
@@ -929,7 +928,6 @@ class TestVideoFileDualUpload:
         data = response.json()
         assert data["file_name"] == existing_url_data["file_name"]
         assert data["external_url"] == existing_url_data["external_url"]
-        assert data["upload_method"] == "existing_url"
         assert data["upload_status"] == "upload_completed"
         assert data["file_url"] == existing_url_data["external_url"]
 
@@ -941,7 +939,6 @@ class TestVideoFileDualUpload:
         # First create metadata
         metadata_data = {
             "file_name": "test_video_upload.mp4",
-            "upload_method": "new_upload"
         }
         
         metadata_response = client.post(
@@ -1054,7 +1051,6 @@ class TestVideoFileDualUpload:
         """Test creating metadata without authentication."""
         metadata_data = {
             "file_name": "test_video.mp4",
-            "upload_method": "new_upload"
         }
         
         response = client.post(
@@ -1069,7 +1065,6 @@ class TestVideoFileDualUpload:
         headers = {"Authorization": f"Bearer {user_token}"}
         metadata_data = {
             "file_name": "test_video.mp4",
-            "upload_method": "new_upload"
         }
         
         response = client.post(

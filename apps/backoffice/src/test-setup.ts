@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import React from 'react';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -7,6 +8,16 @@ global.fetch = vi.fn();
 // Mock window.location
 delete (window as any).location;
 (window as any).location = { href: 'http://localhost:3000' };
+
+// Mock react-router-dom globally
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    MemoryRouter: ({ children }: any) => React.createElement('div', { 'data-testid': 'memory-router' }, children),
+    useNavigate: () => vi.fn(),
+  };
+});
 
 // Mock console methods to reduce test output noise
 const originalError = console.error;

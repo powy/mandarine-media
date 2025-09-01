@@ -193,11 +193,11 @@ const SeasonScreen: React.FC = () => {
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-kyool-blue mb-3">Détails</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {episodes.length > 0 && episodes[0].themes_and_genres_id_list?.length && (
+            {episodes.length > 0 && episodes[0].media_themes_id_list?.length && (
               <div>
                 <span className="text-gray-400">Genres: </span>
                 <span className="text-white">
-                  {episodes[0].themes_and_genres_id_list.join(', ')}
+                  {episodes[0].media_themes_id_list.join(', ')}
                 </span>
               </div>
             )}

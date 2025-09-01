@@ -74,3 +74,25 @@ emulator -avd <your_emulator_name>
 # Example:
 emulator -avd Pixel_4_API_35
 ```
+
+## uspadte sdtabase
+
+```bash
+Basic Commands:
+  # From the backend directory:
+  cd /home/powy/code/media_workspace/kyool-media/backend
+
+  # Create a new migration after model changes:
+  alembic revision --autogenerate -m "Description of changes"
+
+  # Apply migrations to database:
+  alembic upgrade head
+
+  # Check current migration version:
+  alembic current
+
+  # See migration history:
+  alembic history
+
+
+```

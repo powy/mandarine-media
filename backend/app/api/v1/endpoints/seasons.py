@@ -37,23 +37,33 @@ def create_season(
     """
     Create new season. Admin only.
     """
-    # Check if program exists
-    program = crud.program.get(db=db, id=season_in.program_id)
-    if not program:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Program with id '{season_in.program_id}' not found",
-        )
+    # Check if program exists (only if program_id is provided)
+    if season_in.program_id is not None:
+        try:
+            program = crud.program.get(db=db, id=season_in.program_id)
+            if not program:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Program with id '{season_in.program_id}' not found",
+                )
+        except (ValueError, TypeError) as e:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid program_id format: {season_in.program_id}",
+            )
     
-    # Check if season number already exists for this program
-    existing = crud.season.get_by_program_and_number(
-        db=db, program_id=season_in.program_id, season_number=season_in.season_number
-    )
-    if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Season {season_in.season_number} already exists for program '{program.program_name}'",
+    # Check if season number already exists for this program (only if program_id is provided)
+    if season_in.program_id:
+        existing = crud.season.get_by_program_and_number(
+            db=db, program_id=season_in.program_id, season_number=season_in.season_number
         )
+        if existing:
+            program = crud.program.get(db=db, id=season_in.program_id)
+            program_name = program.program_name if program else "Unknown"
+            raise HTTPException(
+                status_code=409,
+                detail=f"Season {season_in.season_number} already exists for program '{program_name}'",
+            )
     
     season = crud.season.create(db=db, obj_in=season_in)
     return season

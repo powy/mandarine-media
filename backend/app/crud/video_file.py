@@ -92,18 +92,6 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
             db=db, upload_status="metadata_only", skip=skip, limit=limit
         )
 
-    def get_by_upload_method(
-        self, db: Session, *, upload_method: str, skip: int = 0, limit: int = 100
-    ) -> List[VideoFile]:
-        """Get video files by upload method"""
-        return (
-            db.query(self.model)
-            .filter(VideoFile.upload_method == upload_method)
-            .order_by(desc(VideoFile.creation_date_utc))
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
 
     def update_upload_status(
         self, db: Session, *, file_id: UUID, status: str, upload_timestamp: Optional[str] = None
@@ -146,7 +134,6 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
                 video_file_id=obj.id,
                 video_file_name=obj.file_name,
                 video_file_url=obj.file_url or obj.external_url,
-                upload_method=obj.upload_method,
                 file_size=f"{obj.file_size_bytes} bytes" if obj.file_size_bytes else None,
                 duration=f"{obj.duration_seconds} seconds" if obj.duration_seconds else None,
                 media_description_id=media_description_id,
@@ -190,7 +177,6 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
                 video_file_id=obj.id,
                 video_file_name=obj.file_name,
                 video_file_url=obj.file_url or obj.external_url,
-                upload_method=obj.upload_method,
                 file_size=f"{obj.file_size_bytes} bytes" if obj.file_size_bytes else None,
                 duration=f"{obj.duration_seconds} seconds" if obj.duration_seconds else None,
                 media_description_id=media_description_id,

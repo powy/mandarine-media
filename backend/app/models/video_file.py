@@ -25,16 +25,6 @@ class ResolutionEnum(enum.Enum):
     r360p = "360p"
 
 
-class ResolutionEnum(enum.Enum):
-    r4320p = "4320p"
-    r2160p = "2160p"
-    r1440p = "1440p"
-    r1080p = "1080p"
-    r720p = "720p"
-    r480p = "480p"
-    r360p = "360p"
-
-
 class UploadStatusEnum(enum.Enum):
     metadata_only = "metadata_only"
     file_uploading = "file_uploading"
@@ -55,7 +45,6 @@ class VideoFile(Base):
     encoding_status = Column(String, nullable=False, default="pending")  # Will use enum validation in schemas
     
     # New fields for dual upload functionality
-    upload_method = Column(String, nullable=True, default="new_upload")  # Will use enum validation in schemas
     upload_status = Column(String, nullable=False, default="metadata_only")  # Will use enum validation in schemas
     upload_timestamp = Column(DateTime(timezone=True), nullable=True)  # When file upload was initiated
     external_url = Column(String, nullable=True)  # For existing media URL method

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 import uuid
@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     is_active: bool = True
     is_admin: bool = False
+    subscription_plans_id_list: Optional[List[str]] = None
 
 
 class UserCreate(UserBase):
@@ -21,6 +22,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
     password: Optional[str] = None
+    subscription_plans_id_list: Optional[List[str]] = None
 
 
 class UserInDBBase(UserBase):

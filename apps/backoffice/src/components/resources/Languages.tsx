@@ -75,14 +75,14 @@ export const LanguageList = () => (
   <List 
     filters={languageFilters}
     actions={<LanguageListActions />} 
-    sort={{ field: 'created_at', order: 'DESC' }}
+    sort={{ field: 'creation_date_utc', order: 'DESC' }}
     perPage={20}
   >
     <Datagrid>
       <TextField source="id" sortable />
       <TextField source="name" sortable />
       <TextField source="sigle" label="Code" sortable />
-      <DateField source="created_at" sortable />
+      <DateField source="creation_date_utc" sortable />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -114,7 +114,7 @@ export const LanguageShow = () => (
       <TextField source="id" />
       <TextField source="name" />
       <TextField source="sigle" label="Language Code" />
-      <DateField source="created_at" />
+      <DateField source="creation_date_utc" />
     </SimpleShowLayout>
   </Show>
 );

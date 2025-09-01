@@ -11,6 +11,7 @@ import {
   usersApi,
   audienceCategoriesApi,
   subscriptionPlansApi,
+  videoFileReportsApi,
   getContentLists,
   getContentList,
   createContentList,
@@ -20,7 +21,12 @@ import {
   getScreenDescription,
   createScreenDescription,
   updateScreenDescription,
-  deleteScreenDescription
+  deleteScreenDescription,
+  getMediaThemes,
+  getMediaTheme,
+  createMediaTheme,
+  updateMediaTheme,
+  deleteMediaTheme
 } from 'share';
 import { resourceMappers } from './mappers';
 
@@ -47,6 +53,7 @@ export const dataProvider: DataProvider = {
             data: resourceMappers.countries.mapList(countriesData),
             total: countriesTotal,
           };
+
 
         case 'media-descriptions':
           const mediaResponse = await mediaApi.getMediaDescriptions({
@@ -199,14 +206,6 @@ export const dataProvider: DataProvider = {
             total: videoFilesTotal,
           };
 
-        case 'themes':
-          // For now, use a simple fetch - will need to update when themes API is available in shared package
-          const themesResponse = await fetch(`http://localhost:8000/api/v1/themes?skip=${skip}&limit=${perPage}`);
-          const themesData = await themesResponse.json();
-          return {
-            data: resourceMappers.themes.mapList(Array.isArray(themesData) ? themesData : []),
-            total: Array.isArray(themesData) ? themesData.length : 0,
-          };
 
         case 'audience-categories':
         case 'audience-category':
@@ -242,6 +241,38 @@ export const dataProvider: DataProvider = {
             total: subscriptionPlansTotal,
           };
 
+        case 'video-file-reports':
+          const { event: reportEventFilter, ...otherReportFilters } = filters;
+          const reportsResponse = await videoFileReportsApi.getReports({ 
+            skip, 
+            limit: perPage,
+            event: reportEventFilter,
+            ...otherReportFilters 
+          });
+          // Handle both direct array and paginated response formats
+          const reportsData = Array.isArray(reportsResponse) ? reportsResponse : reportsResponse.data || [];
+          const reportsTotal = Array.isArray(reportsResponse) ? reportsData.length : reportsResponse.pagination?.total || reportsData.length;
+          return {
+            data: resourceMappers.videoFileReports.mapList(reportsData),
+            total: reportsTotal,
+          };
+
+        case 'media-themes':
+          const { q: themeQuery, ...otherThemeFilters } = filters;
+          const mediaThemesResponse = await getMediaThemes({ 
+            skip, 
+            limit: perPage,
+            q: themeQuery,
+            ...otherThemeFilters 
+          });
+          // Handle both direct array and paginated response formats
+          const mediaThemesData = Array.isArray(mediaThemesResponse) ? mediaThemesResponse : mediaThemesResponse.data || [];
+          const mediaThemesTotal = Array.isArray(mediaThemesResponse) ? mediaThemesData.length : mediaThemesResponse.pagination?.total || mediaThemesData.length;
+          return {
+            data: resourceMappers.mediaThemes.mapList(mediaThemesData),
+            total: mediaThemesTotal,
+          };
+
         default:
           throw new Error(`Unknown resource: ${resource}`);
       }
@@ -259,6 +290,7 @@ export const dataProvider: DataProvider = {
         case 'countries':
           const country = await countriesApi.getById(id);
           return { data: resourceMappers.countries.mapOne(country) };
+
 
         case 'media-descriptions':
           const media = await mediaApi.getMediaDescription(id);
@@ -303,10 +335,6 @@ export const dataProvider: DataProvider = {
           const videoFile = await mediaApi.getVideoFile(id);
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
-        case 'themes':
-          const themeResponse = await fetch(`http://localhost:8000/api/v1/themes/${id}`);
-          const themeData = await themeResponse.json();
-          return { data: resourceMappers.themes.mapOne(themeData) };
 
         case 'audience-categories':
         case 'audience-category':
@@ -317,6 +345,14 @@ export const dataProvider: DataProvider = {
         case 'subscription-plan':
           const subscriptionPlan = await subscriptionPlansApi.getById(id);
           return { data: resourceMappers.subscriptionPlans.mapOne(subscriptionPlan) };
+
+        case 'video-file-reports':
+          const report = await videoFileReportsApi.getReport(id);
+          return { data: resourceMappers.videoFileReports.mapOne(report) };
+
+        case 'media-themes':
+          const mediaTheme = await getMediaTheme(id);
+          return { data: resourceMappers.mediaThemes.mapOne(mediaTheme) };
 
         default:
           throw new Error(`Unknown resource: ${resource}`);
@@ -402,6 +438,7 @@ export const dataProvider: DataProvider = {
           const country = await countriesApi.create(resourceMappers.countries.mapToCreate(data));
           return { data: resourceMappers.countries.mapOne(country) };
 
+
         case 'media-descriptions':
           const media = await mediaApi.createMediaDescription(resourceMappers.mediaDescriptions.mapToCreate(data));
           return { data: resourceMappers.mediaDescriptions.mapOne(media) };
@@ -445,14 +482,6 @@ export const dataProvider: DataProvider = {
           const videoFile = await mediaApi.createVideoFile(resourceMappers.videoFiles.mapToCreate(data));
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
-        case 'themes':
-          const createResponse = await fetch('http://localhost:8000/api/v1/themes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(resourceMappers.themes.mapToCreate(data))
-          });
-          const newTheme = await createResponse.json();
-          return { data: resourceMappers.themes.mapOne(newTheme) };
 
         case 'audience-categories':
         case 'audience-category':
@@ -463,6 +492,10 @@ export const dataProvider: DataProvider = {
         case 'subscription-plan':
           const subscriptionPlan = await subscriptionPlansApi.create(resourceMappers.subscriptionPlans.mapToCreate(data));
           return { data: resourceMappers.subscriptionPlans.mapOne(subscriptionPlan) };
+
+        case 'media-themes':
+          const newMediaTheme = await createMediaTheme(resourceMappers.mediaThemes.mapToCreate(data));
+          return { data: resourceMappers.mediaThemes.mapOne(newMediaTheme) };
 
         default:
           throw new Error(`Create not implemented for resource: ${resource}`);
@@ -481,6 +514,7 @@ export const dataProvider: DataProvider = {
         case 'countries':
           const country = await countriesApi.update(id, resourceMappers.countries.mapToUpdate(data));
           return { data: resourceMappers.countries.mapOne(country) };
+
 
         case 'media-descriptions':
           const media = await mediaApi.updateMediaDescription(id, resourceMappers.mediaDescriptions.mapToUpdate(data));
@@ -525,14 +559,6 @@ export const dataProvider: DataProvider = {
           const videoFile = await mediaApi.updateVideoFile(id, resourceMappers.videoFiles.mapToUpdate(data));
           return { data: resourceMappers.videoFiles.mapOne(videoFile) };
 
-        case 'themes':
-          const updateResponse = await fetch(`http://localhost:8000/api/v1/themes/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(resourceMappers.themes.mapToUpdate(data))
-          });
-          const updatedTheme = await updateResponse.json();
-          return { data: resourceMappers.themes.mapOne(updatedTheme) };
 
         case 'audience-categories':
         case 'audience-category':
@@ -543,6 +569,10 @@ export const dataProvider: DataProvider = {
         case 'subscription-plan':
           const subscriptionPlan = await subscriptionPlansApi.update(id, resourceMappers.subscriptionPlans.mapToUpdate(data));
           return { data: resourceMappers.subscriptionPlans.mapOne(subscriptionPlan) };
+
+        case 'media-themes':
+          const updatedMediaTheme = await updateMediaTheme(id, resourceMappers.mediaThemes.mapToUpdate(data));
+          return { data: resourceMappers.mediaThemes.mapOne(updatedMediaTheme) };
 
         default:
           throw new Error(`Update not implemented for resource: ${resource}`);
@@ -570,6 +600,7 @@ export const dataProvider: DataProvider = {
         case 'countries':
           const country = await countriesApi.delete(id);
           return { data: resourceMappers.countries.mapOne(country) };
+
 
         case 'media-descriptions':
           const media = await mediaApi.deleteMediaDescription(id);
@@ -610,12 +641,6 @@ export const dataProvider: DataProvider = {
           const deletedVideoFile = await mediaApi.deleteVideoFile(id);
           return { data: resourceMappers.videoFiles.mapOne(deletedVideoFile) };
 
-        case 'themes':
-          const deleteResponse = await fetch(`http://localhost:8000/api/v1/themes/${id}`, {
-            method: 'DELETE'
-          });
-          const deletedTheme = await deleteResponse.json();
-          return { data: resourceMappers.themes.mapOne(deletedTheme) };
 
         case 'audience-categories':
         case 'audience-category':
@@ -626,6 +651,10 @@ export const dataProvider: DataProvider = {
         case 'subscription-plan':
           const deletedSubscriptionPlan = await subscriptionPlansApi.delete(id);
           return { data: resourceMappers.subscriptionPlans.mapOne(deletedSubscriptionPlan) };
+
+        case 'media-themes':
+          const deletedMediaTheme = await deleteMediaTheme(id);
+          return { data: resourceMappers.mediaThemes.mapOne(deletedMediaTheme) };
 
         default:
           throw new Error(`Delete not implemented for resource: ${resource}`);

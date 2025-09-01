@@ -138,9 +138,6 @@ export class ExcelParser {
           case 'episode_number':
           case 'production_year':
           case 'duration_seconds':
-          case 'view_count':
-          case 'like_count':
-          case 'share_count':
           case 'translation_share':
           case 'sacem_share':
           case 'other_share':
@@ -168,10 +165,9 @@ export class ExcelParser {
             description[fieldName] = this.convertToISODate(value, fieldName, rowNumber);
             break;
           
-          case 'media_categories_id_list':
-          case 'themes_and_genres_id_list':
+          case 'media_categories_list':
+          case 'media_themes_id_list':
           case 'subscription_plan_id_list':
-          case 'public_person_id_list':
           case 'subtitle_languages_available':
           case 'audio_languages_available':
           case 'seo_keywords':
@@ -179,7 +175,7 @@ export class ExcelParser {
           case 'distribution_territories':
           case 'actors_id_list':
           case 'directors_id_list':
-          case 'productor_id_list':
+          case 'productors_id_list':
           case 'authors_id_list':
           case 'origin_country_id_list':
           case 'original_languages_id':
@@ -234,15 +230,15 @@ export class ExcelParser {
   /**
    * Validate media type
    */
-  private static validateMediaType(value: any, _rowNumber: number): 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt' {
-    const validTypes = ['video', 'webtoon', 'trailer', 'teaser', 'excerpt'];
+  private static validateMediaType(value: any, _rowNumber: number): 'video' | 'webtoon' | 'trailer' | 'excerpt' {
+    const validTypes = ['video', 'webtoon', 'trailer', 'excerpt'];
     const mediaType = String(value).toLowerCase().trim();
     
     if (!validTypes.includes(mediaType)) {
       throw new Error(`Invalid media_type: ${value}. Must be one of: ${validTypes.join(', ')}`);
     }
     
-    return mediaType as 'video' | 'webtoon' | 'trailer' | 'teaser' | 'excerpt';
+    return mediaType as 'video' | 'webtoon' | 'trailer' | 'excerpt';
   }
   
   /**

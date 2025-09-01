@@ -7,7 +7,7 @@ from app.models.common import GUID, JSONArray
 from app.models.associations import (
     media_description_actors, media_description_directors, media_description_producers,
     media_description_authors, media_description_origin_countries, media_description_available_countries,
-    media_description_original_languages, media_description_audience_categories, media_description_themes,
+    media_description_original_languages, media_description_audience_categories,
     media_description_eligible_plans, media_description_trailers, media_description_excerpts
 )
 import enum
@@ -56,8 +56,10 @@ class MediaDescription(Base):
     program_id = Column(GUID(), ForeignKey("programs.id"), nullable=True)
     season_id = Column(GUID(), ForeignKey("seasons.id"), nullable=True)
     episode_number = Column(Integer, nullable=True)
-    media_categories = Column(JSONArray(), nullable=True)  # ARRAY of enum 'category'
-    # Removed: themes_and_genres_id_list - replaced with proper relationship
+    media_categories_list = Column(JSONArray(), nullable=True)  # ARRAY of enum 'category'
+    media_themes_id_list = Column(JSONArray(), nullable=True)  # List of MediaTheme IDs
+    trailer_id_list = Column(JSONArray(), nullable=True)  # List of VideoFile IDs for trailers
+    extract_id_list = Column(JSONArray(), nullable=True)  # List of VideoFile IDs for extracts
     descriptive_summary_text = Column(Text, nullable=True)
     synopsis_text = Column(Text, nullable=True)
     contract_start_date_utc = Column(DateTime(timezone=True), nullable=True)
@@ -111,23 +113,18 @@ class MediaDescription(Base):
     revenue_share = Column(Float, nullable=True)
     paid_token_cost = Column(Integer, nullable=True)
     
-    # v1.10-C engagement fields
-    view_count = Column(Integer, nullable=True, default=0)
-    like_count = Column(Integer, nullable=True, default=0)
-    share_count = Column(Integer, nullable=True, default=0)
+    # v1.10-C fields
     is_premium_content = Column(Boolean, nullable=True, default=False)
-    
-    # v1.10-C additional fields from migration
-    audio_languages_available = Column(JSONArray(), nullable=True)
-    subtitle_languages_available = Column(JSONArray(), nullable=True)
-    distribution_territories = Column(JSONArray(), nullable=True)
-    source_platform = Column(String, nullable=True)
     original_language = Column(String, nullable=True)
-    content_warning = Column(String, nullable=True)
-    rating_system = Column(String, nullable=True)
-    # Removed ghost columns: trailer_url, secondary_thumbnail_url, main_thumbnail_url
-    public_person_id_list = Column(JSONArray(), nullable=True)
-    # Removed ghost columns: audience_category_id, media_categories_id_list
+    
+    # v1.12 fields - Person ID lists
+    actors_id_list = Column(JSONArray(), nullable=True)
+    directors_id_list = Column(JSONArray(), nullable=True)
+    productors_id_list = Column(JSONArray(), nullable=True)
+    authors_id_list = Column(JSONArray(), nullable=True)
+    available_countries_id_list = Column(JSONArray(), nullable=True)
+    audience_categories_id_list = Column(JSONArray(), nullable=True)
+    eligible_plans_id_list = Column(JSONArray(), nullable=True)
     
     # Relationships
     main_video_file = relationship("VideoFile", backref="media_descriptions")
@@ -148,7 +145,6 @@ class MediaDescription(Base):
     
     audience_categories = relationship("AudienceCategory", secondary=media_description_audience_categories, back_populates="media")
     
-    themes = relationship("Theme", secondary=media_description_themes, back_populates="media")
     
     eligible_plan_id_list = relationship("SubscriptionPlan", secondary=media_description_eligible_plans, back_populates="eligible_media")
     

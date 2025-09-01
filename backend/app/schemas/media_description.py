@@ -66,13 +66,6 @@ class AudienceCategorySimple(BaseModel):
         from_attributes = True
 
 
-class ThemeSimple(BaseModel):
-    id: UUID
-    name: str
-    category: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class SubscriptionPlanSimple(BaseModel):
@@ -102,7 +95,7 @@ class MediaDescriptionBase(BaseModel):
     program_id: Optional[UUID] = None
     season_id: Optional[UUID] = None
     episode_number: Optional[int] = None
-    media_categories: Optional[List[MediaCategoryEnum]] = None
+    media_categories_list: Optional[List[MediaCategoryEnum]] = None
     descriptive_summary_text: Optional[str] = None
     synopsis_text: Optional[str] = None
     contract_start_date_utc: Optional[datetime] = None
@@ -144,6 +137,18 @@ class MediaDescriptionBase(BaseModel):
     other_share: Optional[float] = None
     revenue_share: Optional[float] = None
     paid_token_cost: Optional[int] = None
+    
+    # v1.12 fields - New JSON array fields
+    media_themes_id_list: Optional[List[str]] = None
+    trailer_id_list: Optional[List[str]] = None
+    extract_id_list: Optional[List[str]] = None
+    actors_id_list: Optional[List[str]] = None
+    directors_id_list: Optional[List[str]] = None
+    productors_id_list: Optional[List[str]] = None
+    authors_id_list: Optional[List[str]] = None
+    available_countries_id_list: Optional[List[str]] = None
+    audience_categories_id_list: Optional[List[str]] = None
+    eligible_plans_id_list: Optional[List[str]] = None
 
 
 class MediaDescriptionCreate(MediaDescriptionBase):
@@ -156,7 +161,6 @@ class MediaDescriptionCreate(MediaDescriptionBase):
     available_country_ids: Optional[List[str]] = Field(None, description="List of Country IDs for available countries")
     original_language_ids: Optional[List[str]] = Field(None, description="List of Language IDs for original languages")
     # Removed: audience_category_ids (handled by relationships now)
-    theme_ids: Optional[List[str]] = Field(None, description="List of Theme IDs")
     eligible_plan_id_list: Optional[List[str]] = Field(None, description="List of SubscriptionPlan IDs")
     trailer_ids: Optional[List[str]] = Field(None, description="List of VideoFile IDs for trailers")
     excerpt_ids: Optional[List[str]] = Field(None, description="List of VideoFile IDs for excerpts")
@@ -171,7 +175,7 @@ class MediaDescriptionUpdate(BaseModel):
     program_id: Optional[UUID] = None
     season_id: Optional[UUID] = None
     episode_number: Optional[int] = None
-    media_categories: Optional[List[MediaCategoryEnum]] = None
+    media_categories_list: Optional[List[MediaCategoryEnum]] = None
     descriptive_summary_text: Optional[str] = None
     synopsis_text: Optional[str] = None
     contract_start_date_utc: Optional[datetime] = None
@@ -200,7 +204,6 @@ class MediaDescriptionUpdate(BaseModel):
     available_country_ids: Optional[List[str]] = None
     original_language_ids: Optional[List[str]] = None
     # Removed: audience_category_ids (handled by relationships now)
-    theme_ids: Optional[List[str]] = None
     eligible_plan_id_list: Optional[List[str]] = None
     trailer_ids: Optional[List[str]] = None
     excerpt_ids: Optional[List[str]] = None
@@ -225,7 +228,6 @@ class MediaDescription(MediaDescriptionInDBBase):
     available_countries: Optional[List[CountrySimple]] = []
     original_languages: Optional[List[LanguageSimple]] = []
     audience_categories: Optional[List[AudienceCategorySimple]] = []
-    themes: Optional[List[ThemeSimple]] = []
     eligible_plan_id_list: Optional[List[SubscriptionPlanSimple]] = []
     trailers: Optional[List[VideoFileSimple]] = []
     excerpts: Optional[List[VideoFileSimple]] = []
@@ -246,3 +248,8 @@ class MediaDescriptionList(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class MediaDescriptionListResponse(BaseModel):
+    data: List[MediaDescriptionList]
+    pagination: dict

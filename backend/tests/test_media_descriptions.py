@@ -640,28 +640,7 @@ class TestMediaDescriptionRead:
         assert data["file_number"] == sample_media_data["file_number"]
         assert data["episode_title"] == sample_media_data["episode_title"]
     
-    def test_read_media_description_admin_no_view_increment(self, client, admin_token, sample_media_data):
-        """Test that admin users don't increment view count."""
-        headers = {"Authorization": f"Bearer {admin_token}"}
-        
-        # Create media description
-        create_response = client.post(
-            "/api/v1/media-descriptions",
-            headers=headers,
-            json=sample_media_data
-        )
-        assert create_response.status_code == 200
-        media_id = create_response.json()["id"]
-        initial_view_count = create_response.json()["view_count"]
-        
-        # Read as admin (should not increment view count)
-        response = client.get(
-            f"/api/v1/media-descriptions/{media_id}",
-            headers=headers
-        )
-        
-        assert response.status_code == 200
-        assert response.json()["view_count"] == initial_view_count
+    # Removed test_read_media_description_admin_no_view_increment - engagement fields removed
     
     def test_read_media_description_not_found(self, client, user_token):
         """Test reading non-existent media description."""
@@ -752,31 +731,7 @@ class TestMediaDescriptionsByVideo:
         # Should get 404 (not found) instead of 401 (unauthorized) since auth is optional
         assert response.status_code == 404
     
-    def test_read_media_description_unauthenticated_view_increment(self, client, admin_token, sample_media_data):
-        """Test that unauthenticated users increment view count."""
-        # Create media description as admin
-        admin_headers = {"Authorization": f"Bearer {admin_token}"}
-        create_response = client.post(
-            "/api/v1/media-descriptions",
-            headers=admin_headers,
-            json=sample_media_data
-        )
-        assert create_response.status_code == 200
-        media_id = create_response.json()["id"]
-        initial_view_count = create_response.json()["view_count"]
-        
-        # Read as unauthenticated user (should increment view count)
-        response = client.get(f"/api/v1/media-descriptions/{media_id}")
-        
-        assert response.status_code == 200
-        # Note: We need to check the view count via another request since it's incremented in the database
-        # Let's check by reading again as admin (admin reads don't increment)
-        admin_read_response = client.get(
-            f"/api/v1/media-descriptions/{media_id}",
-            headers=admin_headers
-        )
-        assert admin_read_response.status_code == 200
-        assert admin_read_response.json()["view_count"] == initial_view_count + 1
+    # Removed test_read_media_description_unauthenticated_view_increment - engagement fields removed
 
 
 class TestMediaDescriptionUpdate:
@@ -1270,94 +1225,7 @@ class TestTrendingMedia:
         assert isinstance(data, list)
 
 
-class TestMediaInteractions:
-    """Test media interaction endpoints (like, share)."""
-    
-    def test_like_media_description_success(self, client, user_token, admin_token, sample_media_data):
-        """Test successful media like action."""
-        # Create media description first
-        admin_headers = {"Authorization": f"Bearer {admin_token}"}
-        create_response = client.post(
-            "/api/v1/media-descriptions",
-            headers=admin_headers,
-            json=sample_media_data
-        )
-        assert create_response.status_code == 200
-        media_id = create_response.json()["id"]
-        initial_like_count = create_response.json()["like_count"]
-        
-        # Like the media
-        user_headers = {"Authorization": f"Bearer {user_token}"}
-        response = client.post(
-            f"/api/v1/media-descriptions/{media_id}/like",
-            headers=user_headers
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["like_count"] == initial_like_count + 1
-    
-    def test_like_media_description_not_found(self, client, user_token):
-        """Test liking non-existent media description."""
-        headers = {"Authorization": f"Bearer {user_token}"}
-        fake_id = str(uuid.uuid4())
-        
-        response = client.post(
-            f"/api/v1/media-descriptions/{fake_id}/like",
-            headers=headers
-        )
-        
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
-    
-    def test_like_media_description_unauthorized(self, client):
-        """Test liking without authentication."""
-        fake_id = str(uuid.uuid4())
-        response = client.post(f"/api/v1/media-descriptions/{fake_id}/like")
-        assert response.status_code == 401
-    
-    def test_share_media_description_success(self, client, user_token, admin_token, sample_media_data):
-        """Test successful media share action."""
-        # Create media description first
-        admin_headers = {"Authorization": f"Bearer {admin_token}"}
-        create_response = client.post(
-            "/api/v1/media-descriptions",
-            headers=admin_headers,
-            json=sample_media_data
-        )
-        assert create_response.status_code == 200
-        media_id = create_response.json()["id"]
-        initial_share_count = create_response.json()["share_count"]
-        
-        # Share the media
-        user_headers = {"Authorization": f"Bearer {user_token}"}
-        response = client.post(
-            f"/api/v1/media-descriptions/{media_id}/share",
-            headers=user_headers
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["share_count"] == initial_share_count + 1
-    
-    def test_share_media_description_not_found(self, client, user_token):
-        """Test sharing non-existent media description."""
-        headers = {"Authorization": f"Bearer {user_token}"}
-        fake_id = str(uuid.uuid4())
-        
-        response = client.post(
-            f"/api/v1/media-descriptions/{fake_id}/share",
-            headers=headers
-        )
-        
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
-    
-    def test_share_media_description_unauthorized(self, client):
-        """Test sharing without authentication."""
-        fake_id = str(uuid.uuid4())
-        response = client.post(f"/api/v1/media-descriptions/{fake_id}/share")
-        assert response.status_code == 401
+# Removed TestMediaInteractions class - engagement endpoints (like/share) have been removed
 
 
 class TestMediaDescriptionEdgeCases:

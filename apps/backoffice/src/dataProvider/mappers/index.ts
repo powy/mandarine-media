@@ -27,6 +27,7 @@ import {
   ScreenContentCreate,
   ScreenContentUpdate,
   VideoFile,
+  VideoFileReport,
 } from 'share';
 
 // React Admin expects 'id' field and ISO date strings work well with date inputs
@@ -63,6 +64,7 @@ const createBaseMapper = <T extends { id: string; creation_date_utc: string }, C
 
 // Specific mappers for each resource
 const countries = createBaseMapper<Country, CountryCreate, CountryUpdate>();
+
 
 const languages = createBaseMapper<Language, LanguageCreate, LanguageUpdate>();
 
@@ -400,31 +402,6 @@ const videoFiles = {
   },
 };
 
-// Simple theme mapper - themes have: id, name, description, category, creation_date_utc
-const themes = {
-  mapOne: (item: any): ReactAdminRecord => ({
-    ...item,
-    id: item.id,
-    created_at: item.creation_date_utc,
-  }),
-
-  mapList: (items: any[]): ReactAdminRecord[] => 
-    (items || []).map((item) => ({
-      ...item,
-      id: item.id,
-      created_at: item.creation_date_utc,
-    })),
-
-  mapToCreate: (data: ReactAdminRecord): any => {
-    const { id, created_at, creation_date_utc, ...rest } = data;
-    return rest;
-  },
-
-  mapToUpdate: (data: ReactAdminRecord): any => {
-    const { id, created_at, creation_date_utc, ...rest } = data;
-    return rest;
-  },
-};
 
 // Simple audience categories mapper
 const audienceCategories = {
@@ -478,6 +455,48 @@ const subscriptionPlans = {
   },
 };
 
+// Video file reports mapper - read-only resource
+const videoFileReports = {
+  mapOne: (item: VideoFileReport): ReactAdminRecord => ({
+    ...item,
+    id: item.id,
+    created_at: item.timestamp,
+  }),
+
+  mapList: (items: VideoFileReport[]): ReactAdminRecord[] => 
+    (items || []).map((item) => ({
+      ...item,
+      id: item.id,
+      created_at: item.timestamp,
+    })),
+};
+
+// Media themes mapper
+const mediaThemes = {
+  mapOne: (item: any): ReactAdminRecord => ({
+    ...item,
+    id: item.id,
+    created_at: item.creation_date_utc,
+  }),
+
+  mapList: (items: any[]): ReactAdminRecord[] => 
+    (items || []).map((item) => ({
+      ...item,
+      id: item.id,
+      created_at: item.creation_date_utc,
+    })),
+
+  mapToCreate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+
+  mapToUpdate: (data: ReactAdminRecord): any => {
+    const { id, created_at, creation_date_utc, ...rest } = data;
+    return rest;
+  },
+};
+
 export const resourceMappers = {
   countries,
   languages,
@@ -490,7 +509,8 @@ export const resourceMappers = {
   contentLists,
   screenContents,
   videoFiles,
-  themes,
+  videoFileReports,
+  mediaThemes,
   audienceCategories,
   subscriptionPlans,
 };

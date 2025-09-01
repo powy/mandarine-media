@@ -11,7 +11,6 @@ from app.models.public_person import PublicPerson
 from app.models.country import Country
 from app.models.language import Language
 from app.models.audience_category import AudienceCategory
-from app.models.theme import Theme
 from app.models.subscription_plan import SubscriptionPlan
 from app.schemas.media_description import MediaDescriptionCreate, MediaDescriptionUpdate
 
@@ -35,7 +34,6 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
             joinedload(MediaDescription.available_countries),
             joinedload(MediaDescription.original_languages),
             joinedload(MediaDescription.audience_categories),
-            joinedload(MediaDescription.themes),
             joinedload(MediaDescription.eligible_plan_id_list),
             joinedload(MediaDescription.trailers),
             joinedload(MediaDescription.excerpts)
@@ -50,7 +48,6 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
         media_type: Optional[str] = None,
         status: Optional[str] = None,
         is_featured: Optional[bool] = None,
-        theme_ids: Optional[List[str]] = None,
         country_ids: Optional[List[str]] = None,
         language_ids: Optional[List[str]] = None
     ) -> List[MediaDescription]:
@@ -66,8 +63,6 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
             query = query.filter(MediaDescription.is_featured == is_featured)
             
         # Filter by themes
-        if theme_ids:
-            query = query.join(MediaDescription.themes).filter(Theme.id.in_(theme_ids))
             
         # Filter by origin countries
         if country_ids:
@@ -88,7 +83,7 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
         
         for field in ['actor_ids', 'director_ids', 'producer_ids', 'author_ids', 
                      'origin_country_ids', 'available_country_ids', 'original_language_ids',
-                     'audience_category_ids', 'theme_ids', 'eligible_plan_id_list',
+                     'audience_category_ids', 'eligible_plan_id_list',
                      'trailer_ids', 'excerpt_ids']:
             if field in obj_data:
                 value = obj_data.pop(field)
@@ -119,7 +114,7 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
         
         for field in ['actor_ids', 'director_ids', 'producer_ids', 'author_ids',
                      'origin_country_ids', 'available_country_ids', 'original_language_ids', 
-                     'audience_category_ids', 'theme_ids', 'eligible_plan_id_list',
+                     'audience_category_ids', 'eligible_plan_id_list',
                      'trailer_ids', 'excerpt_ids']:
             if field in obj_data:
                 relationship_data[field] = obj_data.pop(field)
@@ -180,10 +175,6 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
             categories = db.query(AudienceCategory).filter(AudienceCategory.id.in_(relationship_data['audience_category_ids'])).all()
             db_obj.audience_categories = categories
             
-        # Themes
-        if 'theme_ids' in relationship_data:
-            themes = db.query(Theme).filter(Theme.id.in_(relationship_data['theme_ids'])).all()
-            db_obj.themes = themes
             
         # Eligible Plans
         if 'eligible_plan_id_list' in relationship_data:
@@ -229,6 +220,44 @@ class CRUDMediaDescription(CRUDBase[MediaDescription, MediaDescriptionCreate, Me
             return db.query(MediaDescription).join(MediaDescription.origin_countries).filter(Country.id == country_id).all()
         else:
             return db.query(MediaDescription).join(MediaDescription.available_countries).filter(Country.id == country_id).all()
+
+    def count_total(self, db: Session) -> int:
+        """Count total number of media descriptions"""
+        return db.query(MediaDescription).count()
+
+    def count_with_filters(
+        self,
+        db: Session,
+        *,
+        media_type: Optional[str] = None,
+        status: Optional[str] = None,
+        is_featured: Optional[bool] = None,
+        country_ids: Optional[List[str]] = None,
+        language_ids: Optional[List[str]] = None
+    ) -> int:
+        """Count media descriptions with filters"""
+        query = db.query(self.model)
+        
+        if media_type:
+            query = query.filter(MediaDescription.media_type == media_type)
+        
+        if status:
+            query = query.filter(MediaDescription.content_status == status)
+            
+        if is_featured is not None:
+            query = query.filter(MediaDescription.is_featured == is_featured)
+            
+        # Filter by themes
+            
+        # Filter by origin countries
+        if country_ids:
+            query = query.join(MediaDescription.origin_countries).filter(Country.id.in_(country_ids))
+            
+        # Filter by original languages
+        if language_ids:
+            query = query.join(MediaDescription.original_languages).filter(Language.id.in_(language_ids))
+        
+        return query.count()
 
 
 media_description = CRUDMediaDescription(MediaDescription)

@@ -297,18 +297,17 @@ def create_video_file_metadata(
         # Create video file record with metadata only
         video_file_data = schemas.video_file.VideoFileCreate(
             file_name=video_file_in.file_name,
-            upload_method=video_file_in.upload_method,
             upload_status=schemas.video_file.UploadStatusEnum.metadata_only,
             external_url=video_file_in.external_url,
         )
         
         video_file = crud.video_file.create(db=db, obj_in=video_file_data)
         
-        # Generate upload URL if this is for new upload method
+        # Generate upload URL for new uploads (when no external_url provided)
         upload_url = None
-        if video_file_in.upload_method == schemas.video_file.UploadMethodEnum.new_upload:
-            # Generate presigned URL or upload endpoint URL
-            upload_url = f"/api/v1/video/files/{video_file.id}/upload-file"
+        if not video_file_in.external_url:
+            # Generate presigned URL or upload endpoint URL for new uploads
+            upload_url = f"/api/v1/video-files/{video_file.id}/upload-file"
         
         return schemas.video_file.VideoFileUploadResponse(
             id=video_file.id,
@@ -339,7 +338,6 @@ def create_video_file_with_existing_url(
         video_file_data = schemas.video_file.VideoFileCreate(
             file_name=video_file_in.file_name,
             external_url=video_file_in.external_url,
-            upload_method=schemas.video_file.UploadMethodEnum.existing_url,
             upload_status=schemas.video_file.UploadStatusEnum.upload_completed,
             file_url=video_file_in.external_url,  # Use external URL as file URL
         )
@@ -598,7 +596,7 @@ def generate_drm_token(
     id: UUID,
     expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
     drm_key_id: Optional[str] = Query(None),
-    current_user: schemas.User = Depends(deps.get_current_active_user),  # Regular users can get DRM tokens
+    current_user: schemas.User = Depends(deps.get_current_active_admin),  # Admin only
 ) -> Any:
     """
     Generate JWT token for DRM license requests.

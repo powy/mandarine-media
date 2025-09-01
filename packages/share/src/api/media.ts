@@ -70,16 +70,6 @@ export const mediaApi = {
     return response.data;
   },
 
-  // User interactions
-  async likeMedia(id: string): Promise<MediaDescription> {
-    const response = await apiClient.post<MediaDescription>(`/media-descriptions/${id}/like`);
-    return response.data;
-  },
-
-  async shareMedia(id: string): Promise<MediaDescription> {
-    const response = await apiClient.post<MediaDescription>(`/media-descriptions/${id}/share`);
-    return response.data;
-  },
 
   // Video File endpoints
   async getVideoFiles(filters?: VideoFileFilters): Promise<VideoFileListResponse> {
@@ -219,15 +209,6 @@ export const mediaApi = {
     return response.data;
   },
 
-  async bulkCreateMediaDescriptions(data: MediaDescription[]): Promise<BulkMediaDescriptionResponse> {
-    const response = await apiClient.post<BulkMediaDescriptionResponse>('/media-descriptions/bulk-create', data);
-    return response.data;
-  },
-
-  async bulkUpdateMediaDescriptions(data: Array<{id: string} & Partial<MediaDescription>>): Promise<BulkMediaDescriptionResponse> {
-    const response = await apiClient.put<BulkMediaDescriptionResponse>('/media-descriptions/bulk-update', data);
-    return response.data;
-  },
 
   // Description Reports endpoints
   async getDescriptionReports(skip = 0, limit = 20): Promise<DescriptionReportListResponse> {
@@ -332,7 +313,7 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
     }
     
     // Get cast and crew information
-    if (mediaDescription.actors_id_list?.length || mediaDescription.directors_id_list?.length || mediaDescription.productor_id_list?.length) {
+    if (mediaDescription.actors_id_list?.length || mediaDescription.directors_id_list?.length || mediaDescription.productors_id_list?.length) {
       
       // Get actors
       if (mediaDescription.actors_id_list?.length) {
@@ -361,10 +342,10 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
       }
       
       // Get producers
-      if (mediaDescription.productor_id_list?.length) {
+      if (mediaDescription.productors_id_list?.length) {
         try {
           producers = await Promise.all(
-            mediaDescription.productor_id_list.map(id => personsApi.getById(id).catch(() => null))
+            mediaDescription.productors_id_list.map(id => personsApi.getById(id).catch(() => null))
           );
           producers = producers.filter(Boolean);
         } catch (error) {
@@ -539,7 +520,7 @@ export const getSeasonScreenData = async (seasonId: string) => {
     episodes.forEach(episode => {
       episode.actors_id_list?.forEach(id => actorIds.add(id));
       episode.directors_id_list?.forEach(id => directorIds.add(id));
-      episode.productor_id_list?.forEach(id => producerIds.add(id));
+      episode.productors_id_list?.forEach(id => producerIds.add(id));
       episode.origin_country_id_list?.forEach(id => countryIds.add(id));
     });
     
@@ -729,7 +710,7 @@ export const getProgramScreenData = async (seasonId: string) => {
     currentSeasonEpisodes.forEach(episode => {
       episode.actors_id_list?.forEach(id => actorIds.add(id));
       episode.directors_id_list?.forEach(id => directorIds.add(id));
-      episode.productor_id_list?.forEach(id => producerIds.add(id));
+      episode.productors_id_list?.forEach(id => producerIds.add(id));
       episode.origin_country_id_list?.forEach(id => countryIds.add(id));
     });
     
@@ -795,7 +776,7 @@ export const getProgramScreenData = async (seasonId: string) => {
       programImageUrl,
       synopsis: firstEpisode?.synopsis_text || null,
       description: firstEpisode?.descriptive_summary_text || null,
-      genres: firstEpisode?.media_categories || [],
+      genres: firstEpisode?.media_categories_list || [],
       audioLanguages,
       subtitleLanguages,
       releaseDate: firstEpisode?.production_year || null,
@@ -865,7 +846,7 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
     const firstEpisode = episodes[0];
     const synopsis = firstEpisode?.synopsis_text || null;
     const description = firstEpisode?.descriptive_summary_text || null;
-    const genres = firstEpisode?.media_categories || [];
+    const genres = firstEpisode?.media_categories_list || [];
     const releaseDate = firstEpisode?.production_year || null;
 
     // Get program image from the first episode or season
@@ -883,7 +864,7 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
       // Collect person IDs
       (episode.actors_id_list || []).forEach(id => actorIds.add(id));
       (episode.directors_id_list || []).forEach(id => directorIds.add(id));
-      (episode.productor_id_list || []).forEach(id => producerIds.add(id));
+      (episode.productors_id_list || []).forEach(id => producerIds.add(id));
       
       // Collect language and country IDs
       (episode.original_languages_id || []).forEach(id => audioLanguageIds.add(id));

@@ -12,11 +12,6 @@ class EncodingStatusEnum(str, enum.Enum):
     failed = "failed"
 
 
-class UploadMethodEnum(str, enum.Enum):
-    existing_url = "existing_url"
-    new_upload = "new_upload"
-
-
 class UploadStatusEnum(str, enum.Enum):
     metadata_only = "metadata_only"
     file_uploading = "file_uploading"
@@ -32,7 +27,6 @@ class VideoFileBase(BaseModel):
     encoding_status: EncodingStatusEnum = Field(default=EncodingStatusEnum.pending)
     
     # New fields for dual upload functionality
-    upload_method: UploadMethodEnum = Field(default=UploadMethodEnum.new_upload, description="Upload method used")
     upload_status: UploadStatusEnum = Field(default=UploadStatusEnum.metadata_only, description="Current upload status")
     upload_timestamp: Optional[datetime] = Field(None, description="When file upload was initiated")
     external_url: Optional[str] = Field(None, description="External media URL for existing files")
@@ -73,7 +67,6 @@ class VideoFileUpdate(BaseModel):
     file_name: Optional[str] = None
     file_size_bytes: Optional[int] = None
     encoding_status: Optional[EncodingStatusEnum] = None
-    upload_method: Optional[UploadMethodEnum] = None
     upload_status: Optional[UploadStatusEnum] = None
     upload_timestamp: Optional[datetime] = None
     external_url: Optional[str] = None
@@ -125,7 +118,6 @@ class VideoFileList(BaseModel):
 class VideoFileMetadataCreate(BaseModel):
     """Schema for creating video file metadata only (first step of two-step upload)"""
     file_name: str = Field(..., description="Original filename")
-    upload_method: UploadMethodEnum = Field(default=UploadMethodEnum.new_upload)
     external_url: Optional[str] = Field(None, description="External media URL for existing files")
 
 

@@ -136,15 +136,15 @@ export const ExcerptInput = ({ source = "excerpt_ids", label = "Excerpts", ...pr
   </ReferenceArrayInput>
 );
 
-// Media Categories input (enum-based)
-export const MediaCategoriesInput = ({ source = "media_categories", label = "Media Categories", ...props }) => (
+// Media Categories input (enum-based) - v1.12 field name
+export const MediaCategoriesInput = ({ source = "media_categories_list", label = "Media Categories", ...props }) => (
   <SelectArrayInput 
     source={source}
     label={label}
     choices={[
       { id: 'movie', name: 'Movie' },
       { id: 'drama', name: 'Drama' },
-      { id: 'short_drama', name: 'Short Drama' },
+      { id: 'short-drama', name: 'Short Drama' },
       { id: 'musical', name: 'Musical' },
       { id: 'animation', name: 'Animation' },
       { id: 'documentary', name: 'Documentary' },
@@ -153,4 +153,26 @@ export const MediaCategoriesInput = ({ source = "media_categories", label = "Med
     ]}
     {...props}
   />
+);
+
+// v1.12 new MediaTheme input
+export const MediaThemeInput = ({ source = "media_themes_id_list", label = "Media Themes", ...props }) => (
+  <ReferenceArrayInput source={source} reference="media-themes" label={label} {...props}>
+    <AutocompleteArrayInput 
+      optionText="name"
+      optionValue="id"
+      filterToQuery={searchText => ({ q: searchText })}
+    />
+  </ReferenceArrayInput>
+);
+
+// Subscription Plan input for Users - v1.12 new field
+export const SubscriptionPlanInput = ({ source = "subscription_plans_id_list", label = "Subscription Plans", ...props }) => (
+  <ReferenceArrayInput source={source} reference="subscription-plans" label={label} {...props}>
+    <AutocompleteArrayInput 
+      optionText="name"
+      optionValue="id"
+      filterToQuery={searchText => ({ q: searchText })}
+    />
+  </ReferenceArrayInput>
 );

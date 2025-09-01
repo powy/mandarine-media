@@ -91,9 +91,9 @@ describe('Program Components', () => {
       expect(screen.getByTestId('reference-field-general_media_description_id')).toBeInTheDocument();
       expect(screen.queryByTestId('field-general_media_description')).not.toBeInTheDocument();
       
-      // Should use creation_date_utc, not created_at
+      // Should use creation_date_utc, not creation_date_utc
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
-      expect(screen.queryByTestId('date-field-created_at')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('date-field-creation_date_utc')).not.toBeInTheDocument();
     });
 
     test('renders action buttons', () => {
@@ -219,9 +219,9 @@ describe('Program Components', () => {
       expect(screen.getByTestId('reference-field-general_media_description_id')).toBeInTheDocument();
       expect(screen.queryByTestId('field-general_media_description')).not.toBeInTheDocument();
       
-      // Should use creation_date_utc, not created_at  
+      // Should use creation_date_utc, not creation_date_utc  
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
-      expect(screen.queryByTestId('date-field-created_at')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('date-field-creation_date_utc')).not.toBeInTheDocument();
     });
 
     test('renders action buttons in toolbar', () => {

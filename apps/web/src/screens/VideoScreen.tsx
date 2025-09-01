@@ -578,11 +578,11 @@ const VideoScreen: React.FC = () => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-kyool-blue mb-3">Détails</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {mediaDescription.themes_and_genres_id_list?.length && (
+              {mediaDescription.media_themes_id_list?.length && (
                 <div>
                   <span className="text-gray-400">Genres: </span>
                   <span className="text-white">
-                    {mediaDescription.themes_and_genres_id_list.join(', ')}
+                    {mediaDescription.media_themes_id_list.join(', ')}
                   </span>
                 </div>
               )}

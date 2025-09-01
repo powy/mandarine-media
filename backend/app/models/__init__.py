@@ -13,4 +13,4 @@ from .country import Country
 from .picture import Picture
 from .content_list import ContentList, ThumbnailFormatEnum, ContentTypeEnum
 from .screen_description import ScreenDescription, ScreenTypeEnum
-from .theme import Theme
+from .media_theme import MediaTheme

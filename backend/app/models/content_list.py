@@ -54,8 +54,8 @@ class ContentList(Base):
     
     # NEW v1.9 fields - Content filtering and organization
     media_type = Column(String, nullable=True)  # Filter by media type
-    media_categories_id_list = Column(JSONArray(), nullable=True)  # Filter by category IDs
-    themes_and_genres_id_list = Column(JSONArray(), nullable=True)  # Filter by theme/genre IDs
+    media_categories_list = Column(JSONArray(), nullable=True)  # Array of MediaCategoryEnum values
+    media_themes_id_list = Column(JSONArray(), nullable=True)  # List of MediaTheme IDs
     latest_first = Column(Boolean, default=True, nullable=False)  # Order items by latest first
     slug = Column(String, nullable=True, unique=True)
     

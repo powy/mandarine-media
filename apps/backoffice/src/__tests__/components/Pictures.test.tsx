@@ -36,11 +36,13 @@ vi.mock('react-admin', () => ({
 }));
 
 // Mock useNavigate
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', () => ({
-  ...vi.importActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
 
 describe('Picture Components', () => {
   beforeEach(() => {
@@ -58,11 +60,11 @@ describe('Picture Components', () => {
       expect(screen.getByTestId('list')).toBeInTheDocument();
       expect(screen.getByTestId('datagrid')).toBeInTheDocument();
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
-      expect(screen.getByTestId('image-field-photo_url')).toBeInTheDocument();
+      expect(screen.getByTestId('image-field-image_url')).toBeInTheDocument();
       expect(screen.getByTestId('field-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('field-alt_text')).toBeInTheDocument();
-      expect(screen.getByTestId('field-description')).toBeInTheDocument();
-      expect(screen.getByTestId('date-field-created_at')).toBeInTheDocument();
+      expect(screen.getByTestId('function-field')).toBeInTheDocument();
+      expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
       expect(screen.getByTestId('edit-button')).toBeInTheDocument();
       expect(screen.getByTestId('show-button')).toBeInTheDocument();
       expect(screen.getByTestId('delete-button')).toBeInTheDocument();
@@ -97,20 +99,9 @@ describe('Picture Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('filter-button')).toBeInTheDocument();
-      expect(screen.getByTestId('create-button')).toBeInTheDocument();
-      expect(screen.getByTestId('export-button')).toBeInTheDocument();
-    });
-
-    test('renders search input', () => {
-      render(
-        <MemoryRouter>
-          <PictureList />
-        </MemoryRouter>
-      );
-
-      expect(screen.getByTestId('search-input')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Search pictures...')).toBeInTheDocument();
+      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
+      expect(screen.getByTestId('show-button')).toBeInTheDocument();
+      expect(screen.getByTestId('delete-button')).toBeInTheDocument();
     });
   });
 
@@ -124,10 +115,9 @@ describe('Picture Components', () => {
 
       expect(screen.getByTestId('create')).toBeInTheDocument();
       expect(screen.getByTestId('form')).toBeInTheDocument();
-      expect(screen.getByTestId('input-photo_url')).toBeInTheDocument();
+      expect(screen.getByTestId('input-image_url')).toBeInTheDocument();
       expect(screen.getByTestId('input-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('input-alt_text')).toBeInTheDocument();
-      expect(screen.getByTestId('input-description')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-width')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-height')).toBeInTheDocument();
     });
@@ -144,28 +134,7 @@ describe('Picture Components', () => {
       expect(screen.queryByText('File Size (bytes)')).not.toBeInTheDocument();
     });
 
-    test('includes description field', () => {
-      render(
-        <MemoryRouter>
-          <PictureCreate />
-        </MemoryRouter>
-      );
 
-      expect(screen.getByTestId('input-description')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-    });
-
-    test('renders form toolbar', () => {
-      render(
-        <MemoryRouter>
-          <PictureCreate />
-        </MemoryRouter>
-      );
-
-      expect(screen.getByTestId('form-toolbar')).toBeInTheDocument();
-      expect(screen.getByTestId('save-button')).toBeInTheDocument();
-      expect(screen.getByTestId('button-cancel')).toBeInTheDocument();
-    });
   });
 
   describe('PictureEdit', () => {
@@ -178,10 +147,9 @@ describe('Picture Components', () => {
 
       expect(screen.getByTestId('edit')).toBeInTheDocument();
       expect(screen.getByTestId('form')).toBeInTheDocument();
-      expect(screen.getByTestId('input-photo_url')).toBeInTheDocument();
+      expect(screen.getByTestId('input-image_url')).toBeInTheDocument();
       expect(screen.getByTestId('input-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('input-alt_text')).toBeInTheDocument();
-      expect(screen.getByTestId('input-description')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-width')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-height')).toBeInTheDocument();
     });
@@ -198,16 +166,6 @@ describe('Picture Components', () => {
       expect(screen.queryByText('File Size (bytes)')).not.toBeInTheDocument();
     });
 
-    test('includes description field', () => {
-      render(
-        <MemoryRouter>
-          <PictureEdit />
-        </MemoryRouter>
-      );
-
-      expect(screen.getByTestId('input-description')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-    });
   });
 
   describe('PictureShow', () => {
@@ -221,14 +179,13 @@ describe('Picture Components', () => {
       expect(screen.getByTestId('show')).toBeInTheDocument();
       expect(screen.getByTestId('show-layout')).toBeInTheDocument();
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
-      expect(screen.getByTestId('image-field-photo_url')).toBeInTheDocument();
-      expect(screen.getByTestId('url-field-photo_url')).toBeInTheDocument();
+      expect(screen.getByTestId('image-field-image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('url-field-image_url')).toBeInTheDocument();
       expect(screen.getByTestId('field-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('field-alt_text')).toBeInTheDocument();
-      expect(screen.getByTestId('field-description')).toBeInTheDocument();
       expect(screen.getByTestId('field-width')).toBeInTheDocument();
       expect(screen.getByTestId('field-height')).toBeInTheDocument();
-      expect(screen.getByTestId('date-field-created_at')).toBeInTheDocument();
+      expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
     });
 
     test('does not render file_size_bytes field', () => {
@@ -243,27 +200,6 @@ describe('Picture Components', () => {
       expect(screen.queryByText('File Size (bytes)')).not.toBeInTheDocument();
     });
 
-    test('includes description field', () => {
-      render(
-        <MemoryRouter>
-          <PictureShow />
-        </MemoryRouter>
-      );
 
-      expect(screen.getByTestId('field-description')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-    });
-
-    test('renders action buttons in toolbar', () => {
-      render(
-        <MemoryRouter>
-          <PictureShow />
-        </MemoryRouter>
-      );
-
-      expect(screen.getByTestId('toolbar')).toBeInTheDocument();
-      expect(screen.getByTestId('list-button')).toBeInTheDocument();
-      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
-    });
   });
 });

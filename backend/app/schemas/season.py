@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 class SeasonBase(BaseModel):
-    program_id: UUID
+    program_id: Optional[UUID] = None
     season_number: int = Field(..., gt=0, le=9999)
     season_name: Optional[str] = None
     general_media_description_id: Optional[UUID] = None
@@ -24,6 +24,7 @@ class SeasonCreate(SeasonBase):
 
 
 class SeasonUpdate(BaseModel):
+    program_id: Optional[UUID] = None
     season_number: Optional[int] = Field(None, gt=0, le=9999)
     season_name: Optional[str] = None
     general_media_description_id: Optional[UUID] = None

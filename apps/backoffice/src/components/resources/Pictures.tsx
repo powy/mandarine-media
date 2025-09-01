@@ -79,19 +79,18 @@ export const PictureList = () => (
   <List 
     filters={pictureFilters}
     actions={<PictureListActions />} 
-    sort={{ field: 'created_at', order: 'DESC' }}
+    sort={{ field: 'creation_date_utc', order: 'DESC' }}
     perPage={20}
   >
     <Datagrid>
       <TextField source="id" sortable />
       <ImageField 
-        source="photo_url" 
+        source="image_url" 
         label="Image" 
         sx={{ '& img': { maxHeight: 50, maxWidth: 50 } }}
       />
       <TextField source="file_name" label="File Name" sortable />
       <TextField source="alt_text" label="Alt Text" />
-      <TextField source="description" label="Description" />
       <FunctionField 
         label="Dimensions" 
         render={record => 
@@ -100,7 +99,7 @@ export const PictureList = () => (
             : 'N/A'
         } 
       />
-      <DateField source="created_at" label="Created" sortable />
+      <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
       <ShowButton />
       <DeleteButton />
@@ -112,7 +111,7 @@ export const PictureCreate = () => (
   <Create redirect="list">
     <SimpleForm toolbar={<PictureToolbar />}>
       <TextInput 
-        source="photo_url" 
+        source="image_url" 
         label="Photo URL"
         validate={[required()]} 
         fullWidth 
@@ -125,12 +124,6 @@ export const PictureCreate = () => (
       <TextInput 
         source="alt_text" 
         label="Alt Text"
-        fullWidth 
-        multiline
-      />
-      <TextInput 
-        source="description" 
-        label="Description"
         fullWidth 
         multiline
       />
@@ -152,7 +145,7 @@ export const PictureEdit = () => (
   <Edit>
     <SimpleForm toolbar={<PictureToolbar />}>
       <TextInput 
-        source="photo_url" 
+        source="image_url" 
         label="Photo URL"
         validate={[required()]} 
         fullWidth 
@@ -165,12 +158,6 @@ export const PictureEdit = () => (
       <TextInput 
         source="alt_text" 
         label="Alt Text"
-        fullWidth 
-        multiline
-      />
-      <TextInput 
-        source="description" 
-        label="Description"
         fullWidth 
         multiline
       />
@@ -192,14 +179,13 @@ export const PictureShow = () => (
   <Show actions={<PictureShowActions />}>
     <SimpleShowLayout>
       <TextField source="id" />
-      <ImageField source="photo_url" label="Image" />
-      <UrlField source="photo_url" label="Photo URL" />
+      <ImageField source="image_url" label="Image" />
+      <UrlField source="image_url" label="Photo URL" />
       <TextField source="file_name" label="File Name" />
       <TextField source="alt_text" label="Alt Text" />
-      <TextField source="description" label="Description" />
       <TextField source="width" label="Width (pixels)" />
       <TextField source="height" label="Height (pixels)" />
-      <DateField source="created_at" label="Created" />
+      <DateField source="creation_date_utc" label="Created" />
     </SimpleShowLayout>
   </Show>
 );

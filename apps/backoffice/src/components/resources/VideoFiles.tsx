@@ -38,9 +38,9 @@ const VideoFileFilters = (props: any) => (
         { id: 'file_uploading', name: 'Uploading' },
         { id: 'upload_completed', name: 'Completed' },
         { id: 'upload_failed', name: 'Failed' },
+        { id: 'ready_no_subtitles', name: 'Ready (No Subtitles)' },
       ]} 
     />
-    <BooleanInput source="is_processed" label="Processed" />
   </Filter>
 );
 
@@ -88,20 +88,15 @@ export const VideoFileCreate = () => (
       />
       
       {/* Upload and Encoding Settings */}
-      <SelectInput 
-        source="upload_method" 
-        choices={[
-          { id: 'existing_url', name: 'Existing URL' },
-          { id: 'new_upload', name: 'New Upload' },
-        ]}
-        defaultValue="existing_url"
-      />
       
       <SelectInput 
         source="upload_status" 
         choices={[
           { id: 'metadata_only', name: 'Metadata Only' },
+          { id: 'file_uploading', name: 'Uploading' },
           { id: 'upload_completed', name: 'Completed' },
+          { id: 'upload_failed', name: 'Failed' },
+          { id: 'ready_no_subtitles', name: 'Ready (No Subtitles)' },
         ]}
         defaultValue="upload_completed"
         helperText="For existing URLs, typically set to 'Completed'"
@@ -158,13 +153,6 @@ export const VideoFileEdit = () => (
       <TextInput source="external_url" label="Video URL" fullWidth />
       
       {/* Upload and Encoding Settings */}
-      <SelectInput 
-        source="upload_method" 
-        choices={[
-          { id: 'existing_url', name: 'Existing URL' },
-          { id: 'new_upload', name: 'New Upload' },
-        ]}
-      />
       
       <SelectInput 
         source="upload_status" 
@@ -173,6 +161,7 @@ export const VideoFileEdit = () => (
           { id: 'file_uploading', name: 'Uploading' },
           { id: 'upload_completed', name: 'Completed' },
           { id: 'upload_failed', name: 'Failed' },
+          { id: 'ready_no_subtitles', name: 'Ready (No Subtitles)' },
         ]}
       />
       
@@ -231,7 +220,6 @@ export const VideoFileShow = () => (
       <TextField source="file_name" />
       
       {/* Upload and Status Information */}
-      <TextField source="upload_method" label="Upload Method" />
       <TextField source="upload_status" label="Upload Status" />
       <TextField source="encoding_status" label="Encoding Status" />
       <TextField source="external_url" label="External URL" />

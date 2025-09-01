@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, media_descriptions, video_files, public_persons, media_uploads, description_reports, video_file_reports, programs, seasons, languages, countries, pictures, content_lists, screen_descriptions, themes, audience_categories, subscription_plans
+from app.api.v1.endpoints import auth, users, media_descriptions, video_files, public_persons, media_uploads, description_reports, video_file_reports, programs, seasons, languages, countries, pictures, content_lists, screen_descriptions, audience_categories, subscription_plans, media_themes
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
@@ -17,6 +17,6 @@ api_router.include_router(countries.router, prefix="/countries", tags=["countrie
 api_router.include_router(pictures.router, prefix="/pictures", tags=["pictures"])
 api_router.include_router(content_lists.router, prefix="/content-lists", tags=["content-lists"])
 api_router.include_router(screen_descriptions.router, prefix="/screen-descriptions", tags=["screen-descriptions"])
-api_router.include_router(themes.router, prefix="/themes", tags=["themes"])
 api_router.include_router(audience_categories.router, prefix="/audience-categories", tags=["audience-categories"])
 api_router.include_router(subscription_plans.router, prefix="/subscription-plans", tags=["subscription-plans"])
+api_router.include_router(media_themes.router, prefix="/media-themes", tags=["media-themes"])
