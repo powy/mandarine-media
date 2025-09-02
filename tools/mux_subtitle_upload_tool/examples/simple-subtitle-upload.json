@@ -13,7 +13,7 @@
   "mux_asset_id": "your-existing-mux-asset-id",
   "subtitles": [
     {
-      "file_path": "/path/to/subtitles/english.srt",
+      "file_path": "./subtitles/english.srt",
       "language_code": "en",
       "name": "English",
       "text_type": "subtitles",

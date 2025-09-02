@@ -1,36 +1,36 @@
 from .user import User, UserCreate, UserUpdate, UserInDB
 from .media_description import (
     MediaDescription,
-    MediaDescriptionCreate, 
+    MediaDescriptionCreate,
     MediaDescriptionUpdate,
     MediaDescriptionInDB,
-    MediaDescriptionList
+    MediaDescriptionList,
 )
 from .video_file import (
     VideoFile,
     VideoFileCreate,
     VideoFileUpdate,
     VideoFileInDB,
-    VideoFileList
+    VideoFileList,
 )
 from .public_person import (
     PublicPerson,
     PublicPersonCreate,
     PublicPersonUpdate,
     PublicPersonInDB,
-    PublicPersonList
+    PublicPersonList,
 )
 from .subscription_plan import (
     SubscriptionPlan,
     SubscriptionPlanCreate,
     SubscriptionPlanUpdate,
-    SubscriptionPlanInDB
+    SubscriptionPlanInDB,
 )
 from .audience_category import (
     AudienceCategory,
     AudienceCategoryCreate,
     AudienceCategoryUpdate,
-    AudienceCategoryInDB
+    AudienceCategoryInDB,
 )
 from .description_report import (
     DescriptionReport,
@@ -38,45 +38,25 @@ from .description_report import (
     DescriptionReportInDB,
     DescriptionReportList,
     BulkMediaDescriptionCreate,
-    BulkMediaDescriptionResponse
+    BulkMediaDescriptionResponse,
 )
 from .video_file_report import (
     VideoFileReport,
     VideoFileReportCreate,
     VideoFileReportInDB,
-    VideoFileReportList
+    VideoFileReportList,
 )
 from .program import (
     Program,
     ProgramCreate,
     ProgramCreateRequest,
     ProgramUpdate,
-    ProgramInDB
+    ProgramInDB,
 )
-from .season import (
-    Season,
-    SeasonCreate,
-    SeasonUpdate,
-    SeasonInDB
-)
-from .language import (
-    Language,
-    LanguageCreate,
-    LanguageUpdate,
-    LanguageInDB
-)
-from .country import (
-    Country,
-    CountryCreate,
-    CountryUpdate,
-    CountryInDB
-)
-from .picture import (
-    Picture,
-    PictureCreate,
-    PictureUpdate,
-    PictureInDB
-)
+from .season import Season, SeasonCreate, SeasonUpdate, SeasonInDB
+from .language import Language, LanguageCreate, LanguageUpdate, LanguageInDB
+from .country import Country, CountryCreate, CountryUpdate, CountryInDB
+from .picture import Picture, PictureCreate, PictureUpdate, PictureInDB
 from .content_list import (
     ContentList,
     ContentListCreate,
@@ -87,7 +67,7 @@ from .content_list import (
     ContentListReorderRequest,
     ContentListJSONResponse,
     ThumbnailFormatEnum,
-    ContentTypeEnum
+    ContentTypeEnum,
 )
 from .screen_description import (
     ScreenDescription,
@@ -99,11 +79,6 @@ from .screen_description import (
     ScreenDescriptionReorderRequest,
     ScreenDescriptionJSONResponse,
     ScreenDescriptionByTypeResponse,
-    ScreenTypeEnum
+    ScreenTypeEnum,
 )
-from .media_theme import (
-    MediaTheme,
-    MediaThemeCreate,
-    MediaThemeUpdate,
-    MediaThemeInDB
-)
+from .media_theme import MediaTheme, MediaThemeCreate, MediaThemeUpdate, MediaThemeInDB

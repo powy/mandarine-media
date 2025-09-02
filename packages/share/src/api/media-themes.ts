@@ -15,7 +15,8 @@ export async function getMediaThemes(params?: MediaThemeApiParams): Promise<Pagi
     pagination: {
       total: response.data.length,
       page: Math.floor((params?.skip || 0) / (params?.limit || 20)) + 1,
-      per_page: params?.limit || 20,
+      skip: params?.skip || 0,
+      limit: params?.limit || 20,
       pages: Math.ceil(response.data.length / (params?.limit || 20))
     }
   };

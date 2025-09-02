@@ -51,11 +51,13 @@ def create_season(
                 status_code=422,
                 detail=f"Invalid program_id format: {season_in.program_id}",
             )
-    
+
     # Check if season number already exists for this program (only if program_id is provided)
     if season_in.program_id:
         existing = crud.season.get_by_program_and_number(
-            db=db, program_id=season_in.program_id, season_number=season_in.season_number
+            db=db,
+            program_id=season_in.program_id,
+            season_number=season_in.season_number,
         )
         if existing:
             program = crud.program.get(db=db, id=season_in.program_id)
@@ -64,7 +66,7 @@ def create_season(
                 status_code=409,
                 detail=f"Season {season_in.season_number} already exists for program '{program_name}'",
             )
-    
+
     season = crud.season.create(db=db, obj_in=season_in)
     return season
 
@@ -99,7 +101,7 @@ def update_season(
     season = crud.season.get(db=db, id=id)
     if not season:
         raise HTTPException(status_code=404, detail="Season not found")
-    
+
     # Check if updating season number to an existing one
     if season_in.season_number is not None:
         existing = crud.season.get_by_program_and_number(
@@ -110,7 +112,7 @@ def update_season(
                 status_code=409,
                 detail=f"Season {season_in.season_number} already exists for this program",
             )
-    
+
     season = crud.season.update(db=db, db_obj=season, obj_in=season_in)
     return season
 
@@ -128,6 +130,6 @@ def delete_season(
     season = crud.season.get(db=db, id=id)
     if not season:
         raise HTTPException(status_code=404, detail="Season not found")
-    
+
     season = crud.season.remove(db=db, id=id)
     return season

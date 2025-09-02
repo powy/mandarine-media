@@ -18,12 +18,28 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Remove the incorrectly created subscription_plans_id field and FK constraint
+    # Check if we're using SQLite
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    
+    # Get existing columns
+    columns = [col['name'] for col in inspector.get_columns('users')]
+    
     with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.drop_constraint('fk_users_subscription_plan', type_='foreignkey')
-        batch_op.drop_column('subscription_plans_id')
-        # Add the correct field as JSONArray
-        batch_op.add_column(sa.Column('subscription_plans_id_list', JSONArray(), nullable=True))
+        # Only drop constraint for non-SQLite databases
+        if bind.dialect.name != 'sqlite':
+            try:
+                batch_op.drop_constraint('fk_users_subscription_plan', type_='foreignkey')
+            except:
+                pass
+        
+        # Only drop column if it exists
+        if 'subscription_plans_id' in columns:
+            batch_op.drop_column('subscription_plans_id')
+            
+        # Only add new column if it doesn't exist
+        if 'subscription_plans_id_list' not in columns:
+            batch_op.add_column(sa.Column('subscription_plans_id_list', JSONArray(), nullable=True))
 
 
 def downgrade() -> None:

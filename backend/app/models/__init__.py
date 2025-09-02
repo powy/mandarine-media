@@ -1,5 +1,10 @@
 from .user import User
-from .media_description import MediaDescription, MediaTypeEnum, ContentStatusEnum, MediaCategoryEnum
+from .media_description import (
+    MediaDescription,
+    MediaTypeEnum,
+    ContentStatusEnum,
+    MediaCategoryEnum,
+)
 from .video_file import VideoFile, EncodingStatusEnum, UploadStatusEnum, ResolutionEnum
 from .public_person import PublicPerson
 from .subscription_plan import SubscriptionPlan

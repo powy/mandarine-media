@@ -1,0 +1,76 @@
+{
+  "auth": {
+    "mux_token_id": "YOUR_MUX_TOKEN_ID",
+    "mux_token_secret": "YOUR_MUX_TOKEN_SECRET"
+  },
+  "backend": {
+    "server_address": "http://localhost:8000",
+    "user": "admin@example.com",
+    "password": "your_password_here"
+  },
+  "video": {
+    "filepath": "/path/to/your/video.mp4",
+    "title": "Backend Integrated Video Upload",
+    "description": "Example with full backend integration and Mux completion"
+  },
+  "settings": {
+    "playback_policy": ["signed"],
+    "video_quality": "plus",
+    "max_resolution_tier": "1080p",
+    "normalize_audio": true,
+    "master_access": "none",
+    "mp4_support": "standard",
+    "passthrough": "backend-integrated-upload-001",
+    "cors_origin": "*",
+    "environment_text": "development"
+  },
+  "metadata": {
+    "title": "Enhanced Video with Backend Integration",
+    "description": "This upload demonstrates the enhanced backend integration features",
+    "external_id": "enhanced-vid-12345",
+    "creator_id": "creator-789",
+    "category": "demo",
+    "tags": ["mux", "backend", "integration", "enhanced"],
+    "custom_field_1": "backend_integrated",
+    "custom_field_2": "auto_completion",
+    "content_rating": "G",
+    "language": "en-US"
+  },
+  "subtitles": [
+    {
+      "url": "https://example.com/subtitles/english.srt",
+      "language_code": "en-US",
+      "name": "English",
+      "text_type": "subtitles",
+      "closed_captions": false,
+      "passthrough": "en-subtitle-enhanced"
+    }
+  ],
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": "./logs/backend-integrated-upload.log",
+    "console": true,
+    "format": "json"
+  },
+  "webhook": {
+    "enabled": false
+  },
+  "options": {
+    "timeout": 3600000,
+    "retry_attempts": 3,
+    "retry_delay": 5000,
+    "chunk_size": 31457280,
+    "concurrent_uploads": 1,
+    "validate_before_upload": true
+  },
+  "features": {
+    "backend_integration": {
+      "enabled": true,
+      "create_with_mux_asset_id": true,
+      "complete_from_mux_api": true,
+      "enhanced_metadata_extraction": true,
+      "auto_complete_on_ready": true
+    }
+  }
+}

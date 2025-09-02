@@ -66,8 +66,6 @@ class AudienceCategorySimple(BaseModel):
         from_attributes = True
 
 
-
-
 class SubscriptionPlanSimple(BaseModel):
     id: UUID
     name: str
@@ -108,36 +106,46 @@ class MediaDescriptionBase(BaseModel):
     seo_description: Optional[str] = None
     seo_keywords_text_list: Optional[List[str]] = None
     hashtags_text_list: Optional[List[str]] = None
-    external_identifier_text: Optional[str] = Field(None, description="External system identifier")
+    external_identifier_text: Optional[str] = Field(
+        None, description="External system identifier"
+    )
     rights_holder: Optional[str] = None
-    
+
     # v1.10-C fields
     friendly_url: Optional[str] = None
-    
+
     # v1.4 fields - Business fields (updated)
-    copyright_owner_text: Optional[str] = Field(None, description="Copyright owner name/text")
-    
+    copyright_owner_text: Optional[str] = Field(
+        None, description="Copyright owner name/text"
+    )
+
     # v1.4 fields - Metadata fields (v1.9 renamed)
-    slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
-    human_keywords_text_list: Optional[List[str]] = Field(None, description="Human-readable tags/keywords")
-    
+    slug: Optional[str] = Field(
+        None, description="SEO-friendly URL slug (auto-generated from title if empty)"
+    )
+    human_keywords_text_list: Optional[List[str]] = Field(
+        None, description="Human-readable tags/keywords"
+    )
+
     # v1.4 fields - Image fields
     image_1920_1080_id: Optional[UUID] = None
     image_1920_720_id: Optional[UUID] = None
     image_1080_1080_id: Optional[UUID] = None
     image_810_1080_id: Optional[UUID] = None
     image_1080_1920_id: Optional[UUID] = None
-    additional_images_id_list: Optional[List[str]] = Field(None, description="Array of picture id stored as JSON")
-    
+    additional_images_id_list: Optional[List[str]] = Field(
+        None, description="Array of picture id stored as JSON"
+    )
+
     # v1.4 test image fields - REMOVED (ghost columns)
-    
+
     # v1.4 fields - Revenue fields (Admin only)
     translation_share: Optional[float] = None
     sacem_share: Optional[float] = None
     other_share: Optional[float] = None
     revenue_share: Optional[float] = None
     paid_token_cost: Optional[int] = None
-    
+
     # v1.12 fields - New JSON array fields
     media_themes_id_list: Optional[List[str]] = None
     trailer_id_list: Optional[List[str]] = None
@@ -153,17 +161,37 @@ class MediaDescriptionBase(BaseModel):
 
 class MediaDescriptionCreate(MediaDescriptionBase):
     # Additional fields for creating relationships
-    actor_ids: Optional[List[str]] = Field(None, description="List of PublicPerson IDs for actors")
-    director_ids: Optional[List[str]] = Field(None, description="List of PublicPerson IDs for directors") 
-    producer_ids: Optional[List[str]] = Field(None, description="List of PublicPerson IDs for producers")
-    author_ids: Optional[List[str]] = Field(None, description="List of PublicPerson IDs for authors")
-    origin_country_ids: Optional[List[str]] = Field(None, description="List of Country IDs for origin countries")
-    available_country_ids: Optional[List[str]] = Field(None, description="List of Country IDs for available countries")
-    original_language_ids: Optional[List[str]] = Field(None, description="List of Language IDs for original languages")
+    actor_ids: Optional[List[str]] = Field(
+        None, description="List of PublicPerson IDs for actors"
+    )
+    director_ids: Optional[List[str]] = Field(
+        None, description="List of PublicPerson IDs for directors"
+    )
+    producer_ids: Optional[List[str]] = Field(
+        None, description="List of PublicPerson IDs for producers"
+    )
+    author_ids: Optional[List[str]] = Field(
+        None, description="List of PublicPerson IDs for authors"
+    )
+    origin_country_ids: Optional[List[str]] = Field(
+        None, description="List of Country IDs for origin countries"
+    )
+    available_country_ids: Optional[List[str]] = Field(
+        None, description="List of Country IDs for available countries"
+    )
+    original_language_ids: Optional[List[str]] = Field(
+        None, description="List of Language IDs for original languages"
+    )
     # Removed: audience_category_ids (handled by relationships now)
-    eligible_plan_id_list: Optional[List[str]] = Field(None, description="List of SubscriptionPlan IDs")
-    trailer_ids: Optional[List[str]] = Field(None, description="List of VideoFile IDs for trailers")
-    excerpt_ids: Optional[List[str]] = Field(None, description="List of VideoFile IDs for excerpts")
+    eligible_plan_id_list: Optional[List[str]] = Field(
+        None, description="List of SubscriptionPlan IDs"
+    )
+    trailer_ids: Optional[List[str]] = Field(
+        None, description="List of VideoFile IDs for trailers"
+    )
+    excerpt_ids: Optional[List[str]] = Field(
+        None, description="List of VideoFile IDs for excerpts"
+    )
 
 
 class MediaDescriptionUpdate(BaseModel):
@@ -194,7 +222,7 @@ class MediaDescriptionUpdate(BaseModel):
     copyright_owner_text: Optional[str] = None
     slug: Optional[str] = None
     human_keywords_text_list: Optional[List[str]] = None
-    
+
     # Relationship update fields
     actor_ids: Optional[List[str]] = None
     director_ids: Optional[List[str]] = None
@@ -253,3 +281,113 @@ class MediaDescriptionList(BaseModel):
 class MediaDescriptionListResponse(BaseModel):
     data: List[MediaDescriptionList]
     pagination: dict
+
+
+class MediaDescriptionCreateFromText(BaseModel):
+    """Schema for creating media description from text fields instead of UUIDs"""
+
+    # Required fields
+    episode_title: str = Field(..., description="Content title")
+    media_type: MediaTypeEnum = Field(..., description="Content type")
+
+    # Optional file_number - will be auto-generated if not provided
+    file_number: Optional[int] = Field(
+        None, description="Human-readable unique ID (auto-generated if not provided)"
+    )
+
+    # Text fields that will be converted to UUIDs via get-or-create
+    program_name: Optional[str] = Field(
+        None, description="Program name (will be converted to program_id)"
+    )
+    season_name: Optional[str] = Field(
+        None, description="Season name (will be converted to season_id)"
+    )
+    theme_names: Optional[List[str]] = Field(
+        None, description="List of theme names (will be converted to theme IDs)"
+    )
+
+    # Image fields - lookup by file_name, don't create if missing
+    image_1920_1080_filename: Optional[str] = Field(
+        None, description="Image filename for 1920x1080 format"
+    )
+    image_1920_720_filename: Optional[str] = Field(
+        None, description="Image filename for 1920x720 format"
+    )
+    image_1080_1080_filename: Optional[str] = Field(
+        None, description="Image filename for 1080x1080 format"
+    )
+    image_810_1080_filename: Optional[str] = Field(
+        None, description="Image filename for 810x1080 format"
+    )
+    image_1080_1920_filename: Optional[str] = Field(
+        None, description="Image filename for 1080x1920 format"
+    )
+
+    # Person fields - lookup by stage_name_roman
+    actor_names: Optional[List[str]] = Field(
+        None, description="List of actor names (stage_name_roman)"
+    )
+    director_names: Optional[List[str]] = Field(
+        None, description="List of director names (stage_name_roman)"
+    )
+    producer_names: Optional[List[str]] = Field(
+        None, description="List of producer names (stage_name_roman)"
+    )
+    author_names: Optional[List[str]] = Field(
+        None, description="List of author names (stage_name_roman)"
+    )
+
+    # Country fields - lookup by name
+    available_country_names: Optional[List[str]] = Field(
+        None, description="List of available country names"
+    )
+
+    # Audience category fields - lookup by name
+    audience_category_names: Optional[List[str]] = Field(
+        None, description="List of audience category names"
+    )
+
+    # Eligible plan fields - lookup by name
+    eligible_plan_names: Optional[List[str]] = Field(
+        None, description="List of eligible plan names"
+    )
+
+    # All other fields remain the same as MediaDescriptionBase
+    expected_filename: Optional[str] = None
+    main_video_file_id: Optional[UUID] = None
+    episode_number: Optional[int] = None
+    media_categories_list: Optional[List[MediaCategoryEnum]] = None
+    descriptive_summary_text: Optional[str] = None
+    synopsis_text: Optional[str] = None
+    contract_start_date_utc: Optional[datetime] = None
+    contract_end_date_utc: Optional[datetime] = None
+    production_year: Optional[int] = None
+    original_broadcast_date_utc: Optional[datetime] = None
+    is_featured: Optional[bool] = False
+    content_status: Optional[ContentStatusEnum] = ContentStatusEnum.draft
+    seo_title: Optional[str] = None
+    seo_description: Optional[str] = None
+    seo_keywords_text_list: Optional[List[str]] = None
+    hashtags_text_list: Optional[List[str]] = None
+    external_identifier_text: Optional[str] = Field(
+        None, description="External system identifier"
+    )
+    rights_holder: Optional[str] = None
+    friendly_url: Optional[str] = None
+    copyright_owner_text: Optional[str] = Field(
+        None, description="Copyright owner name/text"
+    )
+    slug: Optional[str] = Field(
+        None, description="SEO-friendly URL slug (auto-generated from title if empty)"
+    )
+    human_keywords_text_list: Optional[List[str]] = Field(
+        None, description="Human-readable tags/keywords"
+    )
+    additional_images_id_list: Optional[List[str]] = Field(
+        None, description="Array of picture id stored as JSON"
+    )
+    translation_share: Optional[float] = None
+    sacem_share: Optional[float] = None
+    other_share: Optional[float] = None
+    revenue_share: Optional[float] = None
+    paid_token_cost: Optional[int] = None

@@ -88,7 +88,7 @@ export class BackendService {
     }
   }
   
-  async createVideoFileRecord(videoMetadata) {
+  async createVideoFileRecord(videoMetadata, muxAssetId = null) {
     try {
       if (!this.token) {
         await this.authenticate();
@@ -111,19 +111,34 @@ export class BackendService {
       const videoFileData = {
         file_name: videoMetadata.external_id,
         external_id: videoMetadata.external_id,
-        upload_status: "initialized",
+        upload_status: muxAssetId ? "file_uploading" : "initialized",
         upload_method: "new_upload",
         duration_seconds: videoMetadata.duration_seconds,
         file_size_bytes: videoMetadata.file_size_bytes,
         frame_rate: videoMetadata.frame_rate,
-        bitrate_kbps: Math.round(videoMetadata.bitrate / 1000), // Convert to kbps
+        bitrate_kbps: videoMetadata.bitrate ? Math.round(videoMetadata.bitrate / 1000) : null, // Convert to kbps
         resolution_width: videoMetadata.max_resolution_width,
         resolution_height: videoMetadata.max_resolution_height,
         environment_text: this.config.settings?.environment_text || null,
-        audio_channel_uuid_list: audioChannelUuidList.length > 0 ? audioChannelUuidList : null
+        audio_channel_uuid_list: audioChannelUuidList.length > 0 ? audioChannelUuidList : null,
+        // Enhanced metadata fields
+        aspect_ratio: videoMetadata.aspect_ratio,
+        audio_sample_rate: videoMetadata.audio_sample_rate,
+        video_codec: videoMetadata.video_codec,
+        audio_codec: videoMetadata.audio_codec
       };
       
-      this.logger.info('Creating video file record', { videoFileData });
+      // Add mux_asset_id if provided
+      if (muxAssetId) {
+        videoFileData.mux_asset_id = muxAssetId;
+      }
+      
+      this.logger.info('Creating video file record', { 
+        videoFileData: {
+          ...videoFileData,
+          mux_asset_id: muxAssetId || 'not_provided'
+        }
+      });
       
       const response = await axios.post(`${this.baseURL}/api/v1/video-files/create-metadata`, videoFileData, {
         headers: { Authorization: `Bearer ${this.token}` }
@@ -223,6 +238,42 @@ export class BackendService {
         ErrorCodes.DATABASE_CONNECTION_FAILED,
         { error: error.response?.data, uuid, muxData }
       );
+    }
+  }
+
+  async completeVideoFileFromMux(uuid) {
+    try {
+      if (!this.token) {
+        await this.authenticate();
+      }
+      
+      this.logger.info('Calling Mux completion endpoint for video file', { uuid });
+      
+      const response = await axios.post(`${this.baseURL}/api/v1/video-files/${uuid}/complete-from-mux`, {}, {
+        headers: { Authorization: `Bearer ${this.token}` }
+      });
+      
+      this.logger.info('Video file completed with Mux data successfully', {
+        uuid,
+        encoding_status: response.data.encoding_status,
+        duration_seconds: response.data.duration_seconds,
+        mux_playback_id: response.data.mux_playback_id
+      });
+      
+      return response.data;
+    } catch (error) {
+      // Log as warning instead of error since this is an enhancement feature
+      // The upload should not fail if completion endpoint fails
+      this.logger.warn('Failed to complete video file with Mux data', {
+        uuid,
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
+      // Return null to indicate completion failed but don't throw
+      // This allows the upload process to continue successfully
+      return null;
     }
   }
 }

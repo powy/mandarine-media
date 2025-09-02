@@ -77,18 +77,8 @@ export class UploadService {
       const languages = await this.backendService.getLanguages();
       videoMetadata.languages = languages;
       
-      // Step 5: Create video file record in backend
-      this.logger.info('Step 5: Creating video file record in backend');
-      this.videoRecord = await this.backendService.createVideoFileRecord(videoMetadata);
-      this.logger.info('Video record created with UUID', { uuid: this.videoRecord.id });
-      
-      // Step 6: Start the upload process
-      this.logger.info('Step 6: Starting Mux upload process');
-      
-      // Update status to upload started
-      await this.backendService.updateUploadStatus(this.videoRecord.id, 'file_uploading');
-      
-      // Validate video file (legacy step for Mux compatibility)
+      // Step 5: Validate video file (needed for Mux upload)
+      this.logger.info('Step 5: Validating video file for Mux upload');
       const fileInfo = await validateVideoFile(this.config.video.filepath);
       this.logger.info('Video file validated for Mux', {
         filepath: fileInfo.filepath,
@@ -96,19 +86,32 @@ export class UploadService {
         extension: fileInfo.extension
       });
       
-      // Create direct upload
+      // Step 6: Create Mux direct upload
+      this.logger.info('Step 6: Creating Mux direct upload');
       const upload = await this.muxService.createDirectUpload();
       uploadId = upload.id;
       
+      // Get the future asset ID from the upload response
+      assetId = upload.asset_id;
+      this.logger.info('Mux upload created', { uploadId, assetId });
+      
+      // Step 7: Create video file record with mux_asset_id
+      this.logger.info('Step 7: Creating video file record with mux_asset_id');
+      this.videoRecord = await this.backendService.createVideoFileRecord(videoMetadata, assetId);
+      this.logger.info('Video record created with UUID and mux_asset_id', { 
+        uuid: this.videoRecord.id,
+        mux_asset_id: assetId
+      });
+      
       this.logger.logUploadStart(fileInfo.filepath, fileInfo.size, uploadId);
       
-      // Upload file to Mux
+      // Step 8: Upload file to Mux
+      this.logger.info('Step 8: Uploading file to Mux');
       await this.performFileUpload(upload.url, fileInfo);
       
-      // Step 7: Monitor upload status and get asset
-      this.logger.info('Step 7: Monitoring Mux upload status');
+      // Step 9: Monitor upload status and get asset
+      this.logger.info('Step 9: Monitoring Mux upload status');
       const asset = await this.muxService.monitorUploadStatus(uploadId);
-      assetId = asset.id;
       
       this.logger.logUploadComplete(uploadId, assetId, asset.duration);
       
@@ -120,30 +123,44 @@ export class UploadService {
         asset.playback_ids?.[0]?.id
       );
       
-      // Step 8: Wait for asset to be ready
-      this.logger.info('Step 8: Waiting for Mux asset to be ready');
+      // Step 10: Wait for asset to be ready
+      this.logger.info('Step 10: Waiting for Mux asset to be ready');
       let readyAsset = await this.muxService.waitForAssetReady(assetId);
       
-      // Step 9: Update backend with final Mux data
-      this.logger.info('Step 9: Updating backend with final Mux data');
-      await this.backendService.updateVideoFileWithMuxData(this.videoRecord.id, {
-        assetId: readyAsset.id,
-        status: readyAsset.status,
-        duration: readyAsset.duration,
-        playback_ids: readyAsset.playback_ids
-      });
+      // Step 11: Complete video file data from Mux API
+      this.logger.info('Step 11: Completing video file data from Mux API');
+      const completedVideoFile = await this.backendService.completeVideoFileFromMux(this.videoRecord.id);
       
-      // Step 10: Add subtitles if provided
+      if (completedVideoFile) {
+        this.logger.info('Video file completed successfully with Mux data', {
+          uuid: this.videoRecord.id,
+          duration: completedVideoFile.duration_seconds,
+          encoding_status: completedVideoFile.encoding_status
+        });
+        // Update our local reference with completed data
+        this.videoRecord = completedVideoFile;
+      } else {
+        // Fallback to manual update if completion endpoint fails
+        this.logger.info('Falling back to manual Mux data update');
+        await this.backendService.updateVideoFileWithMuxData(this.videoRecord.id, {
+          assetId: readyAsset.id,
+          status: readyAsset.status,
+          duration: readyAsset.duration,
+          playback_ids: readyAsset.playback_ids
+        });
+      }
+      
+      // Step 12: Add subtitles if provided
       let subtitleResults = [];
       if (this.config.subtitles && this.config.subtitles.length > 0) {
-        this.logger.info('Step 10: Adding subtitle tracks');
+        this.logger.info('Step 12: Adding subtitle tracks');
         subtitleResults = await this.muxService.addSubtitles(assetId, this.config.subtitles);
       }
       
-      // Step 11: Setup webhook if configured
+      // Step 13: Setup webhook if configured
       const webhook = await this.muxService.setupWebhook();
       
-      // Step 12: Save to database if configured (legacy feature)
+      // Step 14: Save to database if configured (legacy feature)
       if (this.config.database) {
         await this.saveToDatabase(readyAsset, upload, subtitleResults);
       }

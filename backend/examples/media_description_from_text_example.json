@@ -1,0 +1,98 @@
+{
+  "episode_title": "The Great Adventure - Episode 1",
+  "media_type": "video",
+  "program_name": "Adventure Series 2024",
+  "season_name": "Season 1 - Origins",
+  "episode_number": 1,
+  "theme_names": [
+    "Action",
+    "Adventure", 
+    "Family Friendly",
+    "Drama"
+  ],
+  "image_1920_1080_filename": "adventure_episode1_1920x1080.jpg",
+  "image_1920_720_filename": "adventure_episode1_1920x720.jpg",
+  "image_1080_1080_filename": "adventure_episode1_square.jpg",
+  "image_810_1080_filename": "adventure_episode1_portrait.jpg",
+  "image_1080_1920_filename": "adventure_episode1_vertical.jpg",
+  "actor_names": [
+    "John Smith",
+    "Maria García", 
+    "李明",
+    "Ahmed Al-Rashid"
+  ],
+  "director_names": [
+    "Sarah Johnson"
+  ],
+  "producer_names": [
+    "Michael Chen",
+    "Elena Rodriguez"
+  ],
+  "author_names": [
+    "David Park",
+    "Anna Wilson"
+  ],
+  "available_country_names": [
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "France",
+    "Germany",
+    "Japan",
+    "South Korea"
+  ],
+  "audience_category_names": [
+    "General Audience",
+    "Teen Plus"
+  ],
+  "eligible_plan_names": [
+    "Premium",
+    "Family Plan"
+  ],
+  "media_categories_list": [
+    "tvshow"
+  ],
+  "descriptive_summary_text": "Join our heroes on an epic adventure through mysterious lands filled with wonder and danger. This first episode introduces our main characters and sets the stage for an incredible journey.",
+  "synopsis_text": "When young explorer Alex discovers an ancient map in their grandmother's attic, they embark on a quest that will change their life forever. Along with their loyal friends, they must navigate treacherous terrain and solve ancient puzzles to uncover a legendary treasure.",
+  "production_year": 2024,
+  "original_broadcast_date_utc": "2024-03-15T20:00:00Z",
+  "contract_start_date_utc": "2024-01-01T00:00:00Z",
+  "contract_end_date_utc": "2026-12-31T23:59:59Z",
+  "is_featured": true,
+  "content_status": "published",
+  "seo_title": "Adventure Series S01E01 - The Great Adventure Begins",
+  "seo_description": "Watch the premiere episode of Adventure Series as young heroes embark on an epic quest. Family-friendly adventure with stunning visuals and compelling characters.",
+  "seo_keywords_text_list": [
+    "adventure",
+    "family show",
+    "treasure hunt",
+    "epic quest",
+    "2024 series"
+  ],
+  "hashtags_text_list": [
+    "#AdventureSeries",
+    "#EpicQuest",
+    "#FamilyShow",
+    "#TreasureHunt",
+    "#NewSeries2024"
+  ],
+  "external_identifier_text": "ADV-S01E01-2024",
+  "rights_holder": "Adventure Productions LLC",
+  "copyright_owner_text": "Adventure Productions LLC",
+  "slug": "adventure-series-s01e01-great-adventure",
+  "human_keywords_text_list": [
+    "adventure",
+    "quest",
+    "family",
+    "treasure",
+    "friendship",
+    "courage",
+    "mystery"
+  ],
+  "expected_filename": "adventure_s01e01_main_video.mp4",
+  "translation_share": 0.15,
+  "sacem_share": 0.05,
+  "other_share": 0.10,
+  "revenue_share": 0.70,
+  "paid_token_cost": 3
+}

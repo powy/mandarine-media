@@ -467,6 +467,11 @@ export interface MediaDescriptionCreate {
   other_share?: number;
   revenue_share?: number;
   paid_token_cost?: number;
+  // v1.12 new fields
+  trailer_id_list?: string[];
+  extract_id_list?: string[];
+  available_countries_id_list?: string[];
+  eligible_plans_id_list?: string[];
 }
 
 // v1.4 new create/update interfaces

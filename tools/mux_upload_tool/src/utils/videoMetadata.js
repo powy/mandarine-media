@@ -34,7 +34,10 @@ export async function extractVideoMetadata(filepath, logger) {
       audio_channels: null,
       video_codec: null,
       audio_codec: null,
-      audio_languages: []
+      audio_languages: [],
+      // Enhanced metadata fields
+      aspect_ratio: null,
+      audio_sample_rate: null
     };
     
     // Extract video stream information
@@ -51,6 +54,24 @@ export async function extractVideoMetadata(filepath, logger) {
           extractedMetadata.frame_rate = parseFloat((num / den).toFixed(2));
         }
       }
+      
+      // Calculate aspect ratio
+      if (videoStream.width && videoStream.height) {
+        const aspectRatio = videoStream.width / videoStream.height;
+        extractedMetadata.aspect_ratio = aspectRatio.toFixed(3);
+      }
+      
+      // Get display aspect ratio if available (may be different from pixel ratio)
+      if (videoStream.display_aspect_ratio && videoStream.display_aspect_ratio !== 'N/A') {
+        extractedMetadata.aspect_ratio = videoStream.display_aspect_ratio;
+      } else if (videoStream.sample_aspect_ratio && videoStream.sample_aspect_ratio !== '1:1' && videoStream.sample_aspect_ratio !== 'N/A') {
+        // If there's a sample aspect ratio, calculate the display aspect ratio
+        const [sarNum, sarDen] = videoStream.sample_aspect_ratio.split(':').map(Number);
+        if (sarNum && sarDen && videoStream.width && videoStream.height) {
+          const displayAspectRatio = (videoStream.width * sarNum) / (videoStream.height * sarDen);
+          extractedMetadata.aspect_ratio = displayAspectRatio.toFixed(3);
+        }
+      }
     }
     
     // Extract audio stream information
@@ -59,6 +80,11 @@ export async function extractVideoMetadata(filepath, logger) {
       const primaryAudioStream = audioStreams[0];
       extractedMetadata.audio_channels = primaryAudioStream.channels;
       extractedMetadata.audio_codec = primaryAudioStream.codec_name;
+      
+      // Extract audio sample rate
+      if (primaryAudioStream.sample_rate) {
+        extractedMetadata.audio_sample_rate = parseInt(primaryAudioStream.sample_rate);
+      }
       
       // Extract language information from all audio streams
       audioStreams.forEach(stream => {

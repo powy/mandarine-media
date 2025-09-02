@@ -229,7 +229,72 @@ npm start -- -c config.json --quiet
 
 ### Using as a Module
 
-You can also use the tool programmatically:
+The tool provides three ways to use it programmatically:
+
+#### Method 1: Explicit Credentials (Recommended for Programmatic Use)
+
+```javascript
+import SubtitleService from './src/services/subtitleService.js';
+
+const result = await SubtitleService.withCredentials({
+  awsCredentials: {
+    accessKeyId: 'your-aws-access-key',
+    secretAccessKey: 'your-aws-secret-key',
+    region: 'us-east-1',
+    bucket: 'your-subtitle-bucket'
+  },
+  muxCredentials: {
+    tokenId: 'your-mux-token-id',
+    tokenSecret: 'your-mux-token-secret'
+  },
+  assetId: 'your-mux-asset-id',
+  subtitles: [
+    {
+      file_path: './subtitles/english.srt',
+      language_code: 'en',
+      name: 'English',
+      text_type: 'subtitles',
+      closed_captions: false
+    }
+  ],
+  options: {
+    cleanupDelayMinutes: 60,
+    maxRetryAttempts: 3,
+    logLevel: 'info'
+  }
+});
+
+console.log('Upload result:', result);
+```
+
+#### Method 2: Environment Variables
+
+```javascript
+import SubtitleService from './src/services/subtitleService.js';
+
+// Requires environment variables to be set:
+// AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET_NAME
+// MUX_TOKEN_ID, MUX_TOKEN_SECRET
+
+const result = await SubtitleService.withEnvironment(
+  'your-mux-asset-id',
+  [
+    {
+      file_path: './subtitles/english.srt',
+      language_code: 'en',
+      name: 'English'
+    }
+  ],
+  {
+    cleanupDelayMinutes: 60,
+    logLevel: 'info'
+  }
+);
+
+console.log('Upload result:', result);
+```
+
+#### Method 3: Configuration Object (Original)
 
 ```javascript
 import SubtitleService from './src/services/subtitleService.js';

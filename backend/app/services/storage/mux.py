@@ -178,3 +178,137 @@ class MuxStorageBackend(BaseStorageBackend):
                 
         except Exception:
             return None
+    
+    async def get_complete_asset_info(self, asset_id: str) -> Optional[Dict[str, Any]]:
+        """Get complete asset information from Mux API for video file completion."""
+        try:
+            response = self.assets_api.get_asset(asset_id)
+            asset = response.data
+            
+            # Helper function to determine most restrictive playback policy
+            def get_most_restrictive_policy_and_id(playback_ids):
+                if not playback_ids:
+                    return None, None
+                
+                # Policy hierarchy: drm > signed > public
+                policy_priority = {"drm": 3, "signed": 2, "public": 1}
+                most_restrictive = None
+                best_priority = 0
+                
+                for pb in playback_ids:
+                    policy = pb.policy if hasattr(pb, 'policy') else 'public'
+                    priority = policy_priority.get(policy, 1)
+                    if priority > best_priority:
+                        best_priority = priority
+                        most_restrictive = pb
+                
+                return most_restrictive.policy if most_restrictive else 'public', most_restrictive.id if most_restrictive else playback_ids[0].id
+            
+            # Get most restrictive playback policy and ID
+            playback_policy, mux_playback_id = get_most_restrictive_policy_and_id(asset.playback_ids)
+            
+            # Generate playback URL using most restrictive playback ID
+            file_url = f"https://stream.mux.com/{mux_playback_id}.m3u8" if mux_playback_id else None
+            
+            # Map encoding status
+            encoding_status_map = {
+                "preparing": "processing",
+                "ready": "completed", 
+                "errored": "failed"
+            }
+            encoding_status = encoding_status_map.get(asset.status, asset.status)
+            
+            # Map upload status from encoding status
+            upload_status_map = {
+                "processing": "file_uploading",
+                "completed": "upload_completed",
+                "failed": "upload_failed"
+            }
+            upload_status = upload_status_map.get(encoding_status, "upload_completed")
+            
+            # Extract video track information
+            video_tracks = [track for track in (asset.tracks or []) if hasattr(track, 'type') and track.type == 'video']
+            audio_tracks = [track for track in (asset.tracks or []) if hasattr(track, 'type') and track.type == 'audio']
+            text_tracks = [track for track in (asset.tracks or []) if hasattr(track, 'type') and track.type == 'text']
+            
+            # Get max resolution from video tracks
+            max_resolution_width = None
+            max_resolution_height = None
+            frame_rate = None
+            
+            if video_tracks:
+                video_track = video_tracks[0]  # Take first video track
+                if hasattr(video_track, 'max_width'):
+                    max_resolution_width = video_track.max_width
+                if hasattr(video_track, 'max_height'):
+                    max_resolution_height = video_track.max_height
+                if hasattr(video_track, 'max_frame_rate') and video_track.max_frame_rate != -1:
+                    frame_rate = float(video_track.max_frame_rate)
+            
+            # Extract subtitle languages
+            subtitle_languages = []
+            if text_tracks:
+                for track in text_tracks:
+                    if hasattr(track, 'language_code') and track.language_code:
+                        subtitle_languages.append(track.language_code)
+            
+            # Determine DRM protection
+            drm_protection = playback_policy == 'drm'
+            
+            # Map encoding profile
+            encoding_profile = getattr(asset, 'video_quality', None)
+            
+            # Prepare timestamps
+            upload_timestamp = None
+            encodage_date_utc = None
+            if hasattr(asset, 'created_at'):
+                upload_timestamp = asset.created_at
+                # If asset is ready, use created_at as encoding completion date
+                if asset.status == 'ready':
+                    encodage_date_utc = asset.created_at
+            
+            return {
+                'success': True,
+                'asset_id': asset.id,
+                'asset_status': asset.status,
+                'file_url': file_url,
+                'duration_seconds': int(asset.duration) if hasattr(asset, 'duration') and asset.duration else None,
+                'max_resolution_width': max_resolution_width,
+                'max_resolution_height': max_resolution_height,
+                'frame_rate': frame_rate,
+                'aspect_ratio': getattr(asset, 'aspect_ratio', None),
+                'encoding_status': encoding_status,
+                'upload_status': upload_status,
+                'upload_timestamp': upload_timestamp,
+                'encodage_date_utc': encodage_date_utc,
+                'encoding_profile': encoding_profile,
+                'subtitle_tracks_text_list': subtitle_languages,
+                'mux_playback_id': mux_playback_id,
+                'drm_protection': drm_protection,
+                'playback_policy': playback_policy,
+                'bitrate_kbps': None,  # Not available in Mux API
+                'file_size_bytes': None,  # Not available in Mux API
+                'audio_sample_rate': None,  # Not available in Mux API
+                'unavailable_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate'],
+                'preserved_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate']  # These fields are preserved, not overwritten
+            }
+            
+        except ApiException as e:
+            if e.status == 404:
+                return {
+                    'success': False,
+                    'error': 'Asset not found in Mux',
+                    'error_code': 'ASSET_NOT_FOUND'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'Mux API error: {str(e)}',
+                    'error_code': 'MUX_API_ERROR'
+                }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Unexpected error: {str(e)}',
+                'error_code': 'UNEXPECTED_ERROR'
+            }

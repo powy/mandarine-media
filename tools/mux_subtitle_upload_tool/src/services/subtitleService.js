@@ -10,6 +10,9 @@ export default class SubtitleService {
     this.logger = logger;
     this.sessionId = crypto.randomUUID();
     
+    // Resolve relative paths to absolute paths for all subtitles
+    this.config = this.resolveFilePaths(config);
+    
     this.s3Manager = new S3Manager(config.s3, logger);
     this.muxManager = new MuxManager(config.auth, logger);
     
@@ -21,6 +24,136 @@ export default class SubtitleService {
       monitoringInterval: config.options?.monitoring_interval || 5000,
       validateBeforeUpload: config.options?.validate_before_upload !== false
     };
+  }
+
+  /**
+   * Static factory method: Create service with explicit credentials
+   * @param {Object} params - Parameters object
+   * @param {Object} params.awsCredentials - AWS credentials and S3 config
+   * @param {string} params.awsCredentials.accessKeyId - AWS Access Key ID
+   * @param {string} params.awsCredentials.secretAccessKey - AWS Secret Access Key  
+   * @param {string} params.awsCredentials.region - AWS region
+   * @param {string} params.awsCredentials.bucket - S3 bucket name
+   * @param {Object} params.muxCredentials - Mux API credentials
+   * @param {string} params.muxCredentials.tokenId - Mux Token ID
+   * @param {string} params.muxCredentials.tokenSecret - Mux Token Secret
+   * @param {string} params.assetId - Mux Asset ID
+   * @param {Array} params.subtitles - Array of subtitle objects
+   * @param {Object} params.options - Optional configuration
+   * @param {Object} params.logger - Optional logger (will create default if not provided)
+   * @returns {Promise<Object>} Upload results
+   */
+  static async withCredentials({
+    awsCredentials,
+    muxCredentials, 
+    assetId,
+    subtitles,
+    options = {},
+    logger = null
+  }) {
+    // Build config object from explicit parameters
+    const config = {
+      auth: {
+        mux_token_id: muxCredentials.tokenId,
+        mux_token_secret: muxCredentials.tokenSecret
+      },
+      s3: {
+        access_key_id: awsCredentials.accessKeyId,
+        secret_access_key: awsCredentials.secretAccessKey,
+        region: awsCredentials.region,
+        bucket_name: awsCredentials.bucket,
+        presigned_url_expiry: options.presignedUrlExpiry || 3600
+      },
+      mux_asset_id: assetId,
+      subtitles: subtitles,
+      options: {
+        cleanup_delay_minutes: options.cleanupDelayMinutes || 120,
+        max_retry_attempts: options.maxRetryAttempts || 3,
+        retry_delay: options.retryDelay || 5000,
+        monitoring_timeout: options.monitoringTimeout || 60000,
+        monitoring_interval: options.monitoringInterval || 5000,
+        validate_before_upload: options.validateBeforeUpload !== false
+      }
+    };
+
+    // Create logger if not provided
+    if (!logger) {
+      const { createLogger } = await import('../config/logger.js');
+      logger = createLogger({
+        logging: {
+          level: options.logLevel || 'info',
+          console: true,
+          format: 'simple'
+        }
+      });
+    }
+
+    // Create and run service
+    const service = new SubtitleService(config, logger);
+    return await service.uploadSubtitles();
+  }
+
+  /**
+   * Static factory method: Create service using environment variables
+   * @param {string} assetId - Mux Asset ID
+   * @param {Array} subtitles - Array of subtitle objects
+   * @param {Object} options - Optional configuration
+   * @param {Object} logger - Optional logger
+   * @returns {Promise<Object>} Upload results
+   */
+  static async withEnvironment(assetId, subtitles, options = {}, logger = null) {
+    // Read from environment variables
+    const awsCredentials = {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION || 'us-east-1',
+      bucket: process.env.S3_BUCKET_NAME
+    };
+
+    const muxCredentials = {
+      tokenId: process.env.MUX_TOKEN_ID,
+      tokenSecret: process.env.MUX_TOKEN_SECRET
+    };
+
+    // Validate required environment variables
+    const requiredEnvVars = [
+      { name: 'AWS_ACCESS_KEY_ID', value: awsCredentials.accessKeyId },
+      { name: 'AWS_SECRET_ACCESS_KEY', value: awsCredentials.secretAccessKey },
+      { name: 'S3_BUCKET_NAME', value: awsCredentials.bucket },
+      { name: 'MUX_TOKEN_ID', value: muxCredentials.tokenId },
+      { name: 'MUX_TOKEN_SECRET', value: muxCredentials.tokenSecret }
+    ];
+
+    const missingVars = requiredEnvVars.filter(env => !env.value);
+    if (missingVars.length > 0) {
+      throw new Error(`Missing required environment variables: ${missingVars.map(env => env.name).join(', ')}`);
+    }
+
+    // Use the withCredentials method
+    return await SubtitleService.withCredentials({
+      awsCredentials,
+      muxCredentials,
+      assetId,
+      subtitles,
+      options,
+      logger
+    });
+  }
+
+  /**
+   * Resolve relative file paths to absolute paths
+   */
+  resolveFilePaths(config) {
+    const resolvedConfig = { ...config };
+    
+    if (resolvedConfig.subtitles) {
+      resolvedConfig.subtitles = resolvedConfig.subtitles.map(subtitle => ({
+        ...subtitle,
+        file_path: path.resolve(subtitle.file_path)
+      }));
+    }
+    
+    return resolvedConfig;
   }
 
   /**

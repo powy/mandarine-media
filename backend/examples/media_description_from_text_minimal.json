@@ -1,0 +1,24 @@
+{
+  "episode_title": "Quick Test Episode",
+  "media_type": "video",
+  "program_name": "Test Program",
+  "actor_names": [
+    "Test Actor One",
+    "Test Actor Two"
+  ],
+  "theme_names": [
+    "Comedy",
+    "Test Theme"
+  ],
+  "available_country_names": [
+    "United States"
+  ],
+  "audience_category_names": [
+    "General Audience"
+  ],
+  "eligible_plan_names": [
+    "Basic Plan"
+  ],
+  "descriptive_summary_text": "A simple test episode for validating the from-text endpoint.",
+  "content_status": "draft"
+}

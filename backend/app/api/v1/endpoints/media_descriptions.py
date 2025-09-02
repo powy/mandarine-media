@@ -9,6 +9,12 @@ from app import crud, schemas
 from app.api import deps
 from app.core.config import settings
 from app.schemas import description_report
+from app.services.text_to_uuid_service import (
+    get_or_create_program, get_or_create_season, get_or_create_themes,
+    get_or_create_persons, get_image_by_filename, get_or_create_countries,
+    get_or_create_audience_categories, get_or_create_subscription_plans,
+    get_next_available_file_number
+)
 
 router = APIRouter()
 
@@ -303,3 +309,143 @@ def read_media_descriptions_by_video(
     
     # Get media descriptions that reference this video file
     return crud.media_description.get_by_video_file_id(db=db, video_file_id=video_file_id)
+
+
+@router.post("/from-text", response_model=schemas.media_description.MediaDescription)
+def create_media_description_from_text(
+    *,
+    db: Session = Depends(deps.get_db),
+    media_description_in: schemas.media_description.MediaDescriptionCreateFromText,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Create new media description from text fields. Admin only.
+    
+    This endpoint accepts text values for relationship fields and converts them to UUIDs
+    using get-or-create logic. Fields with multiple matches will be logged as errors 
+    and set to None.
+    """
+    # Handle file_number - generate if not provided
+    file_number = media_description_in.file_number
+    if file_number is None:
+        file_number = get_next_available_file_number(db)
+    else:
+        # Check if file_number already exists
+        existing = crud.media_description.get_by_file_number(db=db, file_number=file_number)
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Media description with file_number {file_number} already exists",
+            )
+    
+    # Convert text fields to UUIDs
+    program_id = None
+    if media_description_in.program_name:
+        program_id = get_or_create_program(db, media_description_in.program_name)
+    
+    season_id = None
+    if media_description_in.season_name:
+        season_id = get_or_create_season(db, media_description_in.season_name)
+    
+    # Handle image fields (lookup only, don't create)
+    image_1920_1080_id = None
+    if media_description_in.image_1920_1080_filename:
+        image_1920_1080_id = get_image_by_filename(db, media_description_in.image_1920_1080_filename)
+    
+    image_1920_720_id = None
+    if media_description_in.image_1920_720_filename:
+        image_1920_720_id = get_image_by_filename(db, media_description_in.image_1920_720_filename)
+    
+    image_1080_1080_id = None
+    if media_description_in.image_1080_1080_filename:
+        image_1080_1080_id = get_image_by_filename(db, media_description_in.image_1080_1080_filename)
+    
+    image_810_1080_id = None
+    if media_description_in.image_810_1080_filename:
+        image_810_1080_id = get_image_by_filename(db, media_description_in.image_810_1080_filename)
+    
+    image_1080_1920_id = None
+    if media_description_in.image_1080_1920_filename:
+        image_1080_1920_id = get_image_by_filename(db, media_description_in.image_1080_1920_filename)
+    
+    # Handle list fields
+    theme_ids = get_or_create_themes(db, media_description_in.theme_names or [])
+    actor_ids = get_or_create_persons(db, media_description_in.actor_names or [])
+    director_ids = get_or_create_persons(db, media_description_in.director_names or [])
+    producer_ids = get_or_create_persons(db, media_description_in.producer_names or [])
+    author_ids = get_or_create_persons(db, media_description_in.author_names or [])
+    available_country_ids = get_or_create_countries(db, media_description_in.available_country_names or [])
+    audience_category_ids = get_or_create_audience_categories(db, media_description_in.audience_category_names or [])
+    eligible_plan_ids = get_or_create_subscription_plans(db, media_description_in.eligible_plan_names or [])
+    
+    # Convert UUIDs to strings for the relationship fields
+    theme_id_strings = [str(uuid_id) for uuid_id in theme_ids]
+    actor_id_strings = [str(uuid_id) for uuid_id in actor_ids]
+    director_id_strings = [str(uuid_id) for uuid_id in director_ids]
+    producer_id_strings = [str(uuid_id) for uuid_id in producer_ids]
+    author_id_strings = [str(uuid_id) for uuid_id in author_ids]
+    available_country_id_strings = [str(uuid_id) for uuid_id in available_country_ids]
+    audience_category_id_strings = [str(uuid_id) for uuid_id in audience_category_ids]
+    eligible_plan_id_strings = [str(uuid_id) for uuid_id in eligible_plan_ids]
+    
+    # Create the standard MediaDescriptionCreate object
+    media_description_data = schemas.media_description.MediaDescriptionCreate(
+        # Required fields
+        file_number=file_number,
+        episode_title=media_description_in.episode_title,
+        media_type=media_description_in.media_type,
+        
+        # Converted UUID fields
+        program_id=program_id,
+        season_id=season_id,
+        image_1920_1080_id=image_1920_1080_id,
+        image_1920_720_id=image_1920_720_id,
+        image_1080_1080_id=image_1080_1080_id,
+        image_810_1080_id=image_810_1080_id,
+        image_1080_1920_id=image_1080_1920_id,
+        
+        # Relationship fields
+        actor_ids=actor_id_strings,
+        director_ids=director_id_strings,
+        producer_ids=producer_id_strings,
+        author_ids=author_id_strings,
+        available_country_ids=available_country_id_strings,
+        # TODO: Check if we need origin_country_ids or theme_ids fields in MediaDescriptionCreate
+        theme_ids=theme_id_strings,
+        eligible_plan_id_list=eligible_plan_id_strings,
+        audience_category_ids=audience_category_id_strings,
+        
+        # All other fields from input
+        expected_filename=media_description_in.expected_filename,
+        main_video_file_id=media_description_in.main_video_file_id,
+        episode_number=media_description_in.episode_number,
+        media_categories_list=media_description_in.media_categories_list,
+        descriptive_summary_text=media_description_in.descriptive_summary_text,
+        synopsis_text=media_description_in.synopsis_text,
+        contract_start_date_utc=media_description_in.contract_start_date_utc,
+        contract_end_date_utc=media_description_in.contract_end_date_utc,
+        production_year=media_description_in.production_year,
+        original_broadcast_date_utc=media_description_in.original_broadcast_date_utc,
+        is_featured=media_description_in.is_featured,
+        content_status=media_description_in.content_status,
+        seo_title=media_description_in.seo_title,
+        seo_description=media_description_in.seo_description,
+        seo_keywords_text_list=media_description_in.seo_keywords_text_list,
+        hashtags_text_list=media_description_in.hashtags_text_list,
+        external_identifier_text=media_description_in.external_identifier_text,
+        rights_holder=media_description_in.rights_holder,
+        friendly_url=media_description_in.friendly_url,
+        copyright_owner_text=media_description_in.copyright_owner_text,
+        slug=media_description_in.slug,
+        human_keywords_text_list=media_description_in.human_keywords_text_list,
+        additional_images_id_list=media_description_in.additional_images_id_list,
+        translation_share=media_description_in.translation_share,
+        sacem_share=media_description_in.sacem_share,
+        other_share=media_description_in.other_share,
+        revenue_share=media_description_in.revenue_share,
+        paid_token_cost=media_description_in.paid_token_cost,
+    )
+    
+    # Create the media description using existing logic
+    media_description = crud.media_description.create(db=db, obj_in=media_description_data)
+    return media_description

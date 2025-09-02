@@ -13,7 +13,7 @@
   "mux_asset_id": "mock-asset-id-12345",
   "subtitles": [
     {
-      "file_path": "/home/powy/code/media_workspace/kyool-media/tools/mux_subtitle_upload_tool/test-data/test_english.srt",
+      "file_path": "test-data/test_english.srt",
       "language_code": "en",
       "name": "English",
       "text_type": "subtitles",
@@ -21,7 +21,7 @@
       "passthrough": "test-en"
     },
     {
-      "file_path": "/home/powy/code/media_workspace/kyool-media/tools/mux_subtitle_upload_tool/test-data/test_spanish.vtt",
+      "file_path": "test-data/test_spanish.vtt",
       "language_code": "es",
       "name": "Español",
       "text_type": "subtitles",
@@ -29,7 +29,7 @@
       "passthrough": "test-es"
     },
     {
-      "file_path": "/home/powy/code/media_workspace/kyool-media/tools/mux_subtitle_upload_tool/test-data/test_french.srt",
+      "file_path": "test-data/test_french.srt",
       "language_code": "fr",
       "name": "Français",
       "text_type": "subtitles",

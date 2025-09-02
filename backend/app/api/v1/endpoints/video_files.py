@@ -701,3 +701,123 @@ def get_token_info(
             "error": f"Failed to analyze token: {str(e)}",
             "video_file_id": str(id)
         }
+
+
+@router.post("/{id}/complete-from-mux", response_model=schemas.video_file.VideoFile)
+async def complete_video_file_from_mux(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Complete video file data using Mux API. Admin only.
+    
+    Fetches complete video information from Mux using the stored mux_asset_id
+    and updates the video file record with all available data.
+    """
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Get video file
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(status_code=404, detail="Video file not found")
+    
+    # Check if video file has mux_asset_id
+    if not video_file.mux_asset_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Video file does not have a mux_asset_id. Cannot complete from Mux."
+        )
+    
+    logger.info(f"Completing video file {id} from Mux asset {video_file.mux_asset_id}")
+    
+    try:
+        # Get Mux configuration and create service
+        upload_config = settings.get_upload_config()
+        
+        # Check if Mux is configured
+        if 'mux' not in upload_config.get('backends', {}):
+            raise HTTPException(
+                status_code=500,
+                detail="Mux backend not configured. Check UPLOAD_MUX_TOKEN_ID and UPLOAD_MUX_TOKEN_SECRET environment variables."
+            )
+        
+        from app.services.storage.mux import MuxStorageBackend
+        mux_service = MuxStorageBackend(upload_config['backends']['mux'])
+        
+        # Get complete asset information from Mux
+        asset_info = await mux_service.get_complete_asset_info(video_file.mux_asset_id)
+        
+        if not asset_info['success']:
+            error_code = asset_info.get('error_code', 'UNKNOWN_ERROR')
+            error_msg = asset_info.get('error', 'Failed to retrieve asset information')
+            
+            if error_code == 'ASSET_NOT_FOUND':
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Asset {video_file.mux_asset_id} not found in Mux"
+                )
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to retrieve asset information: {error_msg}"
+                )
+        
+        # Prepare update data - only update fields that have values from Mux
+        update_data = {}
+        
+        # Always update these fields if they have values or are explicitly None
+        if asset_info.get('file_url'):
+            update_data['file_url'] = asset_info['file_url']
+        if asset_info.get('duration_seconds') is not None:
+            update_data['duration_seconds'] = asset_info['duration_seconds']
+        if 'max_resolution_width' in asset_info:
+            update_data['max_resolution_width'] = asset_info['max_resolution_width']
+        if 'max_resolution_height' in asset_info:
+            update_data['max_resolution_height'] = asset_info['max_resolution_height']
+        if 'frame_rate' in asset_info:
+            update_data['frame_rate'] = asset_info['frame_rate']
+        if 'aspect_ratio' in asset_info:
+            update_data['aspect_ratio'] = asset_info['aspect_ratio']
+        if asset_info.get('encoding_status'):
+            update_data['encoding_status'] = asset_info['encoding_status']
+        if asset_info.get('upload_status'):
+            update_data['upload_status'] = asset_info['upload_status']
+        if 'upload_timestamp' in asset_info:
+            update_data['upload_timestamp'] = asset_info['upload_timestamp']
+        if 'encodage_date_utc' in asset_info:
+            update_data['encodage_date_utc'] = asset_info['encodage_date_utc']
+        if asset_info.get('encoding_profile'):
+            update_data['encoding_profile'] = asset_info['encoding_profile']
+        if asset_info.get('subtitle_tracks_text_list') is not None:
+            update_data['subtitle_tracks_text_list'] = asset_info['subtitle_tracks_text_list']
+        if asset_info.get('mux_playback_id'):
+            update_data['mux_playback_id'] = asset_info['mux_playback_id']
+        if asset_info.get('drm_protection') is not None:
+            update_data['drm_protection'] = asset_info['drm_protection']
+        if asset_info.get('playback_policy'):
+            update_data['playback_policy'] = asset_info['playback_policy']
+        
+        # Note: bitrate_kbps, file_size_bytes, and audio_sample_rate are not updated to null to preserve existing values if any
+        # All unavailable fields from Mux API are now preserved instead of being overwritten
+        
+        logger.info(f"Updating video file {id} with {len(update_data)} fields from Mux")
+        
+        # Update the video file
+        video_file = crud.video_file.update(db=db, db_obj=video_file, obj_in=update_data)
+        
+        logger.info(f"Successfully completed video file {id} from Mux asset {video_file.mux_asset_id}")
+        
+        return video_file
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error completing video file {id} from Mux: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to complete video file from Mux: {str(e)}"
+        )

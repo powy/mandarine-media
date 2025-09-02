@@ -83,6 +83,11 @@ And this is the third subtitle line.
   }
 
   async createMockConfig(mockFiles) {
+    // Convert absolute paths to relative paths for portability
+    const getRelativePath = (filePath) => {
+      return path.relative(process.cwd(), filePath).replace(/\\/g, '/');
+    };
+
     const mockConfig = {
       auth: {
         mux_token_id: "mock-token-id",
@@ -98,7 +103,7 @@ And this is the third subtitle line.
       mux_asset_id: "mock-asset-id-12345",
       subtitles: [
         {
-          file_path: mockFiles.srtPath,
+          file_path: getRelativePath(mockFiles.srtPath),
           language_code: "en",
           name: "English",
           text_type: "subtitles",
@@ -106,7 +111,7 @@ And this is the third subtitle line.
           passthrough: "test-en"
         },
         {
-          file_path: mockFiles.vttPath,
+          file_path: getRelativePath(mockFiles.vttPath),
           language_code: "es",
           name: "Español",
           text_type: "subtitles",
@@ -114,7 +119,7 @@ And this is the third subtitle line.
           passthrough: "test-es"
         },
         {
-          file_path: mockFiles.frenchPath,
+          file_path: getRelativePath(mockFiles.frenchPath),
           language_code: "fr",
           name: "Français",
           text_type: "subtitles",
