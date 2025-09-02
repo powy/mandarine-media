@@ -907,6 +907,28 @@ export interface ScreenDescriptionFilters {
 export interface ScreenContentFilters extends ScreenDescriptionFilters {}
 
 export interface ContentListListResponse extends PaginatedResponse<ContentList> {}
+
+// Auto-generation response type
+export interface AutoGenerationResponse {
+  message: string;
+  created_count: number;
+  updated_count: number;
+  skipped_count: number;
+  error_count: number;
+  errors: string[];
+}
+
+// Dynamic list update response type
+export interface DynamicListUpdateResponse {
+  message: string;
+  processed_count: number;
+  updated_count: number;
+  skipped_count: number;
+  error_count: number;
+  errors: string[];
+  screens_updated: number;
+  screen_errors: string[];
+}
 // v1.9 Breaking change: ScreenContent renamed to ScreenDescription
 export interface ScreenDescriptionListResponse extends PaginatedResponse<ScreenDescription> {}
 

@@ -8,6 +8,8 @@ import {
   getContentListJSON,
   reorderContentList,
   regenerateContentListJSON,
+  autoGenerateContentLists,
+  updateDynamicContentLists,
 } from '../api/content-lists';
 import { apiClient } from '../api/client';
 import type {
@@ -16,6 +18,8 @@ import type {
   ContentListUpdate,
   ContentListJSON,
   ReorderContentRequest,
+  AutoGenerationResponse,
+  DynamicListUpdateResponse,
 } from '../types';
 
 // Mock the API client
@@ -253,6 +257,178 @@ describe('Content Lists API', () => {
       await createContentList(minimalCreateData);
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists', minimalCreateData);
+    });
+  });
+
+  describe('autoGenerateContentLists', () => {
+    it('should trigger auto-generation and return results', async () => {
+      const mockResponse: AutoGenerationResponse = {
+        message: 'Auto-generation completed',
+        created_count: 24,
+        updated_count: 0,
+        skipped_count: 0,
+        error_count: 0,
+        errors: [],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await autoGenerateContentLists();
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/auto-generate');
+      expect(result).toEqual(mockResponse);
+      expect(result.created_count).toBe(24);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('should handle auto-generation with errors', async () => {
+      const mockResponse: AutoGenerationResponse = {
+        message: 'Auto-generation completed with errors',
+        created_count: 20,
+        updated_count: 2,
+        skipped_count: 0,
+        error_count: 2,
+        errors: [
+          'Error processing video/animation/action: Database error',
+          'Error processing webtoon/drama/romance: Theme not found',
+        ],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await autoGenerateContentLists();
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/auto-generate');
+      expect(result).toEqual(mockResponse);
+      expect(result.error_count).toBe(2);
+      expect(result.errors).toHaveLength(2);
+    });
+
+    it('should handle auto-generation API errors', async () => {
+      const errorMessage = 'Unauthorized';
+      mockApiClient.post.mockRejectedValue(new Error(errorMessage));
+
+      await expect(autoGenerateContentLists()).rejects.toThrow(errorMessage);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/auto-generate');
+    });
+
+    it('should handle idempotent auto-generation (second run)', async () => {
+      const mockResponse: AutoGenerationResponse = {
+        message: 'Auto-generation completed',
+        created_count: 0,
+        updated_count: 5,
+        skipped_count: 43,
+        error_count: 0,
+        errors: [],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await autoGenerateContentLists();
+
+      expect(result.created_count).toBe(0); // No new lists on second run
+      expect(result.skipped_count).toBeGreaterThan(result.updated_count); // Mostly skipped
+    });
+  });
+
+  describe('updateDynamicContentLists', () => {
+    it('should trigger dynamic list update and return results', async () => {
+      const mockResponse: DynamicListUpdateResponse = {
+        message: 'Dynamic list update completed',
+        processed_count: 15,
+        updated_count: 8,
+        skipped_count: 7,
+        error_count: 0,
+        errors: [],
+        screens_updated: 3,
+        screen_errors: [],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await updateDynamicContentLists();
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/update-dynamic-lists');
+      expect(result).toEqual(mockResponse);
+      expect(result.processed_count).toBe(15);
+      expect(result.updated_count).toBe(8);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('should handle dynamic update with errors', async () => {
+      const mockResponse: DynamicListUpdateResponse = {
+        message: 'Dynamic list update completed with errors',
+        processed_count: 12,
+        updated_count: 8,
+        skipped_count: 2,
+        error_count: 2,
+        errors: [
+          'Error processing content list "Animation + Action": Invalid theme ID',
+          'Error processing content list "Drama Romance": Database connection failed',
+        ],
+        screens_updated: 1,
+        screen_errors: ['Error updating screen "Homepage": Network timeout'],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await updateDynamicContentLists();
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/update-dynamic-lists');
+      expect(result).toEqual(mockResponse);
+      expect(result.error_count).toBe(2);
+      expect(result.errors).toHaveLength(2);
+    });
+
+    it('should handle dynamic update API errors', async () => {
+      const errorMessage = 'Unauthorized';
+      mockApiClient.post.mockRejectedValue(new Error(errorMessage));
+
+      await expect(updateDynamicContentLists()).rejects.toThrow(errorMessage);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/update-dynamic-lists');
+    });
+
+    it('should handle dynamic update with no changes', async () => {
+      const mockResponse: DynamicListUpdateResponse = {
+        message: 'Dynamic list update completed',
+        processed_count: 10,
+        updated_count: 0,
+        skipped_count: 10,
+        error_count: 0,
+        errors: [],
+        screens_updated: 0,
+        screen_errors: [],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await updateDynamicContentLists();
+
+      expect(result.updated_count).toBe(0); // No updates needed
+      expect(result.skipped_count).toBe(10); // All skipped due to no changes
+      expect(result.processed_count).toBe(10); // All lists processed
+    });
+
+    it('should handle mixed results with season consolidation', async () => {
+      const mockResponse: DynamicListUpdateResponse = {
+        message: 'Dynamic list update completed',
+        processed_count: 5,
+        updated_count: 3,
+        skipped_count: 2,
+        error_count: 0,
+        errors: [],
+        screens_updated: 2,
+        screen_errors: [],
+      };
+
+      mockApiClient.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await updateDynamicContentLists();
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/content-lists/update-dynamic-lists');
+      expect(result.processed_count).toBe(5);
+      expect(result.updated_count).toBe(3);
+      expect(result.skipped_count).toBe(2);
     });
   });
 });

@@ -66,6 +66,8 @@ from .content_list import (
     ContentListResponse,
     ContentListReorderRequest,
     ContentListJSONResponse,
+    AutoGenerationResponse,
+    DynamicListUpdateResponse,
     ThumbnailFormatEnum,
     ContentTypeEnum,
 )

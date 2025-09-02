@@ -94,7 +94,7 @@ export const LanguageCreate = () => (
   <Create redirect="list">
     <SimpleForm toolbar={<LanguageToolbar />}>
       <TextInput source="name" validate={[required()]} fullWidth />
-      <TextInput source="sigle" label="Language Code" validate={[required()]} helperText="e.g., EN, FR, KR" />
+      <TextInput source="sigle" label="Language Code" validate={[required()]} helperText="e.g., EN, FR, KR, en-US, zh-Hans-CN (max 20 chars)" />
     </SimpleForm>
   </Create>
 );
@@ -103,7 +103,7 @@ export const LanguageEdit = () => (
   <Edit>
     <SimpleForm toolbar={<LanguageToolbar />}>
       <TextInput source="name" validate={[required()]} fullWidth />
-      <TextInput source="sigle" label="Language Code" validate={[required()]} helperText="e.g., EN, FR, KR" />
+      <TextInput source="sigle" label="Language Code" validate={[required()]} helperText="e.g., EN, FR, KR, en-US, zh-Hans-CN (max 20 chars)" />
     </SimpleForm>
   </Edit>
 );

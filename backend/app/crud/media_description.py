@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, asc
 from uuid import UUID, uuid4
@@ -395,6 +395,82 @@ class CRUDMediaDescription(
             )
 
         return query.count()
+
+    def get_filtered_media(
+        self,
+        db: Session,
+        *,
+        media_types: Optional[List[str]] = None,
+        categories: Optional[List[str]] = None,
+        theme_ids: Optional[List[str]] = None
+    ) -> List[MediaDescription]:
+        """
+        Get media descriptions filtered by categories and/or themes with media type.
+        Implements the business logic for content list filtering.
+        Uses SQLite-compatible JSON operations.
+        """
+        query = db.query(MediaDescription)
+        
+        # Apply media type filter
+        if media_types:
+            query = query.filter(MediaDescription.media_type.in_(media_types))
+        
+        # For SQLite compatibility, we need to use a different approach
+        # Get all potential matches and filter in Python
+        all_media = query.all()
+        
+        # Filter based on business rules
+        filtered_media = []
+        for media in all_media:
+            media_categories = media.media_categories_list or []
+            media_themes = media.media_themes_id_list or []
+            
+            if categories and theme_ids:
+                # Both fields: match AT LEAST ONE category AND AT LEAST ONE theme
+                has_category = any(cat in media_categories for cat in categories)
+                has_theme = any(theme in media_themes for theme in theme_ids)
+                
+                # Handle case where media has no themes assigned:
+                # If media matches categories but has no themes, include it
+                # This allows content lists to work even when media theme assignment is incomplete
+                if has_category and (has_theme or not media_themes):
+                    filtered_media.append(media)
+            elif categories:
+                # Only categories: match any of the specified categories
+                has_category = any(cat in media_categories for cat in categories)
+                if has_category:
+                    filtered_media.append(media)
+            elif theme_ids:
+                # Only themes: match any of the specified themes
+                has_theme = any(theme in media_themes for theme in theme_ids)
+                if has_theme:
+                    filtered_media.append(media)
+            elif not categories and not theme_ids:
+                # No category/theme filters, include all (filtered by media_type already)
+                filtered_media.append(media)
+        
+        return filtered_media
+
+    def get_season_videos(self, db: Session) -> Dict[str, List[MediaDescription]]:
+        """
+        Get all videos grouped by their season_id.
+        Returns a dictionary where keys are season IDs and values are lists of videos.
+        """
+        videos_with_seasons = (
+            db.query(MediaDescription)
+            .filter(MediaDescription.season_id.isnot(None))
+            .filter(MediaDescription.media_type == "video")
+            .all()
+        )
+        
+        season_videos = {}
+        for video in videos_with_seasons:
+            season_id = str(video.season_id)
+            if season_id not in season_videos:
+                season_videos[season_id] = []
+            season_videos[season_id].append(video)
+        
+        return season_videos
 
 
 media_description = CRUDMediaDescription(MediaDescription)

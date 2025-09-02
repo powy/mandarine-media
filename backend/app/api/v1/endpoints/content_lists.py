@@ -321,3 +321,58 @@ def get_content_lists_stats(
         "total_active_lists": total_active,
         "counts_by_thumbnail_format": format_counts,
     }
+
+
+@router.post("/auto-generate", response_model=schemas.AutoGenerationResponse)
+def auto_generate_content_lists(
+    db: Session = Depends(deps.get_db),
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Auto-generate content lists for all combinations of media categories, themes, and types.
+    
+    **Access:** Manager/Admin only
+    """
+    from app.services.content_list_auto_generation import ContentListAutoGenerationService
+    
+    service = ContentListAutoGenerationService(db)
+    results = service.generate_all_auto_lists()
+    
+    return {
+        "message": "Auto-generation completed",
+        "created_count": results["created"],
+        "updated_count": results["updated"],
+        "skipped_count": results["skipped"],
+        "error_count": len(results["errors"]),
+        "errors": results["errors"]
+    }
+
+
+@router.post("/update-dynamic-lists", response_model=schemas.DynamicListUpdateResponse)
+def update_dynamic_content_lists(
+    force_update: bool = False,
+    db: Session = Depends(deps.get_db),
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Update all content lists that have filtering criteria defined.
+    Processes both auto-generated and manual lists by applying their media filtering,
+    sorting, and season consolidation rules.
+    
+    **Access:** Manager/Admin only
+    """
+    from app.services.content_list_processing import ContentListProcessingService
+    
+    service = ContentListProcessingService(db)
+    results = service.update_all_dynamic_lists(force_update=force_update)
+    
+    return {
+        "message": "Dynamic list update completed",
+        "processed_count": results["processed"],
+        "updated_count": results["updated"], 
+        "skipped_count": results["skipped"],
+        "error_count": len(results["errors"]),
+        "errors": results["errors"],
+        "screens_updated": results["screens_updated"],
+        "screen_errors": results["screen_errors"]
+    }

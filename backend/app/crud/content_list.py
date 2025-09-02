@@ -202,5 +202,17 @@ class CRUDContentList(CRUDBase[ContentList, ContentListCreate, ContentListUpdate
         
         return content_list
 
+    def get_by_slug(self, db: Session, *, slug: str) -> Optional[ContentList]:
+        """Get content list by slug."""
+        return db.query(ContentList).filter(ContentList.slug == slug).first()
+
+    def create_auto_list(self, db: Session, *, obj_in: ContentListCreate) -> ContentList:
+        """Create an auto-generated content list with proper slug generation."""
+        # Generate slug from title if not provided
+        if not obj_in.slug:
+            obj_in.slug = obj_in.title.lower().replace(" ", "_")
+        
+        return self.create_with_json_cache(db, obj_in=obj_in)
+
 
 content_list = CRUDContentList(ContentList)

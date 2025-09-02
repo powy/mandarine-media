@@ -41,7 +41,7 @@ import {
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box } from '@mui/material';
-import { getContentListJSON, regenerateContentListJSON, reorderContentList } from 'share';
+import { getContentListJSON, regenerateContentListJSON, reorderContentList, autoGenerateContentLists, updateDynamicContentLists } from 'share';
 
 // Define thumbnail format choices - dimension-based naming
 const thumbnailFormatChoices = [
@@ -130,6 +130,8 @@ const ContentListListActions = () => (
     <FilterButton />
     <CreateButton />
     <ExportButton />
+    <AutoGenerateButton />
+    <UpdateDynamicListsButton />
   </TopToolbar>
 );
 
@@ -220,6 +222,78 @@ const RegenerateJsonButton = () => {
       label="Regenerate JSON"
       variant="outlined"
       color="secondary"
+    />
+  );
+};
+
+// Auto Generate Button (for list actions)
+const AutoGenerateButton = () => {
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [loading, setLoading] = useState(false);
+
+  const handleAutoGenerate = async () => {
+    setLoading(true);
+    try {
+      const result = await autoGenerateContentLists();
+      notify(
+        `Auto-generation completed: ${result.created_count} created, ${result.updated_count} updated, ${result.skipped_count} skipped`,
+        { type: 'success' }
+      );
+      if (result.error_count > 0) {
+        notify(`${result.error_count} errors occurred during auto-generation`, { type: 'warning' });
+      }
+      refresh();
+    } catch (error) {
+      notify(`Error in auto-generation: ${error.message}`, { type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleAutoGenerate}
+      label="Auto-Generate Lists"
+      variant="contained"
+      color="primary"
+      disabled={loading}
+    />
+  );
+};
+
+// Update Dynamic Lists Button (for list actions)
+const UpdateDynamicListsButton = () => {
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [loading, setLoading] = useState(false);
+
+  const handleUpdateDynamic = async () => {
+    setLoading(true);
+    try {
+      const result = await updateDynamicContentLists();
+      notify(
+        `Dynamic update completed: ${result.processed_count} processed, ${result.updated_count} updated, ${result.skipped_count} skipped`,
+        { type: 'success' }
+      );
+      if (result.error_count > 0) {
+        notify(`${result.error_count} errors occurred during processing`, { type: 'warning' });
+      }
+      refresh();
+    } catch (error) {
+      notify(`Error updating dynamic lists: ${error.message}`, { type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleUpdateDynamic}
+      label="Update Dynamic Lists"
+      variant="contained"
+      color="secondary"
+      disabled={loading}
     />
   );
 };

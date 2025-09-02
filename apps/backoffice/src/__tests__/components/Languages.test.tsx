@@ -44,7 +44,7 @@ describe('Language Components', () => {
   const mockRecord = {
     id: '123',
     name: 'English',
-    iso_code: 'en',
+    sigle: 'en',
     creation_date_utc: '2025-01-01T00:00:00Z'
   };
 
@@ -73,7 +73,7 @@ describe('Language Components', () => {
 
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
       expect(screen.getByTestId('field-name')).toBeInTheDocument();
-      expect(screen.getByTestId('field-iso_code')).toBeInTheDocument();
+      expect(screen.getByTestId('field-sigle')).toBeInTheDocument();
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
     });
 
@@ -122,14 +122,14 @@ describe('Language Components', () => {
       expect(screen.getByTestId('input-name')).toBeInTheDocument();
     });
 
-    test('includes required iso_code field', () => {
+    test('includes required sigle field', () => {
       render(
         <MemoryRouter>
           <LanguageCreate />
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('input-iso_code')).toBeInTheDocument();
+      expect(screen.getByTestId('input-sigle')).toBeInTheDocument();
     });
 
     test('renders form toolbar', () => {
@@ -166,14 +166,14 @@ describe('Language Components', () => {
       expect(screen.getByTestId('input-name')).toBeInTheDocument();
     });
 
-    test('includes required iso_code field', () => {
+    test('includes required sigle field', () => {
       render(
         <MemoryRouter>
           <LanguageEdit />
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('input-iso_code')).toBeInTheDocument();
+      expect(screen.getByTestId('input-sigle')).toBeInTheDocument();
     });
   });
 
@@ -198,7 +198,7 @@ describe('Language Components', () => {
 
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
       expect(screen.getByTestId('field-name')).toBeInTheDocument();
-      expect(screen.getByTestId('field-iso_code')).toBeInTheDocument();
+      expect(screen.getByTestId('field-sigle')).toBeInTheDocument();
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
     });
 

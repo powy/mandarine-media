@@ -99,8 +99,8 @@ class TestLanguagesCreate:
         """Test language creation with invalid sigle format fails."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        # Too long sigle
-        invalid_data1 = {"name": "Korean", "sigle": "kor"}
+        # Too long sigle (exceeds 20 characters)
+        invalid_data1 = {"name": "Korean", "sigle": "en-US-California-extended"}  # 25 chars
         response1 = client.post("/api/v1/languages", json=invalid_data1, headers=headers)
         assert response1.status_code == 422
         

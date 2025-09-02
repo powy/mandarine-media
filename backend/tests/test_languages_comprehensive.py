@@ -78,18 +78,28 @@ class TestLanguagesEdgeCases:
         """Test language creation with very long sigle."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        # Very long sigle (100 characters)
-        long_sigle = "x" * 100
-        data = {"name": "Test Language", "sigle": long_sigle}
-        
+        # Test with exactly 20 characters (should succeed)
+        valid_long_sigle = "en-US-California-ext"  # exactly 20 chars
+        data = {"name": "Test Language 20", "sigle": valid_long_sigle}
         response = client.post("/api/v1/languages", json=data, headers=headers)
-        # Should either succeed or fail with validation error
-        assert response.status_code in [200, 422]
+        assert response.status_code == 200
+        created_id = response.json()["id"]
+        assert response.json()["sigle"] == valid_long_sigle
         
-        if response.status_code == 200:
-            language = response.json()
-            assert language["sigle"] == long_sigle
-            client.delete(f"/api/v1/languages/{language['id']}", headers=headers)
+        # Test with 21 characters (should fail)
+        too_long_sigle = "en-US-California-ext1"  # 21 chars
+        data2 = {"name": "Test Language 21", "sigle": too_long_sigle}
+        response2 = client.post("/api/v1/languages", json=data2, headers=headers)
+        assert response2.status_code == 422
+        
+        # Very long sigle (100 characters) - should fail
+        very_long_sigle = "x" * 100
+        data3 = {"name": "Test Language 100", "sigle": very_long_sigle}
+        response3 = client.post("/api/v1/languages", json=data3, headers=headers)
+        assert response3.status_code == 422
+        
+        # Clean up
+        client.delete(f"/api/v1/languages/{created_id}", headers=headers)
 
     def test_create_language_special_characters(self, client, admin_token):
         """Test language creation with special characters."""
@@ -479,3 +489,34 @@ class TestLanguagesEdgeCases:
             # Check if spaces are preserved or trimmed
             assert language["sigle"] in ["  sl  ", "sl"]
             client.delete(f"/api/v1/languages/{language['id']}", headers=headers)
+    
+    def test_language_sigle_various_lengths(self, client, admin_token):
+        """Test language creation with various sigle lengths up to 20."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        created_ids = []
+        
+        # Test various valid lengths
+        test_cases = [
+            ("ko", "Korean"),  # 2 chars
+            ("eng", "English"),  # 3 chars
+            ("en-US", "English US"),  # 5 chars
+            ("zh-Hans", "Chinese Simplified"),  # 7 chars
+            ("en-US-ext", "English US Extended"),  # 9 chars
+            ("pt-BR-regional", "Portuguese Brazil Regional"),  # 14 chars
+            ("en-US-California", "English US California"),  # 16 chars
+            ("de-DE-BY-Munich-loc", "German Munich Local"),  # 19 chars
+            ("en-US-California-ext", "English California Extended"),  # 20 chars (max)
+        ]
+        
+        for sigle, name in test_cases:
+            data = {"name": name, "sigle": sigle}
+            response = client.post("/api/v1/languages", json=data, headers=headers)
+            assert response.status_code == 200, f"Failed to create language with sigle '{sigle}' (length {len(sigle)})"
+            language = response.json()
+            assert language["sigle"] == sigle
+            assert language["name"] == name
+            created_ids.append(language["id"])
+        
+        # Clean up
+        for language_id in created_ids:
+            client.delete(f"/api/v1/languages/{language_id}", headers=headers)

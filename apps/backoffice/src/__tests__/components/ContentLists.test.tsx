@@ -7,17 +7,17 @@ import { ContentListList, ContentListShow } from '../../components/resources/Con
 // Mock the share package
 const mockGetContentListJSON = vi.fn();
 const mockRegenerateContentListJSON = vi.fn();
+const mockAutoGenerateContentLists = vi.fn();
+const mockUpdateDynamicContentLists = vi.fn();
 
 vi.mock('share', () => ({
   getContentListJSON: mockGetContentListJSON,
   regenerateContentListJSON: mockRegenerateContentListJSON,
+  autoGenerateContentLists: mockAutoGenerateContentLists,
+  updateDynamicContentLists: mockUpdateDynamicContentLists,
 }));
 
 // Mock react-admin
-const mockUseRecordContext = vi.fn();
-const mockUseNotify = vi.fn();
-const mockUseRefresh = vi.fn();
-
 vi.mock('react-admin', () => ({
   List: ({ children }: any) => <div data-testid="list">{children}</div>,
   Datagrid: ({ children }: any) => <div data-testid="datagrid">{children}</div>,
@@ -44,9 +44,9 @@ vi.mock('react-admin', () => ({
   ArrayField: ({ source }: any) => <div data-testid={`array-field-${source}`}>{source}</div>,
   SingleFieldList: ({ children }: any) => <div data-testid="single-field-list">{children}</div>,
   ChipField: ({ source }: any) => <div data-testid={`chip-field-${source}`}>{source}</div>,
-  useRecordContext: mockUseRecordContext,
-  useNotify: mockUseNotify,
-  useRefresh: mockUseRefresh,
+  useRecordContext: vi.fn(),
+  useNotify: vi.fn(),
+  useRefresh: vi.fn(),
   SearchInput: ({ placeholder }: any) => <input data-testid="search-input" placeholder={placeholder} />,
   FilterButton: () => <div data-testid="filter-button">Filter</div>,
   CreateButton: () => <div data-testid="create-button">Create</div>,
@@ -54,7 +54,7 @@ vi.mock('react-admin', () => ({
 }));
 
 // Mock Material-UI
-jest.mock('@mui/material', () => ({
+vi.mock('@mui/material', () => ({
   Dialog: ({ open, children }: any) => open ? <div data-testid="dialog">{children}</div> : null,
   DialogTitle: ({ children }: any) => <div data-testid="dialog-title">{children}</div>,
   DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
@@ -64,14 +64,8 @@ jest.mock('@mui/material', () => ({
 }));
 
 describe('ContentLists Components', () => {
-  const mockNotify = jest.fn();
-  const mockRefresh = jest.fn();
-
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseNotify.mockReturnValue(mockNotify);
-    mockUseRefresh.mockReturnValue(mockRefresh);
-    mockUseRecordContext.mockReturnValue({ id: '123', title: 'Test Content List' });
+    vi.clearAllMocks();
   });
 
   describe('ContentListList', () => {
@@ -104,6 +98,8 @@ describe('ContentLists Components', () => {
       expect(screen.getByTestId('filter-button')).toBeInTheDocument();
       expect(screen.getByTestId('create-button')).toBeInTheDocument();
       expect(screen.getByTestId('export-button')).toBeInTheDocument();
+      expect(screen.getByTestId('button-auto-generate-lists')).toBeInTheDocument();
+      expect(screen.getByTestId('button-update-dynamic-lists')).toBeInTheDocument();
     });
 
     test('renders search input', () => {
@@ -232,4 +228,5 @@ describe('ContentLists Components', () => {
       });
     });
   });
+
 });

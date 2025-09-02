@@ -178,3 +178,25 @@ class ContentListJSONResponse(BaseModel):
     display_order: int
     last_updated: Optional[str]
     items: List[ContentListItemData]
+
+
+class AutoGenerationResponse(BaseModel):
+    """Schema for auto-generation endpoint response"""
+    message: str
+    created_count: int
+    updated_count: int
+    skipped_count: int
+    error_count: int
+    errors: List[str]
+
+
+class DynamicListUpdateResponse(BaseModel):
+    """Schema for dynamic list update endpoint response"""
+    message: str
+    processed_count: int
+    updated_count: int
+    skipped_count: int
+    error_count: int
+    errors: List[str]
+    screens_updated: int
+    screen_errors: List[str]

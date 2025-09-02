@@ -116,3 +116,16 @@ export const validateUUID = (uuid: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid);
 };
+
+// Language validation schemas
+export const languageSchema = z.object({
+  name: z.string().min(1, 'Language name is required'),
+  sigle: z.string().min(1, 'Language code is required').max(20, 'Language code must be less than 20 characters'),
+});
+
+export const languageCreateSchema = languageSchema;
+
+export const languageUpdateSchema = z.object({
+  name: z.string().min(1, 'Language name is required').optional(),
+  sigle: z.string().min(1, 'Language code is required').max(20, 'Language code must be less than 20 characters').optional(),
+});

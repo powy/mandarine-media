@@ -6,7 +6,7 @@ from datetime import datetime
 
 class LanguageBase(BaseModel):
     name: str = Field(..., min_length=1)
-    sigle: str = Field(..., min_length=1, max_length=2)
+    sigle: str = Field(..., min_length=1, max_length=20)
     
     @field_validator('name', 'sigle')
     @classmethod
@@ -22,7 +22,7 @@ class LanguageCreate(LanguageBase):
 
 class LanguageUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1)
-    sigle: Optional[str] = Field(None, min_length=1, max_length=2)
+    sigle: Optional[str] = Field(None, min_length=1, max_length=20)
     
     @field_validator('name', 'sigle')
     @classmethod

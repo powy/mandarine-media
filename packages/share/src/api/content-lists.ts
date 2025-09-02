@@ -7,6 +7,8 @@ import type {
   ContentListFilters,
   ContentListJSON,
   ReorderContentRequest,
+  AutoGenerationResponse,
+  DynamicListUpdateResponse,
 } from '../types';
 
 // Get all content lists
@@ -68,4 +70,16 @@ export const reorderContentList = async (id: string, data: ReorderContentRequest
 export const regenerateContentListJSON = async (id: string): Promise<void> => {
   // v1.9: Updated to flat URL structure
   await apiClient.post(`/content-lists/${id}/regenerate-json`);
+};
+
+// Auto-generate content lists for all combinations (Manager/Admin only)
+export const autoGenerateContentLists = async (): Promise<AutoGenerationResponse> => {
+  const response = await apiClient.post('/content-lists/auto-generate');
+  return response.data;
+};
+
+// Update dynamic content lists based on filtering criteria (Manager/Admin only)
+export const updateDynamicContentLists = async (): Promise<DynamicListUpdateResponse> => {
+  const response = await apiClient.post('/content-lists/update-dynamic-lists');
+  return response.data;
 };
