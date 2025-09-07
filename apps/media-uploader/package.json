@@ -1,0 +1,71 @@
+{
+  "name": "media-uploader",
+  "version": "1.0.0",
+  "description": "Unified media upload tool consolidating media-analyzer, mux-upload, mux-subtitle-upload, and picture-upload tools",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "media-uploader": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "build": "echo 'No build needed for CLI tool'",
+    "test": "jest",
+    "test:help": "node src/index.js --help",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "type-check": "echo 'Type checking skipped for JS project'"
+  },
+  "keywords": [
+    "mux",
+    "media",
+    "video",
+    "subtitle",
+    "picture",
+    "upload",
+    "cli",
+    "s3",
+    "streaming",
+    "analyzer"
+  ],
+  "author": "KYOOL Media Platform",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/client-sts": "^3.879.0",
+    "@aws-sdk/lib-storage": "^3.450.0",
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@mux/mux-node": "^12.4.1",
+    "@mux/upchunk": "^3.5.0",
+    "axios": "^1.11.0",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "fs-extra": "^11.2.0",
+    "glob": "^8.1.0",
+    "glob-promise": "^6.0.0",
+    "joi": "^17.11.0",
+    "ora": "^7.0.1",
+    "pg": "^8.11.3",
+    "sharp": "^0.32.6",
+    "string-similarity": "^4.0.4",
+    "winston": "^3.11.0",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
+    "jest": "^29.7.0",
+    "nock": "^13.4.0",
+    "sinon": "^17.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyool-media/uploader-tool"
+  }
+}

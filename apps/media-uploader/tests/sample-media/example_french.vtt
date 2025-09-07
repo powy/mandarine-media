@@ -1,0 +1,21 @@
+WEBVTT
+
+1
+00:00:01.000 --> 00:00:04.000
+Bienvenue dans notre démonstration vidéo.
+
+2
+00:00:04.500 --> 00:00:08.000
+Ceci est un exemple de sous-titres français.
+
+3
+00:00:08.500 --> 00:00:12.000
+Vous pouvez utiliser ceci pour tester l'outil de téléchargement de sous-titres.
+
+4
+00:00:12.500 --> 00:00:16.000
+L'outil télécharge les sous-titres vers Mux via S3.
+
+5
+00:00:16.500 --> 00:00:20.000
+Merci d'avoir regardé cette démonstration.

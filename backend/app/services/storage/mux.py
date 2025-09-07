@@ -181,13 +181,26 @@ class MuxStorageBackend(BaseStorageBackend):
     
     async def get_complete_asset_info(self, asset_id: str) -> Optional[Dict[str, Any]]:
         """Get complete asset information from Mux API for video file completion."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
+            logger.info(f"[MUX DEBUG] Fetching asset info for asset_id: {asset_id}")
             response = self.assets_api.get_asset(asset_id)
             asset = response.data
+            
+            # Log raw playback IDs
+            logger.info(f"[MUX DEBUG] Asset status: {asset.status}")
+            logger.info(f"[MUX DEBUG] Number of playback_ids: {len(asset.playback_ids) if asset.playback_ids else 0}")
+            if asset.playback_ids:
+                for idx, pb_id in enumerate(asset.playback_ids):
+                    pb_policy = pb_id.policy if hasattr(pb_id, 'policy') else 'NO_POLICY_ATTR'
+                    logger.info(f"[MUX DEBUG] Playback ID {idx}: id={pb_id.id}, policy={pb_policy}")
             
             # Helper function to determine most restrictive playback policy
             def get_most_restrictive_policy_and_id(playback_ids):
                 if not playback_ids:
+                    logger.warning(f"[MUX DEBUG] No playback_ids provided to get_most_restrictive_policy_and_id")
                     return None, None
                 
                 # Policy hierarchy: drm > signed > public
@@ -198,17 +211,24 @@ class MuxStorageBackend(BaseStorageBackend):
                 for pb in playback_ids:
                     policy = pb.policy if hasattr(pb, 'policy') else 'public'
                     priority = policy_priority.get(policy, 1)
+                    logger.info(f"[MUX DEBUG] Evaluating playback ID {pb.id}: policy={policy}, priority={priority}")
                     if priority > best_priority:
                         best_priority = priority
                         most_restrictive = pb
+                        logger.info(f"[MUX DEBUG] New most restrictive: id={pb.id}, policy={policy}, priority={priority}")
                 
-                return most_restrictive.policy if most_restrictive else 'public', most_restrictive.id if most_restrictive else playback_ids[0].id
+                final_policy = most_restrictive.policy if most_restrictive and hasattr(most_restrictive, 'policy') else 'public'
+                final_id = most_restrictive.id if most_restrictive else playback_ids[0].id
+                logger.info(f"[MUX DEBUG] Final selection: policy={final_policy}, id={final_id}, most_restrictive={most_restrictive is not None}")
+                return final_policy, final_id
             
             # Get most restrictive playback policy and ID
             playback_policy, mux_playback_id = get_most_restrictive_policy_and_id(asset.playback_ids)
+            logger.info(f"[MUX DEBUG] Selected playback_policy: {playback_policy}, mux_playback_id: {mux_playback_id}")
             
             # Generate playback URL using most restrictive playback ID
             file_url = f"https://stream.mux.com/{mux_playback_id}.m3u8" if mux_playback_id else None
+            logger.info(f"[MUX DEBUG] Generated file_url: {file_url}")
             
             # Map encoding status
             encoding_status_map = {
@@ -259,15 +279,25 @@ class MuxStorageBackend(BaseStorageBackend):
             encoding_profile = getattr(asset, 'video_quality', None)
             
             # Prepare timestamps
+            from datetime import datetime
             upload_timestamp = None
             encodage_date_utc = None
             if hasattr(asset, 'created_at'):
-                upload_timestamp = asset.created_at
+                # Convert Unix timestamp to datetime object if needed
+                if isinstance(asset.created_at, (int, float, str)):
+                    try:
+                        timestamp = float(asset.created_at) if isinstance(asset.created_at, str) else asset.created_at
+                        upload_timestamp = datetime.utcfromtimestamp(timestamp)
+                    except (ValueError, TypeError):
+                        upload_timestamp = None
+                else:
+                    upload_timestamp = asset.created_at
+                
                 # If asset is ready, use created_at as encoding completion date
-                if asset.status == 'ready':
-                    encodage_date_utc = asset.created_at
+                if asset.status == 'ready' and upload_timestamp:
+                    encodage_date_utc = upload_timestamp
             
-            return {
+            result = {
                 'success': True,
                 'asset_id': asset.id,
                 'asset_status': asset.status,
@@ -292,6 +322,9 @@ class MuxStorageBackend(BaseStorageBackend):
                 'unavailable_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate'],
                 'preserved_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate']  # These fields are preserved, not overwritten
             }
+            
+            logger.info(f"[MUX DEBUG] Returning result with file_url: {result.get('file_url')}, mux_playback_id: {result.get('mux_playback_id')}")
+            return result
             
         except ApiException as e:
             if e.status == 404:

@@ -19,7 +19,8 @@ media_workspace/
 │   │   ├── web/                   # Public React web application
 │   │   ├── backoffice/            # React Admin dashboard
 │   │   ├── alpha/                 # Primary React Native mobile app
-│   │   └── mobile/                # Alternative React Native implementation
+│   │   ├── mobile/                # Alternative React Native implementation
+│   │   └── media-uploader/        # CLI tool for media processing and uploads
 │   ├── packages/share/            # Shared utilities, API client, types
 │   ├── backend/                   # Python FastAPI server
 │   └── documents/                 # Technical documentation
@@ -165,6 +166,18 @@ npm run start:backend        # Start FastAPI server
 npm run stop:backend         # Stop Docker services
 ```
 
+### Media Uploader Commands
+```bash
+# Media processing and upload tool
+npm run media-uploader -- [command] [options]  # Run media uploader CLI
+npm run media-uploader:help                    # Show detailed help
+npm run test:media-uploader                    # Run media uploader tests
+
+# Alternative access methods
+nx run media-uploader:start [command]          # Via NX
+node apps/media-uploader/src/index.js [command] # Direct execution
+```
+
 ### Backend Commands
 ```bash
 cd backend
@@ -183,6 +196,300 @@ pytest tests/test_specific.py                     # Run specific tests
 ./start_server.sh                                  # Start server directly
 python -m uvicorn app.main:app --reload          # Manual server start
 ```
+
+## 📤 Media Uploader Tool
+
+The `media-uploader` is a powerful CLI tool for processing and uploading media content to various platforms including Mux, S3, and the Kyool backend API. It consolidates five specialized tools into a unified interface.
+
+### Overview
+
+The media uploader provides automated workflows for:
+- **File Analysis**: Scan and associate video, subtitle, and image files
+- **Video Upload**: Upload videos to Mux streaming platform
+- **Subtitle Management**: Upload subtitles to existing Mux assets
+- **Image Processing**: Upload pictures to S3 and create backend records
+- **Complete Workflows**: End-to-end media processing pipelines
+
+### Installation & Access
+
+The media uploader is integrated into the monorepo and accessible via:
+
+```bash
+# Primary method - workspace script
+npm run media-uploader -- [command] [options]
+
+# Help and testing
+npm run media-uploader:help                # Show complete help
+npm run test:media-uploader                # Run tests
+
+# Alternative methods
+nx run media-uploader:start [command]      # Via NX
+node apps/media-uploader/src/index.js [command] # Direct execution
+```
+
+### Available Commands
+
+#### 🔍 **analyze** (Media Analyzer)
+Scans directories to find and associate related media files (videos, subtitles, images).
+
+```bash
+# Basic usage
+npm run media-uploader -- analyze /path/to/media
+
+# Advanced options
+npm run media-uploader -- analyze \
+  --video-path /videos \
+  --subtitle-path /subs \
+  --image-path /images \
+  --output analysis.json \
+  --min-score 75 \
+  --verbose
+```
+
+**Options:**
+- `--video-path <path>`: Specific video folder location
+- `--subtitle-path <path>`: Specific subtitle folder location  
+- `--image-path <path>`: Specific image folder location
+- `--output <file>`: Save analysis results to JSON file
+- `--min-score <score>`: Minimum association confidence (default: 60)
+- `--verbose`: Detailed analysis output
+- `--no-metadata`: Skip video metadata reading (faster)
+- `--export-for-upload`: Format output for upload workflows
+
+#### 🎥 **mux-upload** (Video Upload)
+Uploads video files to Mux streaming platform with comprehensive options.
+
+```bash
+# Basic upload
+npm run media-uploader -- mux-upload --config video-config.json
+
+# With advanced options
+npm run media-uploader -- mux-upload \
+  --config video-config.json \
+  --timeout 7200 \
+  --retry 5 \
+  --verbose \
+  --progress
+```
+
+**Options:**
+- `--config <path>`: **Required** - JSON configuration file
+- `--debug`: Enable detailed debug logging
+- `--timeout <seconds>`: Upload timeout (default: 3600)
+- `--retry <count>`: Retry attempts on failure (default: 3)
+- `--dry-run`: Validate configuration without uploading
+- `--progress`: Show upload progress bar (default: enabled)
+- `--no-progress`: Disable progress display
+- `--verbose`: Detailed output
+- `--quiet`: Errors only
+
+#### 📝 **mux-subtitle-upload** (Subtitle Upload)
+Uploads subtitle files to existing Mux video assets via S3 temporary storage.
+
+```bash
+# Basic subtitle upload
+npm run media-uploader -- mux-subtitle-upload --config subtitle-config.json
+
+# With cleanup options
+npm run media-uploader -- mux-subtitle-upload \
+  --config subtitle-config.json \
+  --cleanup-delay 180 \
+  --verbose
+```
+
+**Options:**
+- `--config <path>`: **Required** - JSON configuration file
+- `--debug`: Enable detailed debug logging
+- `--retry <count>`: Retry attempts (default: 3)
+- `--dry-run`: Validate without uploading
+- `--verbose`: Detailed output
+- `--quiet`: Errors only
+- `--no-cleanup`: Skip S3 cleanup after upload
+- `--cleanup-delay <minutes>`: S3 cleanup delay (default: 120)
+
+#### 🖼️ **picture-upload** (Image Upload)
+Uploads images to S3 storage and creates corresponding records in the Kyool backend API.
+
+```bash
+# Basic picture upload
+npm run media-uploader -- picture-upload --config picture-config.json
+
+# With validation
+npm run media-uploader -- picture-upload \
+  --config picture-config.json \
+  --dry-run \
+  --verbose
+```
+
+**Options:**
+- `--config <path>`: **Required** - JSON configuration file
+- `--verbose`: Detailed output
+- `--dry-run`: Validate configuration without uploading
+
+#### 🚀 **one-media-complete-upload** (Complete Workflow)
+Executes a complete media processing workflow from folder analysis to final upload.
+
+```bash
+# Complete media processing
+npm run media-uploader -- complete-upload \
+  --config workflow-config.json \
+  --folder /path/to/media
+
+# Validation run
+npm run media-uploader -- complete-upload \
+  --config workflow-config.json \
+  --folder /path/to/media \
+  --dry-run \
+  --verbose
+```
+
+**Options:**
+- `--config <path>`: **Required** - JSON workflow configuration
+- `--folder <path>`: **Required** - Media folder path
+- `--verbose`: Detailed processing output
+- `--dry-run`: Validate and scan without processing
+
+### Configuration Files
+
+Each tool requires JSON configuration files with specific structures:
+
+#### Video Upload Configuration
+```json
+{
+  "mux": {
+    "token_id": "your-mux-token-id",
+    "token_secret": "your-mux-token-secret"
+  },
+  "videos": [
+    {
+      "file_path": "/path/to/video.mp4",
+      "title": "Video Title",
+      "description": "Video description"
+    }
+  ]
+}
+```
+
+#### Subtitle Upload Configuration
+```json
+{
+  "mux": {
+    "token_id": "your-mux-token-id", 
+    "token_secret": "your-mux-token-secret"
+  },
+  "s3": {
+    "bucket": "your-s3-bucket",
+    "region": "us-east-1"
+  },
+  "subtitles": [
+    {
+      "asset_id": "mux-asset-id",
+      "file_path": "/path/to/subtitle.srt",
+      "language": "en",
+      "name": "English"
+    }
+  ]
+}
+```
+
+#### Picture Upload Configuration
+```json
+{
+  "s3": {
+    "bucket": "your-s3-bucket",
+    "region": "us-east-1"
+  },
+  "api": {
+    "base_url": "http://localhost:8000",
+    "token": "your-api-token"
+  },
+  "pictures": [
+    {
+      "file_path": "/path/to/image.jpg",
+      "title": "Image Title",
+      "description": "Image description"
+    }
+  ]
+}
+```
+
+### Examples
+
+#### Complete Media Processing Workflow
+```bash
+# 1. Analyze media folder structure
+npm run media-uploader -- analyze /content/new-series \
+  --output analysis.json \
+  --export-for-upload
+
+# 2. Upload videos to Mux
+npm run media-uploader -- mux-upload \
+  --config video-upload-config.json \
+  --verbose
+
+# 3. Upload subtitles to Mux assets
+npm run media-uploader -- mux-subtitle-upload \
+  --config subtitle-config.json
+
+# 4. Upload promotional images
+npm run media-uploader -- picture-upload \
+  --config images-config.json
+
+# 5. Or run complete workflow in one command
+npm run media-uploader -- complete-upload \
+  --config complete-workflow.json \
+  --folder /content/new-series
+```
+
+#### Batch Processing with Validation
+```bash
+# Always validate first
+npm run media-uploader -- complete-upload \
+  --config batch-config.json \
+  --folder /media/batch-content \
+  --dry-run
+
+# Then process if validation passes
+npm run media-uploader -- complete-upload \
+  --config batch-config.json \
+  --folder /media/batch-content \
+  --verbose
+```
+
+### Logging and Monitoring
+
+All tools provide comprehensive logging:
+- **Console Output**: Real-time progress and status
+- **Log Files**: Detailed logs in `apps/media-uploader/logs/`
+- **Progress Tracking**: Upload progress bars and percentage completion
+- **Error Handling**: Automatic retries with exponential backoff
+
+### Troubleshooting
+
+Common issues and solutions:
+
+1. **Configuration Errors**:
+   ```bash
+   # Use dry-run to validate configs
+   npm run media-uploader -- [command] --config config.json --dry-run
+   ```
+
+2. **Upload Failures**:
+   ```bash
+   # Increase timeout and retries
+   npm run media-uploader -- mux-upload \
+     --config config.json \
+     --timeout 7200 \
+     --retry 5
+   ```
+
+3. **File Association Issues**:
+   ```bash
+   # Lower association threshold
+   npm run media-uploader -- analyze /path/to/media \
+     --min-score 40 \
+     --verbose
+   ```
 
 ## 📖 Documentation
 
@@ -313,7 +620,7 @@ docker-compose -f docker-compose.dev.yml up --build
 - CORS configuration for cross-origin requests
 - Environment-based configuration management
 
-## 📊 Recent Updates (August 2025)
+## 📊 Recent Updates (August-September 2025)
 
 - ✅ Comprehensive documentation overhaul
 - ✅ Enhanced API endpoints for all content types
@@ -323,6 +630,7 @@ docker-compose -f docker-compose.dev.yml up --build
 - ✅ Enhanced file upload system
 - ✅ Video processing integration
 - ✅ Complete testing coverage
+- ✅ **Media Uploader CLI Tool** - Integrated comprehensive media processing and upload system
 
 ## 🤝 Contributing
 

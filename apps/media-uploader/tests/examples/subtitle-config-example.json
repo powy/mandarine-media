@@ -1,0 +1,38 @@
+{
+  "auth": {
+    "mux_token_id": "your-mux-token-id",
+    "mux_token_secret": "your-mux-token-secret"
+  },
+  "s3": {
+    "access_key_id": "your-aws-access-key",
+    "secret_access_key": "your-aws-secret-key",
+    "region": "eu-west-3",
+    "bucket_name": "your-s3-bucket-name",
+    "subtitle_folder": "custom-subtitles"
+  },
+  "mux_asset_id": "your-mux-asset-id",
+  "subtitles": [
+    {
+      "file_path": "./test-files/example_french.vtt",
+      "language_code": "fr",
+      "name": "Français",
+      "text_type": "subtitles",
+      "closed_captions": false
+    },
+    {
+      "file_path": "./test-files/example_english.vtt",
+      "language_code": "en",
+      "name": "English",
+      "text_type": "subtitles",
+      "closed_captions": false
+    }
+  ],
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "console": true
+  },
+  "options": {
+    "cleanup_delay_minutes": 120
+  }
+}

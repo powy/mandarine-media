@@ -1,0 +1,21 @@
+WEBVTT
+
+1
+00:00:01.000 --> 00:00:04.000
+Welcome to our video demonstration.
+
+2
+00:00:04.500 --> 00:00:08.000
+This is an example of English subtitles.
+
+3
+00:00:08.500 --> 00:00:12.000
+You can use this for testing the subtitle upload tool.
+
+4
+00:00:12.500 --> 00:00:16.000
+The tool uploads subtitles to Mux via S3.
+
+5
+00:00:16.500 --> 00:00:20.000
+Thank you for watching this demonstration.

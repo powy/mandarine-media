@@ -751,6 +751,12 @@ async def complete_video_file_from_mux(
         # Get complete asset information from Mux
         asset_info = await mux_service.get_complete_asset_info(video_file.mux_asset_id)
         
+        logger.info(f"[VIDEO_FILES DEBUG] Received asset_info from Mux service:")
+        logger.info(f"[VIDEO_FILES DEBUG] - success: {asset_info.get('success')}")
+        logger.info(f"[VIDEO_FILES DEBUG] - file_url: {asset_info.get('file_url')}")
+        logger.info(f"[VIDEO_FILES DEBUG] - mux_playback_id: {asset_info.get('mux_playback_id')}")
+        logger.info(f"[VIDEO_FILES DEBUG] - playback_policy: {asset_info.get('playback_policy')}")
+        
         if not asset_info['success']:
             error_code = asset_info.get('error_code', 'UNKNOWN_ERROR')
             error_msg = asset_info.get('error', 'Failed to retrieve asset information')
@@ -770,8 +776,12 @@ async def complete_video_file_from_mux(
         update_data = {}
         
         # Always update these fields if they have values or are explicitly None
+        logger.info(f"[VIDEO_FILES DEBUG] Checking file_url: asset_info.get('file_url') = {repr(asset_info.get('file_url'))}")
         if asset_info.get('file_url'):
             update_data['file_url'] = asset_info['file_url']
+            logger.info(f"[VIDEO_FILES DEBUG] Added file_url to update_data: {asset_info['file_url']}")
+        else:
+            logger.warning(f"[VIDEO_FILES DEBUG] file_url NOT added to update_data. Value was: {repr(asset_info.get('file_url'))}")
         if asset_info.get('duration_seconds') is not None:
             update_data['duration_seconds'] = asset_info['duration_seconds']
         if 'max_resolution_width' in asset_info:
@@ -803,6 +813,10 @@ async def complete_video_file_from_mux(
         
         # Note: bitrate_kbps, file_size_bytes, and audio_sample_rate are not updated to null to preserve existing values if any
         # All unavailable fields from Mux API are now preserved instead of being overwritten
+        
+        logger.info(f"[VIDEO_FILES DEBUG] Final update_data dictionary:")
+        for key, value in update_data.items():
+            logger.info(f"[VIDEO_FILES DEBUG]   - {key}: {repr(value)}")
         
         logger.info(f"Updating video file {id} with {len(update_data)} fields from Mux")
         

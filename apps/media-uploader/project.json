@@ -1,0 +1,55 @@
+{
+  "name": "media-uploader",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/media-uploader/src",
+  "projectType": "application",
+  "tags": ["type:app", "platform:node", "scope:tools"],
+  "targets": {
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node src/index.js",
+        "cwd": "apps/media-uploader"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "command": "echo 'No build needed for CLI tool'",
+        "outputPath": "dist/apps/media-uploader"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "command": "jest",
+        "cwd": "apps/media-uploader",
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/apps/media-uploader"
+      }
+    },
+    "test:help": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node src/index.js --help",
+        "cwd": "apps/media-uploader"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/media-uploader/**/*.{js,jsx}"]
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Type checking skipped for JS project'",
+        "cwd": "apps/media-uploader"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "auth": {
+    "mux_token_id": "YOUR_MUX_TOKEN_ID",
+    "mux_token_secret": "YOUR_MUX_TOKEN_SECRET"
+  },
+  "s3": {
+    "access_key_id": "YOUR_AWS_ACCESS_KEY_ID",
+    "secret_access_key": "YOUR_AWS_SECRET_ACCESS_KEY",
+    "region": "eu-west-3",
+    "bucket_name": "kyool-temp-uploads",
+    "subtitle_folder": "subtitles-uploads"
+  },
+  "mux_asset_id": "hf6a2aqLT0293lAl3ZSlau7J9xWS3PZ3Uiwjj5B4LdpU",
+  "subtitles": [
+    {
+      "file_path": "./test-files/example_french.vtt",
+      "language_code": "fr",
+      "name": "Français",
+      "text_type": "subtitles",
+      "closed_captions": false
+    },
+    {
+      "file_path": "./test-files/example_english.vtt",
+      "language_code": "en",
+      "name": "English",
+      "text_type": "subtitles",
+      "closed_captions": false
+    }
+  ],
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "console": true
+  },
+  "options": {
+    "cleanup_delay_minutes": 10
+  }
+}

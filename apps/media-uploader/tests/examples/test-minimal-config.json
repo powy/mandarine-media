@@ -1,0 +1,23 @@
+{
+  "auth": {
+    "mux_token_id": "test-token-id",
+    "mux_token_secret": "test-token-secret"
+  },
+  "s3": {
+    "access_key_id": "test-key",
+    "secret_access_key": "test-secret",
+    "region": "us-east-1",
+    "bucket_name": "test-bucket",
+    "subtitle_folder": "my-custom-subtitles"
+  },
+  "mux_asset_id": "test-asset-123",
+  "subtitles": [
+    {
+      "file_path": "./test-files/example_french.vtt",
+      "language_code": "fr",
+      "name": "French",
+      "text_type": "subtitles",
+      "closed_captions": false
+    }
+  ]
+}

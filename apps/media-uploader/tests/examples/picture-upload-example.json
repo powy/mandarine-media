@@ -1,0 +1,22 @@
+{
+  "picturePath": "C:\\path\\to\\your\\image.jpg",
+  "s3": {
+    "accessKeyId": "YOUR_AWS_ACCESS_KEY_ID",
+    "secretAccessKey": "YOUR_AWS_SECRET_ACCESS_KEY",
+    "region": "eu-west-3",
+    "bucket": "example-media",
+    "keyPrefix": "images/visuals/"
+  },
+  "cloudfront": {
+    "domain": "www.kyool.eu"
+  },
+  "api": {
+    "baseUrl": "http://localhost:8000",
+    "username": "admin@kyool.com",
+    "password": "admin123"
+  },
+  "metadata": {
+    "fileName": "example-image.jpg",
+    "altText": "Example image for testing picture upload functionality"
+  }
+}
