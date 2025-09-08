@@ -123,7 +123,8 @@ export default class SubtitleService {
         name: subtitle.name,
         text_type: subtitle.text_type || 'subtitles',
         closed_captions: subtitle.closed_captions || false,
-        passthrough: subtitle.passthrough
+        passthrough: subtitle.passthrough,
+        is_default: subtitle.is_default || false
       }
     );
 
@@ -207,6 +208,20 @@ export default class SubtitleService {
       throw new Error(`Subtitle file not found: ${subtitle.file_path} (index: ${index})`);
     }
 
+    // Validate language code (BCP 47 compliance)
+    if (!subtitle.language_code) {
+      throw new Error(`Missing language_code for subtitle file: ${subtitle.file_path} (index: ${index})`);
+    }
+    
+    if (!this.isValidBCP47(subtitle.language_code)) {
+      this.logger.warn('Invalid BCP 47 language code detected', {
+        languageCode: subtitle.language_code,
+        filePath: subtitle.file_path,
+        index: index,
+        suggestion: 'Use valid BCP 47 codes like "en", "en-US", "fr", "es", etc.'
+      });
+    }
+
     // Check file size
     const stats = await fs.stat(subtitle.file_path);
     if (stats.size === 0) {
@@ -227,14 +242,9 @@ export default class SubtitleService {
 
     // Check file extension
     const extension = path.extname(subtitle.file_path).toLowerCase();
-    const supportedFormats = ['.srt', '.vtt', '.sbv'];
+    const supportedFormats = ['.srt', '.vtt'];
     if (!supportedFormats.includes(extension)) {
-      this.logger.warn('Unsupported subtitle format', {
-        extension: extension,
-        filePath: subtitle.file_path,
-        supportedFormats: supportedFormats,
-        index: index
-      });
+      throw new Error(`Unsupported subtitle format: ${extension}. Mux only supports SRT and VTT formats. (file: ${subtitle.file_path}, index: ${index})`);
     }
 
     // Basic content validation
@@ -280,6 +290,15 @@ export default class SubtitleService {
       subtitleCount: this.config.subtitles.length,
       options: this.options
     };
+  }
+
+  /**
+   * Validate BCP 47 language code
+   */
+  isValidBCP47(languageCode) {
+    // Basic BCP 47 validation - checks for common patterns
+    const bcp47Pattern = /^[a-z]{2,3}(-[A-Z]{2})?(-[a-z]{4})?(-[A-Z]{2})?$/;
+    return bcp47Pattern.test(languageCode);
   }
 
   /**

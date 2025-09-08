@@ -15,7 +15,8 @@ const subtitleSchema = Joi.object({
   name: Joi.string().required(),
   text_type: Joi.string().valid('subtitles', 'captions').default('subtitles'),
   closed_captions: Joi.boolean().default(false),
-  passthrough: Joi.string().optional()
+  passthrough: Joi.string().optional(),
+  is_default: Joi.boolean().optional() // Allow is_default field for marking default subtitle track
 });
 
 const loggingSchema = Joi.object({

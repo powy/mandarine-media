@@ -78,8 +78,6 @@ export interface MediaDescription {
   
   // v1.12 new fields
   media_themes_id_list?: string[];
-  trailer_id_list?: string[];
-  extract_id_list?: string[];
   available_countries_id_list?: string[];
   audience_categories_id_list?: string[];
   eligible_plans_id_list?: string[];
@@ -468,8 +466,6 @@ export interface MediaDescriptionCreate {
   revenue_share?: number;
   paid_token_cost?: number;
   // v1.12 new fields
-  trailer_id_list?: string[];
-  extract_id_list?: string[];
   available_countries_id_list?: string[];
   eligible_plans_id_list?: string[];
 }

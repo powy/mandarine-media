@@ -22,7 +22,8 @@ export default class MuxManager {
         this.logger.info(`Attempting to add subtitle track to Mux (attempt ${attempt}/${this.maxRetryAttempts})`, {
           assetId: assetId,
           language: options.language_code || 'en',
-          attempt: attempt
+          attempt: attempt,
+          url: presignedUrl
         });
 
         const trackData = {
@@ -34,17 +35,42 @@ export default class MuxManager {
           closed_captions: options.closed_captions || false
         };
 
+        // Add default flag if specified (for French subtitles)
+        if (options.is_default === true) {
+          trackData.default = true;
+        }
+
         // Add passthrough if provided
         if (options.passthrough) {
           trackData.passthrough = options.passthrough;
         }
 
+        // Defensive check for trackData
+        if (!trackData) {
+          throw new Error('trackData is not defined - this indicates a critical error in track preparation');
+        }
+
+        // Log the exact API call being made
+        this.logger.info('Making Mux API call to create track', {
+          endpoint: `https://api.mux.com/video/v1/assets/${assetId}/tracks`,
+          method: 'POST',
+          payload: JSON.stringify(trackData, null, 2),
+          assetId: assetId,
+          attempt: attempt
+        });
+
         const track = await this.mux.video.assets.createTrack(assetId, trackData);
+
+        this.logger.info('Mux API response received', {
+          response: JSON.stringify(track, null, 2)
+        });
 
         this.logger.info('Subtitle track added successfully to Mux', {
           assetId: assetId,
           trackId: track.id,
-          language: trackData.language_code,
+          language: trackData?.language_code || 'unknown',
+          name: trackData?.name || 'unknown',
+          default: trackData?.default || false,
           attempt: attempt
         });
 
@@ -61,8 +87,12 @@ export default class MuxManager {
         
         this.logger.error(`Mux track creation failed (attempt ${attempt}/${this.maxRetryAttempts})`, {
           error: error.message,
+          errorStack: error.stack,
           assetId: assetId,
-          attempt: attempt
+          attempt: attempt,
+          requestPayload: trackData ? JSON.stringify(trackData, null, 2) : 'trackData not available',
+          responseStatus: error.response?.status,
+          responseData: error.response?.data ? JSON.stringify(error.response.data, null, 2) : undefined
         });
 
         // If this was the last attempt, don't wait
@@ -171,28 +201,28 @@ export default class MuxManager {
   getLanguageName(code) {
     const languages = {
       'en': 'English',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German',
-      'it': 'Italian',
-      'pt': 'Portuguese',
-      'ja': 'Japanese',
-      'ko': 'Korean',
-      'zh': 'Chinese',
-      'ru': 'Russian',
-      'ar': 'Arabic',
-      'hi': 'Hindi',
-      'nl': 'Dutch',
-      'sv': 'Swedish',
-      'da': 'Danish',
-      'no': 'Norwegian',
-      'fi': 'Finnish',
-      'pl': 'Polish',
-      'tr': 'Turkish',
-      'el': 'Greek',
-      'he': 'Hebrew',
-      'th': 'Thai',
-      'vi': 'Vietnamese'
+      'es': 'Español',
+      'fr': 'Français',
+      'de': 'Deutsch',
+      'it': 'Italiano',
+      'pt': 'Português',
+      'ja': '日本語',
+      'ko': '한국어',
+      'zh': '中文',
+      'ru': 'Русский',
+      'ar': 'العربية',
+      'hi': 'हिन्दी',
+      'nl': 'Nederlands',
+      'sv': 'Svenska',
+      'da': 'Dansk',
+      'no': 'Norsk',
+      'fi': 'Suomi',
+      'pl': 'Polski',
+      'tr': 'Türkçe',
+      'el': 'Ελληνικά',
+      'he': 'עברית',
+      'th': 'ไทย',
+      'vi': 'Tiếng Việt'
     };
     return languages[code] || code.toUpperCase();
   }

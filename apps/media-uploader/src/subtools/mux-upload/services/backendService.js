@@ -193,7 +193,14 @@ export class BackendService {
         encoding_status: muxData.status === 'ready' ? 'completed' : 'processing'
       };
       
-      // Playback ID will be set by backend endpoint during completion
+      // Add playback ID if available (fallback when complete-from-mux fails)
+      if (muxData.playback_ids && muxData.playback_ids.length > 0) {
+        updateData.mux_playback_id = muxData.playback_ids[0].id;
+        this.logger.info('Setting playback ID from Mux data', {
+          uuid,
+          playbackId: updateData.mux_playback_id
+        });
+      }
       
       // Update duration if available and not already set
       if (muxData.duration) {
@@ -248,17 +255,17 @@ export class BackendService {
       
       return response.data;
     } catch (error) {
-      // Log as warning instead of error since this is an enhancement feature
-      // The upload should not fail if completion endpoint fails
-      this.logger.warn('Failed to complete video file with Mux data', {
+      // Log as error since URL population is critical for proper functioning
+      this.logger.error('Failed to complete video file with Mux data - URL may not be populated correctly', {
         uuid,
         error: error.message,
         status: error.response?.status,
-        data: error.response?.data
+        data: error.response?.data,
+        endpoint: `${this.baseURL}/api/v1/video-files/${uuid}/complete-from-mux`
       });
       
       // Return null to indicate completion failed but don't throw
-      // This allows the upload process to continue successfully
+      // This allows the upload process to continue with fallback method
       return null;
     }
   }

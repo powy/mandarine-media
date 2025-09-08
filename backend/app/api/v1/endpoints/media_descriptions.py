@@ -242,6 +242,35 @@ def update_media_description(
     return media_description
 
 
+@router.patch("/{id}", response_model=schemas.media_description.MediaDescription)
+def patch_media_description(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    media_description_in: schemas.media_description.MediaDescriptionUpdate,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Partially update a media description. Admin only.
+    Only updates the fields that are provided in the request.
+    """
+    media_description = crud.media_description.get(db=db, id=id)
+    if not media_description:
+        raise HTTPException(status_code=404, detail="Media description not found")
+    
+    # Check if updating file_number to an existing one
+    if media_description_in.file_number is not None:
+        existing = crud.media_description.get_by_file_number(db=db, file_number=media_description_in.file_number)
+        if existing and existing.id != id:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Media description with file_number {media_description_in.file_number} already exists",
+            )
+    
+    media_description = crud.media_description.update(db=db, db_obj=media_description, obj_in=media_description_in)
+    return media_description
+
+
 @router.delete("/{id}", response_model=schemas.media_description.MediaDescription)
 def delete_media_description(
     *,

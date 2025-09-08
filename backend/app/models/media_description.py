@@ -58,8 +58,7 @@ class MediaDescription(Base):
     episode_number = Column(Integer, nullable=True)
     media_categories_list = Column(JSONArray(), nullable=True)  # ARRAY of enum 'category'
     media_themes_id_list = Column(JSONArray(), nullable=True)  # List of MediaTheme IDs
-    trailer_id_list = Column(JSONArray(), nullable=True)  # List of VideoFile IDs for trailers
-    extract_id_list = Column(JSONArray(), nullable=True)  # List of VideoFile IDs for extracts
+    # Removed trailer_id_list and extract_id_list - using many-to-many relationships instead
     descriptive_summary_text = Column(Text, nullable=True)
     synopsis_text = Column(Text, nullable=True)
     contract_start_date_utc = Column(DateTime(timezone=True), nullable=True)

@@ -7,13 +7,14 @@ import { uploadSubtitlesToMux } from '../../mux-subtitle-upload/wrapper.js';
 import { uploadPicture } from '../../picture-upload/wrapper.js';
 
 export class OrchestrationService {
-  constructor(config, logger) {
+  constructor(config, logger, excelService = null) {
     this.config = config;
     this.logger = logger;
+    this.excelService = excelService;
     this.tempConfigDir = path.join(process.cwd(), '.temp-configs');
   }
 
-  async processUploads(excelData, mediaFiles, folderPath) {
+  async processUploads(excelData, mediaFiles, folderPath, excelPath = null) {
     const startTime = Date.now();
     const results = {
       success: false,
@@ -52,22 +53,17 @@ export class OrchestrationService {
       // Get main video asset for subtitle upload
       const mainVideoAsset = videoResults.successes.find(v => v.isMainVideo);
       
-      if (mainVideoAsset) {
-        // Step 2: Upload subtitles to Mux (after main video is ready)
-        console.log(chalk.cyan('📝 Uploading subtitles to Mux...'));
-        const subtitleResults = await this.uploadSubtitlesToMux(
-          excelData.files, 
-          mediaFiles, 
-          folderPath, 
-          mainVideoAsset.assetId
-        );
-        results.uploads.subtitles = subtitleResults.successes;
-        if (subtitleResults.errors.length > 0) {
-          results.errors.push(...subtitleResults.errors);
-        }
-      } else {
-        console.log(chalk.yellow('⚠️  No main video uploaded successfully, skipping subtitles'));
-        results.errors.push('No main video available for subtitle upload');
+      // Step 2: Upload subtitles to Mux (after videos are ready)
+      console.log(chalk.cyan('📝 Uploading subtitles to Mux...'));
+      const subtitleResults = await this.uploadSubtitlesToMux(
+        excelData.files, 
+        mediaFiles, 
+        folderPath, 
+        videoResults.successes // Pass all video assets instead of just main
+      );
+      results.uploads.subtitles = subtitleResults.successes;
+      if (subtitleResults.errors.length > 0) {
+        results.errors.push(...subtitleResults.errors);
       }
       
       // Step 3: Upload images to S3
@@ -78,18 +74,44 @@ export class OrchestrationService {
         results.errors.push(...imageResults.errors);
       }
       
-      // Step 4: Create media description via API
+      // Step 4: Create media description via API (two-step process)
       console.log(chalk.cyan('📄 Creating media description...'));
       const apiResult = await this.createMediaDescription(
         excelData.description, 
         results.uploads.images,
-        mainVideoAsset
+        videoResults.successes // Pass all video assets instead of just main
       );
       
       if (apiResult.success) {
         results.mediaDescriptionId = apiResult.id;
         results.success = true;
         console.log(chalk.green(`✅ Media description created with ID: ${apiResult.id}`));
+        
+        // Update Excel file with media_description ID and rename file
+        if (this.excelService && excelPath) {
+          try {
+            console.log(chalk.cyan('📄 Updating Excel file with media description ID...'));
+            
+            // Save media_description ID to Description sheet
+            await this.excelService.saveMediaDescriptionToExcel(excelPath, apiResult.id);
+            console.log(chalk.green(`✅ Saved media description ID to Excel`));
+            
+            // Rename Excel file with _uploaded suffix
+            const newExcelPath = await this.excelService.renameExcelFile(excelPath);
+            console.log(chalk.green(`✅ Renamed Excel file: ${path.basename(newExcelPath)}`));
+            
+            // Store the new Excel path in results for reference
+            results.updatedExcelPath = newExcelPath;
+            
+          } catch (excelError) {
+            // Don't fail the entire upload process if Excel update fails
+            this.logger.error(`Excel update failed: ${excelError.message}`);
+            results.errors.push(`Excel update failed: ${excelError.message}`);
+            console.log(chalk.yellow(`⚠️  Excel update failed: ${excelError.message}`));
+          }
+        } else {
+          this.logger.warn('ExcelService or excelPath not available - skipping Excel update');
+        }
       } else {
         results.errors.push(`Media description creation failed: ${apiResult.error}`);
       }
@@ -118,10 +140,54 @@ export class OrchestrationService {
     const successes = [];
     const errors = [];
     
-    // Get video files from Files sheet
-    const videoEntries = filesData.filter(file => 
-      file.type && file.type.toLowerCase().includes('video') && file.fileName
-    );
+    // Log all entries from Excel for debugging
+    this.logger.info(`All Excel file entries (${filesData.length} total):`, {
+      entries: filesData.map(entry => `"${entry.type}": ${entry.fileName}`).join(', ')
+    });
+    
+    // Get video files from Files sheet - include main videos, trailers, and excerpts
+    const videoEntries = filesData.filter(file => {
+      if (!file.type || !file.fileName) return false;
+      const type = file.type.toLowerCase();
+      const isVideo = type.includes('video') || type.includes('trailer') || type.includes('excerpt') || type.includes('extract');
+      
+      // Log each decision for debugging
+      if (file.type && file.fileName) {
+        this.logger.debug(`Processing entry "${file.type}": ${file.fileName} -> ${isVideo ? 'INCLUDED' : 'EXCLUDED'}`);
+      }
+      
+      return isVideo;
+    });
+    
+    this.logger.info(`Filtered video entries (${videoEntries.length} found):`, {
+      entries: videoEntries.map(entry => `"${entry.type}": ${entry.fileName}`).join(', ')
+    });
+    
+    // Specific debugging for excerpts
+    const excerptEntries = videoEntries.filter(entry => {
+      const type = entry.type.toLowerCase();
+      return type.includes('excerpt') || type.includes('extract');
+    });
+    if (excerptEntries.length > 0) {
+      this.logger.info(`Excerpt entries found (${excerptEntries.length}):`, {
+        excerpts: excerptEntries.map(entry => `"${entry.type}": ${entry.fileName}`).join(', ')
+      });
+    } else {
+      this.logger.warn('No excerpt entries found in filtered video entries');
+    }
+    
+    // Log any entries that were filtered out (for debugging)
+    const filteredOut = filesData.filter(file => {
+      if (!file.type || !file.fileName) return true;
+      const type = file.type.toLowerCase();
+      return !(type.includes('video') || type.includes('trailer') || type.includes('excerpt'));
+    }).filter(file => file.type && file.fileName); // Only show entries that have both type and fileName
+    
+    if (filteredOut.length > 0) {
+      this.logger.info(`Non-video entries found (${filteredOut.length}):`, {
+        entries: filteredOut.map(entry => `"${entry.type}": ${entry.fileName}`).join(', ')
+      });
+    }
     
     for (const entry of videoEntries) {
       try {
@@ -146,6 +212,15 @@ export class OrchestrationService {
         // Generate config for mux-upload with policy and DRM handling
         const configPath = await this.generateMuxUploadConfig(videoFile, entry, descriptionData);
         
+        // Log excerpt processing specifically
+        if (entry.type.toLowerCase().includes('excerpt')) {
+          this.logger.info(`Processing excerpt upload:`, {
+            fileName: videoFile.name,
+            type: entry.type,
+            configPath: configPath
+          });
+        }
+        
         console.log(chalk.gray(`  Uploading ${videoFile.name}...`));
         
         const result = await uploadToMux({
@@ -155,7 +230,7 @@ export class OrchestrationService {
         });
         
         const isMainVideo = entry.type.toLowerCase() === 'video';
-        successes.push({
+        const uploadData = {
           fileName: videoFile.name,
           type: entry.type,
           assetId: result.asset.id,
@@ -163,9 +238,30 @@ export class OrchestrationService {
           status: result.asset.status,
           isMainVideo,
           result
-        });
+        };
+
+        // Add backend record info if available
+        if (result.backend_record) {
+          uploadData.backendRecordId = result.backend_record.id;
+          uploadData.uploadStatus = result.backend_record.upload_status;
+          this.logger.info(`Video file record created for ${entry.type}`, {
+            fileName: videoFile.name,
+            type: entry.type,
+            assetId: result.asset.id,
+            backendRecordId: result.backend_record.id,
+            uploadStatus: result.backend_record.upload_status
+          });
+        } else {
+          this.logger.warn(`No backend record created for ${entry.type}`, {
+            fileName: videoFile.name,
+            type: entry.type,
+            assetId: result.asset.id
+          });
+        }
         
-        console.log(chalk.green(`    ✅ ${videoFile.name} uploaded (Asset: ${result.asset.id})`));
+        successes.push(uploadData);
+        
+        console.log(chalk.green(`    ✅ ${videoFile.name} uploaded (Asset: ${result.asset.id}, Type: ${entry.type})`));
         
       } catch (error) {
         const errorMsg = `Failed to upload video ${entry.fileName}: ${error.message}`;
@@ -182,10 +278,22 @@ export class OrchestrationService {
     const successes = [];
     const errors = [];
     
-    // Collect all image files from Files sheet
+    // Collect image files from both poster column AND image entries in Files sheet
     const imageFiles = new Set();
     filesData.forEach(file => {
-      if (file.poster) imageFiles.add(file.poster);
+      // Add poster images (column 3 - "Poster" column)
+      if (file.poster) {
+        imageFiles.add(file.poster);
+      }
+      
+      // Add image entries (where type contains "image" and filename is specified)
+      if (file.type && file.type.toLowerCase().includes('image') && file.fileName) {
+        imageFiles.add(file.fileName);
+      }
+    });
+    
+    this.logger.info(`Found ${imageFiles.size} image files to upload:`, {
+      images: Array.from(imageFiles).join(', ')
     });
     
     for (const fileName of imageFiles) {
@@ -231,16 +339,16 @@ export class OrchestrationService {
     return { successes, errors };
   }
 
-  async uploadSubtitlesToMux(filesData, mediaFiles, folderPath, assetId) {
+  async uploadSubtitlesToMux(filesData, mediaFiles, folderPath, videoAssets) {
     const successes = [];
     const errors = [];
     
     // Collect subtitle files from Files sheet
     const subtitleFiles = [];
     filesData.forEach(file => {
-      if (file.frSubtitle) subtitleFiles.push({ fileName: file.frSubtitle, language: 'fr', name: 'French' });
-      if (file.enSubtitle) subtitleFiles.push({ fileName: file.enSubtitle, language: 'en', name: 'English' });
-      if (file.koSubtitle) subtitleFiles.push({ fileName: file.koSubtitle, language: 'ko', name: 'Korean' });
+      if (file.frSubtitle) subtitleFiles.push({ fileName: file.frSubtitle, language: 'fr', name: 'Français', isDefault: true });
+      if (file.enSubtitle) subtitleFiles.push({ fileName: file.enSubtitle, language: 'en', name: 'English', isDefault: false });
+      if (file.koSubtitle) subtitleFiles.push({ fileName: file.koSubtitle, language: 'ko', name: '한국어', isDefault: false });
     });
     
     if (subtitleFiles.length === 0) {
@@ -248,44 +356,114 @@ export class OrchestrationService {
       return { successes, errors };
     }
     
-    try {
-      // Generate config for subtitle upload
-      const configPath = await this.generateSubtitleUploadConfig(subtitleFiles, mediaFiles, assetId);
+    // Group subtitles by their corresponding video asset
+    const subtitlesByAsset = new Map();
+    
+    subtitleFiles.forEach(subtitleFile => {
+      // Find the corresponding video asset by matching filename patterns
+      const matchingAsset = this.findMatchingVideoAssetForSubtitle(subtitleFile.fileName, videoAssets);
       
-      console.log(chalk.gray(`  Uploading ${subtitleFiles.length} subtitle files...`));
-      
-      const result = await uploadSubtitlesToMux({
-        config: configPath,
-        verbose: false,
-        quiet: true
-      });
-      
-      if (result.success && result.results) {
-        result.results.forEach(res => {
-          if (res.success) {
-            successes.push({
-              fileName: res.subtitle.file_path,
-              language: res.subtitle.language_code,
-              name: res.subtitle.name,
-              trackId: res.trackId,
-              result: res
-            });
-            console.log(chalk.green(`    ✅ ${res.subtitle.language_code}: ${res.trackId}`));
-          } else {
-            errors.push(`Subtitle upload failed (${res.subtitle.language_code}): ${res.error}`);
-            console.log(chalk.red(`    ❌ ${res.subtitle.language_code}: ${res.error}`));
-          }
-        });
+      if (matchingAsset) {
+        if (!subtitlesByAsset.has(matchingAsset.assetId)) {
+          subtitlesByAsset.set(matchingAsset.assetId, {
+            asset: matchingAsset,
+            subtitles: []
+          });
+        }
+        subtitlesByAsset.get(matchingAsset.assetId).subtitles.push(subtitleFile);
+        
+        this.logger.info(`Matched subtitle "${subtitleFile.fileName}" to video asset: ${matchingAsset.assetId} (${matchingAsset.type})`);
+      } else {
+        const errorMsg = `No matching video asset found for subtitle: ${subtitleFile.fileName}`;
+        errors.push(errorMsg);
+        this.logger.error(errorMsg);
       }
-      
-    } catch (error) {
-      const errorMsg = `Subtitle upload process failed: ${error.message}`;
-      errors.push(errorMsg);
-      console.log(chalk.red(`  ❌ ${errorMsg}`));
-      this.logger.error(errorMsg);
+    });
+    
+    // Process subtitles for each video asset
+    for (const [assetId, assetData] of subtitlesByAsset.entries()) {
+      try {
+        this.logger.info(`Processing ${assetData.subtitles.length} subtitles for asset: ${assetId} (${assetData.asset.type})`);
+        
+        // Generate config for this specific asset's subtitles
+        const configPath = await this.generateSubtitleUploadConfig(assetData.subtitles, mediaFiles, assetId);
+        
+        console.log(chalk.gray(`  Uploading ${assetData.subtitles.length} subtitle files for ${assetData.asset.type}...`));
+        
+        const result = await uploadSubtitlesToMux({
+          config: configPath,
+          verbose: false,
+          quiet: true
+        });
+        
+        if (result.success && result.results) {
+          result.results.forEach(res => {
+            if (res.success) {
+              successes.push({
+                fileName: res.subtitle.file_path,
+                language: res.subtitle.language_code,
+                name: res.subtitle.name,
+                trackId: res.trackId,
+                assetId: assetId,
+                videoType: assetData.asset.type,
+                result: res
+              });
+              console.log(chalk.green(`    ✅ ${res.subtitle.language_code} (${assetData.asset.type}): ${res.trackId}`));
+            } else {
+              errors.push(`Subtitle upload failed (${res.subtitle.language_code}, ${assetData.asset.type}): ${res.error}`);
+              console.log(chalk.red(`    ❌ ${res.subtitle.language_code} (${assetData.asset.type}): ${res.error}`));
+            }
+          });
+        }
+        
+      } catch (error) {
+        const errorMsg = `Subtitle upload failed for asset ${assetId} (${assetData.asset.type}): ${error.message}`;
+        errors.push(errorMsg);
+        console.log(chalk.red(`    ❌ ${errorMsg}`));
+        this.logger.error(errorMsg);
+      }
     }
     
     return { successes, errors };
+  }
+
+  /**
+   * Find the matching video asset for a subtitle file based on filename patterns
+   */
+  findMatchingVideoAssetForSubtitle(subtitleFileName, videoAssets) {
+    // Extract the base name from subtitle filename (remove language suffix)
+    // Examples: 
+    // "pompom bag - fr.srt" -> "pompom bag"
+    // "trailer 01 - pompom bag - fr.srt" -> "trailer 01 - pompom bag"  
+    // "EX 01 - pompom bag - en.srt" -> "EX 01 - pompom bag"
+    
+    const baseNameMatch = subtitleFileName.match(/^(.+?)\s*-\s*(fr|en|ko)\.srt$/i);
+    if (!baseNameMatch) {
+      this.logger.warn(`Could not parse subtitle filename pattern: ${subtitleFileName}`);
+      return null;
+    }
+    
+    const baseName = baseNameMatch[1].trim();
+    this.logger.debug(`Looking for video asset matching subtitle base name: "${baseName}"`);
+    
+    // Try to find matching video asset by comparing base names
+    const matchingAsset = videoAssets.find(asset => {
+      const videoBaseName = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '');
+      const matches = videoBaseName === baseName;
+      
+      if (matches) {
+        this.logger.debug(`Found match: "${baseName}" -> "${videoBaseName}" (${asset.type})`);
+      }
+      
+      return matches;
+    });
+    
+    if (!matchingAsset) {
+      this.logger.warn(`No video asset found for subtitle base name: "${baseName}"`);
+      this.logger.debug(`Available video assets: ${videoAssets.map(a => `"${a.fileName}" (${a.type})`).join(', ')}`);
+    }
+    
+    return matchingAsset;
   }
 
   /**
@@ -433,7 +611,7 @@ export class OrchestrationService {
     }
   }
 
-  async createMediaDescription(descriptionData, uploadedImages, mainVideoAsset) {
+  async createMediaDescription(descriptionData, uploadedImages, videoAssets) {
     try {
       // First authenticate to get JWT token
       const authResult = await this.authenticateWithBackend();
@@ -445,44 +623,110 @@ export class OrchestrationService {
         };
       }
       
-      // Map Excel data to API schema
-      const apiData = this.mapExcelToApiSchema(descriptionData, uploadedImages, mainVideoAsset);
+      // STEP 1: Create media description without asset IDs (text-only fields)
+      this.logger.info('Step 1: Creating media description with text-only fields...');
+      const textOnlyData = this.mapExcelToApiSchemaTextOnly(descriptionData);
       
-      const apiUrl = `${this.config.backend.baseUrl}/api/v1/media-descriptions/from-text`;
+      const createUrl = `${this.config.backend.baseUrl}/api/v1/media-descriptions/from-text`;
       
-      this.logger.info(`Creating media description via API: ${apiUrl}`);
+      this.logger.info(`Creating media description via API: ${createUrl}`);
       this.logger.info(`Using JWT Bearer token authentication`);
-      this.logger.info(`API payload keys: ${Object.keys(apiData).join(', ')}`);
+      this.logger.info(`Text-only API payload keys: ${Object.keys(textOnlyData).join(', ')}`);
       
-      // Make API call to create media description with JWT token
-      const response = await axios.post(
-        apiUrl,
-        apiData,
+      // Make API call to create media description with text-only fields
+      const createResponse = await axios.post(
+        createUrl,
+        textOnlyData,
         {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authResult.token}`
           },
-          timeout: 30000  // 30 second timeout
+          timeout: 30000
         }
       );
       
-      if (response.status === 200 || response.status === 201) {
-        return {
-          success: true,
-          id: response.data.id,
-          data: response.data
-        };
-      } else {
+      if (createResponse.status !== 200 && createResponse.status !== 201) {
         return {
           success: false,
-          error: `API returned status ${response.status}`,
-          response: response.data
+          error: `Initial creation failed with status ${createResponse.status}`,
+          response: createResponse.data
+        };
+      }
+      
+      const mediaDescriptionId = createResponse.data.id;
+      this.logger.info(`✅ Step 1 completed: Media description created with ID: ${mediaDescriptionId}`);
+      
+      // STEP 2: Patch media description with all asset IDs
+      this.logger.info('Step 2: Patching media description with asset IDs...');
+      const assetData = this.mapAssetsToApiSchema(uploadedImages, videoAssets, mediaDescriptionId);
+      
+      if (Object.keys(assetData).length === 0) {
+        this.logger.warn('No asset IDs to patch - returning with text-only description');
+        return {
+          success: true,
+          id: mediaDescriptionId,
+          data: createResponse.data,
+          patchSkipped: true
+        };
+      }
+      
+      const patchUrl = `${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`;
+      
+      this.logger.info(`Patching media description via API: ${patchUrl}`);
+      this.logger.info(`Asset patch payload keys: ${Object.keys(assetData).join(', ')}`);
+      
+      // Log asset field mappings
+      const imageFields = Object.keys(assetData).filter(key => key.startsWith('image_'));
+      const videoFields = Object.keys(assetData).filter(key => key.includes('video') || key.includes('file_id'));
+      
+      if (imageFields.length > 0) {
+        this.logger.info(`Image fields in patch payload (${imageFields.length}):`, {
+          fields: imageFields.map(field => `${field}: "${assetData[field]}"`)
+        });
+      }
+      
+      if (videoFields.length > 0) {
+        this.logger.info(`Video fields in patch payload (${videoFields.length}):`, {
+          fields: videoFields.map(field => `${field}: "${assetData[field]}"`)
+        });
+      }
+      
+      // Make PATCH API call to add asset IDs
+      const patchResponse = await axios.patch(
+        patchUrl,
+        assetData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authResult.token}`
+          },
+          timeout: 30000
+        }
+      );
+      
+      if (patchResponse.status === 200 || patchResponse.status === 204) {
+        this.logger.info(`✅ Step 2 completed: Media description patched successfully`);
+        return {
+          success: true,
+          id: mediaDescriptionId,
+          data: patchResponse.data || createResponse.data,
+          patchSucceeded: true
+        };
+      } else {
+        this.logger.error(`Step 2 failed: PATCH returned status ${patchResponse.status}`);
+        return {
+          success: false,
+          error: `Asset patching failed with status ${patchResponse.status}`,
+          id: mediaDescriptionId, // Return the created ID even if patch failed
+          response: patchResponse.data,
+          createSucceeded: true,
+          patchFailed: true
         };
       }
       
     } catch (error) {
-      this.logger.error(`Media description creation failed: ${error.message}`);
+      this.logger.error(`Media description creation/patching failed: ${error.message}`);
       
       if (error.response) {
         this.logger.error(`API Response Status: ${error.response.status}`);
@@ -506,9 +750,9 @@ export class OrchestrationService {
   }
 
   /**
-   * Map Excel description data to API schema
+   * Map Excel description data to API schema (text-only fields, no asset IDs)
    */
-  mapExcelToApiSchema(descriptionData, uploadedImages, mainVideoAsset) {
+  mapExcelToApiSchemaTextOnly(descriptionData) {
     const apiData = {
       // Required fields
       episode_title: descriptionData.episode_title,
@@ -604,21 +848,60 @@ export class OrchestrationService {
       apiData.human_keywords_text_list = keywords;
     }
 
+    return apiData;
+  }
+
+  /**
+   * Map uploaded assets (images and videos) to API schema for PATCH request
+   */
+  mapAssetsToApiSchema(uploadedImages, videoAssets, mediaDescriptionId) {
+    const assetData = {};
+
     // Associate uploaded images by dimensions
+    this.logger.info(`Processing ${uploadedImages.length} uploaded images for asset mapping`);
     uploadedImages.forEach(image => {
       const dimensions = image.dimensions;
-      if (dimensions) {
-        const fieldName = `image_${dimensions.replace('x', '_')}_filename`;
-        apiData[fieldName] = image.fileName;
+      if (dimensions && image.pictureId) {
+        const fieldName = `image_${dimensions.replace('x', '_')}_id`;
+        assetData[fieldName] = image.pictureId;
+        this.logger.info(`Mapped image field: ${fieldName} = "${image.pictureId}"`);
+      } else {
+        this.logger.warn(`Image missing dimensions or picture ID - skipping: "${image.fileName}" (dimensions: ${dimensions}, pictureId: ${image.pictureId})`);
       }
     });
 
     // Set main video file ID if available
+    const mainVideoAsset = videoAssets.find(asset => asset.isMainVideo);
     if (mainVideoAsset && mainVideoAsset.result?.backend_record?.uuid) {
-      apiData.main_video_file_id = mainVideoAsset.result.backend_record.uuid;
+      assetData.main_video_file_id = mainVideoAsset.result.backend_record.uuid;
+      this.logger.info(`Mapped main video field: main_video_file_id = "${mainVideoAsset.result.backend_record.uuid}"`);
     }
 
-    return apiData;
+    // Get trailer and excerpt video file IDs for relationships
+    const trailerAssets = videoAssets.filter(asset => asset.type.toLowerCase().includes('trailer'));
+    const excerptAssets = videoAssets.filter(asset => asset.type.toLowerCase().includes('extract') || asset.type.toLowerCase().includes('excerpt'));
+
+    if (trailerAssets.length > 0) {
+      assetData.trailer_ids = trailerAssets
+        .filter(asset => asset.result?.backend_record?.uuid)
+        .map(asset => asset.result.backend_record.uuid);
+      this.logger.info(`Mapped trailer IDs: ${assetData.trailer_ids.join(', ')}`);
+    }
+
+    if (excerptAssets.length > 0) {
+      assetData.excerpt_ids = excerptAssets
+        .filter(asset => asset.result?.backend_record?.uuid)
+        .map(asset => asset.result.backend_record.uuid);
+      this.logger.info(`Mapped excerpt IDs: ${assetData.excerpt_ids.join(', ')}`);
+    }
+
+    // Add friendly URL using media_description ID
+    if (mediaDescriptionId) {
+      assetData.friendly_url = `https://www.kyool.eu/video/${mediaDescriptionId}`;
+      this.logger.info(`Generated friendly URL: ${assetData.friendly_url}`);
+    }
+
+    return assetData;
   }
 
   /**
@@ -652,7 +935,12 @@ export class OrchestrationService {
 
     const config = {
       video: {
-        filepath: videoFile.fullPath  // Use fullPath instead of path
+        filepath: videoFile.fullPath,  // Use fullPath instead of path
+        title: this.generateVideoTitle(videoFile.name, entry.type)
+      },
+      metadata: {
+        video_type: entry.type.toLowerCase(),
+        source_filename: videoFile.name
       },
       auth: {
         mux_token_id: this.config.mux.tokenId,
@@ -697,7 +985,7 @@ export class OrchestrationService {
    */
   async generatePictureUploadConfig(imageFile) {
     const config = {
-      picturePath: imageFile.path,
+      picturePath: imageFile.fullPath,  // Use fullPath instead of path for absolute path
       s3: {
         accessKeyId: this.config.s3.accessKeyId,
         secretAccessKey: this.config.s3.secretAccessKey,
@@ -730,7 +1018,8 @@ export class OrchestrationService {
       return {
         language_code: sub.language,
         name: sub.name,
-        file_path: subtitleFile ? subtitleFile.fullPath : path.join(process.cwd(), sub.fileName)
+        file_path: subtitleFile ? subtitleFile.fullPath : path.join(process.cwd(), sub.fileName),
+        is_default: sub.isDefault || false
       };
     });
 
@@ -771,6 +1060,7 @@ export class OrchestrationService {
     if (name.includes('1920x1080') || name.includes('1920_1080')) return '1920x1080';
     if (name.includes('1920x720') || name.includes('1920_720')) return '1920x720';
     if (name.includes('1080x1080') || name.includes('1080_1080')) return '1080x1080';
+    if (name.includes('810x1080') || name.includes('810_1080')) return '810x1080';
     if (name.includes('810x1920') || name.includes('810_1920')) return '810x1920';
     if (name.includes('1080x1920') || name.includes('1080_1920')) return '1080x1920';
     return null;
@@ -815,6 +1105,22 @@ export class OrchestrationService {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Generate appropriate title for video based on type
+   */
+  generateVideoTitle(filename, videoType) {
+    // Remove extension and clean up filename
+    const baseTitle = filename.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+    
+    // Add type suffix for non-main videos
+    if (videoType && videoType.toLowerCase() !== 'video') {
+      const typeLabel = videoType.replace(/video_?/i, '').replace(/[_-]/g, ' ');
+      return `${baseTitle} (${typeLabel})`;
+    }
+    
+    return baseTitle;
   }
 
   /**

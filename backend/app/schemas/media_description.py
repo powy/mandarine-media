@@ -148,8 +148,6 @@ class MediaDescriptionBase(BaseModel):
 
     # v1.12 fields - New JSON array fields
     media_themes_id_list: Optional[List[str]] = None
-    trailer_id_list: Optional[List[str]] = None
-    extract_id_list: Optional[List[str]] = None
     actors_id_list: Optional[List[str]] = None
     directors_id_list: Optional[List[str]] = None
     productors_id_list: Optional[List[str]] = None
@@ -222,6 +220,14 @@ class MediaDescriptionUpdate(BaseModel):
     copyright_owner_text: Optional[str] = None
     slug: Optional[str] = None
     human_keywords_text_list: Optional[List[str]] = None
+    
+    # Image fields for updates
+    image_1920_1080_id: Optional[UUID] = None
+    image_1920_720_id: Optional[UUID] = None
+    image_1080_1080_id: Optional[UUID] = None
+    image_810_1080_id: Optional[UUID] = None
+    image_1080_1920_id: Optional[UUID] = None
+    additional_images_id_list: Optional[List[str]] = None
 
     # Relationship update fields
     actor_ids: Optional[List[str]] = None

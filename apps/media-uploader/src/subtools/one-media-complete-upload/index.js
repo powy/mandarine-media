@@ -166,11 +166,12 @@ export class OneMediaCompleteUpload {
         );
       }
       
-      // Check for title duplicates (warning only)
+      // Check for title duplicates (error - stop execution)
       if (duplicates.byTitle) {
-        console.log(chalk.yellow(`⚠️  Warning: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
-        console.log(chalk.yellow(`   Existing media description ID: ${duplicates.byTitle.id}`));
-        console.log(chalk.gray('   This is just a warning - continuing with upload...'));
+        console.log(chalk.red(`❌ Error: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
+        console.log(chalk.red(`   Existing media description ID: ${duplicates.byTitle.id}`));
+        console.log(chalk.red('   Stopping upload to prevent duplicates.'));
+        throw new Error(`Duplicate episode title detected: "${duplicates.byTitle.episode_title}"`);
       }
       
       if (!duplicates.bySlug && !duplicates.byTitle) {
@@ -182,13 +183,19 @@ export class OneMediaCompleteUpload {
       const uploadResults = await this.orchestrationService.processUploads(
         excelData, 
         mediaFiles, 
-        this.options.folder
+        this.options.folder,
+        excelPath
       );
       
       if (uploadResults.success) {
         // Success - display final results
         console.log(chalk.green.bold('\n🎉 Upload completed successfully!'));
         console.log(chalk.green(`📄 Media Description ID: ${chalk.white(uploadResults.mediaDescriptionId)}`));
+        
+        // Show Excel update information
+        if (uploadResults.updatedExcelPath) {
+          console.log(chalk.green(`📋 Excel file updated: ${chalk.white(path.basename(uploadResults.updatedExcelPath))}`));
+        }
         
         // Show upload summary
         const { uploads } = uploadResults;
@@ -305,7 +312,7 @@ export class OneMediaCompleteUpload {
 
   initializeServices() {
     this.excelService = new ExcelService(this.options.folder, this.logger);
-    this.orchestrationService = new OrchestrationService(this.config, this.logger);
+    this.orchestrationService = new OrchestrationService(this.config, this.logger, this.excelService);
     this.mediaAnalysisService = new MediaAnalysisService(this.logger);
     this.validationService = new ValidationService(this.logger);
     this.logger.info('Services initialized');

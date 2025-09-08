@@ -241,7 +241,7 @@ export function getFileInfoFromPath(filepath) {
 }
 
 export async function validateSubtitleUrl(url) {
-  const validExtensions = ['.srt', '.vtt', '.ass', '.ssa', '.ttml', '.dfxp'];
+  const validExtensions = ['.srt', '.vtt'];
   
   try {
     // First check if it's a local file path

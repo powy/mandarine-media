@@ -390,4 +390,69 @@ export class ExcelService {
       throw error;
     }
   }
+
+  /**
+   * Save media_description ID to the Description sheet
+   * Adds a new row 1 with format: A1="ID", B1="id", C1=uuid_value
+   */
+  async saveMediaDescriptionToExcel(excelPath, mediaDescriptionId) {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(excelPath);
+      
+      const descriptionSheet = workbook.getWorksheet('Description');
+      if (!descriptionSheet) {
+        throw new Error('Description sheet not found');
+      }
+      
+      // Insert a new row at the top (row 1)
+      descriptionSheet.insertRow(1);
+      
+      // Set the new row 1 with media_description data
+      const newRow = descriptionSheet.getRow(1);
+      newRow.getCell(1).value = 'ID';
+      newRow.getCell(2).value = 'id';
+      newRow.getCell(3).value = mediaDescriptionId;
+      
+      // Apply basic formatting to the new row
+      newRow.getCell(1).font = { bold: true };
+      newRow.getCell(2).font = { bold: true };
+      newRow.getCell(3).font = { bold: true };
+      
+      // Save the workbook
+      await workbook.xlsx.writeFile(excelPath);
+      
+      this.logger.info(`Saved media_description ID "${mediaDescriptionId}" to Description sheet`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error saving media_description ID to Excel: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Rename Excel file by adding "_uploaded" suffix
+   */
+  async renameExcelFile(excelPath) {
+    try {
+      const parsedPath = path.parse(excelPath);
+      const newFileName = `${parsedPath.name}_uploaded${parsedPath.ext}`;
+      const newFilePath = path.join(parsedPath.dir, newFileName);
+      
+      // Check if the new file already exists
+      if (await fs.pathExists(newFilePath)) {
+        this.logger.warn(`File already exists: ${newFileName}, skipping rename`);
+        return excelPath; // Return original path if rename not possible
+      }
+      
+      // Rename the file
+      await fs.rename(excelPath, newFilePath);
+      
+      this.logger.info(`Renamed Excel file: ${parsedPath.base} -> ${newFileName}`);
+      return newFilePath;
+    } catch (error) {
+      this.logger.error(`Error renaming Excel file: ${error.message}`);
+      throw error;
+    }
+  }
 }
