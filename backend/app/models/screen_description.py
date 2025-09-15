@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, Text, Integer, Boolean
 from sqlalchemy.sql import func
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 import enum
 
@@ -36,8 +36,8 @@ class ScreenDescription(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     display_order = Column(Integer, default=0, nullable=False)
     
-    # Content organization - ordered list of content list IDs
-    content_lists = Column(JSONArray(), nullable=True, default=list)  # Array of content list UUIDs
+    # Content organization - ordered list of media showcase IDs
+    media_showcases = Column(JSONArray(), nullable=True, default=list)  # Array of media showcase UUIDs
     
     # NEW v1.9 field
     slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
@@ -51,8 +51,8 @@ class ScreenDescription(Base):
         Generate JSON representation of the screen content with nested content lists.
         """
         try:
-            from app.crud.content_list import content_list as crud_content_list
-            
+            from app.crud.media_showcase import media_showcase as crud_media_showcase
+
             # Build the JSON structure
             json_data = {
                 "id": str(self.id),
@@ -62,40 +62,49 @@ class ScreenDescription(Base):
                 "is_active": self.is_active,
                 "display_order": self.display_order,
                 "last_updated": self.last_updated_utc.isoformat() if self.last_updated_utc else None,
-                "content_lists": []
+                "media_showcases": []
             }
             
-            # Process content lists
-            content_lists = self.content_lists or []
+            # Process media showcases
+            media_showcases = self.media_showcases or []
             
-            for i, content_list_id in enumerate(content_lists):
+            for i, media_showcase_id in enumerate(media_showcases):
                 try:
-                    content_list_uuid = uuid.UUID(content_list_id) if isinstance(content_list_id, str) else content_list_id
+                    media_showcase_uuid = uuid.UUID(media_showcase_id) if isinstance(media_showcase_id, str) else media_showcase_id
                     
-                    # Fetch content list
+                    # Fetch media showcase
                     if db_session:
-                        content_list_obj = crud_content_list.get(db_session, id=content_list_uuid)
+                        media_showcase_obj = crud_media_showcase.get(db_session, id=media_showcase_uuid)
                         
-                        if content_list_obj and content_list_obj.is_active:
-                            # Get or generate JSON data for the content list
-                            content_list_json = content_list_obj.get_json_data()
-                            if not content_list_json:
+                        if media_showcase_obj and media_showcase_obj.is_active:
+                            # Get or generate JSON data for the media showcase
+                            media_showcase_json = media_showcase_obj.get_json_data()
+                            if not media_showcase_json:
                                 # Generate fresh JSON if not available
-                                content_list_json = content_list_obj.update_json(db_session)
-                            
-                            if content_list_json:
-                                # Add the content list with its display order
-                                content_list_data = content_list_json.copy()
-                                content_list_data["screen_display_order"] = i + 1
-                                json_data["content_lists"].append(content_list_data)
+                                media_showcase_json = media_showcase_obj.update_json(db_session)
+
+                            if media_showcase_json:
+                                # Add the media showcase with its display order
+                                media_showcase_data = media_showcase_json.copy()
+                                media_showcase_data["screen_display_order"] = i + 1
+                                json_data["media_showcases"].append(media_showcase_data)
                         
-                except (ValueError, AttributeError) as e:
-                    # Skip invalid content list IDs
+                except ValueError as e:
+                    # Skip invalid media showcase IDs (UUID parse errors)
+                    print(f"Warning: Invalid media showcase ID {media_showcase_id} in screen {self.title}: {str(e)}")
+                    continue
+                except AttributeError as e:
+                    # Skip if media showcase object has missing methods or attributes
+                    print(f"Warning: Media showcase {media_showcase_id} missing required attributes in screen {self.title}: {str(e)}")
+                    continue
+                except Exception as e:
+                    # Log other unexpected errors but continue processing
+                    print(f"Warning: Unexpected error processing media showcase {media_showcase_id} in screen {self.title}: {str(e)}")
                     continue
             
             # Update the JSON content and timestamp
             self.json_content = json.dumps(json_data, ensure_ascii=False, indent=2)
-            self.json_last_updated = datetime.utcnow()
+            self.json_last_updated = datetime.now(timezone.utc)
             
             # Save to database if session provided
             if db_session:
@@ -106,6 +115,9 @@ class ScreenDescription(Base):
             
         except Exception as e:
             print(f"Error updating JSON for screen content {self.title}: {str(e)}")
+            # In case of critical error, ensure we don't leave partial data
+            self.json_content = None
+            self.json_last_updated = None
             return None
 
     def get_json_data(self) -> Optional[Dict[str, Any]]:
@@ -119,75 +131,75 @@ class ScreenDescription(Base):
                 return None
         return None
 
-    def add_content_list(self, content_list_id: str, position: Optional[int] = None):
+    def add_media_showcase(self, media_showcase_id: str, position: Optional[int] = None):
         """
-        Add a content list to the screen at the specified position.
+        Add a media showcase to the screen at the specified position.
         """
-        content_lists = self.content_lists or []
-        
+        media_showcases = self.media_showcases or []
+
         if position is None:
             # Add to end
-            content_lists.append(str(content_list_id))
+            media_showcases.append(str(media_showcase_id))
         else:
             # Insert at position
-            content_lists.insert(position, str(content_list_id))
-        
-        self.content_lists = content_lists
-        self.last_updated_utc = datetime.utcnow()
+            media_showcases.insert(position, str(media_showcase_id))
 
-    def remove_content_list(self, content_list_id: str):
+        self.media_showcases = media_showcases
+        self.last_updated_utc = datetime.now(timezone.utc)
+
+    def remove_media_showcase(self, media_showcase_id: str):
         """
-        Remove a content list from the screen.
+        Remove a media showcase from the screen.
         """
-        content_lists = self.content_lists or []
-        
-        # Find and remove the content list
+        media_showcases = self.media_showcases or []
+
+        # Find and remove the media showcase
         try:
-            content_lists.remove(str(content_list_id))
-            self.content_lists = content_lists
-            self.last_updated_utc = datetime.utcnow()
+            media_showcases.remove(str(media_showcase_id))
+            self.media_showcases = media_showcases
+            self.last_updated_utc = datetime.now(timezone.utc)
         except ValueError:
-            # Content list not found, ignore
+            # Media showcase not found, ignore
             pass
 
-    def reorder_content_lists(self, new_content_lists: List[str]):
+    def reorder_media_showcases(self, new_media_showcases: List[str]):
         """
-        Reorder content lists with new array.
+        Reorder media showcases with new array.
         """
-        self.content_lists = new_content_lists
-        self.last_updated_utc = datetime.utcnow()
+        self.media_showcases = new_media_showcases
+        self.last_updated_utc = datetime.now(timezone.utc)
 
-    def get_content_list_count(self) -> int:
+    def get_media_showcase_count(self) -> int:
         """
-        Get the number of content lists in this screen.
+        Get the number of media showcases in this screen.
         """
-        return len(self.content_lists) if self.content_lists else 0
+        return len(self.media_showcases) if self.media_showcases else 0
 
-    def get_active_content_lists(self, db_session) -> List[Dict[str, Any]]:
+    def get_active_media_showcases(self, db_session) -> List[Dict[str, Any]]:
         """
-        Get all active content lists for this screen with their data.
+        Get all active media showcases for this screen with their data.
         """
         try:
-            from app.crud.content_list import content_list as crud_content_list
-            
+            from app.crud.media_showcase import media_showcase as crud_media_showcase
+
             active_lists = []
-            content_lists = self.content_lists or []
-            
-            for content_list_id in content_lists:
+            media_showcases = self.media_showcases or []
+
+            for media_showcase_id in media_showcases:
                 try:
-                    content_list_uuid = uuid.UUID(content_list_id) if isinstance(content_list_id, str) else content_list_id
-                    content_list_obj = crud_content_list.get(db_session, id=content_list_uuid)
-                    
-                    if content_list_obj and content_list_obj.is_active:
-                        content_list_data = content_list_obj.get_json_data()
-                        if content_list_data:
-                            active_lists.append(content_list_data)
-                            
+                    media_showcase_uuid = uuid.UUID(media_showcase_id) if isinstance(media_showcase_id, str) else media_showcase_id
+                    media_showcase_obj = crud_media_showcase.get(db_session, id=media_showcase_uuid)
+
+                    if media_showcase_obj and media_showcase_obj.is_active:
+                        media_showcase_data = media_showcase_obj.get_json_data()
+                        if media_showcase_data:
+                            active_lists.append(media_showcase_data)
+
                 except (ValueError, AttributeError):
                     continue
-                    
+
             return active_lists
-            
+
         except Exception as e:
-            print(f"Error getting active content lists for screen {self.title}: {str(e)}")
+            print(f"Error getting active media showcases for screen {self.title}: {str(e)}")
             return []

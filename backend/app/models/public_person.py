@@ -4,9 +4,7 @@ from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
-from app.models.associations import (
-    media_description_actors, media_description_directors, media_description_producers, media_description_authors
-)
+# No longer need the individual association table imports
 
 
 class PublicPerson(Base):
@@ -31,8 +29,26 @@ class PublicPerson(Base):
     # Relationships
     face_image = relationship("Picture")
     
-    # Many-to-many relationships with MediaDescription
-    acted_in = relationship("MediaDescription", secondary=media_description_actors, back_populates="actors")
-    directed = relationship("MediaDescription", secondary=media_description_directors, back_populates="directors")
-    produced = relationship("MediaDescription", secondary=media_description_producers, back_populates="producers")
-    authored = relationship("MediaDescription", secondary=media_description_authors, back_populates="authors")
+    # New unified media roles relationship
+    media_roles = relationship("MediaDescriptionPerson", back_populates="public_person", cascade="all, delete-orphan")
+
+    # Helper properties for backward compatibility
+    @property
+    def acted_in(self):
+        """Get all media descriptions where this person is an actor"""
+        return [pr.media_description for pr in self.media_roles if pr.role == 'actor']
+
+    @property
+    def directed(self):
+        """Get all media descriptions where this person is a director"""
+        return [pr.media_description for pr in self.media_roles if pr.role == 'director']
+
+    @property
+    def produced(self):
+        """Get all media descriptions where this person is a producer"""
+        return [pr.media_description for pr in self.media_roles if pr.role == 'producer']
+
+    @property
+    def authored(self):
+        """Get all media descriptions where this person is an author"""
+        return [pr.media_description for pr in self.media_roles if pr.role == 'author']

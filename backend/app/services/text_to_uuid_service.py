@@ -9,6 +9,7 @@ from app.models.media_theme import MediaTheme
 from app.models.public_person import PublicPerson
 from app.models.picture import Picture
 from app.models.country import Country
+from app.models.language import Language
 from app.models.audience_category import AudienceCategory
 from app.models.subscription_plan import SubscriptionPlan
 from app.models.media_description import MediaDescription
@@ -343,3 +344,56 @@ def get_next_available_file_number(db: Session) -> int:
     
     # If no gaps found, return next number after max
     return max_file_number[0] + 1
+
+
+def get_or_create_languages(db: Session, names: List[str]) -> List[UUID]:
+    """
+    Get or create languages by name.
+    Returns list of UUIDs, skipping any with multiple matches.
+    """
+    if not names:
+        return []
+
+    result_ids = []
+
+    for name in names:
+        if not name:
+            continue
+
+        # Search for existing languages
+        languages = db.query(Language).all()
+        matches = []
+
+        for language in languages:
+            if texts_match(name, language.name):
+                matches.append(language)
+
+        if len(matches) == 1:
+            result_ids.append(matches[0].id)
+        elif len(matches) > 1:
+            logger.error(f"Multiple languages found for name '{name}': {[l.name for l in matches]}")
+            # Skip this language
+        else:
+            # Create new language - need both name and sigle
+            # For sigle, try to extract first 2-3 characters of the name as a simple code
+            sigle = name.lower().replace(" ", "")[:3]  # Simple language code generation
+
+            # Check if sigle already exists (it's unique)
+            existing_sigle = db.query(Language).filter(Language.sigle == sigle).first()
+            if existing_sigle:
+                # Try with first 2 characters + random number
+                import random
+                sigle = name.lower().replace(" ", "")[:2] + str(random.randint(1, 99))
+
+            new_language = Language(
+                id=uuid4(),
+                name=name.strip(),
+                sigle=sigle
+            )
+            db.add(new_language)
+            db.commit()
+            db.refresh(new_language)
+            logger.info(f"Created new language: '{name}' with sigle '{sigle}' and ID {new_language.id}")
+            result_ids.append(new_language.id)
+
+    return result_ids

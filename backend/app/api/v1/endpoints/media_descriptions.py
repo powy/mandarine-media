@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -12,7 +12,7 @@ from app.schemas import description_report
 from app.services.text_to_uuid_service import (
     get_or_create_program, get_or_create_season, get_or_create_themes,
     get_or_create_persons, get_image_by_filename, get_or_create_countries,
-    get_or_create_audience_categories, get_or_create_subscription_plans,
+    get_or_create_languages, get_or_create_audience_categories, get_or_create_subscription_plans,
     get_next_available_file_number
 )
 
@@ -155,7 +155,7 @@ def create_bulk_media_descriptions(
                     "status": "success",
                     "message": "Created successfully",
                     "success_associated_file": True,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 })
             except Exception as e:
                 # Create and save failure report to database if we have the needed info
@@ -178,7 +178,7 @@ def create_bulk_media_descriptions(
                     "status": "failed", 
                     "message": str(e),
                     "success_associated_file": False,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 })
         
         return description_report.BulkMediaDescriptionResponse(
@@ -205,12 +205,12 @@ def read_media_description(
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
-    Get media description by ID.
+    Get media description by ID with all relationships loaded.
     """
-    media_description = crud.media_description.get(db=db, id=id)
+    media_description = crud.media_description.get_with_relationships(db=db, id=str(id))
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
-    
+
     return media_description
 
 
@@ -403,7 +403,11 @@ def create_media_description_from_text(
     director_ids = get_or_create_persons(db, media_description_in.director_names or [])
     producer_ids = get_or_create_persons(db, media_description_in.producer_names or [])
     author_ids = get_or_create_persons(db, media_description_in.author_names or [])
+    origin_country_ids = get_or_create_countries(db, media_description_in.origin_country_names or [])
     available_country_ids = get_or_create_countries(db, media_description_in.available_country_names or [])
+    original_language_ids = get_or_create_languages(db, media_description_in.original_language_names or [])
+    available_subtitle_language_ids = get_or_create_languages(db, media_description_in.available_subtitle_language_names or [])
+    available_audio_language_ids = get_or_create_languages(db, media_description_in.available_audio_language_names or [])
     audience_category_ids = get_or_create_audience_categories(db, media_description_in.audience_category_names or [])
     eligible_plan_ids = get_or_create_subscription_plans(db, media_description_in.eligible_plan_names or [])
     
@@ -413,7 +417,11 @@ def create_media_description_from_text(
     director_id_strings = [str(uuid_id) for uuid_id in director_ids]
     producer_id_strings = [str(uuid_id) for uuid_id in producer_ids]
     author_id_strings = [str(uuid_id) for uuid_id in author_ids]
+    origin_country_id_strings = [str(uuid_id) for uuid_id in origin_country_ids]
     available_country_id_strings = [str(uuid_id) for uuid_id in available_country_ids]
+    original_language_id_strings = [str(uuid_id) for uuid_id in original_language_ids]
+    available_subtitle_language_id_strings = [str(uuid_id) for uuid_id in available_subtitle_language_ids]
+    available_audio_language_id_strings = [str(uuid_id) for uuid_id in available_audio_language_ids]
     audience_category_id_strings = [str(uuid_id) for uuid_id in audience_category_ids]
     eligible_plan_id_strings = [str(uuid_id) for uuid_id in eligible_plan_ids]
     
@@ -438,10 +446,13 @@ def create_media_description_from_text(
         director_ids=director_id_strings,
         producer_ids=producer_id_strings,
         author_ids=author_id_strings,
+        origin_country_ids=origin_country_id_strings,
         available_country_ids=available_country_id_strings,
-        # TODO: Check if we need origin_country_ids or theme_ids fields in MediaDescriptionCreate
-        theme_ids=theme_id_strings,
-        eligible_plan_id_list=eligible_plan_id_strings,
+        original_language_ids=original_language_id_strings,
+        available_subtitle_language_ids=available_subtitle_language_id_strings,
+        available_audio_language_ids=available_audio_language_id_strings,
+        media_theme_ids=theme_id_strings,
+        eligible_plan_ids=eligible_plan_id_strings,
         audience_category_ids=audience_category_id_strings,
         
         # All other fields from input
@@ -461,13 +472,13 @@ def create_media_description_from_text(
         seo_description=media_description_in.seo_description,
         seo_keywords_text_list=media_description_in.seo_keywords_text_list,
         hashtags_text_list=media_description_in.hashtags_text_list,
+        tags=media_description_in.human_keywords_text_list or media_description_in.tags,
         external_identifier_text=media_description_in.external_identifier_text,
         rights_holder=media_description_in.rights_holder,
         friendly_url=media_description_in.friendly_url,
         copyright_owner_text=media_description_in.copyright_owner_text,
         slug=media_description_in.slug,
         human_keywords_text_list=media_description_in.human_keywords_text_list,
-        additional_images_id_list=media_description_in.additional_images_id_list,
         translation_share=media_description_in.translation_share,
         sacem_share=media_description_in.sacem_share,
         other_share=media_description_in.other_share,

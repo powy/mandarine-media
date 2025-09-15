@@ -4,6 +4,7 @@ from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID
+from app.models.associations import media_description_media_themes, media_showcase_media_themes
 
 
 class MediaTheme(Base):
@@ -14,4 +15,6 @@ class MediaTheme(Base):
     creation_date_utc = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     name = Column(Text, nullable=False)
     
-    # Relationships will be added once association tables are created
+    # Relationships
+    media_descriptions = relationship("MediaDescription", secondary=media_description_media_themes, back_populates="media_themes")
+    media_showcases = relationship("MediaShowcase", secondary=media_showcase_media_themes, back_populates="media_themes")

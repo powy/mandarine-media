@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
@@ -9,7 +9,7 @@ class SeasonBase(BaseModel):
     season_number: int = Field(..., gt=0, le=9999)
     season_name: Optional[str] = None
     general_media_description_id: Optional[UUID] = None
-    episodes_id_list: Optional[List[str]] = None
+    # Note: Removed episodes_id_list - replaced with proper relationship
     
     @field_validator('season_name')
     @classmethod
@@ -28,7 +28,7 @@ class SeasonUpdate(BaseModel):
     season_number: Optional[int] = Field(None, gt=0, le=9999)
     season_name: Optional[str] = None
     general_media_description_id: Optional[UUID] = None
-    episodes_id_list: Optional[List[str]] = None
+    # Note: Removed episodes_id_list - replaced with proper relationship
     
     @field_validator('season_name')
     @classmethod
@@ -61,8 +61,7 @@ class SeasonInDB(SeasonBase):
     id: UUID
     creation_date_utc: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Season(SeasonInDB):

@@ -151,4 +151,6 @@ android/build/
 # Temporary files
 *.tmp
 *.temp
+.temp*/
+apps/media-uploader/.temp*/
 /apps/mobile/android/.gradle

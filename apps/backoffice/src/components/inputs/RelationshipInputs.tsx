@@ -82,10 +82,30 @@ export const AvailableCountryInput = ({ source = "available_country_ids", label 
   </ReferenceArrayInput>
 );
 
-// Language input
+// Language inputs
 export const OriginalLanguageInput = ({ source = "original_language_ids", label = "Original Languages", ...props }) => (
   <ReferenceArrayInput source={source} reference="languages" label={label} {...props}>
-    <AutocompleteArrayInput 
+    <AutocompleteArrayInput
+      optionText="name"
+      optionValue="id"
+      filterToQuery={searchText => ({ name: searchText })}
+    />
+  </ReferenceArrayInput>
+);
+
+export const AvailableSubtitleLanguageInput = ({ source = "available_subtitle_language_ids", label = "Available Subtitle Languages", ...props }) => (
+  <ReferenceArrayInput source={source} reference="languages" label={label} {...props}>
+    <AutocompleteArrayInput
+      optionText="name"
+      optionValue="id"
+      filterToQuery={searchText => ({ name: searchText })}
+    />
+  </ReferenceArrayInput>
+);
+
+export const AvailableAudioLanguageInput = ({ source = "available_audio_language_ids", label = "Available Audio Languages", ...props }) => (
+  <ReferenceArrayInput source={source} reference="languages" label={label} {...props}>
+    <AutocompleteArrayInput
       optionText="name"
       optionValue="id"
       filterToQuery={searchText => ({ name: searchText })}
@@ -105,7 +125,7 @@ export const AudienceCategoryInput = ({ source = "audience_category_ids", label 
 );
 
 // Subscription Plan input  
-export const EligiblePlanInput = ({ source = "eligible_plan_id_list", label = "Eligible Plans", ...props }) => (
+export const EligiblePlanInput = ({ source = "eligible_plan_ids", label = "Eligible Plans", ...props }) => (
   <ReferenceArrayInput source={source} reference="subscription-plans" label={label} {...props}>
     <AutocompleteArrayInput 
       optionText="name"
@@ -155,8 +175,8 @@ export const MediaCategoriesInput = ({ source = "media_categories_list", label =
   />
 );
 
-// v1.12 new MediaTheme input
-export const MediaThemeInput = ({ source = "media_themes_id_list", label = "Media Themes", ...props }) => (
+// v1.12 MediaTheme input - corrected field name
+export const MediaThemeInput = ({ source = "media_theme_ids", label = "Media Themes", ...props }) => (
   <ReferenceArrayInput source={source} reference="media-themes" label={label} {...props}>
     <AutocompleteArrayInput 
       optionText="name"
@@ -171,6 +191,17 @@ export const SubscriptionPlanInput = ({ source = "subscription_plans_id_list", l
   <ReferenceArrayInput source={source} reference="subscription-plans" label={label} {...props}>
     <AutocompleteArrayInput 
       optionText="name"
+      optionValue="id"
+      filterToQuery={searchText => ({ q: searchText })}
+    />
+  </ReferenceArrayInput>
+);
+
+// Additional Images input - NEW for relationship system
+export const AdditionalImageInput = ({ source = "additional_image_ids", label = "Additional Images", ...props }) => (
+  <ReferenceArrayInput source={source} reference="pictures" label={label} {...props}>
+    <AutocompleteArrayInput 
+      optionText="file_name"
       optionValue="id"
       filterToQuery={searchText => ({ q: searchText })}
     />

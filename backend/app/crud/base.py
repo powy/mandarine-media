@@ -34,8 +34,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         # Use model_dump to properly handle Pydantic v2 serialization
         if hasattr(obj_in, 'model_dump'):
             obj_in_data = obj_in.model_dump()
-        elif hasattr(obj_in, 'dict'):
-            obj_in_data = obj_in.dict()
         else:
             obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data)  # type: ignore
@@ -59,7 +57,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if hasattr(obj_in, 'model_dump'):
                 update_data = obj_in.model_dump(exclude_unset=True)
             else:
-                update_data = obj_in.dict(exclude_unset=True)
+                update_data = jsonable_encoder(obj_in, exclude_unset=True)
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])

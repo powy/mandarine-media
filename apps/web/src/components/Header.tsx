@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from 'share';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth, getScreenDescriptions } from 'share';
 import kyoolLogo from '../assets/kyool_black.svg';
 
 const Header: React.FC = () => {
@@ -10,13 +11,45 @@ const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // Fetch screen descriptions for dynamic navigation
+  const { data: screenDescriptions } = useQuery({
+    queryKey: ['screenDescriptions', 'active'],
+    queryFn: () =>
+      getScreenDescriptions({
+        is_active: true,
+        limit: 10,
+      }),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1,
+  });
+
+  // Build navigation items dynamically
   const navigationItems = [
+    // Keep "A la une" hardcoded for now as requested
+    { label: 'A la une', path: '/content' },
+
+    // Add dynamic screen descriptions
+    ...(screenDescriptions?.data || [])
+      .filter((screen) => screen.title !== 'A la une') // Avoid duplicate
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((screen) => ({
+        label: screen.title,
+        path: `/screen/${screen.id}`,
+      })),
+  ];
+
+  // Fallback to static navigation if API fails
+  const fallbackItems = [
     { label: 'A la une', path: '/content' },
     { label: 'Films', path: '/films' },
     { label: 'Dramas', path: '/dramas' },
     { label: 'Tv-Shows', path: '/tv-shows' },
-    { label: 'Autre', path: '/autre' }
+    { label: 'Autre', path: '/autre' },
   ];
+
+  const finalNavigationItems = screenDescriptions
+    ? navigationItems
+    : fallbackItems;
 
   const handleLogoClick = () => {
     navigate('/');
@@ -51,7 +84,7 @@ const Header: React.FC = () => {
       {/* First line: Logo, Search, User */}
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo */}
-        <button 
+        <button
           onClick={handleLogoClick}
           className="flex items-center hover:opacity-80 transition-opacity"
         >
@@ -61,24 +94,44 @@ const Header: React.FC = () => {
         {/* Search and User */}
         <div className="flex items-center gap-4">
           {/* Search button - not functional yet */}
-          <button 
+          <button
             className="p-2 rounded-full hover:bg-gray-800 transition-colors"
             aria-label="Rechercher"
           >
-            <svg className="w-5 h-5 text-kyool-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-5 h-5 text-kyool-blue"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </button>
 
           {/* User menu */}
           <div className="relative">
-            <button 
+            <button
               onClick={handleUserClick}
               className="p-2 rounded-full hover:bg-gray-800 transition-colors"
               aria-label="Compte utilisateur"
             >
-              <svg className="w-5 h-5 text-kyool-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-5 h-5 text-kyool-blue"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </button>
 
@@ -103,12 +156,14 @@ const Header: React.FC = () => {
       {/* Second line: Navigation */}
       <nav className="border-t border-gray-800">
         <div className="flex items-center px-4 py-2 gap-6 overflow-x-auto">
-          {navigationItems.map((item, index) => (
+          {finalNavigationItems.map((item, index) => (
             <button
               key={index}
               onClick={() => navigate(item.path)}
               className={`whitespace-nowrap hover:text-white transition-colors text-sm font-medium py-1 ${
-                location.pathname === item.path ? 'text-white' : 'text-kyool-blue'
+                location.pathname === item.path
+                  ? 'text-white'
+                  : 'text-kyool-blue'
               }`}
             >
               {item.label}

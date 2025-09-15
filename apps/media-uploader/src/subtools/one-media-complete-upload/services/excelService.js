@@ -11,22 +11,114 @@ export class ExcelService {
   constructor(folderPath, logger) {
     this.folderPath = folderPath;
     this.logger = logger;
-    this.templatePath = path.join(__dirname, '..', 'templates', '0_list_template.xlsx');
+    // Default to new 0_desc template, with fallback to 0_list for backward compatibility
+    this.templatePath = path.join(__dirname, '..', 'templates', '0_desc_template.xlsx');
+    this.fallbackTemplatePath = path.join(__dirname, '..', 'templates', '0_list_template.xlsx');
+  }
+
+  /**
+   * Save workbook with retry mechanism for file lock handling
+   * @param {ExcelJS.Workbook} workbook - The workbook to save
+   * @param {string} filePath - Path to save the workbook
+   * @param {number} maxRetries - Maximum number of retry attempts
+   * @param {number} delay - Base delay in milliseconds between retries
+   */
+  async saveWithRetry(workbook, filePath, maxRetries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await workbook.xlsx.writeFile(filePath);
+        return true;
+      } catch (error) {
+        // Check for file lock errors (Windows EBUSY, EPERM, or specific Excel lock messages)
+        const isFileLocked = error.code === 'EBUSY' ||
+                           error.code === 'EPERM' ||
+                           error.message.includes('EBUSY') ||
+                           error.message.includes('being used by another process') ||
+                           error.message.includes('permission denied');
+
+        if (isFileLocked) {
+          this.logger.warn(`File locked attempt ${attempt}/${maxRetries}: ${path.basename(filePath)}`);
+
+          if (attempt === maxRetries) {
+            throw new Error(`File is locked by Excel or another application: ${path.basename(filePath)}. Please close the file and try again.`);
+          }
+
+          // Exponential backoff: wait longer with each attempt
+          const waitTime = delay * attempt;
+          this.logger.info(`Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          // Non-lock error, throw immediately
+          throw error;
+        }
+      }
+    }
+  }
+
+  /**
+   * Rename file with retry mechanism for file lock handling
+   * @param {string} oldPath - Current file path
+   * @param {string} newPath - New file path
+   * @param {number} maxRetries - Maximum number of retry attempts
+   * @param {number} delay - Base delay in milliseconds between retries
+   */
+  async renameWithRetry(oldPath, newPath, maxRetries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await fs.rename(oldPath, newPath);
+        return true;
+      } catch (error) {
+        // Check for file lock errors
+        const isFileLocked = error.code === 'EBUSY' ||
+                           error.code === 'EPERM' ||
+                           error.message.includes('EBUSY') ||
+                           error.message.includes('being used by another process');
+
+        if (isFileLocked) {
+          this.logger.warn(`File rename locked attempt ${attempt}/${maxRetries}: ${path.basename(oldPath)}`);
+
+          if (attempt === maxRetries) {
+            throw new Error(`File is locked by Excel or another application: ${path.basename(oldPath)}. Please close the file and try again.`);
+          }
+
+          // Exponential backoff
+          const waitTime = delay * attempt;
+          this.logger.info(`Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          // Non-lock error, throw immediately
+          throw error;
+        }
+      }
+    }
   }
 
   async findExistingExcelFile() {
     try {
       const files = await fs.readdir(this.folderPath);
-      const excelFiles = files.filter(file => 
-        file.startsWith('0_list') && file.endsWith('.xlsx')
+
+      // First try to find 0_desc files
+      let excelFiles = files.filter(file =>
+        file.startsWith('0_desc') && file.endsWith('.xlsx')
       );
-      
+
+      // If no 0_desc files found, fall back to 0_list for backward compatibility
+      if (excelFiles.length === 0) {
+        excelFiles = files.filter(file =>
+          file.startsWith('0_list') && file.endsWith('.xlsx')
+        );
+
+        if (excelFiles.length > 0) {
+          this.logger.warn(`Found legacy 0_list Excel file: ${excelFiles[0]}. Consider renaming to 0_desc pattern.`);
+        }
+      }
+
       if (excelFiles.length > 0) {
         const excelPath = path.join(this.folderPath, excelFiles[0]);
         this.logger.info(`Found existing Excel file: ${excelFiles[0]}`);
         return excelPath;
       }
-      
+
       return null;
     } catch (error) {
       this.logger.error(`Error searching for Excel files: ${error.message}`);
@@ -36,20 +128,30 @@ export class ExcelService {
 
   async createExcelFromTemplate(folderName) {
     try {
-      // Generate the auto Excel filename
+      // Generate the auto Excel filename with new 0_desc pattern
       const sanitizedFolderName = folderName.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-      const excelFileName = `0_list_${sanitizedFolderName}_auto.xlsx`;
+      const excelFileName = `0_desc_${sanitizedFolderName}_auto.xlsx`;
       const targetPath = path.join(this.folderPath, excelFileName);
       
-      // Check if template exists
-      const templateExists = await fs.pathExists(this.templatePath);
+      // Check if template exists, fall back to legacy template if needed
+      let templateExists = await fs.pathExists(this.templatePath);
+      let finalTemplatePath = this.templatePath;
+
       if (!templateExists) {
-        throw new Error(`Template file not found at: ${this.templatePath}`);
+        this.logger.warn(`Primary template not found at: ${this.templatePath}, checking fallback...`);
+        templateExists = await fs.pathExists(this.fallbackTemplatePath);
+
+        if (templateExists) {
+          this.logger.info(`Using legacy template: ${this.fallbackTemplatePath}`);
+          finalTemplatePath = this.fallbackTemplatePath;
+        } else {
+          throw new Error(`Template file not found at: ${this.templatePath} or ${this.fallbackTemplatePath}`);
+        }
       }
       
       // Load template workbook with ExcelJS to preserve all formatting
       const templateWorkbook = new ExcelJS.Workbook();
-      await templateWorkbook.xlsx.readFile(this.templatePath);
+      await templateWorkbook.xlsx.readFile(finalTemplatePath);
       
       // Save to target location - this preserves all formatting
       await templateWorkbook.xlsx.writeFile(targetPath);
@@ -170,9 +272,10 @@ export class ExcelService {
           // Store the actual value from column C using the key from column B
           description[key] = value || '';
           
-          // Log for debugging
+          // Enhanced logging for debugging, especially for date fields
           if (value && value.toString().trim() !== '') {
             this.logger?.info(`Parsed ${key}: "${value}" (from row with description: "${frenchDescription}")`);
+
           }
         }
       }
@@ -419,8 +522,8 @@ export class ExcelService {
       newRow.getCell(2).font = { bold: true };
       newRow.getCell(3).font = { bold: true };
       
-      // Save the workbook
-      await workbook.xlsx.writeFile(excelPath);
+      // Save the workbook with retry mechanism
+      await this.saveWithRetry(workbook, excelPath);
       
       this.logger.info(`Saved media_description ID "${mediaDescriptionId}" to Description sheet`);
       return true;
@@ -445,12 +548,23 @@ export class ExcelService {
         return excelPath; // Return original path if rename not possible
       }
       
-      // Rename the file
-      await fs.rename(excelPath, newFilePath);
-      
+      // Rename the file with retry for file lock handling
+      await this.renameWithRetry(excelPath, newFilePath);
+
       this.logger.info(`Renamed Excel file: ${parsedPath.base} -> ${newFileName}`);
       return newFilePath;
     } catch (error) {
+      // Check if it's a file lock error and provide user-friendly message
+      const isFileLocked = error.code === 'EBUSY' ||
+                         error.code === 'EPERM' ||
+                         error.message.includes('being used by another process') ||
+                         error.message.includes('File is locked');
+
+      if (isFileLocked) {
+        this.logger.warn(`Cannot rename file - it's locked by Excel: ${parsedPath.base}. Keeping original name.`);
+        return excelPath; // Return original path instead of failing
+      }
+
       this.logger.error(`Error renaming Excel file: ${error.message}`);
       throw error;
     }

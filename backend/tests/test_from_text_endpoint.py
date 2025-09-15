@@ -80,6 +80,37 @@ class TestFromTextEndpoint:
         assert data["is_featured"] is True
         assert data["content_status"] == "draft"
 
+    def test_create_from_text_with_token_cost(self, client, db, test_admin_user):
+        """Test creation with paid_token_cost field"""
+        access_token = create_access_token(subject=test_admin_user.email)
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        test_data = {
+            "episode_title": "Token Cost Test Episode",
+            "media_type": "video",
+            "file_number": 2001,
+            "paid_token_cost": 150,
+            "translation_share": 0.2,
+            "sacem_share": 0.1,
+            "other_share": 0.05,
+            "revenue_share": 0.65
+        }
+
+        response = client.post(
+            "/api/v1/media-descriptions/from-text",
+            json=test_data,
+            headers=headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["episode_title"] == "Token Cost Test Episode"
+        assert data["paid_token_cost"] == 150
+        assert data["translation_share"] == 0.2
+        assert data["sacem_share"] == 0.1
+        assert data["other_share"] == 0.05
+        assert data["revenue_share"] == 0.65
+
     def test_create_from_text_duplicate_file_number(self, client, db, test_admin_user):
         """Test creation fails with duplicate file_number"""
         access_token = create_access_token(subject=test_admin_user.email)

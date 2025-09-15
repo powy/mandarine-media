@@ -10,7 +10,7 @@ from app.api import deps
 router = APIRouter()
 
 
-@router.get("/", response_model=schemas.VideoFileReportList)
+@router.get("", response_model=schemas.VideoFileReportList)
 def get_video_file_reports(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),

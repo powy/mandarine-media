@@ -57,19 +57,25 @@ from .season import Season, SeasonCreate, SeasonUpdate, SeasonInDB
 from .language import Language, LanguageCreate, LanguageUpdate, LanguageInDB
 from .country import Country, CountryCreate, CountryUpdate, CountryInDB
 from .picture import Picture, PictureCreate, PictureUpdate, PictureInDB
-from .content_list import (
-    ContentList,
-    ContentListCreate,
-    ContentListUpdate,
-    ContentListInDB,
-    ContentListWithJSON,
-    ContentListResponse,
-    ContentListReorderRequest,
-    ContentListJSONResponse,
-    AutoGenerationResponse,
-    DynamicListUpdateResponse,
+from .media_showcase import (
+    MediaShowcase,
+    MediaShowcaseCreate,
+    MediaShowcaseUpdate,
+    MediaShowcaseInDB,
+    MediaShowcaseWithItems,
+    MediaShowcaseResponse,
+    MediaShowcaseJSON,
+    MediaShowcaseJSONResponse,
+    MediaShowcaseItemJSON,
+    MediaShowcaseItemsUpdate,
+    MediaShowcaseAddItems,
+    MediaShowcaseRemoveItems,
+    MediaShowcaseReorderItem,
+    MediaShowcaseItemOperationResponse,
+    MediaShowcaseAutoGenerationResponse,
+    MediaShowcaseBulkRefreshResponse,
     ThumbnailFormatEnum,
-    ContentTypeEnum,
+    ListTypeEnum,
 )
 from .screen_description import (
     ScreenDescription,
@@ -84,3 +90,13 @@ from .screen_description import (
     ScreenTypeEnum,
 )
 from .media_theme import MediaTheme, MediaThemeCreate, MediaThemeUpdate, MediaThemeInDB
+from .media_description_person import (
+    MediaDescriptionPerson,
+    MediaDescriptionPersonCreate,
+    MediaDescriptionPersonUpdate,
+    MediaDescriptionPersonInDB,
+    PersonRoleSimple,
+    PersonRoleCreate,
+    PersonRoleUpdate,
+    BulkPersonRoleAssignment,
+)

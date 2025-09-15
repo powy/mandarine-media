@@ -3,6 +3,8 @@ from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID
+from app.models.associations import media_description_additional_images
+from sqlalchemy.orm import relationship
 
 
 class Picture(Base):
@@ -20,3 +22,6 @@ class Picture(Base):
     height = Column(Integer, nullable=True)
     alt_text = Column(String, nullable=True)
     description = Column(String, nullable=True)
+    
+    # Relationships
+    additional_for_media = relationship("MediaDescription", secondary=media_description_additional_images, back_populates="additional_images")

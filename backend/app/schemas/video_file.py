@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 import enum
+from .language import Language
 
 
 class EncodingStatusEnum(str, enum.Enum):
@@ -20,9 +21,19 @@ class UploadStatusEnum(str, enum.Enum):
     ready_no_subtitles = "ready_no_subtitles"
 
 
+class ResolutionEnum(str, enum.Enum):
+    r4320p = "4320p"
+    r2160p = "2160p"
+    r1440p = "1440p"
+    r1080p = "1080p"
+    r720p = "720p"
+    r480p = "480p"
+    r360p = "360p"
+
+
 class VideoFileBase(BaseModel):
     file_url: Optional[str] = Field(None, description="File storage URL")
-    file_name: str = Field(..., description="Original filename")
+    file_name: Optional[str] = Field(None, description="Original filename")
     file_size_bytes: Optional[int] = Field(None, description="File size in bytes")
     encoding_status: EncodingStatusEnum = Field(default=EncodingStatusEnum.pending)
     
@@ -51,11 +62,11 @@ class VideoFileBase(BaseModel):
     # NEW v1.10-C fields
     playback_policy: Optional[str] = None
     subtitle_tracks_text_list: Optional[List[str]] = None
-    resolutions_list: Optional[List[str]] = None
+    resolutions_list: Optional[List[ResolutionEnum]] = None
     accessibilities_list: Optional[List[str]] = None
     
     # NEW v1.4 fields - Language fields
-    audio_languages_id_list: Optional[List[str]] = None
+    audio_languages: Optional[List[Language]] = Field(default_factory=list, description="Audio languages for this video file")
 
 
 class VideoFileCreate(VideoFileBase):
@@ -91,19 +102,18 @@ class VideoFileUpdate(BaseModel):
     # NEW v1.10-C fields
     playback_policy: Optional[str] = None
     subtitle_tracks_text_list: Optional[List[str]] = None
-    resolutions_list: Optional[List[str]] = None
+    resolutions_list: Optional[List[ResolutionEnum]] = None
     accessibilities_list: Optional[List[str]] = None
     
     # NEW v1.4 fields - Language fields
-    audio_languages_id_list: Optional[List[str]] = None
+    audio_languages: Optional[List[Language]] = Field(default_factory=list, description="Audio languages for this video file")
 
 
 class VideoFileInDB(VideoFileBase):
     id: UUID
     creation_date_utc: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VideoFile(VideoFileInDB):

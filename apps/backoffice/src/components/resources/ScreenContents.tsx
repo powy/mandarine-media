@@ -205,13 +205,13 @@ export const ScreenContentList = () => (
       <TextField source="slug" label="Slug" />
       <BooleanField source="is_active" label="Active" />
       <TextField source="display_order" label="Order" />
-      <FunctionField 
-        label="Content Lists" 
-        render={record => 
-          Array.isArray(record.content_lists) 
-            ? record.content_lists.length 
+      <FunctionField
+        label="Media Showcases"
+        render={record =>
+          Array.isArray(record.media_showcases)
+            ? record.media_showcases.length
             : 0
-        } 
+        }
       />
       <DateField source="creation_date_utc" label="Created" sortable />
       <EditButton />
@@ -250,9 +250,9 @@ export const ScreenContentCreate = () => (
         defaultValue={0} 
         helperText="Order for display (lower numbers appear first)"
       />
-      <ArrayInput source="content_lists" label="Related Content Lists">
+      <ArrayInput source="media_showcases" label="Related Media Showcases">
         <SimpleFormIterator>
-          <ReferenceInput source="" reference="content-lists">
+          <ReferenceInput source="" reference="media-showcases">
             <AutocompleteInput optionText="title" />
           </ReferenceInput>
         </SimpleFormIterator>
@@ -283,9 +283,9 @@ export const ScreenContentEdit = () => (
         source="display_order" 
         helperText="Order for display (lower numbers appear first)"
       />
-      <ArrayInput source="content_lists" label="Related Content Lists">
+      <ArrayInput source="media_showcases" label="Related Media Showcases">
         <SimpleFormIterator>
-          <ReferenceInput source="" reference="content-lists">
+          <ReferenceInput source="" reference="media-showcases">
             <AutocompleteInput optionText="title" />
           </ReferenceInput>
         </SimpleFormIterator>
@@ -303,7 +303,7 @@ export const ScreenContentShow = () => (
       <TextField source="slug" label="Slug" />
       <BooleanField source="is_active" label="Active" />
       <TextField source="display_order" label="Display Order" />
-      <ArrayField source="content_lists" label="Related Content Lists">
+      <ArrayField source="media_showcases" label="Related Media Showcases">
         <SingleFieldList>
           <ChipField source="title" />
         </SingleFieldList>

@@ -1,16 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-interface ContentListItem {
-  content_id: string;
-  content_type: string;
-  title: string;
-  thumbnail_url?: string;
-  description?: string;
-  short_summary?: string;
-  image_alt_text: string;
-  display_order: number;
-}
+import {
+  useContentList,
+  getContentListItemRoute
+} from 'share';
+import type { ContentListItem } from 'share';
 
 interface ContentListProps {
   contentList: {
@@ -34,24 +28,25 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
-  
-  // Carousel state
-  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
 
-  if (!contentList) {
+  // Use shared hook for logic
+  const {
+    sortedItems,
+    isValidContentList,
+    currentCarouselIndex,
+    goToNextCarouselItem,
+    goToPrevCarouselItem,
+    goToCarouselItem,
+    getThumbnailDimensions
+  } = useContentList(contentList);
+
+  if (!isValidContentList) {
     return null;
   }
 
   const handleItemClick = (item: ContentListItem) => {
     console.log('ContentList: Item clicked:', item);
-    
-    // Navigate to video screen for media_description content type
-    if (item.content_type === 'media_description') {
-      navigate(`/video/${item.content_id}`);
-    } else {
-      // For other content types (program, season), we might need different handling
-      console.log('Non-video content clicked:', item.content_type);
-    }
+    navigate(getContentListItemRoute(item));
   };
 
   const checkScrollButtons = () => {
@@ -76,37 +71,17 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
     }
   };
 
-  // Carousel navigation functions
-  const goToNextCarouselItem = () => {
-    if (contentList.items && contentList.items.length > 0) {
-      setCurrentCarouselIndex((prevIndex) => 
-        prevIndex === contentList.items.length - 1 ? 0 : prevIndex + 1
-      );
-    }
-  };
-
-  const goToPrevCarouselItem = () => {
-    if (contentList.items && contentList.items.length > 0) {
-      setCurrentCarouselIndex((prevIndex) => 
-        prevIndex === 0 ? contentList.items.length - 1 : prevIndex - 1
-      );
-    }
-  };
-
-  const goToCarouselItem = (index: number) => {
-    setCurrentCarouselIndex(index);
-  };
 
   useEffect(() => {
     checkScrollButtons();
     const handleResize = () => checkScrollButtons();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [contentList.items]);
+  }, [sortedItems]);
 
   // Keyboard navigation for carousel
   useEffect(() => {
-    if (contentList.list_type === 'carousel') {
+    if (contentList?.list_type === 'carousel') {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'ArrowLeft') {
           goToPrevCarouselItem();
@@ -118,18 +93,11 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [contentList.list_type, contentList.items]);
+  }, [contentList?.list_type, sortedItems, goToPrevCarouselItem, goToNextCarouselItem]);
 
   const renderContentItem = (item: ContentListItem) => {
-    // Use thumbnail dimensions from contentList percentages, fallback to 128px square
-    // Convert percentage to pixels based on container/viewport width
-    const baseWidth = 300; // Base width for calculation - increased for better visibility
-    const width = contentList.percentage_width 
-      ? Math.round((contentList.percentage_width / 100) * baseWidth)
-      : 128;
-    const height = contentList.percentage_height 
-      ? Math.round((contentList.percentage_height / 100) * baseWidth)
-      : 128;
+    // Use shared utility for thumbnail dimensions
+    const { width, height } = getThumbnailDimensions(300);
     
     return (
       <div
@@ -166,14 +134,8 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
   };
 
   const renderCarouselItem = (item: ContentListItem) => {
-    // Use larger dimensions for carousel items
-    const baseWidth = 600; // Larger base width for carousel
-    const width = contentList.percentage_width 
-      ? Math.round((contentList.percentage_width / 100) * baseWidth)
-      : 300;
-    const height = contentList.percentage_height 
-      ? Math.round((contentList.percentage_height / 100) * baseWidth)
-      : 300;
+    // Use shared utility for carousel thumbnail dimensions
+    const { width, height } = getThumbnailDimensions(600);
     
     return (
       <div
@@ -215,17 +177,17 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
   return (
     <div className="mb-8">
       <h2 className="text-kyool-blue text-xl font-bold mb-2 px-4">
-        {contentList.title || 'Untitled Content List'}
+        {contentList?.title || 'Untitled Content List'}
       </h2>
-      {contentList.description && (
+      {contentList?.description && (
         <p className="text-gray-400 text-sm mb-4 px-4">
           {contentList.description}
         </p>
       )}
-      
-      {contentList.items && contentList.items.length > 0 ? (
+
+      {sortedItems.length > 0 ? (
         <>
-          {contentList.list_type === 'carousel' ? (
+          {contentList?.list_type === 'carousel' ? (
             // Carousel display
             <div className="relative flex flex-col items-center">
               {/* Carousel Container */}
@@ -242,8 +204,7 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
                 </button>
 
                 {/* Current Carousel Item */}
-                {renderCarouselItem(contentList.items
-                  .sort((a, b) => a.display_order - b.display_order)[currentCarouselIndex])}
+                {renderCarouselItem(sortedItems[currentCarouselIndex])}
 
                 {/* Right Arrow */}
                 <button
@@ -259,7 +220,7 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
 
               {/* Dot Indicators */}
               <div className="flex space-x-2 mt-4">
-                {contentList.items.map((_, index) => (
+                {sortedItems.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => goToCarouselItem(index)}
@@ -296,11 +257,9 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
                   className="flex overflow-x-auto scrollbar-hide pb-2"
                   onScroll={checkScrollButtons}
                 >
-                  {contentList.items
-                    .sort((a, b) => a.display_order - b.display_order)
-                    .map((item: ContentListItem) =>
-                      renderContentItem(item)
-                    )}
+                  {sortedItems.map((item: ContentListItem) =>
+                    renderContentItem(item)
+                  )}
                 </div>
               </div>
 

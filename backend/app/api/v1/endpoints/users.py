@@ -11,7 +11,7 @@ from app.schemas.user import User as UserSchema, UserCreate, UserUpdate
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("")
 def read_users(
     db: Session = Depends(get_db),
     skip: int = 0,
@@ -38,7 +38,7 @@ def read_user_me(
     return current_user
 
 
-@router.post("/", response_model=UserSchema)
+@router.post("", response_model=UserSchema)
 def create_user(
     *,
     db: Session = Depends(get_db),
@@ -83,3 +83,98 @@ def read_user_by_id(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+# Subscription Plan Relationship Endpoints
+
+@router.post("/{user_id}/subscription_plans/{plan_id}", response_model=UserSchema)
+def add_subscription_plan_to_user(
+    *,
+    db: Session = Depends(get_db),
+    user_id: UUID,
+    plan_id: UUID,
+    current_admin: User = Depends(get_current_admin_user),
+):
+    """
+    Add a subscription plan to a user.
+    """
+    user = crud_user.get(db=db, id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    updated_user = crud_user.add_subscription_plan(
+        db=db, user_id=user_id, plan_id=plan_id
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to add subscription plan to user"
+        )
+
+    return updated_user
+
+
+@router.delete("/{user_id}/subscription_plans/{plan_id}", response_model=UserSchema)
+def remove_subscription_plan_from_user(
+    *,
+    db: Session = Depends(get_db),
+    user_id: UUID,
+    plan_id: UUID,
+    current_admin: User = Depends(get_current_admin_user),
+):
+    """
+    Remove a subscription plan from a user.
+    """
+    user = crud_user.get(db=db, id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    updated_user = crud_user.remove_subscription_plan(
+        db=db, user_id=user_id, plan_id=plan_id
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to remove subscription plan from user"
+        )
+
+    return updated_user
+
+
+@router.put("/{user_id}/subscription_plans", response_model=UserSchema)
+def update_user_subscription_plans(
+    *,
+    db: Session = Depends(get_db),
+    user_id: UUID,
+    plan_ids: List[UUID],
+    current_admin: User = Depends(get_current_admin_user),
+):
+    """
+    Update all subscription plans for a user.
+    """
+    user = crud_user.get(db=db, id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    updated_user = crud_user.update_subscription_plans(
+        db=db, user_id=user_id, plan_ids=plan_ids
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to update subscription plans for user"
+        )
+
+    return updated_user

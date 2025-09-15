@@ -72,15 +72,31 @@ export async function checkFileExists(filePath) {
   }
 }
 
-export async function findExcelFiles(folderPath, prefix = '0_list') {
+export async function findExcelFiles(folderPath, prefix = '0_desc') {
   try {
-    const pattern = `${prefix}*.xlsx`;
-    const files = await glob(pattern, {
+    // First try to find files with the new 0_desc pattern
+    let pattern = `${prefix}*.xlsx`;
+    let files = await glob(pattern, {
       cwd: folderPath,
       nodir: true,
       absolute: false
     });
-    
+
+    // If no 0_desc files found and we're using the default prefix, fall back to 0_list for backward compatibility
+    if (files.length === 0 && prefix === '0_desc') {
+      console.log('No 0_desc files found, checking for legacy 0_list files...');
+      pattern = `0_list*.xlsx`;
+      files = await glob(pattern, {
+        cwd: folderPath,
+        nodir: true,
+        absolute: false
+      });
+
+      if (files.length > 0) {
+        console.log(`Found ${files.length} legacy 0_list file(s). Consider renaming to 0_desc pattern.`);
+      }
+    }
+
     return files.map(file => ({
       name: file,
       fullPath: path.join(folderPath, file)

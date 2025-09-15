@@ -5,10 +5,12 @@ import uuid
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
 from app.models.associations import (
-    media_description_actors, media_description_directors, media_description_producers,
-    media_description_authors, media_description_origin_countries, media_description_available_countries,
-    media_description_original_languages, media_description_audience_categories,
-    media_description_eligible_plans, media_description_trailers, media_description_excerpts
+    media_description_origin_countries, media_description_available_countries,
+    media_description_original_languages, media_description_available_subtitle_languages,
+    media_description_available_audio_languages, media_description_audience_categories,
+    media_description_eligible_plans, media_description_trailers, media_description_excerpts,
+    media_description_media_themes, media_description_additional_images, season_episodes,
+    media_showcase_media_descriptions
 )
 import enum
 
@@ -57,15 +59,12 @@ class MediaDescription(Base):
     season_id = Column(GUID(), ForeignKey("seasons.id"), nullable=True)
     episode_number = Column(Integer, nullable=True)
     media_categories_list = Column(JSONArray(), nullable=True)  # ARRAY of enum 'category'
-    media_themes_id_list = Column(JSONArray(), nullable=True)  # List of MediaTheme IDs
-    # Removed trailer_id_list and extract_id_list - using many-to-many relationships instead
     descriptive_summary_text = Column(Text, nullable=True)
     synopsis_text = Column(Text, nullable=True)
     contract_start_date_utc = Column(DateTime(timezone=True), nullable=True)
     contract_end_date_utc = Column(DateTime(timezone=True), nullable=True)
     production_year = Column(Integer, nullable=True)
     original_broadcast_date_utc = Column(DateTime(timezone=True), nullable=True)
-    # Removed: audience_category_id_list - replaced with proper relationship
     is_featured = Column(Boolean, default=False, nullable=True)
     last_updated_utc = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
     content_status = Column(String, default="draft", nullable=True)  # Will use enum validation in schemas
@@ -73,23 +72,15 @@ class MediaDescription(Base):
     seo_description = Column(Text, nullable=True)
     seo_keywords_text_list = Column(JSONArray(), nullable=True)
     hashtags_text_list = Column(JSONArray(), nullable=True)
+    tags = Column(JSONArray(), nullable=True)  # General purpose tags (distinct from hashtags)
     external_identifier_text = Column(String, nullable=True)  # Renamed from external_id
     rights_holder = Column(String, nullable=True)
     
-    # Removed: Video file UUID list fields - replaced with proper relationships
-    # trailers_id_list, excerpt_id_list, original_languages_id_list
     friendly_url = Column(String, nullable=True)
     
-    # Removed: Person role UUID list fields - replaced with proper relationships
-    # actors_id_list, directors_id_list, productor_id_list, authors_id_list
-    
-    # Removed: Location and language UUID list fields - replaced with proper relationships
-    # origin_country_id_list, original_languages_id_list, available_countries_id_list
     
     # NEW v1.4 fields - Business fields (renamed and cleaned up)
     copyright_owner_text = Column(String, nullable=True)  # Renamed from copyright_owner_id
-    # Removed: subscription_plan_id_list - not needed
-    # Removed: audience_categories_id_list - replaced with proper relationship
     
     # NEW v1.4 fields - Metadata fields (v1.9 renamed)
     slug = Column(String, nullable=True, unique=True)  # Renamed from friendly_url in v1.9
@@ -101,9 +92,7 @@ class MediaDescription(Base):
     image_1080_1080_id = Column(GUID(), ForeignKey("pictures.id"), nullable=True)
     image_810_1080_id = Column(GUID(), ForeignKey("pictures.id"), nullable=True)
     image_1080_1920_id = Column(GUID(), ForeignKey("pictures.id"), nullable=True)
-    additional_images_id_list = Column(JSONArray(), nullable=True)  # Array of picture id stored as JSON
     
-    # v1.4 test image fields - REMOVED (ghost columns)
     
     # NEW v1.4 fields - Revenue fields (Admin only)
     translation_share = Column(Float, nullable=True)
@@ -112,40 +101,92 @@ class MediaDescription(Base):
     revenue_share = Column(Float, nullable=True)
     paid_token_cost = Column(Integer, nullable=True)
     
-    # v1.10-C fields
-    is_premium_content = Column(Boolean, nullable=True, default=False)
-    original_language = Column(String, nullable=True)
     
-    # v1.12 fields - Person ID lists
-    actors_id_list = Column(JSONArray(), nullable=True)
-    directors_id_list = Column(JSONArray(), nullable=True)
-    productors_id_list = Column(JSONArray(), nullable=True)
-    authors_id_list = Column(JSONArray(), nullable=True)
-    available_countries_id_list = Column(JSONArray(), nullable=True)
-    audience_categories_id_list = Column(JSONArray(), nullable=True)
-    eligible_plans_id_list = Column(JSONArray(), nullable=True)
     
     # Relationships
     main_video_file = relationship("VideoFile", backref="media_descriptions")
     program = relationship("Program", back_populates="media_descriptions")
     season = relationship("Season", back_populates="media_descriptions")
     video_file_reports = relationship("VideoFileReport", back_populates="media_description")
+
+    # Image relationships for thumbnail formats
+    image_1920_1080 = relationship("Picture", foreign_keys=[image_1920_1080_id])
+    image_1920_720 = relationship("Picture", foreign_keys=[image_1920_720_id])
+    image_1080_1080 = relationship("Picture", foreign_keys=[image_1080_1080_id])
+    image_810_1080 = relationship("Picture", foreign_keys=[image_810_1080_id])
+    image_1080_1920 = relationship("Picture", foreign_keys=[image_1080_1920_id])
     
-    # Many-to-many relationships
-    actors = relationship("PublicPerson", secondary=media_description_actors, back_populates="acted_in")
-    directors = relationship("PublicPerson", secondary=media_description_directors, back_populates="directed")
-    producers = relationship("PublicPerson", secondary=media_description_producers, back_populates="produced")
-    authors = relationship("PublicPerson", secondary=media_description_authors, back_populates="authored")
+    # New unified people relationship
+    people_roles = relationship("MediaDescriptionPerson", back_populates="media_description", cascade="all, delete-orphan")
     
     origin_countries = relationship("Country", secondary=media_description_origin_countries, back_populates="origin_media")
     available_countries = relationship("Country", secondary=media_description_available_countries, back_populates="available_media")
     
     original_languages = relationship("Language", secondary=media_description_original_languages, back_populates="original_language_media")
-    
+    available_subtitle_languages = relationship("Language", secondary=media_description_available_subtitle_languages, back_populates="subtitle_language_media")
+    available_audio_languages = relationship("Language", secondary=media_description_available_audio_languages, back_populates="audio_language_media")
+
     audience_categories = relationship("AudienceCategory", secondary=media_description_audience_categories, back_populates="media")
     
     
-    eligible_plan_id_list = relationship("SubscriptionPlan", secondary=media_description_eligible_plans, back_populates="eligible_media")
+    eligible_plans = relationship("SubscriptionPlan", secondary=media_description_eligible_plans, back_populates="eligible_media")
     
     trailers = relationship("VideoFile", secondary=media_description_trailers, back_populates="trailer_for")
     excerpts = relationship("VideoFile", secondary=media_description_excerpts, back_populates="excerpt_for")
+    
+    media_themes = relationship("MediaTheme", secondary=media_description_media_themes, back_populates="media_descriptions")
+    additional_images = relationship("Picture", secondary=media_description_additional_images, back_populates="additional_for_media")
+    seasons_episodes = relationship("Season", secondary=season_episodes, back_populates="episodes")
+    
+    # MediaShowcase relationships
+    media_showcases = relationship("MediaShowcase", secondary=media_showcase_media_descriptions, back_populates="media_descriptions")
+
+    # Helper properties for accessing people by role with ordering (backward compatibility)
+    @property
+    def actors_ordered(self):
+        """Get actors ordered by position"""
+        return sorted([pr.public_person for pr in self.people_roles if pr.role == 'actor'],
+                     key=lambda x: next(pr.position for pr in self.people_roles
+                                      if pr.public_person == x and pr.role == 'actor'))
+
+    @property
+    def directors_ordered(self):
+        """Get directors ordered by position"""
+        return sorted([pr.public_person for pr in self.people_roles if pr.role == 'director'],
+                     key=lambda x: next(pr.position for pr in self.people_roles
+                                      if pr.public_person == x and pr.role == 'director'))
+
+    @property
+    def producers_ordered(self):
+        """Get producers ordered by position"""
+        return sorted([pr.public_person for pr in self.people_roles if pr.role == 'producer'],
+                     key=lambda x: next(pr.position for pr in self.people_roles
+                                      if pr.public_person == x and pr.role == 'producer'))
+
+    @property
+    def authors_ordered(self):
+        """Get authors ordered by position"""
+        return sorted([pr.public_person for pr in self.people_roles if pr.role == 'author'],
+                     key=lambda x: next(pr.position for pr in self.people_roles
+                                      if pr.public_person == x and pr.role == 'author'))
+
+    # Backward compatibility properties (unordered)
+    @property
+    def actors(self):
+        """Get actors (for backward compatibility)"""
+        return [pr.public_person for pr in self.people_roles if pr.role == 'actor']
+
+    @property
+    def directors(self):
+        """Get directors (for backward compatibility)"""
+        return [pr.public_person for pr in self.people_roles if pr.role == 'director']
+
+    @property
+    def producers(self):
+        """Get producers (for backward compatibility)"""
+        return [pr.public_person for pr in self.people_roles if pr.role == 'producer']
+
+    @property
+    def authors(self):
+        """Get authors (for backward compatibility)"""
+        return [pr.public_person for pr in self.people_roles if pr.role == 'author']

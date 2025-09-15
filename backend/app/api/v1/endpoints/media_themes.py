@@ -11,7 +11,7 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.get("/", response_model=List[schemas.MediaTheme])
+@router.get("", response_model=List[schemas.MediaTheme])
 def read_media_themes(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
@@ -28,12 +28,12 @@ def read_media_themes(
     return media_themes
 
 
-@router.post("/", response_model=schemas.MediaTheme)
+@router.post("", response_model=schemas.MediaTheme)
 def create_media_theme(
     *,
     db: Session = Depends(deps.get_db),
     media_theme_in: schemas.MediaThemeCreate,
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
     Create new media theme.
@@ -55,7 +55,7 @@ def update_media_theme(
     db: Session = Depends(deps.get_db),
     id: UUID,
     media_theme_in: schemas.MediaThemeUpdate,
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
     Update a media theme.
@@ -98,7 +98,7 @@ def delete_media_theme(
     *,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
     Delete a media theme.

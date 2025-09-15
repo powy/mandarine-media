@@ -16,7 +16,8 @@ export default class MuxManager {
    */
   async addSubtitleTrack(assetId, presignedUrl, options = {}) {
     let lastError;
-    
+    let trackData = null;
+
     for (let attempt = 1; attempt <= this.maxRetryAttempts; attempt++) {
       try {
         this.logger.info(`Attempting to add subtitle track to Mux (attempt ${attempt}/${this.maxRetryAttempts})`, {
@@ -26,12 +27,12 @@ export default class MuxManager {
           url: presignedUrl
         });
 
-        const trackData = {
+        trackData = {
           url: presignedUrl,
           type: 'text',
           text_type: options.text_type || 'subtitles',
           language_code: options.language_code || 'en',
-          name: options.name || this.getLanguageName(options.language_code || 'en'),
+          name: options.name || this.generateUniqueTrackName(options.language_code || 'en'),
           closed_captions: options.closed_captions || false
         };
 
@@ -225,6 +226,16 @@ export default class MuxManager {
       'vi': 'Tiếng Việt'
     };
     return languages[code] || code.toUpperCase();
+  }
+
+  /**
+   * Generate unique track name to avoid conflicts
+   */
+  generateUniqueTrackName(languageCode) {
+    const baseName = this.getLanguageName(languageCode);
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substr(2, 5);
+    return `${baseName}_${timestamp}_${randomSuffix}`;
   }
 
   /**

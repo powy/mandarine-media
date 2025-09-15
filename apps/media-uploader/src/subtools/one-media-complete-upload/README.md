@@ -7,7 +7,7 @@ A comprehensive media upload workflow tool that handles video, image, and subtit
 This subtool provides a complete media upload workflow that:
 
 1. Scans a folder for media files (videos, images, subtitles)
-2. Creates or uses an Excel file (`0_list_*.xlsx`) for file management and metadata
+2. Creates or uses an Excel file (`0_desc_*.xlsx`) for file management and metadata
 3. Processes uploads to Mux (videos), S3 (images), and handles subtitles
 4. Updates backend records through API calls
 
@@ -66,7 +66,7 @@ The tool requires a JSON configuration file with the following structure:
 ### First Run (Excel Creation Phase)
 
 1. The tool scans the specified folder for media files (for reference)
-2. If no `0_list*.xlsx` file exists, it creates `0_list_FOLDERNAME_auto.xlsx` from template
+2. If no `0_desc*.xlsx` file exists, it creates `0_desc_FOLDERNAME_auto.xlsx` from template (falls back to legacy `0_list*.xlsx` files for backward compatibility)
 3. The Excel template preserves its original structure (predefined rows and columns)
 4. Tool stops and prompts user to fill the Excel file with actual filenames
 
@@ -103,7 +103,7 @@ The Description sheet contains metadata with inverted structure (description in 
 
 **Presentation Section:**
 - **program_name**: Program title
-- **season_name**: Season title  
+- **season_name**: Season title
 - **episode_title**: Episode/video title
 - **episode_number**: Episode number
 - **media_categories**: Categories (movie, drama, short-drama, musical, animation, documentary, tvshow, other)
@@ -111,6 +111,11 @@ The Description sheet contains metadata with inverted structure (description in 
 - **descriptive_summary_text**: Short description
 - **synopsis_text**: Full synopsis
 - **slug**: URL slug for direct link
+
+**Language Section:**
+- **original_languages_list**: Original languages (semicolon-separated, e.g., "Français ; Anglais")
+- **available_subtitle_languages_list**: Available subtitle languages (semicolon-separated, e.g., "Français ; Anglais ; Coréen")
+- **available_audio_languages_list**: Available audio languages (semicolon-separated, e.g., "Français ; Anglais")
 
 Note: Column A contains the French descriptions, Column B contains the technical keys used for processing.
 

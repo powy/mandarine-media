@@ -26,6 +26,7 @@ import {
   AutocompleteInput,
   FunctionField,
 } from 'react-admin';
+import { Alert } from '@mui/material';
 
 // Filters for the list view
 const VideoFileFilters = (props: any) => (
@@ -79,27 +80,35 @@ export const VideoFileList = () => (
 export const VideoFileCreate = () => (
   <Create redirect="list">
     <SimpleForm>
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <strong>Video File Creation Options:</strong>
+        <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+          <li><strong>Metadata Only:</strong> Create a video file record without an actual file. Useful for planning content that will be uploaded later via the media uploader tool.</li>
+          <li><strong>External URL:</strong> Link to an existing video file hosted elsewhere.</li>
+          <li><strong>Full Upload:</strong> Complete video file with all metadata (typically done via the media uploader tool).</li>
+        </ul>
+      </Alert>
       <TextInput source="file_name" validate={[required()]} fullWidth />
-      <TextInput 
-        source="external_url" 
-        label="Video URL" 
-        fullWidth 
-        helperText="For existing URL method, provide the direct video URL"
+      <TextInput
+        source="external_url"
+        label="Video URL (Optional)"
+        fullWidth
+        helperText="For existing external URLs, provide the direct video URL. Leave empty for metadata-only creation."
       />
-      
+
       {/* Upload and Encoding Settings */}
-      
-      <SelectInput 
-        source="upload_status" 
+
+      <SelectInput
+        source="upload_status"
         choices={[
-          { id: 'metadata_only', name: 'Metadata Only' },
-          { id: 'file_uploading', name: 'Uploading' },
-          { id: 'upload_completed', name: 'Completed' },
-          { id: 'upload_failed', name: 'Failed' },
+          { id: 'metadata_only', name: 'Metadata Only - No File' },
+          { id: 'file_uploading', name: 'File Currently Uploading' },
+          { id: 'upload_completed', name: 'Upload Completed' },
+          { id: 'upload_failed', name: 'Upload Failed' },
           { id: 'ready_no_subtitles', name: 'Ready (No Subtitles)' },
         ]}
-        defaultValue="upload_completed"
-        helperText="For existing URLs, typically set to 'Completed'"
+        defaultValue="metadata_only"
+        helperText="Choose 'Metadata Only' to create a video file record without an actual file. This is useful for planning or placeholder purposes. Upload can happen later via the media uploader tool."
       />
       
       <SelectInput 

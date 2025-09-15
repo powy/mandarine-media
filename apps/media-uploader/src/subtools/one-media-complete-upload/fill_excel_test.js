@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 
 async function fillExcelWithTestData() {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile('C:/Users/powyp/AppData/Local/Temp/kyool_test_upload_with_files/0_list_filled_test.xlsx');
+  await workbook.xlsx.readFile('C:/Users/powyp/AppData/Local/Temp/kyool_test_upload_with_files/0_desc_filled_test.xlsx');
   
   // Fill Description sheet
   const descSheet = workbook.getWorksheet('Description');
@@ -39,7 +39,7 @@ async function fillExcelWithTestData() {
     filesSheet.getCell('F2').value = '';  // KO subtitle empty
   }
   
-  await workbook.xlsx.writeFile('C:/Users/powyp/AppData/Local/Temp/kyool_test_upload_with_files/0_list_filled_test.xlsx');
+  await workbook.xlsx.writeFile('C:/Users/powyp/AppData/Local/Temp/kyool_test_upload_with_files/0_desc_filled_test.xlsx');
   console.log('Excel file filled with test data');
 }
 

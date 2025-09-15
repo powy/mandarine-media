@@ -15,6 +15,7 @@ interface VideoScreenData {
   actors: PublicPerson[];
   directors: PublicPerson[];
   producers: PublicPerson[];
+  authors: PublicPerson[];
   audioLanguages: Language[];
   subtitleLanguages: Language[];
   originCountries: Country[];
@@ -292,18 +293,19 @@ const VideoScreen: React.FC = () => {
     );
   }
 
-  const { 
-    mediaDescription, 
-    videoFile, 
-    relatedEpisodes, 
-    season, 
-    program, 
-    actors, 
-    directors, 
-    producers, 
-    audioLanguages, 
-    subtitleLanguages, 
-    originCountries 
+  const {
+    mediaDescription,
+    videoFile,
+    relatedEpisodes,
+    season,
+    program,
+    actors,
+    directors,
+    producers,
+    authors,
+    audioLanguages,
+    subtitleLanguages,
+    originCountries
   } = videoData;
   
   const playbackId = videoFile ? getPlaybackId(videoFile) : null;
@@ -356,6 +358,18 @@ const VideoScreen: React.FC = () => {
   
   const previousEpisode = getPreviousEpisode();
   const nextEpisode = getNextEpisode();
+
+  // Debug logging for episode navigation
+  console.log('🎬 VideoScreen Debug:', {
+    videoId: id,
+    hasSeason: !!season,
+    hasRelatedEpisodes: relatedEpisodes.length > 0,
+    currentEpisodeNumber: mediaDescription.episode_number,
+    relatedEpisodeNumbers: relatedEpisodes.map(ep => ep.episode_number),
+    previousEpisode: previousEpisode?.id,
+    nextEpisode: nextEpisode?.id,
+    buttonCondition: !!(season && (previousEpisode || nextEpisode))
+  });
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -564,6 +578,47 @@ const VideoScreen: React.FC = () => {
             </div>
           )}
 
+          {/* Crew Section */}
+          {(actors.length > 0 || directors.length > 0 || producers.length > 0 || authors.length > 0) && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-kyool-blue mb-3">Distribution et équipe</h3>
+              <div className="space-y-2 text-sm">
+                {producers.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Producteur{producers.length > 1 ? 's' : ''}: </span>
+                    <span className="text-white">
+                      {producers.map(p => p.stage_name_roman || `${p.first_name_roman || ''} ${p.last_name_roman || ''}`.trim()).join(', ')}
+                    </span>
+                  </div>
+                )}
+                {directors.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Réalisateur{directors.length > 1 ? 's' : ''}: </span>
+                    <span className="text-white">
+                      {directors.map(d => d.stage_name_roman || `${d.first_name_roman || ''} ${d.last_name_roman || ''}`.trim()).join(', ')}
+                    </span>
+                  </div>
+                )}
+                {authors.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Auteur{authors.length > 1 ? 's' : ''}: </span>
+                    <span className="text-white">
+                      {authors.map(a => a.stage_name_roman || `${a.first_name_roman || ''} ${a.last_name_roman || ''}`.trim()).join(', ')}
+                    </span>
+                  </div>
+                )}
+                {actors.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Acteur{actors.length > 1 ? 's' : ''}: </span>
+                    <span className="text-white">
+                      {actors.map(a => a.stage_name_roman || `${a.first_name_roman || ''} ${a.last_name_roman || ''}`.trim()).join(', ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Synopsis */}
           {mediaDescription.synopsis_text && (
             <div className="mb-6">
@@ -574,99 +629,189 @@ const VideoScreen: React.FC = () => {
             </div>
           )}
 
-          {/* Details Section */}
+          {/* Description Section */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-kyool-blue mb-3">Détails</h3>
+            <h3 className="text-lg font-semibold text-kyool-blue mb-3">Description</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {mediaDescription.media_themes_id_list?.length && (
+              {mediaDescription.media_categories_list?.length > 0 && (
                 <div>
-                  <span className="text-gray-400">Genres: </span>
-                  <span className="text-white">
-                    {mediaDescription.media_themes_id_list.join(', ')}
-                  </span>
+                  <span className="text-gray-400">Catégories: </span>
+                  <span className="text-white">{mediaDescription.media_categories_list.join(', ')}</span>
                 </div>
               )}
-              {audioLanguages.length > 0 && (
+              {(mediaDescription.media_themes?.length || mediaDescription.media_themes_id_list?.length) && (
                 <div>
-                  <span className="text-gray-400">Langues audio: </span>
+                  <span className="text-gray-400">Thèmes: </span>
                   <span className="text-white">
-                    {audioLanguages.map(lang => lang.name).join(', ')}
-                  </span>
-                </div>
-              )}
-              {subtitleLanguages.length > 0 && (
-                <div>
-                  <span className="text-gray-400">Sous-titres: </span>
-                  <span className="text-white">
-                    {subtitleLanguages.map(lang => lang.name).join(', ')}
+                    {mediaDescription.media_themes?.map(theme => theme.name).join(', ') ||
+                     mediaDescription.media_themes_id_list?.join(', ')}
                   </span>
                 </div>
               )}
               {mediaDescription.production_year && (
                 <div>
-                  <span className="text-gray-400">Année: </span>
+                  <span className="text-gray-400">Année de production: </span>
                   <span className="text-white">{mediaDescription.production_year}</span>
                 </div>
               )}
-              {originCountries.length > 0 && (
+              {mediaDescription.audience_categories?.length > 0 && (
                 <div>
-                  <span className="text-gray-400">Pays d'origine: </span>
+                  <span className="text-gray-400">Catégories d'audience: </span>
                   <span className="text-white">
-                    {originCountries.map(country => country.name).join(', ')}
+                    {mediaDescription.audience_categories.map(cat => cat.name).join(', ')}
                   </span>
                 </div>
               )}
-              {mediaDescription.duration_seconds && (
+              {audioLanguages.length > 0 && (
                 <div>
-                  <span className="text-gray-400">Durée: </span>
-                  <span className="text-white">
-                    {Math.floor(mediaDescription.duration_seconds / 60)} minutes
-                  </span>
+                  <span className="text-gray-400">Langues audio disponibles: </span>
+                  <span className="text-white">{audioLanguages.map(lang => lang.name).join(', ')}</span>
+                </div>
+              )}
+              {subtitleLanguages.length > 0 && (
+                <div>
+                  <span className="text-gray-400">Sous-titres disponibles: </span>
+                  <span className="text-white">{subtitleLanguages.map(lang => lang.name).join(', ')}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Cast and Crew Section */}
-          {(actors.length > 0 || directors.length > 0 || producers.length > 0) && (
+          {/* Detail Section */}
+          {(mediaDescription.original_broadcast_date_utc || mediaDescription.rights_holder ||
+            mediaDescription.original_languages?.length || originCountries.length > 0 ||
+            mediaDescription.duration_seconds) && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-kyool-blue mb-3">Distribution et équipe</h3>
-              <p className="text-gray-300 leading-relaxed">
-                {producers.length > 0 && (
-                  <span>
-                    <span className="text-gray-400">Producteur{producers.length > 1 ? 's' : ''}: </span>
+              <h3 className="text-lg font-semibold text-kyool-blue mb-3">Détails</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                {mediaDescription.original_broadcast_date_utc && (
+                  <div>
+                    <span className="text-gray-400">Diffusion originale: </span>
                     <span className="text-white">
-                      {producers.map(p => p.stage_name_roman || `${p.first_name_roman || ''} ${p.last_name_roman || ''}`).join(', ')}
+                      {new Date(mediaDescription.original_broadcast_date_utc).toLocaleDateString('fr-FR')}
                     </span>
-                    {(directors.length > 0 || actors.length > 0) && ', '}
-                  </span>
+                  </div>
                 )}
-                {directors.length > 0 && (
-                  <span>
-                    <span className="text-gray-400">Réalisateur{directors.length > 1 ? 's' : ''}: </span>
+                {mediaDescription.rights_holder && (
+                  <div>
+                    <span className="text-gray-400">Détenteur des droits: </span>
+                    <span className="text-white">{mediaDescription.rights_holder}</span>
+                  </div>
+                )}
+                {mediaDescription.original_languages?.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Langue originale: </span>
                     <span className="text-white">
-                      {directors.map(d => d.stage_name_roman || `${d.first_name_roman || ''} ${d.last_name_roman || ''}`).join(', ')}
+                      {mediaDescription.original_languages.map(lang => lang.name).join(', ')}
                     </span>
-                    {actors.length > 0 && ', '}
-                  </span>
+                  </div>
                 )}
-                {actors.length > 0 && (
-                  <span>
-                    <span className="text-gray-400">avec </span>
+                {originCountries.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Pays d'origine: </span>
+                    <span className="text-white">{originCountries.map(country => country.name).join(', ')}</span>
+                  </div>
+                )}
+                {mediaDescription.human_keywords_text_list?.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Tags: </span>
                     <span className="text-white">
-                      {actors.map(a => a.stage_name_roman || `${a.first_name_roman || ''} ${a.last_name_roman || ''}`).join(', ')}
+                      {mediaDescription.human_keywords_text_list.join(', ')}
                     </span>
-                    <span className="text-gray-400"> (acteur{actors.length > 1 ? 's' : ''})</span>
-                  </span>
+                  </div>
                 )}
-              </p>
+                {mediaDescription.hashtags_text_list?.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Hashtags: </span>
+                    <span className="text-white">
+                      {mediaDescription.hashtags_text_list.map(tag => `#${tag}`).join(' ')}
+                    </span>
+                  </div>
+                )}
+                {mediaDescription.duration_seconds && (
+                  <div>
+                    <span className="text-gray-400">Durée: </span>
+                    <span className="text-white">{Math.floor(mediaDescription.duration_seconds / 60)} minutes</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Description */}
+          {/* Internal Section */}
+          {(mediaDescription.seo_title || mediaDescription.seo_description ||
+            mediaDescription.seo_keywords_text_list?.length ||
+            mediaDescription.available_countries?.length || mediaDescription.eligible_plans?.length ||
+            mediaDescription.is_featured !== undefined || mediaDescription.paid_token_cost !== undefined) && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-kyool-blue mb-3">Informations internes</h3>
+              <div className="space-y-3">
+                {/* SEO Subsection */}
+                {(mediaDescription.seo_title || mediaDescription.seo_description || mediaDescription.seo_keywords_text_list?.length) && (
+                  <div>
+                    <h4 className="text-md font-semibold text-gray-300 mb-2">SEO</h4>
+                    <div className="grid grid-cols-1 gap-2 text-sm pl-4">
+                      {mediaDescription.seo_title && (
+                        <div>
+                          <span className="text-gray-400">Titre SEO: </span>
+                          <span className="text-white">{mediaDescription.seo_title}</span>
+                        </div>
+                      )}
+                      {mediaDescription.seo_description && (
+                        <div>
+                          <span className="text-gray-400">Description SEO: </span>
+                          <span className="text-white">{mediaDescription.seo_description}</span>
+                        </div>
+                      )}
+                      {mediaDescription.seo_keywords_text_list?.length > 0 && (
+                        <div>
+                          <span className="text-gray-400">Mots-clés SEO: </span>
+                          <span className="text-white">{mediaDescription.seo_keywords_text_list.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other Internal Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  {mediaDescription.available_countries?.length > 0 && (
+                    <div>
+                      <span className="text-gray-400">Pays disponibles: </span>
+                      <span className="text-white">
+                        {mediaDescription.available_countries.map(country => country.name).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                  {mediaDescription.eligible_plans?.length > 0 && (
+                    <div>
+                      <span className="text-gray-400">Plans éligibles: </span>
+                      <span className="text-white">
+                        {mediaDescription.eligible_plans.map(plan => plan.name).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                  {mediaDescription.is_featured !== undefined && (
+                    <div>
+                      <span className="text-gray-400">Contenu vedette: </span>
+                      <span className="text-white">{mediaDescription.is_featured ? 'Oui' : 'Non'}</span>
+                    </div>
+                  )}
+                  {mediaDescription.paid_token_cost !== undefined && (
+                    <div>
+                      <span className="text-gray-400">Coût en tokens: </span>
+                      <span className="text-white">{mediaDescription.paid_token_cost}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Descriptive Summary */}
           {mediaDescription.descriptive_summary_text && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-kyool-blue mb-2">Description</h3>
+              <h3 className="text-lg font-semibold text-kyool-blue mb-2">Résumé descriptif</h3>
               <p className="text-gray-300 leading-relaxed">
                 {mediaDescription.descriptive_summary_text}
               </p>

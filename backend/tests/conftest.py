@@ -51,9 +51,8 @@ def client(db):
 
 
 @pytest.fixture
-def test_admin_user():
-    """Create a test admin user."""
-    db = TestingSessionLocal()
+def test_admin_user(db):
+    """Create a test admin user using the transactional database session."""
     user_in = UserCreate(
         email="admin@kyool.com",
         password="adminpassword",
@@ -70,14 +69,12 @@ def test_admin_user():
         user.is_admin = True
         db.commit()
         db.refresh(user)
-    db.close()
     return user
 
 
 @pytest.fixture
-def test_regular_user():
-    """Create a test regular user."""
-    db = TestingSessionLocal()
+def test_regular_user(db):
+    """Create a test regular user using the transactional database session."""
     user_in = UserCreate(
         email="user@kyool.com",
         password="userpassword",
@@ -94,7 +91,6 @@ def test_regular_user():
         user.is_admin = False
         db.commit()
         db.refresh(user)
-    db.close()
     return user
 
 

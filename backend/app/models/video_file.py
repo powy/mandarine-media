@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 import uuid
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
-from app.models.associations import media_description_trailers, media_description_excerpts
+from app.models.associations import media_description_trailers, media_description_excerpts, video_file_audio_languages
 import enum
 
 
@@ -70,16 +70,16 @@ class VideoFile(Base):
     resolutions_list = Column(JSONArray(), nullable=True)  # List of resolution enum
     accessibilities_list = Column(JSONArray(), nullable=True)  # List of enum 'accessibility'
     
-    # NEW v1.4 fields - Language and technical fields
-    audio_languages_id_list = Column(JSONArray(), nullable=True)
-    
     # NEW v1.9 fields
     environment_key = Column(String, nullable=True, default="")  # Environment identifier
     slug = Column(String, nullable=True, unique=True)  # SEO-friendly URL slug
     
     # Relationships
     reports = relationship("VideoFileReport", back_populates="video_file")
-    
+
     # Many-to-many relationships with MediaDescription
     trailer_for = relationship("MediaDescription", secondary=media_description_trailers, back_populates="trailers")
     excerpt_for = relationship("MediaDescription", secondary=media_description_excerpts, back_populates="excerpts")
+
+    # Many-to-many relationships with Language
+    audio_languages = relationship("Language", secondary=video_file_audio_languages, back_populates="audio_video_files")

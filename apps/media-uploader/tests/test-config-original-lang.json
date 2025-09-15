@@ -1,0 +1,45 @@
+{
+  "backend": {
+    "baseUrl": "http://localhost:8000",
+    "username": "admin@kyool.com",
+    "password": "admin123"
+  },
+  "mux": {
+    "tokenId": "dummy-token-id",
+    "tokenSecret": "dummy-token-secret"
+  },
+  "s3": {
+    "accessKeyId": "dummy-access-key",
+    "secretAccessKey": "dummy-secret-key",
+    "region": "eu-west-3",
+    "pictures": {
+      "bucket": "example-media",
+      "keyPrefix": "pictures/"
+    },
+    "subtitles": {
+      "bucket": "example-media",
+      "keyPrefix": "subtitles/"
+    }
+  },
+  "settings": {
+    "videoQuality": "plus",
+    "playbackPolicy": ["public"],
+    "maxResolutionTier": "1080p",
+    "mp4Support": "standard",
+    "masterAccess": "none",
+    "environmentText": "development"
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": "./logs/test-original-lang.log",
+    "console": true
+  },
+  "options": {
+    "timeout": 3600000,
+    "retryAttempts": 3,
+    "retryDelay": 5000,
+    "chunkSize": 31457280,
+    "concurrentUploads": 1
+  }
+}

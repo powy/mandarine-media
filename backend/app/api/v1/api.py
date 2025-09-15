@@ -3,6 +3,7 @@ from app.api.v1.endpoints import (
     auth,
     users,
     media_descriptions,
+    media_description_people,
     video_files,
     public_persons,
     media_uploads,
@@ -13,7 +14,7 @@ from app.api.v1.endpoints import (
     languages,
     countries,
     pictures,
-    content_lists,
+    media_showcases,
     screen_descriptions,
     audience_categories,
     subscription_plans,
@@ -25,6 +26,9 @@ api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(
     media_descriptions.router, prefix="/media-descriptions", tags=["media-descriptions"]
+)
+api_router.include_router(
+    media_description_people.router, prefix="/media-descriptions", tags=["media-description-people"]
 )
 api_router.include_router(
     video_files.router, prefix="/video-files", tags=["video-files"]
@@ -49,7 +53,7 @@ api_router.include_router(languages.router, prefix="/languages", tags=["language
 api_router.include_router(countries.router, prefix="/countries", tags=["countries"])
 api_router.include_router(pictures.router, prefix="/pictures", tags=["pictures"])
 api_router.include_router(
-    content_lists.router, prefix="/content-lists", tags=["content-lists"]
+    media_showcases.router, prefix="/media-showcases", tags=["media-showcases"]
 )
 api_router.include_router(
     screen_descriptions.router,

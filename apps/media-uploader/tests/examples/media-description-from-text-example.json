@@ -1,0 +1,46 @@
+{
+  "episode_title": "La Grande Aventure",
+  "media_type": "video",
+  "file_number": 12345,
+  "program_name": "Aventures Épiques",
+  "season_name": "Saison 1",
+  "episode_number": 1,
+  "descriptive_summary_text": "Une aventure extraordinaire commence...",
+  "synopsis_text": "Dans ce premier épisode, nos héros découvrent un monde mystérieux plein de défis et d'aventures inattendues.",
+  "production_year": 2024,
+  "is_featured": true,
+  "content_status": "published",
+  "media_categories_list": ["adventure", "drama"],
+
+  "actor_names": ["Marie Dubois", "Jean Martin", "Sophie Laurent"],
+  "director_names": ["Pierre Renaud"],
+  "producer_names": ["Productions Kyool", "Studio Films"],
+  "author_names": ["Émilie Rousseau"],
+
+  "theme_names": ["Adventure", "Friendship", "Discovery"],
+  "available_country_names": ["France", "Belgium", "Canada"],
+  "audience_category_names": ["Family", "Teens"],
+  "eligible_plan_names": ["Premium", "Standard"],
+
+  "original_language_names": ["Français"],
+  "available_subtitle_language_names": ["Français", "Anglais", "Espagnol", "Allemand"],
+  "available_audio_language_names": ["Français", "Anglais"],
+
+  "image_1920_1080_filename": "poster_1920x1080.jpg",
+  "image_1920_720_filename": "banner_1920x720.jpg",
+  "image_1080_1080_filename": "square_1080x1080.jpg",
+
+  "seo_title": "La Grande Aventure - Premier Épisode Épique",
+  "seo_description": "Découvrez La Grande Aventure, une série captivante qui vous transportera dans un monde mystérieux...",
+  "hashtags_text_list": ["#aventure", "#série", "#mystère"],
+  "tags": ["adventure", "mystery", "family-friendly"],
+
+  "rights_holder": "Kyool Media Productions",
+  "copyright_owner_text": "© 2024 Kyool Media Productions",
+  "external_identifier_text": "KMP-ADV-S01E01",
+
+  "translation_share": 0.15,
+  "sacem_share": 0.05,
+  "revenue_share": 0.80,
+  "paid_token_cost": 2
+}

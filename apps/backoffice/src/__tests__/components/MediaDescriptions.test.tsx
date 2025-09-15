@@ -32,6 +32,7 @@ vi.mock('../../components/inputs/RelationshipInputs', () => ({
   ExcerptInput: () => <div data-testid="excerpt-input">Excerpts</div>,
   MediaCategoriesInput: () => <div data-testid="media-categories-input">Media Categories</div>,
   MediaThemeInput: () => <div data-testid="media-theme-input">Media Themes</div>,
+  AdditionalImageInput: () => <div data-testid="additional-image-input">Additional Images</div>,
 }));
 
 // Mock react-admin
@@ -232,6 +233,17 @@ describe('MediaDescription Components', () => {
       expect(screen.getByTestId('input-human_keywords_text_list')).toBeInTheDocument();
     });
 
+    test('includes v1.9 fields', () => {
+      render(
+        <MemoryRouter>
+          <MediaDescriptionCreate />
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('input-tag_text_list')).toBeInTheDocument();
+      expect(screen.getByTestId('input-slug')).toBeInTheDocument();
+    });
+
     test('includes picture inputs', () => {
       render(
         <MemoryRouter>
@@ -244,6 +256,27 @@ describe('MediaDescription Components', () => {
       expect(screen.getByTestId('picture-input-image_1080_1080_id')).toBeInTheDocument();
       expect(screen.getByTestId('picture-input-image_810_1080_id')).toBeInTheDocument();
       expect(screen.getByTestId('picture-input-image_1080_1920_id')).toBeInTheDocument();
+    });
+
+    test('includes new image fields', () => {
+      render(
+        <MemoryRouter>
+          <MediaDescriptionCreate />
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('picture-input-image_mobile_home')).toBeInTheDocument();
+      expect(screen.getByTestId('picture-input-image_desktop_home')).toBeInTheDocument();
+    });
+
+    test('includes additional image input', () => {
+      render(
+        <MemoryRouter>
+          <MediaDescriptionCreate />
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId('additional-image-input')).toBeInTheDocument();
     });
   });
 

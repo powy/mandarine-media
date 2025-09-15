@@ -4,7 +4,10 @@ from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID
-from app.models.associations import media_description_original_languages
+from app.models.associations import (
+    media_description_original_languages, media_description_available_subtitle_languages,
+    media_description_available_audio_languages, video_file_audio_languages
+)
 
 
 class Language(Base):
@@ -18,3 +21,8 @@ class Language(Base):
     
     # Many-to-many relationships with MediaDescription
     original_language_media = relationship("MediaDescription", secondary=media_description_original_languages, back_populates="original_languages")
+    subtitle_language_media = relationship("MediaDescription", secondary=media_description_available_subtitle_languages, back_populates="available_subtitle_languages")
+    audio_language_media = relationship("MediaDescription", secondary=media_description_available_audio_languages, back_populates="available_audio_languages")
+
+    # Many-to-many relationships with VideoFile
+    audio_video_files = relationship("VideoFile", secondary=video_file_audio_languages, back_populates="audio_languages")

@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 # Screen Descriptions endpoints
-@router.get("/", response_model=schemas.ScreenDescriptionResponse)
+@router.get("", response_model=schemas.ScreenDescriptionResponse)
 def get_screen_descriptions(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
@@ -80,7 +80,7 @@ def get_screen_description(
     return screen_description
 
 
-@router.post("/", response_model=schemas.ScreenDescription)
+@router.post("", response_model=schemas.ScreenDescription)
 def create_screen_description(
     *,
     db: Session = Depends(deps.get_db),
@@ -157,7 +157,7 @@ def delete_screen_description(
 
 
 @router.put("/{screen_description_id}/reorder-lists", response_model=schemas.ScreenDescription)
-def reorder_content_lists(
+def reorder_media_showcases(
     *,
     db: Session = Depends(deps.get_db),
     screen_description_id: UUID,
@@ -165,18 +165,18 @@ def reorder_content_lists(
     current_user: schemas.User = Depends(deps.get_current_active_admin),
 ) -> Any:
     """
-    Reorder content lists in a screen content.
-    
+    Reorder media showcases in a screen content.
+
     **Access:** Manager/Admin only
     """
     screen_description = crud.screen_description.get(db=db, id=screen_description_id)
     if not screen_description:
         raise HTTPException(status_code=404, detail="Screen content not found")
-    
-    screen_description = crud.screen_description.reorder_content_lists(
+
+    screen_description = crud.screen_description.reorder_media_showcases(
         db=db,
         screen_description=screen_description,
-        new_content_lists=reorder_data.content_lists
+        new_media_showcases=reorder_data.media_showcases
     )
     return screen_description
 

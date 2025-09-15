@@ -55,11 +55,23 @@ describe('v1.9 Type Changes and New Fields', () => {
         sacem_share: 0.05,
         revenue_share: 0.50,
         paid_token_cost: 100,
+        
+        // NEW: Relationship IDs for creation (backend converts to relationship objects)
+        actor_ids: ['person-1', 'person-2'],
+        director_ids: ['person-3'],
+        producer_ids: ['person-4'],
+        media_theme_ids: ['theme-1', 'theme-2'],
       };
 
       expect(createData.tag_text_list).toEqual(['variety', 'korean', 'comedy']);
       expect(createData.slug).toBe('running_man_ep_731');
       expect(createData.episode_number).toBe(731);
+      
+      // NEW: Relationship ID fields for creation
+      expect(createData.actor_ids).toEqual(['person-1', 'person-2']);
+      expect(createData.director_ids).toEqual(['person-3']);
+      expect(createData.producer_ids).toEqual(['person-4']);
+      expect(createData.media_theme_ids).toEqual(['theme-1', 'theme-2']);
     });
 
     it('should handle auto-generated slug when not provided', () => {
@@ -314,6 +326,116 @@ describe('v1.9 Type Changes and New Fields', () => {
       expect(mediaWithOptionalFields.slug).toBe('test_slug');
       expect(mediaWithoutOptionalFields.tag_text_list).toBeUndefined();
       expect(mediaWithoutOptionalFields.slug).toBeUndefined();
+    });
+  });
+  
+  describe('Relationship Objects vs Deprecated ID Lists', () => {
+    it('should support new relationship objects in MediaDescription', () => {
+      const mediaWithRelationships: MediaDescription = {
+        id: 'media-relationships',
+        creation_date_utc: '2024-01-15T10:30:00Z',
+        file_number: 1249,
+        episode_title: 'Media with Relationships',
+        media_type: 'video',
+        slug: 'media_with_relationships',
+        tag_text_list: ['relationship', 'test'],
+        
+        // NEW: Relationship objects (returned by backend)
+        actors: [
+          { id: 'person-1', full_name: 'Actor One', role_type: 'main_actor' },
+          { id: 'person-2', full_name: 'Actor Two', role_type: 'supporting_actor' }
+        ],
+        directors: [
+          { id: 'person-3', full_name: 'Director One', role_type: 'main_director' }
+        ],
+        producers: [
+          { id: 'person-4', full_name: 'Producer One', role_type: 'executive_producer' }
+        ],
+        media_themes: [
+          { id: 'theme-1', theme_name: 'drama' },
+          { id: 'theme-2', theme_name: 'romance' }
+        ],
+        additional_images: [
+          { id: 'image-1', file_name: 'poster.jpg' },
+          { id: 'image-2', file_name: 'banner.jpg' }
+        ],
+        
+        // DEPRECATED: ID list fields (for backward compatibility)
+        /** @deprecated Use actors relationship object instead */
+        actors_id_list: ['person-1', 'person-2'],
+        /** @deprecated Use directors relationship object instead */
+        directors_id_list: ['person-3'],
+        /** @deprecated Use producers relationship object instead */
+        producers_id_list: ['person-4'],
+        /** @deprecated Use additional_images relationship object instead */
+        additional_images_id_list: ['image-1', 'image-2'],
+      };
+      
+      // Test new relationship objects
+      expect(mediaWithRelationships.actors).toHaveLength(2);
+      expect(mediaWithRelationships.actors?.[0].full_name).toBe('Actor One');
+      expect(mediaWithRelationships.actors?.[0].role_type).toBe('main_actor');
+      
+      expect(mediaWithRelationships.directors).toHaveLength(1);
+      expect(mediaWithRelationships.directors?.[0].role_type).toBe('main_director');
+      
+      expect(mediaWithRelationships.media_themes).toHaveLength(2);
+      expect(mediaWithRelationships.media_themes?.[0].theme_name).toBe('drama');
+      
+      expect(mediaWithRelationships.additional_images).toHaveLength(2);
+      expect(mediaWithRelationships.additional_images?.[0].file_name).toBe('poster.jpg');
+      
+      // Test backward compatibility with deprecated fields
+      expect(mediaWithRelationships.actors_id_list).toEqual(['person-1', 'person-2']);
+      expect(mediaWithRelationships.directors_id_list).toEqual(['person-3']);
+      expect(mediaWithRelationships.producers_id_list).toEqual(['person-4']);
+      expect(mediaWithRelationships.additional_images_id_list).toEqual(['image-1', 'image-2']);
+    });
+    
+    it('should support relationship IDs in MediaDescriptionCreate', () => {
+      const createWithRelationships: MediaDescriptionCreate = {
+        file_number: 1250,
+        episode_title: 'Create with Relationships',
+        media_type: 'video',
+        slug: 'create_with_relationships',
+        tag_text_list: ['create', 'relationships'],
+        
+        // NEW: Relationship ID fields (for creation)
+        actor_ids: ['person-5', 'person-6', 'person-7'],
+        director_ids: ['person-8', 'person-9'],
+        producer_ids: ['person-10'],
+        media_theme_ids: ['theme-3', 'theme-4', 'theme-5'],
+        additional_image_ids: ['image-3', 'image-4'],
+      };
+      
+      expect(createWithRelationships.actor_ids).toHaveLength(3);
+      expect(createWithRelationships.director_ids).toHaveLength(2);
+      expect(createWithRelationships.producer_ids).toHaveLength(1);
+      expect(createWithRelationships.media_theme_ids).toHaveLength(3);
+      expect(createWithRelationships.additional_image_ids).toHaveLength(2);
+    });
+    
+    it('should handle empty relationship arrays', () => {
+      const mediaWithEmptyRelationships: MediaDescription = {
+        id: 'media-empty',
+        creation_date_utc: '2024-01-15T10:30:00Z',
+        file_number: 1251,
+        episode_title: 'Media with Empty Relationships',
+        media_type: 'video',
+        
+        // Empty relationship arrays should be valid
+        actors: [],
+        directors: [],
+        producers: [],
+        media_themes: [],
+        additional_images: [],
+      };
+      
+      expect(mediaWithEmptyRelationships.actors).toEqual([]);
+      expect(mediaWithEmptyRelationships.directors).toEqual([]);
+      expect(mediaWithEmptyRelationships.producers).toEqual([]);
+      expect(mediaWithEmptyRelationships.media_themes).toEqual([]);
+      expect(mediaWithEmptyRelationships.additional_images).toEqual([]);
     });
   });
 });

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, HttpUrl
+from pydantic import BaseModel, Field, field_validator, HttpUrl, ConfigDict
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -60,8 +60,7 @@ class PictureInDB(PictureBase):
     id: UUID
     creation_date_utc: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Picture(PictureInDB):

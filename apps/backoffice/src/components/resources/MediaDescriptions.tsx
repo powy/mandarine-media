@@ -42,12 +42,15 @@ import {
   OriginCountryInput,
   AvailableCountryInput,
   OriginalLanguageInput,
+  AvailableSubtitleLanguageInput,
+  AvailableAudioLanguageInput,
   AudienceCategoryInput,
   EligiblePlanInput,
   TrailerInput,
   ExcerptInput,
   MediaCategoriesInput,
   MediaThemeInput,
+  AdditionalImageInput,
 } from '../inputs/RelationshipInputs';
 
 // UUID validation regex
@@ -104,6 +107,9 @@ const transformFormData = (data: any) => {
   if (transformed.hashtags_text_list) {
     transformed.hashtags_text_list = transformTextToJsonArray(transformed.hashtags_text_list);
   }
+  if (transformed.tags) {
+    transformed.tags = transformTextToJsonArray(transformed.tags);
+  }
   if (transformed.human_keywords_text_list) {
     transformed.human_keywords_text_list = transformTextToJsonArray(transformed.human_keywords_text_list);
   }
@@ -154,6 +160,7 @@ export const MediaDescriptionList = () => (
       <NumberField source="file_number" />
       <TextField source="content_status" label="Status" />
       <BooleanField source="is_featured" label="Featured" />
+      <NumberField source="paid_token_cost" label="Token Cost" />
       <DateField source="creation_date_utc" />
       <EditButton />
       <ShowButton />
@@ -204,6 +211,24 @@ export const MediaDescriptionCreate = () => (
       <MediaCategoriesInput />
       <MediaThemeInput />
       
+      {/* v1.9 Fields */}
+      <TextInput
+        source="tags"
+        label="Tags"
+        multiline
+        rows={2}
+        fullWidth
+        placeholder="drama, romance, comedy"
+        helperText="Enter tags separated by commas (replaces human keywords)"
+        format={transformJsonArrayToText}
+      />
+      <TextInput 
+        source="slug" 
+        label="Slug (Optional)" 
+        fullWidth
+        helperText="SEO-friendly URL slug (auto-generated if not provided)"
+      />
+      
       {/* Production Information */}
       <NumberInput source="production_year" />
       <SelectInput 
@@ -228,6 +253,8 @@ export const MediaDescriptionCreate = () => (
       <OriginCountryInput />
       <AvailableCountryInput />
       <OriginalLanguageInput />
+      <AvailableSubtitleLanguageInput />
+      <AvailableAudioLanguageInput />
       
       {/* Business Information */}
       <AudienceCategoryInput />
@@ -236,6 +263,9 @@ export const MediaDescriptionCreate = () => (
       {/* Related Videos */}
       <TrailerInput />
       <ExcerptInput />
+      
+      {/* Additional Images */}
+      <AdditionalImageInput />
       
       {/* Contract and Rights Fields */}
       <DateInput 
@@ -279,18 +309,17 @@ export const MediaDescriptionCreate = () => (
       />
       <TextInput 
         source="human_keywords_text_list" 
-        label="Human Keywords" 
+        label="Human Keywords (Deprecated)" 
         multiline rows={2} 
         fullWidth 
         placeholder="romance, drama, love story"
-        helperText="Enter human-friendly keywords separated by commas"
+        helperText="DEPRECATED: Use Tags field instead. Enter human-friendly keywords separated by commas"
         format={transformJsonArrayToText}
       />
       
       {/* Metadata Fields */}
       <TextInput source="external_identifier_text" label="External Identifier" fullWidth />
-      <TextInput source="friendly_url" label="Friendly URL" fullWidth />
-      <TextInput source="slug" label="Slug" fullWidth />
+      <TextInput source="friendly_url" label="Friendly URL (Deprecated)" fullWidth helperText="DEPRECATED: Use slug field instead" />
       
       {/* Image Fields */}
       <PictureInput source="image_1920_1080_id" label="Image 1920x1080" allowDirectUUID={true} />
@@ -298,6 +327,17 @@ export const MediaDescriptionCreate = () => (
       <PictureInput source="image_1080_1080_id" label="Image 1080x1080" allowDirectUUID={true} />
       <PictureInput source="image_810_1080_id" label="Image 810x1080" allowDirectUUID={true} />
       <PictureInput source="image_1080_1920_id" label="Image 1080x1920" allowDirectUUID={true} />
+      
+      {/* New v1.6 Image Fields */}
+      <PictureInput source="image_mobile_home" label="Mobile Home Image" allowDirectUUID={true} helperText="Optimized image for mobile home screen" />
+      <PictureInput source="image_desktop_home" label="Desktop Home Image" allowDirectUUID={true} helperText="Optimized image for desktop home screen" />
+
+      {/* Revenue Fields */}
+      <NumberInput source="translation_share" label="Translation Share" />
+      <NumberInput source="sacem_share" label="SACEM Share" />
+      <NumberInput source="other_share" label="Other Share" />
+      <NumberInput source="revenue_share" label="Revenue Share" />
+      <NumberInput source="paid_token_cost" label="Paid Token Cost" />
     </SimpleForm>
   </Create>
 );
@@ -344,6 +384,24 @@ export const MediaDescriptionEdit = () => (
       <MediaCategoriesInput />
       <MediaThemeInput />
       
+      {/* v1.9 Fields */}
+      <TextInput
+        source="tags"
+        label="Tags"
+        multiline
+        rows={2}
+        fullWidth
+        placeholder="drama, romance, comedy"
+        helperText="Enter tags separated by commas (replaces human keywords)"
+        format={transformJsonArrayToText}
+      />
+      <TextInput 
+        source="slug" 
+        label="Slug (Optional)" 
+        fullWidth
+        helperText="SEO-friendly URL slug (auto-generated if not provided)"
+      />
+      
       {/* Production Information */}
       <NumberInput source="production_year" />
       <SelectInput 
@@ -367,6 +425,8 @@ export const MediaDescriptionEdit = () => (
       <OriginCountryInput />
       <AvailableCountryInput />
       <OriginalLanguageInput />
+      <AvailableSubtitleLanguageInput />
+      <AvailableAudioLanguageInput />
       
       {/* Business Information */}
       <AudienceCategoryInput />
@@ -375,6 +435,9 @@ export const MediaDescriptionEdit = () => (
       {/* Related Videos */}
       <TrailerInput />
       <ExcerptInput />
+      
+      {/* Additional Images */}
+      <AdditionalImageInput />
       
       {/* Contract and Rights Fields */}
       <DateInput 
@@ -415,18 +478,17 @@ export const MediaDescriptionEdit = () => (
       />
       <TextInput 
         source="human_keywords_text_list" 
-        label="Human Keywords" 
+        label="Human Keywords (Deprecated)" 
         multiline rows={2} 
         fullWidth 
         placeholder="romance, drama, love story"
-        helperText="Enter human-friendly keywords separated by commas"
+        helperText="DEPRECATED: Use Tags field instead. Enter human-friendly keywords separated by commas"
         format={transformJsonArrayToText}
       />
       
       {/* Metadata Fields */}
       <TextInput source="external_identifier_text" label="External Identifier" fullWidth />
-      <TextInput source="friendly_url" label="Friendly URL" fullWidth />
-      <TextInput source="slug" label="Slug" fullWidth />
+      <TextInput source="friendly_url" label="Friendly URL (Deprecated)" fullWidth helperText="DEPRECATED: Use slug field instead" />
       
       {/* Image Fields */}
       <PictureInput source="image_1920_1080_id" label="Image 1920x1080" allowDirectUUID={true} />
@@ -434,6 +496,17 @@ export const MediaDescriptionEdit = () => (
       <PictureInput source="image_1080_1080_id" label="Image 1080x1080" allowDirectUUID={true} />
       <PictureInput source="image_810_1080_id" label="Image 810x1080" allowDirectUUID={true} />
       <PictureInput source="image_1080_1920_id" label="Image 1080x1920" allowDirectUUID={true} />
+      
+      {/* New v1.6 Image Fields */}
+      <PictureInput source="image_mobile_home" label="Mobile Home Image" allowDirectUUID={true} helperText="Optimized image for mobile home screen" />
+      <PictureInput source="image_desktop_home" label="Desktop Home Image" allowDirectUUID={true} helperText="Optimized image for desktop home screen" />
+
+      {/* Revenue Fields */}
+      <NumberInput source="translation_share" label="Translation Share" />
+      <NumberInput source="sacem_share" label="SACEM Share" />
+      <NumberInput source="other_share" label="Other Share" />
+      <NumberInput source="revenue_share" label="Revenue Share" />
+      <NumberInput source="paid_token_cost" label="Paid Token Cost" />
     </SimpleForm>
   </Edit>
 );
@@ -504,6 +577,18 @@ export const MediaDescriptionShow = () => (
           <ChipField source="name" />
         </SingleFieldList>
       </ArrayField>
+
+      <ArrayField source="available_subtitle_languages" label="Available Subtitle Languages">
+        <SingleFieldList>
+          <ChipField source="name" />
+        </SingleFieldList>
+      </ArrayField>
+
+      <ArrayField source="available_audio_languages" label="Available Audio Languages">
+        <SingleFieldList>
+          <ChipField source="name" />
+        </SingleFieldList>
+      </ArrayField>
       
       <ArrayField source="audience_categories" label="Audience Categories">
         <SingleFieldList>
@@ -516,9 +601,68 @@ export const MediaDescriptionShow = () => (
           <ChipField source="name" />
         </SingleFieldList>
       </ArrayField>
-      
+
+      {/* Tags field */}
+      <FunctionField label="Tags" render={(record: any) => {
+        if (!record.tags || !Array.isArray(record.tags) || record.tags.length === 0) {
+          return <span style={{ color: '#999' }}>No tags</span>;
+        }
+        return (
+          <div>
+            {record.tags.map((tag: string, index: number) => (
+              <span
+                key={index}
+                style={{
+                  display: 'inline-block',
+                  background: '#f0f0f0',
+                  padding: '4px 8px',
+                  margin: '2px',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        );
+      }} />
+
+      {/* Human Keywords (for comparison/debugging) */}
+      <FunctionField label="Human Keywords" render={(record: any) => {
+        if (!record.human_keywords_text_list || !Array.isArray(record.human_keywords_text_list) || record.human_keywords_text_list.length === 0) {
+          return <span style={{ color: '#999' }}>No human keywords</span>;
+        }
+        return (
+          <div>
+            {record.human_keywords_text_list.map((keyword: string, index: number) => (
+              <span
+                key={index}
+                style={{
+                  display: 'inline-block',
+                  background: '#e8f4fd',
+                  padding: '4px 8px',
+                  margin: '2px',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {keyword}
+              </span>
+            ))}
+          </div>
+        );
+      }} />
+
       <DateField source="creation_date_utc" />
       <DateField source="last_updated_utc" />
+
+      {/* Revenue Fields */}
+      <NumberField source="translation_share" label="Translation Share" />
+      <NumberField source="sacem_share" label="SACEM Share" />
+      <NumberField source="other_share" label="Other Share" />
+      <NumberField source="revenue_share" label="Revenue Share" />
+      <NumberField source="paid_token_cost" label="Paid Token Cost" />
     </SimpleShowLayout>
   </Show>
 );

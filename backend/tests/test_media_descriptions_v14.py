@@ -84,7 +84,6 @@ def sample_media_v14_data(created_program, created_season, created_language, cre
         "descriptive_summary_text": "This is a test episode with v1.4 fields",
         "synopsis_text": "Test synopsis with v1.4 support",
         "production_year": 2025,
-        "is_premium_content": False,
         "is_featured": False,
         "content_status": "published",
         # v1.4 new fields
@@ -95,8 +94,10 @@ def sample_media_v14_data(created_program, created_season, created_language, cre
         "origin_country_ids": [created_country["id"]],
         "original_language_ids": [created_language["id"]],
         "available_country_ids": [created_country["id"]],
-        "eligible_plan_id_list": ["02426167-3058-418b-a267-e05da5c1c27e"],
+        "eligible_plan_ids": [str(uuid.uuid4())],
         "audience_category_ids": [str(uuid.uuid4())],
+        "media_theme_ids": [str(uuid.uuid4())],
+        "additional_image_ids": [str(uuid.uuid4())],
         "image_1920_1080_id": str(uuid.uuid4()),
         "image_1920_720_id": str(uuid.uuid4()),
         "image_1080_1080_id": str(uuid.uuid4()),
@@ -132,10 +133,10 @@ class TestMediaDescriptionsV14:
         assert data["program_id"] == sample_media_v14_data["program_id"]
         assert data["season_id"] == sample_media_v14_data["season_id"]
         
-        # Check v1.4 fields (API returns JSON array field names)
-        assert "actors_id_list" in data or "actor_ids" in data
-        assert "directors_id_list" in data or "director_ids" in data
-        assert "eligible_plans_id_list" in data or "eligible_plan_id_list" in data
+        # Check v1.4 relationship fields
+        assert "actors" in data  # Now returns relationship objects, not ID lists
+        assert "directors" in data
+        assert "eligible_plans" in data  # This is now a relationship
         
         # Check image fields (current schema field names)
         assert "image_1920_1080_id" in data
@@ -240,7 +241,7 @@ class TestMediaDescriptionsV14:
             "image_1920_1080_id": str(uuid.uuid4()),
             "translation_share": 20.0,
             "sacem_share": 15.0,
-            "eligible_plan_id_list": ["02426167-3058-418b-a267-e05da5c1c27e"],
+            "eligible_plan_ids": [str(uuid.uuid4())],
             "actor_ids": [str(uuid.uuid4()), str(uuid.uuid4())]
         }
         
@@ -251,8 +252,8 @@ class TestMediaDescriptionsV14:
         assert "image_1920_1080_id" in data
         assert "translation_share" in data
         assert "sacem_share" in data
-        assert "eligible_plans_id_list" in data or "eligible_plan_id_list" in data
-        assert "actors_id_list" in data or "actor_ids" in data
+        assert "eligible_plans" in data  # Now returns relationship objects
+        assert "actors" in data  # Now returns relationship objects
 
     def test_list_media_with_v14_fields(self, client, user_token, admin_token, sample_media_v14_data):
         """Test listing media descriptions includes v1.4 fields."""
@@ -355,3 +356,43 @@ class TestMediaDescriptionsV14:
         # Check that empty arrays are handled properly
         # API may return either input field names or JSON array field names
         assert response.status_code == 200
+
+    def test_update_revenue_fields(self, client, admin_token):
+        """Test updating revenue fields via PUT endpoint."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # First create a media description
+        create_data = {
+            "file_number": 99999,
+            "episode_title": "Revenue Update Test",
+            "media_type": "video",
+            "content_status": "draft"
+        }
+
+        create_response = client.post("/api/v1/media-descriptions", json=create_data, headers=headers)
+        assert create_response.status_code == 200
+        created = create_response.json()
+        media_id = created["id"]
+
+        # Update with revenue fields
+        update_data = {
+            "paid_token_cost": 250,
+            "translation_share": 0.35,
+            "sacem_share": 0.15,
+            "other_share": 0.08,
+            "revenue_share": 0.42
+        }
+
+        update_response = client.put(f"/api/v1/media-descriptions/{media_id}", json=update_data, headers=headers)
+        assert update_response.status_code == 200
+
+        # Verify the fields were updated by fetching the record
+        get_response = client.get(f"/api/v1/media-descriptions/{media_id}", headers=headers)
+        assert get_response.status_code == 200
+        updated_data = get_response.json()
+
+        assert updated_data["paid_token_cost"] == 250
+        assert updated_data["translation_share"] == 0.35
+        assert updated_data["sacem_share"] == 0.15
+        assert updated_data["other_share"] == 0.08
+        assert updated_data["revenue_share"] == 0.42

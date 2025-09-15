@@ -76,10 +76,10 @@ class BaseStorageBackend(ABC):
     def generate_file_path(self, file_info: MediaFileInfo) -> str:
         """Generate a storage path for the file."""
         import uuid
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         # Create a path structure: media_type/year/month/uuid_filename
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         file_id = str(uuid.uuid4())
         
         # Clean filename

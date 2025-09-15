@@ -13,9 +13,10 @@ from app.models.common import GUID, JSONArray
 from app.core.config import settings
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import (
-    user, media_description, video_file, public_person, subscription_plan, 
+    user, media_description, video_file, public_person, subscription_plan,
     audience_category, description_report, video_file_report,
-    program, season, language, country, picture, content_list, screen_description
+    program, season, language, country, picture, screen_description, media_theme, media_showcase,
+    media_description_person
 )
 
 # this is the Alembic Config object, which provides

@@ -12,7 +12,12 @@ from app.models.country import Country
 from app.models.language import Language
 from app.models.audience_category import AudienceCategory
 from app.models.subscription_plan import SubscriptionPlan
+from app.models.media_theme import MediaTheme
+from app.models.picture import Picture
+from app.models.media_description_person import MediaDescriptionPerson
 from app.schemas.media_description import MediaDescriptionCreate, MediaDescriptionUpdate
+from app.schemas.media_description_person import PersonRoleCreate
+from app.crud.media_description_person import media_description_person
 
 
 class CRUDMediaDescription(
@@ -44,17 +49,18 @@ class CRUDMediaDescription(
         return (
             db.query(MediaDescription)
             .options(
-                joinedload(MediaDescription.actors),
-                joinedload(MediaDescription.directors),
-                joinedload(MediaDescription.producers),
-                joinedload(MediaDescription.authors),
+                joinedload(MediaDescription.people_roles),
                 joinedload(MediaDescription.origin_countries),
                 joinedload(MediaDescription.available_countries),
                 joinedload(MediaDescription.original_languages),
+                joinedload(MediaDescription.available_subtitle_languages),
+                joinedload(MediaDescription.available_audio_languages),
                 joinedload(MediaDescription.audience_categories),
-                joinedload(MediaDescription.eligible_plan_id_list),
+                joinedload(MediaDescription.eligible_plans),
                 joinedload(MediaDescription.trailers),
                 joinedload(MediaDescription.excerpts),
+                joinedload(MediaDescription.media_themes),
+                joinedload(MediaDescription.additional_images),
             )
             .filter(MediaDescription.id == id)
             .first()
@@ -99,6 +105,22 @@ class CRUDMediaDescription(
 
         return query.offset(skip).limit(limit).all()
 
+    def get_by_slug(self, db: Session, *, slug: str) -> Optional[MediaDescription]:
+        """Get media description by slug"""
+        return db.query(self.model).filter(self.model.slug == slug).first()
+
+    def ensure_unique_slug(self, db: Session, *, base_slug: str) -> str:
+        """Ensure slug is unique by appending numbers if necessary"""
+        if not self.get_by_slug(db, slug=base_slug):
+            return base_slug
+
+        counter = 2
+        while True:
+            candidate = f"{base_slug}_{counter}"
+            if not self.get_by_slug(db, slug=candidate):
+                return candidate
+            counter += 1
+
     def create(
         self, db: Session, *, obj_in: MediaDescriptionCreate
     ) -> MediaDescription:
@@ -113,18 +135,27 @@ class CRUDMediaDescription(
             "director_ids",
             "producer_ids",
             "author_ids",
+            "people_roles",  # Add the new unified people field
             "origin_country_ids",
             "available_country_ids",
             "original_language_ids",
+            "available_subtitle_language_ids",
+            "available_audio_language_ids",
             "audience_category_ids",
-            "eligible_plan_id_list",
+            "eligible_plan_ids",
             "trailer_ids",
             "excerpt_ids",
+            "media_theme_ids",
+            "additional_image_ids",
         ]:
             if field in obj_data:
                 value = obj_data.pop(field)
                 if value:  # Only store non-empty values for relationship processing
                     relationship_data[field] = value
+
+        # Ensure slug uniqueness if provided
+        if obj_data.get("slug"):
+            obj_data["slug"] = self.ensure_unique_slug(db=db, base_slug=obj_data["slug"])
 
         # Create the base object
         obj_data["id"] = str(uuid4())
@@ -153,13 +184,18 @@ class CRUDMediaDescription(
             "director_ids",
             "producer_ids",
             "author_ids",
+            "people_roles",  # Add the new unified people field
             "origin_country_ids",
             "available_country_ids",
             "original_language_ids",
+            "available_subtitle_language_ids",
+            "available_audio_language_ids",
             "audience_category_ids",
-            "eligible_plan_id_list",
+            "eligible_plan_ids",
             "trailer_ids",
             "excerpt_ids",
+            "media_theme_ids",
+            "additional_image_ids",
         ]:
             if field in obj_data:
                 relationship_data[field] = obj_data.pop(field)
@@ -182,41 +218,71 @@ class CRUDMediaDescription(
     ):
         """Helper method to set up many-to-many relationships"""
 
-        # Actors
-        if "actor_ids" in relationship_data:
-            actors = (
-                db.query(PublicPerson)
-                .filter(PublicPerson.id.in_(relationship_data["actor_ids"]))
-                .all()
-            )
-            db_obj.actors = actors
+        # Handle people relationships: convert individual role fields to unified people_roles
+        # Check if we have individual role fields to convert or direct people_roles
+        people_roles_to_create = []
 
-        # Directors
-        if "director_ids" in relationship_data:
-            directors = (
-                db.query(PublicPerson)
-                .filter(PublicPerson.id.in_(relationship_data["director_ids"]))
-                .all()
-            )
-            db_obj.directors = directors
+        # Collect individual role fields and convert to people_roles format
+        role_mappings = {
+            "actor_ids": "actor",
+            "director_ids": "director",
+            "producer_ids": "producer",
+            "author_ids": "author"
+        }
 
-        # Producers
-        if "producer_ids" in relationship_data:
-            producers = (
-                db.query(PublicPerson)
-                .filter(PublicPerson.id.in_(relationship_data["producer_ids"]))
-                .all()
-            )
-            db_obj.producers = producers
+        for field_name, role_name in role_mappings.items():
+            if field_name in relationship_data and relationship_data[field_name]:
+                # Validate that the person IDs exist
+                person_ids = relationship_data[field_name]
+                existing_persons = (
+                    db.query(PublicPerson)
+                    .filter(PublicPerson.id.in_(person_ids))
+                    .all()
+                )
 
-        # Authors
-        if "author_ids" in relationship_data:
-            authors = (
+                # Create people_roles entries with position based on order
+                # Fix: Start from position 10 to avoid auto-position conflict (position 0 gets auto-assigned)
+                for position, person in enumerate(existing_persons):
+                    people_roles_to_create.append({
+                        "public_person_id": str(person.id),
+                        "role": role_name,
+                        "position": (position + 1) * 10  # 10, 20, 30, 40... for ordering (avoid 0)
+                    })
+
+        # Handle direct people_roles input (takes precedence over individual role fields)
+        if "people_roles" in relationship_data:
+            # Validate that the person IDs exist in people_roles
+            validated_roles = []
+            person_ids = [role["public_person_id"] for role in relationship_data["people_roles"]]
+            existing_persons = (
                 db.query(PublicPerson)
-                .filter(PublicPerson.id.in_(relationship_data["author_ids"]))
+                .filter(PublicPerson.id.in_(person_ids))
                 .all()
             )
-            db_obj.authors = authors
+            existing_person_ids = {str(person.id) for person in existing_persons}
+
+            # Only include roles for existing persons
+            for role in relationship_data["people_roles"]:
+                if role["public_person_id"] in existing_person_ids:
+                    validated_roles.append(role)
+
+            people_roles_to_create = validated_roles
+        # Create people relationships if we have any roles to process
+        if people_roles_to_create:
+            # Clear existing people relationships
+            db.query(MediaDescriptionPerson).filter(
+                MediaDescriptionPerson.media_description_id == db_obj.id
+            ).delete()
+
+            # Create new relationships using the bulk create method
+            people_roles = [
+                PersonRoleCreate(**role_data) for role_data in people_roles_to_create
+            ]
+            media_description_person.bulk_create_for_media(
+                db=db,
+                media_description_id=db_obj.id,
+                people_roles=people_roles
+            )
 
         # Origin Countries
         if "origin_country_ids" in relationship_data:
@@ -245,6 +311,24 @@ class CRUDMediaDescription(
             )
             db_obj.original_languages = languages
 
+        # Available Subtitle Languages
+        if "available_subtitle_language_ids" in relationship_data:
+            languages = (
+                db.query(Language)
+                .filter(Language.id.in_(relationship_data["available_subtitle_language_ids"]))
+                .all()
+            )
+            db_obj.available_subtitle_languages = languages
+
+        # Available Audio Languages
+        if "available_audio_language_ids" in relationship_data:
+            languages = (
+                db.query(Language)
+                .filter(Language.id.in_(relationship_data["available_audio_language_ids"]))
+                .all()
+            )
+            db_obj.available_audio_languages = languages
+
         # Audience Categories
         if "audience_category_ids" in relationship_data:
             categories = (
@@ -257,15 +341,15 @@ class CRUDMediaDescription(
             db_obj.audience_categories = categories
 
         # Eligible Plans
-        if "eligible_plan_id_list" in relationship_data:
+        if "eligible_plan_ids" in relationship_data:
             plans = (
                 db.query(SubscriptionPlan)
                 .filter(
-                    SubscriptionPlan.id.in_(relationship_data["eligible_plan_id_list"])
+                    SubscriptionPlan.id.in_(relationship_data["eligible_plan_ids"])
                 )
                 .all()
             )
-            db_obj.eligible_plan_id_list = plans
+            db_obj.eligible_plans = plans
 
         # Trailers
         if "trailer_ids" in relationship_data:
@@ -285,12 +369,30 @@ class CRUDMediaDescription(
             )
             db_obj.excerpts = excerpts
 
+        # Media Themes
+        if "media_theme_ids" in relationship_data:
+            themes = (
+                db.query(MediaTheme)
+                .filter(MediaTheme.id.in_(relationship_data["media_theme_ids"]))
+                .all()
+            )
+            db_obj.media_themes = themes
+
+        # Additional Images
+        if "additional_image_ids" in relationship_data:
+            images = (
+                db.query(Picture)
+                .filter(Picture.id.in_(relationship_data["additional_image_ids"]))
+                .all()
+            )
+            db_obj.additional_images = images
+
     def get_by_theme(self, db: Session, *, theme_id: str) -> List[MediaDescription]:
         """Get all media descriptions with a specific theme"""
         return (
             db.query(MediaDescription)
-            .join(MediaDescription.themes)
-            .filter(Theme.id == theme_id)
+            .join(MediaDescription.media_themes)
+            .filter(MediaTheme.id == theme_id)
             .all()
         )
 
@@ -462,15 +564,57 @@ class CRUDMediaDescription(
             .filter(MediaDescription.media_type == "video")
             .all()
         )
-        
+
         season_videos = {}
         for video in videos_with_seasons:
             season_id = str(video.season_id)
             if season_id not in season_videos:
                 season_videos[season_id] = []
             season_videos[season_id].append(video)
-        
+
         return season_videos
+
+    def remove(self, db: Session, *, id: UUID) -> MediaDescription:
+        """
+        Remove media description with eager loading to avoid DetachedInstanceError.
+
+        This method overrides the base remove method to ensure all relationships
+        are loaded before deletion to prevent lazy loading issues when serializing
+        the response.
+        """
+        # First, get the object with all relationships eagerly loaded
+        obj = (
+            db.query(self.model)
+            .options(
+                # Load people relationships with their public_person data
+                joinedload(MediaDescription.people_roles).joinedload(MediaDescriptionPerson.public_person),
+                # Load all other relationships that might be accessed in the schema
+                joinedload(MediaDescription.origin_countries),
+                joinedload(MediaDescription.available_countries),
+                joinedload(MediaDescription.original_languages),
+                joinedload(MediaDescription.available_subtitle_languages),
+                joinedload(MediaDescription.available_audio_languages),
+                joinedload(MediaDescription.audience_categories),
+                joinedload(MediaDescription.eligible_plans),
+                joinedload(MediaDescription.trailers),
+                joinedload(MediaDescription.excerpts),
+                joinedload(MediaDescription.media_themes),
+                joinedload(MediaDescription.additional_images),
+                # Load main relationships
+                joinedload(MediaDescription.main_video_file),
+                joinedload(MediaDescription.program),
+                joinedload(MediaDescription.season),
+            )
+            .filter(self.model.id == id)
+            .first()
+        )
+
+        if obj:
+            # Delete the object
+            db.delete(obj)
+            db.commit()
+
+        return obj
 
 
 media_description = CRUDMediaDescription(MediaDescription)

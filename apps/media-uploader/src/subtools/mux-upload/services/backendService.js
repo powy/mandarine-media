@@ -93,9 +93,9 @@ export class BackendService {
       if (!this.token) {
         await this.authenticate();
       }
-      
+
       const fileName = videoMetadata.external_id;
-      
+
       // Use title from video config, fallback to filename-generated title
       let title;
       if (this.config.video && this.config.video.title) {
@@ -105,7 +105,7 @@ export class BackendService {
         title = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '); // Remove extension and replace _ - with spaces
       }
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); // Generate slug
-      
+
       const videoFileData = {
         file_name: fileName,
         title: title,
@@ -116,7 +116,7 @@ export class BackendService {
         environment_text: this.config.settings?.environment_text || null,
         drm_protection: this.config.drm?.enabled || false
       };
-      
+
       // Add mux_asset_id if provided
       if (muxAssetId) {
         videoFileData.mux_asset_id = muxAssetId;

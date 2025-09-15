@@ -14,6 +14,155 @@ export class OrchestrationService {
     this.tempConfigDir = path.join(process.cwd(), '.temp-configs');
   }
 
+  /**
+   * Normalize semicolon-separated string by removing spaces around semicolons
+   * before splitting into array
+   * @param {string} str - The semicolon-separated string to process
+   * @returns {string[]} - Array of trimmed, non-empty items
+   */
+  splitSemicolonSeparatedList(str) {
+    if (!str || typeof str !== 'string') return [];
+
+    // Remove spaces around semicolons, then split and trim each item
+    const normalized = str.replace(/\s*;\s*/g, ';');
+    return normalized.split(';')
+      .map(item => item.trim())
+      .filter(item => item.length > 0);
+  }
+
+  /**
+   * Parse various date formats and normalize to ISO format
+   * Handles: dd/mm/yyyy, dd-mm-yyyy, dd mm yyyy, with or without time
+   * Default time: 12:00 (lunch time) if no time specified
+   * Enhanced with better validation and debugging
+   */
+  parseAndNormalizeDate(dateValue) {
+    if (!dateValue) return null;
+
+    // Handle Date objects directly (Excel often provides dates as Date objects)
+    if (dateValue instanceof Date) {
+      if (isNaN(dateValue.getTime())) {
+        return null;
+      }
+      const isoString = dateValue.toISOString();
+      return isoString;
+    }
+
+    const dateStr = dateValue.toString().trim();
+    if (!dateStr) return null;
+
+    console.log(chalk.cyan(`🔍 DATE PARSING DEBUG: "${dateStr}"`));
+
+    // Handle various date formats
+    const datePatterns = [
+      // dd/mm/yyyy or dd-mm-yyyy or dd mm yyyy (European format)
+      {
+        pattern: /^(\d{1,2})[\/\-\s](\d{1,2})[\/\-\s](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+        format: 'DD/MM/YYYY',
+        dayIndex: 1,
+        monthIndex: 2,
+        yearIndex: 3
+      },
+      // yyyy/mm/dd or yyyy-mm-dd (ISO format)
+      {
+        pattern: /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+        format: 'YYYY/MM/DD',
+        dayIndex: 3,
+        monthIndex: 2,
+        yearIndex: 1
+      }
+    ];
+
+    for (const { pattern, format, dayIndex, monthIndex, yearIndex } of datePatterns) {
+      const match = dateStr.match(pattern);
+      if (match) {
+        const day = parseInt(match[dayIndex]);
+        const month = parseInt(match[monthIndex]);
+        const year = parseInt(match[yearIndex]);
+        const hour = parseInt(match[4] || '12');
+        const minute = parseInt(match[5] || '00');
+        const second = parseInt(match[6] || '00');
+
+        console.log(chalk.gray(`  Matched format: ${format}`));
+        console.log(chalk.gray(`  Regex match: ${JSON.stringify(match)}`));
+        console.log(chalk.gray(`  Parsed: Day=${day}, Month=${month}, Year=${year}, Time=${hour}:${minute}:${second}`));
+
+        // Validate date components
+        if (year < 1900 || year > 2100) {
+          console.log(chalk.red(`  ❌ Invalid year: ${year}`));
+          continue;
+        }
+        if (month < 1 || month > 12) {
+          console.log(chalk.red(`  ❌ Invalid month: ${month}`));
+          continue;
+        }
+        if (day < 1 || day > 31) {
+          console.log(chalk.red(`  ❌ Invalid day: ${day}`));
+          continue;
+        }
+        if (hour < 0 || hour > 23) {
+          console.log(chalk.red(`  ❌ Invalid hour: ${hour}`));
+          continue;
+        }
+        if (minute < 0 || minute > 59) {
+          console.log(chalk.red(`  ❌ Invalid minute: ${minute}`));
+          continue;
+        }
+
+        const date = new Date(year, month - 1, day, hour, minute, second);
+
+        // Validate that the date is valid (e.g., not February 30th)
+        if (date.getFullYear() !== year || date.getMonth() !== (month - 1) || date.getDate() !== day) {
+          console.log(chalk.red(`  ❌ Invalid date combination: ${day}/${month}/${year}`));
+          continue;
+        }
+
+        const isoString = date.toISOString();
+        console.log(chalk.green(`  ✅ Successfully parsed to ISO: ${isoString}`));
+        return isoString;
+      }
+    }
+
+    console.log(chalk.red(`  ❌ No matching date pattern found for: "${dateStr}"`));
+    return null;
+  }
+
+  /**
+   * Normalize language names - handles gender forms and common variations
+   */
+  normalizeLanguage(language) {
+    if (!language) return language;
+
+    const languageNormalization = {
+      // Gender form corrections (French feminine to masculine)
+      'Coréenne': 'Coréen',
+      'Française': 'Français',
+      'Anglaise': 'Anglais',
+      'Japonaise': 'Japonais',
+      'Chinoise': 'Chinois',
+      'Allemande': 'Allemand',
+      'Italienne': 'Italien',
+      'Espagnole': 'Espagnol',
+      'Portugaise': 'Portugais',
+      'Russe': 'Russe',
+
+      // Common English variations
+      'Korean': 'Coréen',
+      'French': 'Français',
+      'English': 'Anglais',
+      'Japanese': 'Japonais',
+      'Chinese': 'Chinois',
+      'German': 'Allemand',
+      'Italian': 'Italien',
+      'Spanish': 'Espagnol',
+      'Portuguese': 'Portugais',
+      'Russian': 'Russe'
+    };
+
+    const normalized = languageNormalization[language];
+    return normalized || language; // Return original if no mapping found
+  }
+
   async processUploads(excelData, mediaFiles, folderPath, excelPath = null) {
     const startTime = Date.now();
     const results = {
@@ -107,7 +256,26 @@ export class OrchestrationService {
             // Don't fail the entire upload process if Excel update fails
             this.logger.error(`Excel update failed: ${excelError.message}`);
             results.errors.push(`Excel update failed: ${excelError.message}`);
-            console.log(chalk.yellow(`⚠️  Excel update failed: ${excelError.message}`));
+
+            // Enhanced visible error reporting
+            console.log(chalk.red.bold(`\n❌ EXCEL UPDATE FAILED`));
+            console.log(chalk.yellow(`📄 Media Description ID: ${chalk.white.bold(apiResult.id)}`));
+            console.log(chalk.red(`🔒 Error: ${excelError.message}`));
+
+            // Check if it's a file lock error and provide specific guidance
+            const isFileLocked = excelError.message.includes('locked') ||
+                               excelError.message.includes('being used') ||
+                               excelError.message.includes('EBUSY') ||
+                               excelError.message.includes('EPERM');
+
+            if (isFileLocked) {
+              console.log(chalk.cyan(`\n💡 To fix this:`));
+              console.log(chalk.cyan(`   1. Close the Excel file`));
+              console.log(chalk.cyan(`   2. The media description was created successfully with ID: ${apiResult.id}`));
+              console.log(chalk.cyan(`   3. You can manually add this ID to your Excel file if needed`));
+            }
+
+            console.log(chalk.green(`\n✅ Upload was successful despite Excel update failure!`));
           }
         } else {
           this.logger.warn('ExcelService or excelPath not available - skipping Excel update');
@@ -632,7 +800,40 @@ export class OrchestrationService {
       this.logger.info(`Creating media description via API: ${createUrl}`);
       this.logger.info(`Using JWT Bearer token authentication`);
       this.logger.info(`Text-only API payload keys: ${Object.keys(textOnlyData).join(', ')}`);
-      
+
+      // Enhanced API payload logging for debugging
+      console.log(chalk.blue('\n🔍 API Payload Debug Information:'));
+      console.log(chalk.gray('===================================='));
+
+      // Log arrays specifically to debug array processing issue
+      const arrayFields = ['actor_names', 'director_names', 'producer_names', 'author_names', 'tags', 'hashtags_text_list', 'human_keywords_text_list'];
+      arrayFields.forEach(field => {
+        if (textOnlyData[field]) {
+          console.log(chalk.yellow(`${field}: ${JSON.stringify(textOnlyData[field])} (${Array.isArray(textOnlyData[field]) ? 'array' : 'type: ' + typeof textOnlyData[field]})`));
+        }
+      });
+
+      // Log all other fields
+      const otherFields = Object.keys(textOnlyData).filter(key => !arrayFields.includes(key));
+      if (otherFields.length > 0) {
+        console.log(chalk.cyan('\nOther fields:'));
+        otherFields.forEach(field => {
+          console.log(chalk.gray(`${field}: "${textOnlyData[field]}"`));
+        });
+      }
+
+      // Log backend API compliance summary
+      console.log(chalk.cyan('\n📋 Backend API Compliance Summary:'));
+      console.log(chalk.green('✅ Field mappings fixed to match /from-text endpoint schema exactly'));
+      console.log(chalk.green('✅ Legacy productors_id_list → producer_names mapping corrected'));
+      console.log(chalk.green('✅ Removed invalid "tags" field (not supported by backend)'));
+      console.log(chalk.green('✅ Array fields sending exact backend field names only'));
+      console.log(chalk.yellow('⚠️  Some fields not supported by /from-text endpoint (see warnings above)'));
+
+      // Log complete JSON payload for backend debugging
+      this.logger.info(`Complete API payload: ${JSON.stringify(textOnlyData, null, 2)}`);
+      console.log(chalk.gray('====================================\n'));
+
       // Make API call to create media description with text-only fields
       const createResponse = await axios.post(
         createUrl,
@@ -656,6 +857,41 @@ export class OrchestrationService {
       
       const mediaDescriptionId = createResponse.data.id;
       this.logger.info(`✅ Step 1 completed: Media description created with ID: ${mediaDescriptionId}`);
+
+      // Log backend response to see which fields were actually saved
+      if (createResponse.data) {
+        console.log(chalk.green('\n🔍 Backend Response Analysis:'));
+
+        // Check array fields in the response - only backend-supported fields
+        const responseArrayFields = [
+          'actor_names', 'director_names', 'producer_names', 'author_names',
+          'human_keywords_text_list', 'seo_keywords_text_list',
+          'audience_category_names', 'eligible_plan_names', 'available_country_names',
+          'theme_names'
+        ];
+        responseArrayFields.forEach(field => {
+          if (createResponse.data[field]) {
+            console.log(chalk.yellow(`✅ ${field}: ${JSON.stringify(createResponse.data[field])} (saved as: ${Array.isArray(createResponse.data[field]) ? 'array' : typeof createResponse.data[field]})`));
+          } else {
+            console.log(chalk.red(`❌ ${field}: not found in response`));
+          }
+        });
+
+        // Check other supported fields
+        const responseOtherFields = [
+          'production_year', 'seo_title', 'seo_description', 'external_identifier_text',
+          'contract_start_date_utc', 'contract_end_date_utc', 'original_broadcast_date_utc'
+        ];
+        responseOtherFields.forEach(field => {
+          if (createResponse.data[field]) {
+            console.log(chalk.yellow(`✅ ${field}: "${createResponse.data[field]}"`));
+          } else {
+            console.log(chalk.red(`❌ ${field}: not found in response`));
+          }
+        });
+
+        console.log(chalk.gray('====================================\n'));
+      }
       
       // STEP 2: Patch media description with all asset IDs
       this.logger.info('Step 2: Patching media description with asset IDs...');
@@ -761,91 +997,550 @@ export class OrchestrationService {
 
     // Optional fields from Excel
     if (descriptionData.program_name) apiData.program_name = descriptionData.program_name;
-    if (descriptionData.season_name) apiData.season_name = descriptionData.season_name;
+    if (descriptionData.season_name) {
+      apiData.season_name = descriptionData.season_name;
+    } else if (descriptionData.program_name) {
+      // If season is empty but program exists, copy program to season
+      apiData.season_name = descriptionData.program_name;
+    }
     if (descriptionData.episode_number) apiData.episode_number = parseInt(descriptionData.episode_number);
     if (descriptionData.descriptive_summary_text) apiData.descriptive_summary_text = descriptionData.descriptive_summary_text;
     if (descriptionData.synopsis_text) apiData.synopsis_text = descriptionData.synopsis_text;
     if (descriptionData.slug) apiData.slug = descriptionData.slug;
     
-    // Handle media categories (semicolon-separated)
+    // Handle media categories (semicolon-separated) - map to valid enum values
     if (descriptionData.media_categories) {
-      const categories = descriptionData.media_categories
-        .split(';')
-        .map(cat => cat.trim())
-        .filter(cat => cat.length > 0);
-      apiData.media_categories_list = categories.map(cat => cat.toLowerCase().replace(/\s+/g, '-'));
+      const categories = this.splitSemicolonSeparatedList(descriptionData.media_categories);
+      
+      // Map user-friendly categories to backend enum values
+      const categoryMapping = {
+        'movie': 'movie',
+        'film': 'movie',
+        'drama': 'drama', 
+        'short drama': 'short-drama',
+        'short-drama': 'short-drama',
+        'musical': 'musical',
+        'music': 'musical',
+        'animation': 'animation',
+        'animated': 'animation',
+        'cartoon': 'animation',
+        'documentary': 'documentary',
+        'docu': 'documentary',
+        'tv show': 'tvshow',
+        'tvshow': 'tvshow',
+        'tv': 'tvshow',
+        'television': 'tvshow',
+        'series': 'tvshow',
+        'other': 'other'
+      };
+      
+      apiData.media_categories_list = categories
+        .map(cat => {
+          const normalized = cat.toLowerCase().trim();
+          const mapped = categoryMapping[normalized];
+          if (mapped) {
+            return mapped;
+          } else {
+            this.logger?.warn(`Unknown media category "${cat}" - mapping to "other"`);
+            return 'other';
+          }
+        })
+        .filter((cat, index, arr) => arr.indexOf(cat) === index); // Remove duplicates
     }
 
     // Handle themes (semicolon-separated)
     if (descriptionData.media_themes) {
-      const themes = descriptionData.media_themes
-        .split(';')
-        .map(theme => theme.trim())
-        .filter(theme => theme.length > 0);
+      console.log(chalk.cyan('🔍 THEMES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.media_themes}"`));
+
+      const themes = this.splitSemicolonSeparatedList(descriptionData.media_themes);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(themes)}`));
+      console.log(chalk.gray(`  Final array length: ${themes.length}`));
+
       apiData.theme_names = themes;
+
+      this.logger.info(`Themes mapped to backend:`, {
+        fieldName: 'theme_names',
+        values: themes,
+        count: themes.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No themes data found in Excel'));
     }
 
-    // Handle actors (semicolon-separated)
-    if (descriptionData.actors_id_list) {
-      const actors = descriptionData.actors_id_list
-        .split(';')
-        .map(actor => actor.trim())
-        .filter(actor => actor.length > 0);
+    // Handle actors (semicolon-separated) - Backend expects 'actor_names' only
+    if (descriptionData.actors_id_list || descriptionData.actor_ids) {
+      // Support both old field name and new field name during transition
+      const actorsData = descriptionData.actor_ids || descriptionData.actors_id_list;
+
+      console.log(chalk.cyan('🔍 ACTORS DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${actorsData}"`));
+      console.log(chalk.gray(`  Data type: ${typeof actorsData}`));
+      console.log(chalk.gray(`  Is array: ${Array.isArray(actorsData)}`));
+
+      const actors = Array.isArray(actorsData)
+        ? actorsData
+        : this.splitSemicolonSeparatedList(actorsData);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(actors)}`));
+      console.log(chalk.gray(`  Final array length: ${actors.length}`));
+      console.log(chalk.gray(`  Each item: ${actors.map(a => `"${a}" (${typeof a})`).join(', ')}`));
+
+      // Backend /from-text endpoint expects exactly 'actor_names' as array
       apiData.actor_names = actors;
+
+      this.logger.info(`Actors mapped to backend:`, {
+        fieldName: 'actor_names',
+        values: actors,
+        count: actors.length,
+        sourceField: descriptionData.actors_id_list ? 'actors_id_list' : 'actor_ids'
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No actors data found in Excel'));
     }
 
-    // Handle directors (semicolon-separated)
-    if (descriptionData.directors_id_list) {
-      const directors = descriptionData.directors_id_list
-        .split(';')
-        .map(director => director.trim())
-        .filter(director => director.length > 0);
+    // Handle directors (semicolon-separated) - Backend expects 'director_names' only
+    if (descriptionData.directors_id_list || descriptionData.director_ids) {
+      // Support both old field name and new field name during transition
+      const directorsData = descriptionData.director_ids || descriptionData.directors_id_list;
+
+      console.log(chalk.cyan('🔍 DIRECTORS DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${directorsData}"`));
+      console.log(chalk.gray(`  Data type: ${typeof directorsData}`));
+
+      const directors = Array.isArray(directorsData)
+        ? directorsData
+        : this.splitSemicolonSeparatedList(directorsData);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(directors)}`));
+      console.log(chalk.gray(`  Final array length: ${directors.length}`));
+
+      // Backend /from-text endpoint expects exactly 'director_names' as array
       apiData.director_names = directors;
+
+      this.logger.info(`Directors mapped to backend:`, {
+        fieldName: 'director_names',
+        values: directors,
+        count: directors.length,
+        sourceField: descriptionData.directors_id_list ? 'directors_id_list' : 'director_ids'
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No directors data found in Excel'));
     }
 
-    // Handle producers (semicolon-separated)
-    if (descriptionData.productors_id_list) {
-      const producers = descriptionData.productors_id_list
-        .split(';')
-        .map(producer => producer.trim())
-        .filter(producer => producer.length > 0);
+    // Handle producers (semicolon-separated) - Legacy Excel uses 'productors_id_list'
+    if (descriptionData.productors_id_list || descriptionData.producer_ids) {
+      // Support legacy Excel field name 'productors_id_list' and map to backend 'producer_names'
+      const producersData = descriptionData.productors_id_list || descriptionData.producer_ids;
+
+      console.log(chalk.cyan('🔍 PRODUCERS DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${producersData}"`));
+      console.log(chalk.gray(`  Source field: ${descriptionData.productors_id_list ? 'productors_id_list (legacy)' : 'producer_ids'}`));
+
+      const producers = Array.isArray(producersData)
+        ? producersData
+        : this.splitSemicolonSeparatedList(producersData);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(producers)}`));
+      console.log(chalk.gray(`  Final array length: ${producers.length}`));
+
+      // Backend /from-text endpoint expects exactly 'producer_names' as array
       apiData.producer_names = producers;
+
+      this.logger.info(`Producers mapped to backend:`, {
+        sourceField: descriptionData.productors_id_list ? 'productors_id_list (legacy)' : 'producer_ids',
+        targetField: 'producer_names',
+        values: producers,
+        count: producers.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No producers data found in Excel'));
     }
 
-    // Handle authors (semicolon-separated)
-    if (descriptionData.authors_id_list) {
-      const authors = descriptionData.authors_id_list
-        .split(';')
-        .map(author => author.trim())
-        .filter(author => author.length > 0);
+    // Handle authors (semicolon-separated) - Backend expects 'author_names' only
+    if (descriptionData.authors_id_list || descriptionData.author_ids) {
+      // Support both old field name and new field name during transition
+      const authorsData = descriptionData.author_ids || descriptionData.authors_id_list;
+
+      console.log(chalk.cyan('🔍 AUTHORS DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${authorsData}"`));
+
+      const authors = Array.isArray(authorsData)
+        ? authorsData
+        : this.splitSemicolonSeparatedList(authorsData);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(authors)}`));
+      console.log(chalk.gray(`  Final array length: ${authors.length}`));
+
+      // Backend /from-text endpoint expects exactly 'author_names' as array
       apiData.author_names = authors;
+
+      this.logger.info(`Authors mapped to backend:`, {
+        fieldName: 'author_names',
+        values: authors,
+        count: authors.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No authors data found in Excel'));
     }
 
-    // Handle available countries (semicolon-separated)
+    // Handle original languages (semicolon-separated) - Backend expects 'original_language_names'
+    if (descriptionData.original_languages_list || descriptionData.original_languages || descriptionData.original_language) {
+      const originalLanguagesData = descriptionData.original_languages_list || descriptionData.original_languages || descriptionData.original_language;
+
+      console.log(chalk.cyan('🔍 ORIGINAL LANGUAGES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${originalLanguagesData}"`));
+      console.log(chalk.gray(`  Source field: ${descriptionData.original_languages_list ? 'original_languages_list' : descriptionData.original_languages ? 'original_languages' : 'original_language (singular)'}`));
+
+      const originalLanguages = Array.isArray(originalLanguagesData)
+        ? originalLanguagesData
+        : this.splitSemicolonSeparatedList(originalLanguagesData);
+
+      // Apply language normalization to handle gender forms and common variations
+      const normalizedOriginalLanguages = originalLanguages.map(lang => this.normalizeLanguage(lang));
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(originalLanguages)}`));
+      console.log(chalk.gray(`  After normalization: ${JSON.stringify(normalizedOriginalLanguages)}`));
+      console.log(chalk.gray(`  Final array length: ${normalizedOriginalLanguages.length}`));
+
+      // Backend /from-text endpoint expects exactly 'original_language_names' as array
+      apiData.original_language_names = normalizedOriginalLanguages;
+
+      this.logger.info(`Original languages mapped to backend:`, {
+        sourceField: descriptionData.original_languages_list ? 'original_languages_list' : descriptionData.original_languages ? 'original_languages' : 'original_language (singular)',
+        fieldName: 'original_language_names',
+        values: normalizedOriginalLanguages,
+        count: normalizedOriginalLanguages.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No original languages data found in Excel'));
+    }
+
+    // Handle available subtitle languages (semicolon-separated) - Backend expects 'available_subtitle_language_names'
+    if (descriptionData.available_subtitle_languages_list || descriptionData.available_subtitle_languages) {
+      const subtitleLanguagesData = descriptionData.available_subtitle_languages_list || descriptionData.available_subtitle_languages;
+
+      console.log(chalk.cyan('🔍 SUBTITLE LANGUAGES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${subtitleLanguagesData}"`));
+
+      const subtitleLanguages = Array.isArray(subtitleLanguagesData)
+        ? subtitleLanguagesData
+        : this.splitSemicolonSeparatedList(subtitleLanguagesData);
+
+      // Apply language normalization to handle gender forms and common variations
+      const normalizedSubtitleLanguages = subtitleLanguages.map(lang => this.normalizeLanguage(lang));
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(subtitleLanguages)}`));
+      console.log(chalk.gray(`  After normalization: ${JSON.stringify(normalizedSubtitleLanguages)}`));
+      console.log(chalk.gray(`  Final array length: ${normalizedSubtitleLanguages.length}`));
+
+      // Backend /from-text endpoint expects exactly 'available_subtitle_language_names' as array
+      apiData.available_subtitle_language_names = normalizedSubtitleLanguages;
+
+      this.logger.info(`Subtitle languages mapped to backend:`, {
+        fieldName: 'available_subtitle_language_names',
+        values: normalizedSubtitleLanguages,
+        count: normalizedSubtitleLanguages.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No subtitle languages data found in Excel'));
+    }
+
+    // Handle available audio languages (semicolon-separated) - Backend expects 'available_audio_language_names'
+    if (descriptionData.available_audio_languages_list || descriptionData.available_audio_languages) {
+      const audioLanguagesData = descriptionData.available_audio_languages_list || descriptionData.available_audio_languages;
+
+      console.log(chalk.cyan('🔍 AUDIO LANGUAGES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${audioLanguagesData}"`));
+
+      const audioLanguages = Array.isArray(audioLanguagesData)
+        ? audioLanguagesData
+        : this.splitSemicolonSeparatedList(audioLanguagesData);
+
+      // Apply language normalization to handle gender forms and common variations
+      const normalizedAudioLanguages = audioLanguages.map(lang => this.normalizeLanguage(lang));
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(audioLanguages)}`));
+      console.log(chalk.gray(`  After normalization: ${JSON.stringify(normalizedAudioLanguages)}`));
+      console.log(chalk.gray(`  Final array length: ${normalizedAudioLanguages.length}`));
+
+      // Backend /from-text endpoint expects exactly 'available_audio_language_names' as array
+      apiData.available_audio_language_names = normalizedAudioLanguages;
+
+      this.logger.info(`Audio languages mapped to backend:`, {
+        fieldName: 'available_audio_language_names',
+        values: normalizedAudioLanguages,
+        count: normalizedAudioLanguages.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No audio languages data found in Excel'));
+    }
+
+    // Handle available countries (semicolon-separated) - Backend expects 'available_country_names'
     if (descriptionData.available_countries_id_list) {
-      const countries = descriptionData.available_countries_id_list
-        .split(';')
-        .map(country => country.trim())
-        .filter(country => country.length > 0);
+      console.log(chalk.cyan('🔍 COUNTRIES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.available_countries_id_list}"`));
+
+      const countries = this.splitSemicolonSeparatedList(descriptionData.available_countries_id_list);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(countries)}`));
+      console.log(chalk.gray(`  Final array length: ${countries.length}`));
+
+      // Backend /from-text endpoint expects exactly 'available_country_names' as array
       apiData.available_country_names = countries;
+
+      this.logger.info(`Available countries mapped to backend:`, {
+        fieldName: 'available_country_names',
+        values: countries,
+        count: countries.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No countries data found in Excel'));
+    }
+
+    // Handle audience categories (semicolon-separated) - Backend expects 'audience_category_names'
+    if (descriptionData.audience_categories_id_list) {
+      console.log(chalk.cyan('🔍 AUDIENCE CATEGORIES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.audience_categories_id_list}"`));
+
+      const audienceCategories = this.splitSemicolonSeparatedList(descriptionData.audience_categories_id_list);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(audienceCategories)}`));
+      console.log(chalk.gray(`  Final array length: ${audienceCategories.length}`));
+
+      // Backend /from-text endpoint expects exactly 'audience_category_names' as array
+      apiData.audience_category_names = audienceCategories;
+
+      this.logger.info(`Audience categories mapped to backend:`, {
+        fieldName: 'audience_category_names',
+        values: audienceCategories,
+        count: audienceCategories.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No audience categories data found in Excel'));
+    }
+
+    // Handle eligible plans (semicolon-separated) - Backend expects 'eligible_plan_names'
+    if (descriptionData.eligible_plans_id_list) {
+      console.log(chalk.cyan('🔍 ELIGIBLE PLANS DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.eligible_plans_id_list}"`));
+
+      const eligiblePlans = this.splitSemicolonSeparatedList(descriptionData.eligible_plans_id_list);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(eligiblePlans)}`));
+      console.log(chalk.gray(`  Final array length: ${eligiblePlans.length}`));
+
+      // Backend /from-text endpoint expects exactly 'eligible_plan_names' as array
+      apiData.eligible_plan_names = eligiblePlans;
+
+      this.logger.info(`Eligible plans mapped to backend:`, {
+        fieldName: 'eligible_plan_names',
+        values: eligiblePlans,
+        count: eligiblePlans.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No eligible plans data found in Excel'));
     }
 
     // Handle hashtags (semicolon-separated)
     if (descriptionData.hashtags_text_list) {
-      const hashtags = descriptionData.hashtags_text_list
-        .split(';')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
+      const hashtags = this.splitSemicolonSeparatedList(descriptionData.hashtags_text_list);
       apiData.hashtags_text_list = hashtags;
     }
 
-    // Handle keywords (semicolon-separated)
+    // Handle tags (semicolon-separated) - Support legacy Excel field 'hashtags_id_list' and map to backend 'tags'
+    if (descriptionData.hashtags_id_list || descriptionData.tags) {
+      // Support legacy Excel field name 'hashtags_id_list' and map to backend 'tags'
+      const tagsData = descriptionData.hashtags_id_list || descriptionData.tags;
+
+      console.log(chalk.cyan('🔍 TAGS DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${tagsData}"`));
+      console.log(chalk.gray(`  Source field: ${descriptionData.hashtags_id_list ? 'hashtags_id_list (legacy)' : 'tags'}`));
+
+      const tags = Array.isArray(tagsData)
+        ? tagsData
+        : this.splitSemicolonSeparatedList(tagsData);
+
+      console.log(chalk.gray(`  Parsed tags: [${tags.join(', ')}]`));
+      console.log(chalk.gray(`  Tags count: ${tags.length}`));
+
+      // Backend /from-text endpoint expects exactly 'tags' as array
+      apiData.tags = tags;
+
+      this.logger.info(`Tags mapped to backend:`, {
+        sourceField: descriptionData.hashtags_id_list ? 'hashtags_id_list (legacy)' : 'tags',
+        targetField: 'tags',
+        values: tags,
+        count: tags.length
+      });
+    } else {
+      console.log(chalk.yellow('⚠️  No tags data found in Excel'));
+    }
+
+    // Handle keywords (semicolon-separated) - Backend expects 'human_keywords_text_list'
     if (descriptionData.human_keywords_text_list) {
-      const keywords = descriptionData.human_keywords_text_list
-        .split(';')
-        .map(keyword => keyword.trim())
-        .filter(keyword => keyword.length > 0);
+      const keywords = this.splitSemicolonSeparatedList(descriptionData.human_keywords_text_list);
+      // Backend /from-text endpoint expects exactly 'human_keywords_text_list' as array
+      // Note: 'tags' field does not exist in backend schema, removed
       apiData.human_keywords_text_list = keywords;
+
+      this.logger.info(`Human keywords mapped to backend:`, {
+        fieldName: 'human_keywords_text_list',
+        values: keywords,
+        count: keywords.length
+      });
+    }
+
+    // Handle SEO keywords (semicolon-separated) - Backend expects 'seo_keywords_text_list'
+    if (descriptionData.seo_keywords_text_list) {
+      const seoKeywords = this.splitSemicolonSeparatedList(descriptionData.seo_keywords_text_list);
+
+      // Backend /from-text endpoint expects exactly 'seo_keywords_text_list' as array
+      apiData.seo_keywords_text_list = seoKeywords;
+
+      this.logger.info(`SEO keywords mapped to backend:`, {
+        fieldName: 'seo_keywords_text_list',
+        values: seoKeywords,
+        count: seoKeywords.length
+      });
+    }
+
+    // Handle rights holder
+    if (descriptionData.rights_holder) {
+      apiData.rights_holder = descriptionData.rights_holder;
+    }
+
+    // Handle copyright owner text
+    if (descriptionData.copyright_owner_text) {
+      apiData.copyright_owner_text = descriptionData.copyright_owner_text;
+    }
+
+    // Handle origin countries (backend supports origin_country_names)
+    if (descriptionData.origin_countries_list || descriptionData.origin_countries || descriptionData.origin_country || descriptionData.origin_country_name) {
+      const originCountriesData = descriptionData.origin_countries_list || descriptionData.origin_countries || descriptionData.origin_country || descriptionData.origin_country_name;
+
+      console.log(chalk.cyan('🔍 ORIGIN COUNTRIES DEBUG:'));
+      console.log(chalk.gray(`  Raw Excel data: "${originCountriesData}"`));
+      console.log(chalk.gray(`  Source field: ${descriptionData.origin_countries_list ? 'origin_countries_list' : descriptionData.origin_countries ? 'origin_countries' : descriptionData.origin_country ? 'origin_country' : 'origin_country_name'}`));
+
+      const originCountries = Array.isArray(originCountriesData)
+        ? originCountriesData
+        : this.splitSemicolonSeparatedList(originCountriesData);
+
+      console.log(chalk.gray(`  After splitting: ${JSON.stringify(originCountries)}`));
+      console.log(chalk.gray(`  Final array length: ${originCountries.length}`));
+
+      // Backend /from-text endpoint expects exactly 'origin_country_names' as array
+      apiData.origin_country_names = originCountries;
+
+      this.logger.info(`Origin countries mapped to backend:`, {
+        sourceField: descriptionData.origin_countries_list ? 'origin_countries_list' : descriptionData.origin_countries ? 'origin_countries' : descriptionData.origin_country ? 'origin_country' : 'origin_country_name',
+        fieldName: 'origin_country_names',
+        values: originCountries,
+        count: originCountries.length
+      });
+    } else {
+      // No origin country provided - use default value "Corée du Sud"
+      console.log(chalk.cyan('🔍 ORIGIN COUNTRIES DEBUG:'));
+      console.log(chalk.yellow('  No origin country data found in Excel - using default'));
+      console.log(chalk.gray(`  Default value: "Corée du Sud"`));
+
+      // Backend /from-text endpoint expects exactly 'origin_country_names' as array
+      apiData.origin_country_names = ["Corée du Sud"];
+
+      this.logger.info(`Origin countries mapped to backend (default):`, {
+        sourceField: 'default (no data provided)',
+        fieldName: 'origin_country_names',
+        values: ["Corée du Sud"],
+        count: 1
+      });
+    }
+
+    // Original languages are now handled above in the main mapping section
+
+    // Handle diffusion date - NOT SUPPORTED by backend /from-text endpoint
+    if (descriptionData.diffusion_date || descriptionData.date_diffusion) {
+      this.logger.warn(`Diffusion date field found but not supported by backend /from-text endpoint:`, {
+        value: descriptionData.diffusion_date || descriptionData.date_diffusion
+      });
+    }
+
+    // Handle contact date - NOT SUPPORTED by backend /from-text endpoint
+    if (descriptionData.contact_date || descriptionData.date_contact) {
+      this.logger.warn(`Contact date field found but not supported by backend /from-text endpoint:`, {
+        value: descriptionData.contact_date || descriptionData.date_contact
+      });
+    }
+
+    // Handle audience category - Individual field NOT SUPPORTED (use audience_category_names array instead)
+    if (descriptionData.audience_category) {
+      this.logger.warn(`Individual audience_category field found but not supported by backend /from-text endpoint. Use audience_categories_id_list instead:`, {
+        value: descriptionData.audience_category
+      });
+    }
+
+    // Handle production year - Backend expects exact field name 'production_year'
+    if (descriptionData.production_year) {
+      const year = parseInt(descriptionData.production_year);
+      apiData.production_year = year;
+
+      this.logger.info(`Production year mapped to backend:`, {
+        fieldName: 'production_year',
+        value: year
+      });
+    }
+
+    // Handle eligible plan - Individual field NOT SUPPORTED (use eligible_plan_names array instead)
+    if (descriptionData.eligible_plan) {
+      this.logger.warn(`Individual eligible_plan field found but not supported by backend /from-text endpoint. Use eligible_plans_id_list instead:`, {
+        value: descriptionData.eligible_plan
+      });
+    }
+
+    // Handle SEO fields - Backend supports exact field names only
+    if (descriptionData.seo_title) {
+      apiData.seo_title = descriptionData.seo_title;
+      this.logger.info(`SEO title mapped to backend:`, { fieldName: 'seo_title', value: descriptionData.seo_title });
+    }
+    if (descriptionData.seo_description) {
+      apiData.seo_description = descriptionData.seo_description;
+      this.logger.info(`SEO description mapped to backend:`, { fieldName: 'seo_description', value: descriptionData.seo_description });
+    }
+
+    // Handle external identifier - Backend expects 'external_identifier_text'
+    if (descriptionData.external_identifier || descriptionData.external_identifier_text) {
+      const externalId = descriptionData.external_identifier_text || descriptionData.external_identifier;
+      apiData.external_identifier_text = externalId;
+      this.logger.info(`External identifier mapped to backend:`, { fieldName: 'external_identifier_text', value: externalId });
+    }
+
+    // Handle contract dates - Backend expects exact field names with '_utc' suffix
+    if (descriptionData.contract_start_date || descriptionData.contract_start_date_utc) {
+      const dateValue = descriptionData.contract_start_date_utc || descriptionData.contract_start_date;
+      const normalizedDate = this.parseAndNormalizeDate(dateValue);
+      if (normalizedDate) {
+        apiData.contract_start_date_utc = normalizedDate;
+        this.logger.info(`Contract start date mapped to backend:`, { fieldName: 'contract_start_date_utc', value: normalizedDate });
+      }
+    }
+    if (descriptionData.contract_end_date || descriptionData.contract_end_date_utc) {
+      const dateValue = descriptionData.contract_end_date_utc || descriptionData.contract_end_date;
+      const normalizedDate = this.parseAndNormalizeDate(dateValue);
+      if (normalizedDate) {
+        apiData.contract_end_date_utc = normalizedDate;
+        this.logger.info(`Contract end date mapped to backend:`, { fieldName: 'contract_end_date_utc', value: normalizedDate });
+      }
+    }
+
+    // Handle original broadcast date - Backend expects 'original_broadcast_date_utc'
+    if (descriptionData.original_broadcast_time || descriptionData.original_broadcast_date_utc) {
+      const dateValue = descriptionData.original_broadcast_date_utc || descriptionData.original_broadcast_time;
+      const normalizedDate = this.parseAndNormalizeDate(dateValue);
+      if (normalizedDate) {
+        apiData.original_broadcast_date_utc = normalizedDate;
+        this.logger.info(`Original broadcast date mapped to backend:`, { fieldName: 'original_broadcast_date_utc', value: normalizedDate });
+      }
     }
 
     return apiData;

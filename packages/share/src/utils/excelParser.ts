@@ -271,15 +271,23 @@ export class ExcelParser {
   }
   
   /**
-   * Convert value to string array (comma-separated)
+   * Convert value to string array (semicolon-separated only)
    */
   private static convertToStringArray(value: any): string[] {
     if (Array.isArray(value)) return value.map(v => String(v).trim());
-    
+
     const strValue = String(value).trim();
     if (!strValue) return [];
-    
-    return strValue.split(',').map(item => item.trim()).filter(item => item.length > 0);
+
+    // Handle semicolon-separated values only (safer than comma splitting)
+    // Normalize spaces around semicolons before splitting
+    if (strValue.includes(';')) {
+      const normalized = strValue.replace(/\s*;\s*/g, ';');
+      return normalized.split(';').map(item => item.trim()).filter(item => item.length > 0);
+    }
+
+    // If no semicolons, treat as single item to preserve comma-containing text
+    return [strValue];
   }
   
   /**

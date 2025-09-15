@@ -11,6 +11,7 @@ from .season import season
 from .language import language
 from .country import country
 from .picture import picture
-from .content_list import content_list
+from .media_showcase import media_showcase
 from .screen_description import screen_description
 from .media_theme import media_theme
+from .media_description_person import media_description_person

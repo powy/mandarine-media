@@ -163,7 +163,7 @@ export function sanitizeFilename(filename) {
   // Remove or replace invalid characters for filesystem
   return filename
     .replace(/[<>:"/\\|?*]/g, '_')
-    .replace(/[\x00-\x1f\x80-\x9f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
     .replace(/^\.+/, '')
     .substring(0, 255);
 }

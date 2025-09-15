@@ -1,7 +1,9 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List
 from sqlalchemy.orm import Session
+from uuid import UUID
 from app.core.security import get_password_hash, verify_password
 from app.models.user import User
+from app.models.subscription_plan import SubscriptionPlan
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -34,7 +36,7 @@ class CRUDUser:
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
         if update_data.get("password"):
             hashed_password = get_password_hash(update_data["password"])
             del update_data["password"]
@@ -59,6 +61,51 @@ class CRUDUser:
 
     def is_admin(self, user: User) -> bool:
         return user.is_admin
+
+    def add_subscription_plan(
+        self, db: Session, *, user_id: UUID, plan_id: UUID
+    ) -> Optional[User]:
+        """Add a subscription plan to a user"""
+        user_obj = db.query(User).filter(User.id == user_id).first()
+        plan_obj = db.query(SubscriptionPlan).filter(SubscriptionPlan.id == plan_id).first()
+
+        if user_obj and plan_obj:
+            if plan_obj not in user_obj.subscription_plans:
+                user_obj.subscription_plans.append(plan_obj)
+                db.add(user_obj)
+                db.commit()
+                db.refresh(user_obj)
+        return user_obj
+
+    def remove_subscription_plan(
+        self, db: Session, *, user_id: UUID, plan_id: UUID
+    ) -> Optional[User]:
+        """Remove a subscription plan from a user"""
+        user_obj = db.query(User).filter(User.id == user_id).first()
+        plan_obj = db.query(SubscriptionPlan).filter(SubscriptionPlan.id == plan_id).first()
+
+        if user_obj and plan_obj:
+            if plan_obj in user_obj.subscription_plans:
+                user_obj.subscription_plans.remove(plan_obj)
+                db.add(user_obj)
+                db.commit()
+                db.refresh(user_obj)
+        return user_obj
+
+    def update_subscription_plans(
+        self, db: Session, *, user_id: UUID, plan_ids: List[UUID]
+    ) -> Optional[User]:
+        """Update all subscription plans for a user"""
+        user_obj = db.query(User).filter(User.id == user_id).first()
+
+        if user_obj:
+            # Get the subscription plan objects
+            plans = db.query(SubscriptionPlan).filter(SubscriptionPlan.id.in_(plan_ids)).all()
+            user_obj.subscription_plans = plans
+            db.add(user_obj)
+            db.commit()
+            db.refresh(user_obj)
+        return user_obj
 
 
 user = CRUDUser()

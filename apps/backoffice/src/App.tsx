@@ -10,7 +10,9 @@ import { ProgramList, ProgramCreate, ProgramEdit, ProgramShow } from './componen
 import { SeasonList, SeasonCreate, SeasonEdit, SeasonShow } from './components/resources/Seasons';
 import { PictureList, PictureCreate, PictureEdit, PictureShow } from './components/resources/Pictures';
 import { UserList, UserCreate, UserEdit, UserShow } from './components/resources/Users';
-import { ContentListList, ContentListCreate, ContentListEdit, ContentListShow } from './components/resources/ContentLists';
+import { MediaShowcaseList, MediaShowcaseCreate, MediaShowcaseEdit, MediaShowcaseShow } from './components/resources/MediaShowcases';
+import { MediaDescriptionPeopleList, MediaDescriptionPeopleCreate, MediaDescriptionPeopleEdit, MediaDescriptionPeopleShow } from './components/resources/MediaDescriptionPeople';
+import { DescriptionReportList, DescriptionReportShow } from './components/resources/DescriptionReports';
 import { ScreenContentList, ScreenContentCreate, ScreenContentEdit, ScreenContentShow } from './components/resources/ScreenContents';
 import { VideoFileList, VideoFileCreate, VideoFileEdit, VideoFileShow } from './components/resources/VideoFiles';
 import { MediaThemeList, MediaThemeCreate, MediaThemeEdit, MediaThemeShow } from './components/resources/MediaThemes';
@@ -47,15 +49,21 @@ const CustomMenu = () => {
       
       {/* Content Organization */}
       <MenuItemLink
-        to="/content-lists"
-        primaryText="Content Lists"
-        leftIcon={<span>📝</span>}
+        to="/media-showcases"
+        primaryText="Media Showcases"
+        leftIcon={<span>🎭</span>}
         dense={!open}
       />
       <MenuItemLink
         to="/screen-descriptions"
         primaryText="Screen Descriptions"
         leftIcon={<span>🖥️</span>}
+        dense={!open}
+      />
+      <MenuItemLink
+        to="/media-description-people"
+        primaryText="People Assignments"
+        leftIcon={<span>👥</span>}
         dense={!open}
       />
       
@@ -106,6 +114,12 @@ const CustomMenu = () => {
       />
       
       {/* Reports */}
+      <MenuItemLink
+        to="/description-reports"
+        primaryText="Description Reports"
+        leftIcon={<span>📋</span>}
+        dense={!open}
+      />
       <MenuItemLink
         to="/video-file-reports"
         primaryText="Video File Reports"
@@ -276,14 +290,30 @@ export const App = () => (
     />
 
     {/* Content organization resources */}
-    
+
     <Resource
-      name="content-lists"
-      list={ContentListList}
-      create={ContentListCreate}
-      edit={ContentListEdit}
-      show={ContentListShow}
-      options={{ label: 'Content Lists' }}
+      name="media-showcases"
+      list={MediaShowcaseList}
+      create={MediaShowcaseCreate}
+      edit={MediaShowcaseEdit}
+      show={MediaShowcaseShow}
+      options={{ label: 'Media Showcases' }}
+    />
+
+    <Resource
+      name="media-description-people"
+      list={MediaDescriptionPeopleList}
+      create={MediaDescriptionPeopleCreate}
+      edit={MediaDescriptionPeopleEdit}
+      show={MediaDescriptionPeopleShow}
+      options={{ label: 'People Assignments' }}
+    />
+
+    <Resource
+      name="description-reports"
+      list={DescriptionReportList}
+      show={DescriptionReportShow}
+      options={{ label: 'Description Reports' }}
     />
     
     <Resource

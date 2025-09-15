@@ -5,6 +5,7 @@ from uuid import UUID
 
 from app.crud.base import CRUDBase
 from app.models.video_file import VideoFile
+from app.models.language import Language
 from app.schemas.video_file import VideoFileCreate, VideoFileUpdate
 from app.schemas.video_file_report import VideoFileReportCreate
 from app.crud.video_file_report import video_file_report
@@ -191,6 +192,51 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
             # For now, we just log the request
             
         return obj
+
+    def add_audio_language(
+        self, db: Session, *, video_file_id: UUID, language_id: UUID
+    ) -> Optional[VideoFile]:
+        """Add an audio language to a video file"""
+        video_file_obj = db.query(self.model).filter(self.model.id == video_file_id).first()
+        language_obj = db.query(Language).filter(Language.id == language_id).first()
+
+        if video_file_obj and language_obj:
+            if language_obj not in video_file_obj.audio_languages:
+                video_file_obj.audio_languages.append(language_obj)
+                db.add(video_file_obj)
+                db.commit()
+                db.refresh(video_file_obj)
+        return video_file_obj
+
+    def remove_audio_language(
+        self, db: Session, *, video_file_id: UUID, language_id: UUID
+    ) -> Optional[VideoFile]:
+        """Remove an audio language from a video file"""
+        video_file_obj = db.query(self.model).filter(self.model.id == video_file_id).first()
+        language_obj = db.query(Language).filter(Language.id == language_id).first()
+
+        if video_file_obj and language_obj:
+            if language_obj in video_file_obj.audio_languages:
+                video_file_obj.audio_languages.remove(language_obj)
+                db.add(video_file_obj)
+                db.commit()
+                db.refresh(video_file_obj)
+        return video_file_obj
+
+    def update_audio_languages(
+        self, db: Session, *, video_file_id: UUID, language_ids: List[UUID]
+    ) -> Optional[VideoFile]:
+        """Update all audio languages for a video file"""
+        video_file_obj = db.query(self.model).filter(self.model.id == video_file_id).first()
+
+        if video_file_obj:
+            # Get the language objects
+            languages = db.query(Language).filter(Language.id.in_(language_ids)).all()
+            video_file_obj.audio_languages = languages
+            db.add(video_file_obj)
+            db.commit()
+            db.refresh(video_file_obj)
+        return video_file_obj
 
 
 video_file = CRUDVideoFile(VideoFile)

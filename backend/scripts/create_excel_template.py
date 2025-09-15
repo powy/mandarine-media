@@ -195,7 +195,7 @@ def create_sample_data():
             'audio_sample_rate': 48000,
             'audio_channels': 2,
             'subtitle_languages_id_list': 'English, Japanese, Chinese',
-            'audio_languages_id_list': 'Korean',
+            'audio_languages': 'Korean',
             '_ref_name': 'Squid Game E01 Video'
         },
         {
@@ -218,7 +218,7 @@ def create_sample_data():
             'audio_sample_rate': 48000,
             'audio_channels': 2,
             'subtitle_languages_id_list': 'English, Japanese, Chinese',
-            'audio_languages_id_list': 'Korean',
+            'audio_languages': 'Korean',
             '_ref_name': 'Squid Game E02 Video'
         }
     ]

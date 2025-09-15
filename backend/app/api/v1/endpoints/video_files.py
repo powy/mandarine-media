@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
@@ -380,7 +380,7 @@ async def upload_file_to_existing_metadata(
         crud.video_file.update(
             db=db,
             db_obj=video_file,
-            obj_in={"upload_status": schemas.video_file.UploadStatusEnum.file_uploading, "upload_timestamp": datetime.utcnow()}
+            obj_in={"upload_status": schemas.video_file.UploadStatusEnum.file_uploading, "upload_timestamp": datetime.now(timezone.utc)}
         )
         
         # Initialize upload service
@@ -835,3 +835,98 @@ async def complete_video_file_from_mux(
             status_code=500,
             detail=f"Failed to complete video file from Mux: {str(e)}"
         )
+
+
+# Audio Language Relationship Endpoints
+
+@router.post("/{id}/audio_languages/{language_id}", response_model=schemas.video_file.VideoFile)
+def add_audio_language_to_video_file(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    language_id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Add an audio language to a video file.
+    """
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(
+            status_code=404,
+            detail="Video file not found"
+        )
+
+    updated_video_file = crud.video_file.add_audio_language(
+        db=db, video_file_id=id, language_id=language_id
+    )
+
+    if not updated_video_file:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to add audio language to video file"
+        )
+
+    return updated_video_file
+
+
+@router.delete("/{id}/audio_languages/{language_id}", response_model=schemas.video_file.VideoFile)
+def remove_audio_language_from_video_file(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    language_id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Remove an audio language from a video file.
+    """
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(
+            status_code=404,
+            detail="Video file not found"
+        )
+
+    updated_video_file = crud.video_file.remove_audio_language(
+        db=db, video_file_id=id, language_id=language_id
+    )
+
+    if not updated_video_file:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to remove audio language from video file"
+        )
+
+    return updated_video_file
+
+
+@router.put("/{id}/audio_languages", response_model=schemas.video_file.VideoFile)
+def update_video_file_audio_languages(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    language_ids: List[UUID],
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Update all audio languages for a video file.
+    """
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(
+            status_code=404,
+            detail="Video file not found"
+        )
+
+    updated_video_file = crud.video_file.update_audio_languages(
+        db=db, video_file_id=id, language_ids=language_ids
+    )
+
+    if not updated_video_file:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to update audio languages for video file"
+        )
+
+    return updated_video_file

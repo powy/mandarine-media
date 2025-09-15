@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime
 from fastapi import status
 from app.crud.screen_description import screen_description as crud_screen_description
-from app.crud.content_list import content_list as crud_content_list
+from app.crud.media_showcase import media_showcase as crud_media_showcase
 from app.schemas.screen_description import ScreenDescriptionCreate, ScreenDescriptionUpdate, ScreenDescriptionReorderRequest, ScreenTypeEnum
-from app.schemas.content_list import ContentListCreate, ThumbnailFormatEnum
+from app.schemas.media_showcase import MediaShowcaseCreate, ThumbnailFormatEnum, ListTypeEnum
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def sample_screen_description_data():
         "screen_type": ScreenTypeEnum.homepage,
         "is_active": True,
         "display_order": 1,
-        "content_lists": []
+        "media_showcases": []
     }
 
 
@@ -34,20 +34,20 @@ def sample_screen_description_update_data():
 
 
 @pytest.fixture
-def sample_content_list_data():
-    """Sample content list data for testing screen content items."""
+def sample_media_showcase_data():
+    """Sample media showcase data for testing screen content items."""
     return {
-        "title": "Test Content List for Screen",
-        "description": "A test content list for screen content testing",
+        "title": "Test Media Showcase for Screen",
+        "description": "A test media showcase for screen content testing",
         "thumbnail_format": ThumbnailFormatEnum.format_810x1080,
-        "list_type": "classic",
+        "list_type": ListTypeEnum.classic,
         "percentage_width": 100,
         "percentage_height": 80,
         "latest_first": True,
         "is_active": True,
-        "display_order": 1,
-        "content_items": [],
-        "content_types": []
+        "priority_in_screen": 1,
+        "media_description_ids": [],
+        "media_theme_ids": []
     }
 
 
@@ -149,82 +149,82 @@ class TestScreenContentCRUD:
         assert len(homepage_screens) == 1
         assert homepage_screens[0].screen_type == ScreenTypeEnum.homepage
 
-    def test_add_content_list(self, db, sample_screen_description_data, sample_content_list_data):
+    def test_add_media_showcase(self, db, sample_screen_description_data, sample_media_showcase_data):
         """Test adding a content list to a screen content."""
         # Create screen content
         screen_description_in = ScreenDescriptionCreate(**sample_screen_description_data)
         screen_description = crud_screen_description.create(db=db, obj_in=screen_description_in)
         
-        # Create content list to add to screen content
-        content_list_in = ContentListCreate(**sample_content_list_data)
-        content_list = crud_content_list.create(db=db, obj_in=content_list_in)
-        
-        # Add content list to screen content
-        updated_screen_description = crud_screen_description.add_content_list(
-            db=db, 
-            screen_content=screen_description, 
-            content_list_id=str(content_list.id)
-        )
-        
-        assert len(updated_screen_description.content_lists) == 1
-        assert updated_screen_description.content_lists[0] == str(content_list.id)
+        # Create media showcase to add to screen content
+        media_showcase_in = MediaShowcaseCreate(**sample_media_showcase_data)
+        media_showcase = crud_media_showcase.create(db=db, obj_in=media_showcase_in)
 
-    def test_remove_content_list(self, db, sample_screen_description_data, sample_content_list_data):
+        # Add media showcase to screen content
+        updated_screen_description = crud_screen_description.add_media_showcase(
+            db=db,
+            screen_content=screen_description,
+            media_showcase_id=str(media_showcase.id)
+        )
+
+        assert len(updated_screen_description.media_showcases) == 1
+        assert updated_screen_description.media_showcases[0] == str(media_showcase.id)
+
+    def test_remove_media_showcase(self, db, sample_screen_description_data, sample_media_showcase_data):
         """Test removing a content list from a screen content."""
         # Create screen content
         screen_description_in = ScreenDescriptionCreate(**sample_screen_description_data)
         screen_description = crud_screen_description.create(db=db, obj_in=screen_description_in)
         
-        # Create content list to add to screen content
-        content_list_in = ContentListCreate(**sample_content_list_data)
-        content_list = crud_content_list.create(db=db, obj_in=content_list_in)
-        
-        # Add content list to screen content
-        screen_description = crud_screen_description.add_content_list(
-            db=db, 
-            screen_content=screen_description, 
-            content_list_id=str(content_list.id)
-        )
-        
-        # Remove content list from screen content
-        updated_screen_description = crud_screen_description.remove_content_list(
-            db=db, 
-            screen_content=screen_description, 
-            content_list_id=str(content_list.id)
-        )
-        
-        assert len(updated_screen_description.content_lists) == 0
+        # Create media showcase to add to screen content
+        media_showcase_in = MediaShowcaseCreate(**sample_media_showcase_data)
+        media_showcase = crud_media_showcase.create(db=db, obj_in=media_showcase_in)
 
-    def test_reorder_content_lists(self, db, sample_screen_description_data, sample_content_list_data):
+        # Add media showcase to screen content
+        screen_description = crud_screen_description.add_media_showcase(
+            db=db,
+            screen_content=screen_description,
+            media_showcase_id=str(media_showcase.id)
+        )
+
+        # Remove media showcase from screen content
+        updated_screen_description = crud_screen_description.remove_media_showcase(
+            db=db,
+            screen_content=screen_description,
+            media_showcase_id=str(media_showcase.id)
+        )
+
+        assert len(updated_screen_description.media_showcases) == 0
+
+    def test_reorder_media_showcases(self, db, sample_screen_description_data, sample_media_showcase_data):
         """Test reordering content lists in a screen content."""
         # Create screen content
         screen_description_in = ScreenDescriptionCreate(**sample_screen_description_data)
         screen_description = crud_screen_description.create(db=db, obj_in=screen_description_in)
         
-        # Create two content lists
-        content_list1_in = ContentListCreate(**sample_content_list_data)
-        content_list1 = crud_content_list.create(db=db, obj_in=content_list1_in)
-        
-        content_list2_data = sample_content_list_data.copy()
-        content_list2_data["title"] = "Second Content List"
-        content_list2_in = ContentListCreate(**content_list2_data)
-        content_list2 = crud_content_list.create(db=db, obj_in=content_list2_in)
-        
+        # Create two media showcases
+        media_showcase1_in = MediaShowcaseCreate(**sample_media_showcase_data)
+        media_showcase1 = crud_media_showcase.create(db=db, obj_in=media_showcase1_in)
+
+        media_showcase2_data = sample_media_showcase_data.copy()
+        media_showcase2_data["title"] = "Second Media Showcase"
+        media_showcase2_in = MediaShowcaseCreate(**media_showcase2_data)
+        media_showcase2 = crud_media_showcase.create(db=db, obj_in=media_showcase2_in)
+
         # Set initial order
-        screen_description.content_lists = [str(content_list1.id), str(content_list2.id)]
+        screen_description.media_showcases = [str(media_showcase1.id), str(media_showcase2.id)]
         db.add(screen_description)
         db.commit()
-        
-        # Reorder content lists
-        new_content_lists = [str(content_list2.id), str(content_list1.id)]
-        
-        updated_screen_description = crud_screen_description.reorder_content_lists(
+
+        # Reorder media showcases
+        new_media_showcases = [str(media_showcase2.id), str(media_showcase1.id)]
+
+        updated_screen_description = crud_screen_description.reorder_media_showcases(
             db=db,
             screen_content=screen_description,
-            new_content_lists=new_content_lists
+            new_media_showcases=new_media_showcases
         )
-        
-        assert updated_screen_description.content_lists == new_content_lists
+
+        assert updated_screen_description.media_showcases == new_media_showcases
 
     def test_search_by_title(self, db, sample_screen_description_data):
         """Test searching screen contents by title."""
@@ -409,7 +409,7 @@ class TestScreenContentAPI:
         
         data = response.json()
         assert data["title"] == screen_description.title
-        assert "content_lists" in data
+        assert "media_showcases" in data
 
     def test_get_by_screen_type_user_access(self, client, user_token, db, sample_screen_description_data):
         """Test that regular users can read screen contents by type."""
@@ -492,10 +492,10 @@ class TestScreenContentAPI:
 
 
 class TestScreenContentEdgeCases:
-    def test_screen_description_with_invalid_uuid_content_lists(self, db, sample_screen_description_data):
+    def test_screen_description_with_invalid_uuid_media_showcases(self, db, sample_screen_description_data):
         """Test creating screen content with invalid UUID content lists."""
         invalid_data = sample_screen_description_data.copy()
-        invalid_data["content_lists"] = ["invalid-uuid", "another-invalid-uuid"]
+        invalid_data["media_showcases"] = ["invalid-uuid", "another-invalid-uuid"]
         
         with pytest.raises(ValueError, match="Invalid UUID format"):
             ScreenDescriptionCreate(**invalid_data)
@@ -504,7 +504,7 @@ class TestScreenContentEdgeCases:
         """Test reorder request with invalid UUIDs."""
         with pytest.raises(ValueError, match="Invalid UUID format"):
             ScreenDescriptionReorderRequest(
-                content_lists=["invalid-uuid", "another-invalid-uuid"]
+                media_showcases=["invalid-uuid", "another-invalid-uuid"]
             )
 
     def test_get_nonexistent_screen_description(self, client, user_token):

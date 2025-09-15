@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import UUID
 import enum
 
-from .content_list import ContentListJSONResponse
+from .media_showcase import MediaShowcaseJSON
 
 
 class ScreenTypeEnum(str, enum.Enum):
@@ -23,14 +23,14 @@ class ScreenDescriptionBase(BaseModel):
     screen_type: Optional[ScreenTypeEnum] = Field(None, description="Type of screen this represents")
     is_active: bool = Field(True, description="Whether the screen content is active")
     display_order: int = Field(0, description="Order in which screen appears", ge=0)
-    content_lists: Optional[List[str]] = Field(default_factory=list, description="List of content list IDs (UUIDs as strings)")
+    media_showcases: Optional[List[str]] = Field(default_factory=list, description="List of content list IDs (UUIDs as strings)")
     
     # v1.9 field
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
 
-    @field_validator('content_lists')
+    @field_validator('media_showcases')
     @classmethod
-    def validate_content_lists(cls, v):
+    def validate_media_showcases(cls, v):
         if v is None:
             return []
         # Validate that all items are valid UUID strings
@@ -52,14 +52,14 @@ class ScreenDescriptionUpdate(BaseModel):
     screen_type: Optional[ScreenTypeEnum] = Field(None, description="Type of screen this represents")
     is_active: Optional[bool] = Field(None, description="Whether the screen content is active")
     display_order: Optional[int] = Field(None, description="Order in which screen appears", ge=0)
-    content_lists: Optional[List[str]] = Field(None, description="List of content list IDs (UUIDs as strings)")
+    media_showcases: Optional[List[str]] = Field(None, description="List of content list IDs (UUIDs as strings)")
     
     # v1.9 field
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
 
-    @field_validator('content_lists')
+    @field_validator('media_showcases')
     @classmethod
-    def validate_content_lists(cls, v):
+    def validate_media_showcases(cls, v):
         if v is None:
             return v
         # Validate that all items are valid UUID strings
@@ -90,11 +90,11 @@ class ScreenDescriptionWithJSON(ScreenDescription):
 
 # Request/Response schemas for specific operations
 class ScreenDescriptionReorderRequest(BaseModel):
-    content_lists: List[str] = Field(..., description="New ordered list of content list IDs")
+    media_showcases: List[str] = Field(..., description="New ordered list of content list IDs")
 
-    @field_validator('content_lists')
+    @field_validator('media_showcases')
     @classmethod
-    def validate_content_lists(cls, v):
+    def validate_media_showcases(cls, v):
         # Validate that all items are valid UUID strings
         for item in v:
             try:
@@ -109,6 +109,12 @@ class ScreenDescriptionResponse(BaseModel):
     pagination: Dict[str, Any]
 
 
+class ScreenDescriptionMediaShowcase(MediaShowcaseJSON):
+    """Schema for media showcases within a screen description's JSON cache"""
+    screen_display_order: int = Field(..., description="Display order of this showcase within the screen")
+
+
+# Deprecated: Use ScreenDescriptionMediaShowcase instead
 class ScreenDescriptionListData(BaseModel):
     """Schema for content lists within a screen description's JSON cache"""
     id: str
@@ -128,7 +134,7 @@ class ScreenDescriptionJSONResponse(BaseModel):
     is_active: bool
     display_order: int
     last_updated: Optional[str]
-    content_lists: List[ScreenDescriptionListData]
+    media_showcases: List[ScreenDescriptionMediaShowcase]
 
 
 class ScreenDescriptionByTypeResponse(BaseModel):

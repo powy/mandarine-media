@@ -1,60 +1,22 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getProgramScreenDataByProgramId } from 'share';
-import type { Program, Season, PublicPerson, Language, Country } from 'share';
-
-interface ProgramScreenData {
-  program: Program;
-  currentSeason: Season;
-  programImageUrl: string | null;
-  synopsis: string | null;
-  description: string | null;
-  genres: string[];
-  audioLanguages: Language[];
-  subtitleLanguages: Language[];
-  releaseDate: number | null;
-  originCountries: Country[];
-  actors: PublicPerson[];
-  directors: PublicPerson[];
-  producers: PublicPerson[];
-  allSeasons: Array<Season & {
-    thumbnailUrl: string | null;
-    episodeCount: number;
-  }>;
-}
+import {
+  useProgramScreen,
+  formatPersonsList,
+  formatLanguagesList,
+  formatCountriesList,
+  formatGenresList,
+  formatEpisodeCount,
+  formatSeasonTitle,
+  formatCrewRole,
+  getSeasonRoute
+} from 'share';
 
 const ProgramScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const {
-    data: programData,
-    isLoading,
-    error,
-  } = useQuery<ProgramScreenData>({
-    queryKey: ['program-screen', id],
-    queryFn: async () => {
-      if (!id) throw new Error('Program ID is required');
-      console.log('🔍 ProgramScreen: Fetching data for program ID:', id);
-      console.log('🔍 ProgramScreen: API call starting...');
-      try {
-        const result = await getProgramScreenDataByProgramId(id);
-        console.log('✅ ProgramScreen: API call successful:', result);
-        return result;
-      } catch (error) {
-        console.error('❌ ProgramScreen: API call failed:', error);
-        console.error('❌ ProgramScreen: Error details:', {
-          message: (error as any)?.message,
-          response: (error as any)?.response,
-          status: (error as any)?.response?.status,
-          data: (error as any)?.response?.data
-        });
-        throw error;
-      }
-    },
-    enabled: !!id,
-  });
+  const { data: programData, isLoading, error } = useProgramScreen(id);
 
   useEffect(() => {
     if (error) {
@@ -72,7 +34,7 @@ const ProgramScreen: React.FC = () => {
   });
 
   const handleSeasonClick = (seasonId: string) => {
-    navigate(`/season/${seasonId}`);
+    navigate(getSeasonRoute(seasonId));
   };
 
   if (isLoading) {
@@ -150,7 +112,7 @@ const ProgramScreen: React.FC = () => {
               <div>
                 <span className="text-gray-400">Genres: </span>
                 <span className="text-white">
-                  {genres.join(', ')}
+                  {formatGenresList(genres)}
                 </span>
               </div>
             )}
@@ -158,7 +120,7 @@ const ProgramScreen: React.FC = () => {
               <div>
                 <span className="text-gray-400">Langues audio: </span>
                 <span className="text-white">
-                  {audioLanguages.map(lang => lang.name).join(', ')}
+                  {formatLanguagesList(audioLanguages)}
                 </span>
               </div>
             )}
@@ -166,7 +128,7 @@ const ProgramScreen: React.FC = () => {
               <div>
                 <span className="text-gray-400">Sous-titres: </span>
                 <span className="text-white">
-                  {subtitleLanguages.map(lang => lang.name).join(', ')}
+                  {formatLanguagesList(subtitleLanguages)}
                 </span>
               </div>
             )}
@@ -180,7 +142,7 @@ const ProgramScreen: React.FC = () => {
               <div>
                 <span className="text-gray-400">Pays d'origine: </span>
                 <span className="text-white">
-                  {originCountries.map(country => country.name).join(', ')}
+                  {formatCountriesList(originCountries)}
                 </span>
               </div>
             )}
@@ -194,17 +156,17 @@ const ProgramScreen: React.FC = () => {
             <div className="text-gray-300 leading-relaxed">
               {producers.length > 0 && (
                 <div className="mb-2">
-                  <span className="text-gray-400">Producteur{producers.length > 1 ? 's' : ''}: </span>
+                  <span className="text-gray-400">{formatCrewRole('producer', producers.length)}: </span>
                   <span className="text-white">
-                    {producers.map(p => p.stage_name_roman || `${p.first_name_roman || ''} ${p.last_name_roman || ''}`).join(', ')}
+                    {formatPersonsList(producers)}
                   </span>
                 </div>
               )}
               {directors.length > 0 && (
                 <div className="mb-2">
-                  <span className="text-gray-400">Réalisateur{directors.length > 1 ? 's' : ''}: </span>
+                  <span className="text-gray-400">{formatCrewRole('director', directors.length)}: </span>
                   <span className="text-white">
-                    {directors.map(d => d.stage_name_roman || `${d.first_name_roman || ''} ${d.last_name_roman || ''}`).join(', ')}
+                    {formatPersonsList(directors)}
                   </span>
                 </div>
               )}
@@ -212,9 +174,9 @@ const ProgramScreen: React.FC = () => {
                 <div>
                   <span className="text-gray-400">avec </span>
                   <span className="text-white">
-                    {actors.map(a => a.stage_name_roman || `${a.first_name_roman || ''} ${a.last_name_roman || ''}`).join(', ')}
+                    {formatPersonsList(actors)}
                   </span>
-                  <span className="text-gray-400"> (acteur{actors.length > 1 ? 's' : ''})</span>
+                  <span className="text-gray-400"> ({formatCrewRole('actor', actors.length)})</span>
                 </div>
               )}
             </div>
@@ -269,10 +231,10 @@ const ProgramScreen: React.FC = () => {
                   {/* Season Title and Info */}
                   <div className="flex-1">
                     <h4 className="font-semibold text-white text-lg mb-1">
-                      Saison {season.season_number}
+                      {formatSeasonTitle(season.season_number)}
                     </h4>
                     <p className="text-gray-400 text-sm">
-                      {season.episodeCount} épisode{season.episodeCount > 1 ? 's' : ''}
+                      {formatEpisodeCount(season.episodeCount)}
                     </p>
                   </div>
 

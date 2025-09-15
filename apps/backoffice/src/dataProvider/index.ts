@@ -12,11 +12,13 @@ import {
   audienceCategoriesApi,
   subscriptionPlansApi,
   videoFileReportsApi,
-  getContentLists,
-  getContentList,
-  createContentList,
-  updateContentList,
-  deleteContentList,
+  getMediaShowcases,
+  getMediaShowcase,
+  createMediaShowcase,
+  updateMediaShowcase,
+  deleteMediaShowcase,
+  getDescriptionReports,
+  getDescriptionReport,
   getScreenDescriptions,
   getScreenDescription,
   createScreenDescription,
@@ -172,14 +174,32 @@ export const dataProvider: DataProvider = {
           };
 
 
-        case 'content-lists':
-          const contentLists = await getContentLists({ skip, limit: perPage });
+        case 'media-showcases':
+          const mediaShowcases = await getMediaShowcases({ skip, limit: perPage });
           // Handle both direct array and paginated response formats
-          const contentListsData = Array.isArray(contentLists) ? contentLists : contentLists.data || [];
-          const contentListsTotal = Array.isArray(contentLists) ? contentListsData.length : contentLists.pagination?.total || contentListsData.length;
+          const showcasesData = Array.isArray(mediaShowcases) ? mediaShowcases : mediaShowcases.data || [];
+          const showcasesTotal = Array.isArray(mediaShowcases) ? showcasesData.length : mediaShowcases.pagination?.total || showcasesData.length;
           return {
-            data: resourceMappers.contentLists.mapList(contentListsData),
-            total: contentListsTotal,
+            data: resourceMappers.mediaShowcases.mapList(showcasesData),
+            total: showcasesTotal,
+          };
+
+        case 'description-reports':
+          const descriptionReports = await getDescriptionReports({ skip, limit: perPage });
+          // Handle both direct array and paginated response formats
+          const descReportsData = Array.isArray(descriptionReports) ? descriptionReports : descriptionReports.data || [];
+          const descReportsTotal = Array.isArray(descriptionReports) ? descReportsData.length : descriptionReports.pagination?.total || descReportsData.length;
+          return {
+            data: descReportsData, // No mapper needed for now, use direct data
+            total: descReportsTotal,
+          };
+
+        case 'media-description-people':
+          // This would need special handling since it doesn't have dedicated API functions yet
+          // For now, return empty data
+          return {
+            data: [],
+            total: 0,
           };
 
         case 'screen-descriptions':
@@ -323,9 +343,17 @@ export const dataProvider: DataProvider = {
           return { data: resourceMappers.users.mapOne(user) };
 
 
-        case 'content-lists':
-          const contentList = await getContentList(id);
-          return { data: resourceMappers.contentLists.mapOne(contentList) };
+        case 'media-showcases':
+          const mediaShowcase = await getMediaShowcase(id);
+          return { data: resourceMappers.mediaShowcases.mapOne(mediaShowcase) };
+
+        case 'description-reports':
+          const descriptionReport = await getDescriptionReport(id);
+          return { data: descriptionReport };
+
+        case 'media-description-people':
+          // This would need special handling since it doesn't have dedicated API functions yet
+          return { data: { id } };
 
         case 'screen-descriptions':
           const screenDescription = await getScreenDescription(String(id));
@@ -470,9 +498,17 @@ export const dataProvider: DataProvider = {
           return { data: resourceMappers.users.mapOne(newUser) };
 
 
-        case 'content-lists':
-          const contentList = await createContentList(resourceMappers.contentLists.mapToCreate(data));
-          return { data: resourceMappers.contentLists.mapOne(contentList) };
+        case 'media-showcases':
+          const newMediaShowcase = await createMediaShowcase(resourceMappers.mediaShowcases.mapToCreate(data));
+          return { data: resourceMappers.mediaShowcases.mapOne(newMediaShowcase) };
+
+        case 'description-reports':
+          // Description reports are read-only system records
+          throw new Error('Description reports cannot be created manually');
+
+        case 'media-description-people':
+          // This would need special handling since it doesn't have dedicated API functions yet
+          throw new Error('Media description people creation not implemented yet');
 
         case 'screen-descriptions':
           const screenDescription = await createScreenDescription(resourceMappers.screenContents.mapToCreate(data));
@@ -547,9 +583,17 @@ export const dataProvider: DataProvider = {
           return { data: resourceMappers.users.mapOne(updatedUser) };
 
 
-        case 'content-lists':
-          const contentList = await updateContentList(id, resourceMappers.contentLists.mapToUpdate(data));
-          return { data: resourceMappers.contentLists.mapOne(contentList) };
+        case 'media-showcases':
+          const updatedMediaShowcase = await updateMediaShowcase(id, resourceMappers.mediaShowcases.mapToUpdate(data));
+          return { data: resourceMappers.mediaShowcases.mapOne(updatedMediaShowcase) };
+
+        case 'description-reports':
+          // Description reports are read-only system records
+          throw new Error('Description reports cannot be updated');
+
+        case 'media-description-people':
+          // This would need special handling since it doesn't have dedicated API functions yet
+          throw new Error('Media description people updates not implemented yet');
 
         case 'screen-descriptions':
           const screenDescription = await updateScreenDescription(String(id), resourceMappers.screenContents.mapToUpdate(data));
@@ -629,9 +673,17 @@ export const dataProvider: DataProvider = {
           return { data: resourceMappers.publicPersons.mapOne(person) };
 
 
-        case 'content-lists':
-          await deleteContentList(id);
-          return { data: { id } }; // deleteContentList returns void
+        case 'media-showcases':
+          await deleteMediaShowcase(id);
+          return { data: { id } }; // deleteMediaShowcase returns void
+
+        case 'description-reports':
+          // Description reports are read-only system records
+          throw new Error('Description reports cannot be deleted');
+
+        case 'media-description-people':
+          // This would need special handling since it doesn't have dedicated API functions yet
+          throw new Error('Media description people deletion not implemented yet');
 
         case 'screen-descriptions':
           await deleteScreenDescription(String(id));

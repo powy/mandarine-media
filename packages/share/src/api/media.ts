@@ -59,6 +59,11 @@ export const mediaApi = {
     return response.data;
   },
 
+  async patchMediaDescription(id: string, data: Partial<MediaDescription>): Promise<MediaDescription> {
+    const response = await apiClient.patch<MediaDescription>(`/media-descriptions/${id}`, data);
+    return response.data;
+  },
+
   // Featured and trending content
   async getFeaturedMedia(skip = 0, limit = 20): Promise<MediaDescription[]> {
     const response = await apiClient.get<MediaDescription[]>(`/media-descriptions/featured/list?skip=${skip}&limit=${limit}`);
@@ -202,10 +207,99 @@ export const mediaApi = {
     return response.data;
   },
 
+  // API 1.13 New video file endpoints
+  async destroyVideoFile(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post(`/video-files/${id}/destroy`);
+    return response.data;
+  },
+
+  async generatePlaybackToken(id: string, expirationMinutes: number = 60): Promise<{
+    success: boolean;
+    token: string;
+    playback_url: string;
+    playback_id: string;
+    expires_in_minutes: number;
+    expires_at: number;
+  }> {
+    const response = await apiClient.post(`/video-files/${id}/playback-token?expiration_minutes=${expirationMinutes}`);
+    return response.data;
+  },
+
+  async generateDrmToken(id: string, expirationMinutes: number = 60, drmKeyId?: string): Promise<{
+    success: boolean;
+    token: string;
+    drm_key_id?: string;
+    expires_in_minutes: number;
+    expires_at: number;
+  }> {
+    const params = new URLSearchParams();
+    params.append('expiration_minutes', expirationMinutes.toString());
+    if (drmKeyId) params.append('drm_key_id', drmKeyId);
+
+    const response = await apiClient.post(`/video-files/${id}/drm-token?${params}`);
+    return response.data;
+  },
+
+  async getTokenInfo(id: string): Promise<{
+    token_type: 'playback' | 'drm';
+    expires_at: number;
+    is_expired: boolean;
+    playback_id?: string;
+    drm_key_id?: string;
+  }> {
+    const response = await apiClient.get(`/video-files/${id}/token-info`);
+    return response.data;
+  },
+
+  async completeFromMux(id: string): Promise<VideoFile> {
+    const response = await apiClient.post<VideoFile>(`/video-files/${id}/complete-from-mux`);
+    return response.data;
+  },
+
+  // Audio language management
+  async addAudioLanguage(videoFileId: string, languageId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post(`/video-files/${videoFileId}/audio_languages/${languageId}`);
+    return response.data;
+  },
+
+  async removeAudioLanguage(videoFileId: string, languageId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.delete(`/video-files/${videoFileId}/audio_languages/${languageId}`);
+    return response.data;
+  },
+
+  async updateAllAudioLanguages(videoFileId: string, languageIds: string[]): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.put(`/video-files/${videoFileId}/audio_languages`, languageIds);
+    return response.data;
+  },
+
   // Bulk Media Description endpoints
   async createBulkMediaDescriptions(data: BulkMediaDescriptionRequest): Promise<BulkMediaDescriptionResponse> {
     // v1.9: Updated to flat URL structure
     const response = await apiClient.post<BulkMediaDescriptionResponse>('/media-descriptions/bulk', data);
+    return response.data;
+  },
+
+  // API 1.13 Text-to-UUID conversion
+  async createMediaDescriptionFromText(data: {
+    episode_title: string;
+    media_type: 'video' | 'excerpt' | 'trailer' | 'webtoon' | 'season' | 'program';
+    file_number?: number;
+    program_name?: string;
+    season_name?: string;
+    actor_names?: string[];
+    director_names?: string[];
+    producer_names?: string[];
+    author_names?: string[];
+    theme_names?: string[];
+    available_country_names?: string[];
+    audience_category_names?: string[];
+    image_1920_1080_filename?: string;
+    descriptive_summary_text?: string;
+    production_year?: number;
+    is_featured?: boolean;
+    content_status?: 'draft' | 'published' | 'archived' | 'scheduled';
+  }): Promise<MediaDescription> {
+    const response = await apiClient.post<MediaDescription>('/media-descriptions/from-text', data);
     return response.data;
   },
 
@@ -284,15 +378,25 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
     let actors: any[] = [];
     let directors: any[] = [];
     let producers: any[] = [];
+    let authors: any[] = [];
     let audioLanguages: any[] = [];
     let subtitleLanguages: any[] = [];
     let originCountries: any[] = [];
     
     // If this media is part of a season, get other episodes and program info
+    console.log('🔍 getVideoScreenData: Checking season data...', {
+      mediaDescriptionId: mediaDescriptionId,
+      hasSeasonId: !!mediaDescription.season_id,
+      seasonId: mediaDescription.season_id,
+      episodeNumber: mediaDescription.episode_number
+    });
+
     if (mediaDescription.season_id) {
+      console.log('🔍 getVideoScreenData: Fetching season and episodes...');
       
       // Get season info
       season = await seasonsApi.getById(mediaDescription.season_id);
+      console.log('✅ getVideoScreenData: Season fetched:', season);
       
       // Get other episodes in the same season
       const episodesResponse = await mediaApi.getMediaDescriptions({
@@ -302,56 +406,118 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
       
       // Filter episodes that belong to the same season
       relatedEpisodes = episodesResponse.data.filter(
-        episode => episode.season_id === mediaDescription.season_id && 
+        episode => episode.season_id === mediaDescription.season_id &&
                   episode.id !== mediaDescriptionId
       ).sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+
+      console.log('✅ getVideoScreenData: Related episodes found:', {
+        totalEpisodesInResponse: episodesResponse.data.length,
+        filteredForSeason: relatedEpisodes.length,
+        episodes: relatedEpisodes.map(ep => ({
+          id: ep.id,
+          episode_number: ep.episode_number,
+          episode_title: ep.episode_title
+        }))
+      });
       
       // If season has a program, get program info
       if (season.program_id) {
         program = await programsApi.getById(season.program_id);
       }
+    } else {
+      console.log('⚠️ getVideoScreenData: No season_id found - navigation buttons will not appear');
+    }
+
+    // If no program found through season, check for direct program_id
+    if (!program && mediaDescription.program_id) {
+      try {
+        program = await programsApi.getById(mediaDescription.program_id);
+      } catch (error) {
+        console.warn('Failed to fetch program by direct program_id:', error);
+      }
     }
     
-    // Get cast and crew information
-    if (mediaDescription.actors_id_list?.length || mediaDescription.directors_id_list?.length || mediaDescription.productors_id_list?.length) {
-      
-      // Get actors
-      if (mediaDescription.actors_id_list?.length) {
-        try {
-          actors = await Promise.all(
-            mediaDescription.actors_id_list.map(id => personsApi.getById(id).catch(() => null))
-          );
-          actors = actors.filter(Boolean);
-        } catch (error) {
-          console.warn('Failed to fetch actors:', error);
-          actors = [];
-        }
+    // Get cast and crew information - prioritize API 1.13 relationship objects over legacy ID lists
+    console.log('🔍 getVideoScreenData: Checking for cast and crew data...', {
+      hasActorsRelation: !!mediaDescription.actors?.length,
+      hasDirectorsRelation: !!mediaDescription.directors?.length,
+      hasProducersRelation: !!mediaDescription.producers?.length,
+      hasAuthorsRelation: !!mediaDescription.authors?.length,
+      hasActorsIdList: !!mediaDescription.actors_id_list?.length,
+      hasDirectorsIdList: !!mediaDescription.directors_id_list?.length,
+      hasProductorsIdList: !!mediaDescription.productors_id_list?.length,
+      hasAuthorsIdList: !!mediaDescription.authors_id_list?.length
+    });
+
+    // Get actors - prioritize relationship objects
+    if (mediaDescription.actors?.length) {
+      actors = mediaDescription.actors;
+      console.log('✅ getVideoScreenData: Using actors from relationship objects:', actors.length);
+    } else if (mediaDescription.actors_id_list?.length) {
+      try {
+        console.log('🔄 getVideoScreenData: Fetching actors from ID list...', mediaDescription.actors_id_list);
+        actors = await Promise.all(
+          mediaDescription.actors_id_list.map(id => personsApi.getById(id).catch(() => null))
+        );
+        actors = actors.filter(Boolean);
+        console.log('✅ getVideoScreenData: Fetched actors from ID list:', actors.length);
+      } catch (error) {
+        console.warn('❌ Failed to fetch actors from ID list:', error);
+        actors = [];
       }
-      
-      // Get directors
-      if (mediaDescription.directors_id_list?.length) {
-        try {
-          directors = await Promise.all(
-            mediaDescription.directors_id_list.map(id => personsApi.getById(id).catch(() => null))
-          );
-          directors = directors.filter(Boolean);
-        } catch (error) {
-          console.warn('Failed to fetch directors:', error);
-          directors = [];
-        }
+    }
+
+    // Get directors - prioritize relationship objects
+    if (mediaDescription.directors?.length) {
+      directors = mediaDescription.directors;
+      console.log('✅ getVideoScreenData: Using directors from relationship objects:', directors.length);
+    } else if (mediaDescription.directors_id_list?.length) {
+      try {
+        console.log('🔄 getVideoScreenData: Fetching directors from ID list...', mediaDescription.directors_id_list);
+        directors = await Promise.all(
+          mediaDescription.directors_id_list.map(id => personsApi.getById(id).catch(() => null))
+        );
+        directors = directors.filter(Boolean);
+        console.log('✅ getVideoScreenData: Fetched directors from ID list:', directors.length);
+      } catch (error) {
+        console.warn('❌ Failed to fetch directors from ID list:', error);
+        directors = [];
       }
-      
-      // Get producers
-      if (mediaDescription.productors_id_list?.length) {
-        try {
-          producers = await Promise.all(
-            mediaDescription.productors_id_list.map(id => personsApi.getById(id).catch(() => null))
-          );
-          producers = producers.filter(Boolean);
-        } catch (error) {
-          console.warn('Failed to fetch producers:', error);
-          producers = [];
-        }
+    }
+
+    // Get producers - prioritize relationship objects (note: API uses 'producers' but legacy uses 'productors_id_list')
+    if (mediaDescription.producers?.length) {
+      producers = mediaDescription.producers;
+      console.log('✅ getVideoScreenData: Using producers from relationship objects:', producers.length);
+    } else if (mediaDescription.productors_id_list?.length) {
+      try {
+        console.log('🔄 getVideoScreenData: Fetching producers from ID list...', mediaDescription.productors_id_list);
+        producers = await Promise.all(
+          mediaDescription.productors_id_list.map(id => personsApi.getById(id).catch(() => null))
+        );
+        producers = producers.filter(Boolean);
+        console.log('✅ getVideoScreenData: Fetched producers from ID list:', producers.length);
+      } catch (error) {
+        console.warn('❌ Failed to fetch producers from ID list:', error);
+        producers = [];
+      }
+    }
+
+    // Get authors - prioritize relationship objects
+    if (mediaDescription.authors?.length) {
+      authors = mediaDescription.authors;
+      console.log('✅ getVideoScreenData: Using authors from relationship objects:', authors.length);
+    } else if (mediaDescription.authors_id_list?.length) {
+      try {
+        console.log('🔄 getVideoScreenData: Fetching authors from ID list...', mediaDescription.authors_id_list);
+        authors = await Promise.all(
+          mediaDescription.authors_id_list.map(id => personsApi.getById(id).catch(() => null))
+        );
+        authors = authors.filter(Boolean);
+        console.log('✅ getVideoScreenData: Fetched authors from ID list:', authors.length);
+      } catch (error) {
+        console.warn('❌ Failed to fetch authors from ID list:', error);
+        authors = [];
       }
     }
     
@@ -422,6 +588,7 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
       actors,
       directors,
       producers,
+      authors,
       audioLanguages,
       subtitleLanguages,
       originCountries
@@ -936,6 +1103,80 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
       data: error?.response?.data
     });
     throw new Error(`Failed to fetch program screen data by program ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Trailers and Excerpts data function
+export const getTrailersAndExcerpts = async (mediaDescriptionId: string) => {
+  try {
+    console.log('🔍 getTrailersAndExcerpts: Starting for media ID:', mediaDescriptionId);
+    
+    // Get the main media description WITH relationships loaded
+    const mediaDescription = await mediaApi.getMediaDescription(mediaDescriptionId);
+    console.log('✅ getTrailersAndExcerpts: Media description received:', {
+      id: mediaDescription.id,
+      title: mediaDescription.episode_title,
+      hasTrailers: !!(mediaDescription as any).trailers?.length,
+      hasExcerpts: !!(mediaDescription as any).excerpts?.length,
+      trailerCount: (mediaDescription as any).trailers?.length || 0,
+      excerptCount: (mediaDescription as any).excerpts?.length || 0,
+      rawTrailers: (mediaDescription as any).trailers,
+      rawExcerpts: (mediaDescription as any).excerpts
+    });
+    
+    // The API already returns trailers and excerpts as VideoFile objects in the relationships!
+    const rawTrailers = (mediaDescription as any).trailers || [];
+    const rawExcerpts = (mediaDescription as any).excerpts || [];
+    
+    // Return just the VideoFile objects - don't create fake MediaDescription objects
+    // The VideoScreen will handle keeping the original description and only switching the video
+    let trailers: { mediaDescription: MediaDescription, videoFile: VideoFile | null }[] = [];
+    let excerpts: { mediaDescription: MediaDescription, videoFile: VideoFile | null }[] = [];
+    
+    // For trailers - keep original MediaDescription but use trailer VideoFile
+    if (rawTrailers.length > 0) {
+      console.log('🔍 getTrailersAndExcerpts: Processing trailers from relationships:', rawTrailers.length);
+      trailers = rawTrailers.map((trailerVideoFile: VideoFile) => {
+        return {
+          mediaDescription: mediaDescription, // Keep original MediaDescription for display
+          videoFile: trailerVideoFile // Use trailer VideoFile for playback
+        };
+      });
+      console.log('✅ getTrailersAndExcerpts: Trailers processed:', trailers.length);
+    }
+    
+    // For excerpts - keep original MediaDescription but use excerpt VideoFile
+    if (rawExcerpts.length > 0) {
+      console.log('🔍 getTrailersAndExcerpts: Processing excerpts from relationships:', rawExcerpts.length);
+      excerpts = rawExcerpts.map((excerptVideoFile: VideoFile) => {
+        return {
+          mediaDescription: mediaDescription, // Keep original MediaDescription for display
+          videoFile: excerptVideoFile // Use excerpt VideoFile for playback
+        };
+      });
+      console.log('✅ getTrailersAndExcerpts: Excerpts processed:', excerpts.length);
+    }
+    
+    console.log('✅ getTrailersAndExcerpts: Final result:', {
+      trailersCount: trailers.length,
+      excerptsCount: excerpts.length,
+      totalExtraContent: trailers.length + excerpts.length
+    });
+    
+    return {
+      trailers,
+      excerpts,
+      hasTrailers: trailers.length > 0,
+      hasExcerpts: excerpts.length > 0,
+      hasExtraContent: trailers.length > 0 || excerpts.length > 0
+    };
+  } catch (error) {
+    console.error('❌ getTrailersAndExcerpts: Critical error occurred:', {
+      mediaDescriptionId,
+      error: error instanceof Error ? error.message : error,
+      errorDetails: error
+    });
+    throw new Error(`Failed to fetch trailers and excerpts: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

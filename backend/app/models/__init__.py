@@ -16,6 +16,7 @@ from .season import Season
 from .language import Language
 from .country import Country
 from .picture import Picture
-from .content_list import ContentList, ThumbnailFormatEnum, ContentTypeEnum
+from .media_showcase import MediaShowcase
 from .screen_description import ScreenDescription, ScreenTypeEnum
 from .media_theme import MediaTheme
+from .media_description_person import MediaDescriptionPerson, PersonRoleEnum

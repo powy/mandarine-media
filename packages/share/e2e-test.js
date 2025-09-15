@@ -232,7 +232,7 @@ async function runEndToEndTests() {
     }
   });
 
-  console.log('\n📊 Testing URL Formats...');
+  console.log('\n📊 Testing URL Formats and New API Structure...');
 
   // Test 17: Verify persons URL uses /public-persons
   await runTest('Persons URL Format (/public-persons)', async () => {
@@ -252,8 +252,35 @@ async function runEndToEndTests() {
       throw error;
     }
   });
+  
+  // Test 18a: Verify media descriptions return relationship objects
+  await runTest('Media Descriptions with Relationship Objects', async () => {
+    try {
+      const result = await mediaApi.getMediaDescriptions({ limit: 1 });
+      if (result && result.data && result.data.length > 0) {
+        const mediaDesc = result.data[0];
+        
+        // Check if we have relationship objects OR deprecated ID lists
+        const hasRelationshipObjects = mediaDesc.actors || mediaDesc.directors || mediaDesc.producers;
+        const hasDeprecatedFields = mediaDesc.actors_id_list || mediaDesc.directors_id_list;
+        
+        if (!hasRelationshipObjects && !hasDeprecatedFields) {
+          console.log('⚠️  Media description has no actor/director data (expected in some cases)');
+        } else if (hasRelationshipObjects) {
+          console.log('✅ Media descriptions include new relationship objects');
+        } else {
+          console.log('⚠️  Media descriptions still using deprecated ID list fields');
+        }
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new Error('Media descriptions endpoint not found');
+      }
+      throw error;
+    }
+  });
 
-  // Test 18: Verify media-uploads endpoints exist
+  // Test 19: Verify media-uploads endpoints exist
   await runTest('Media Upload Endpoints Exist', async () => {
     // These should require admin auth, so we expect 401, not 404
     const endpoints = ['/upload/video', '/upload/webcomic', '/upload/backends'];
@@ -267,6 +294,42 @@ async function runEndToEndTests() {
       if (![401, 405, 422].includes(response.status)) {
         console.log(`⚠️  Unexpected status ${response.status} for ${endpoint}`);
       }
+    }
+  });
+  
+  // Test 20: Verify content-lists endpoints work with new structure
+  await runTest('Content Lists API with New Structure', async () => {
+    try {
+      // Import content-lists API if available
+      const { getContentLists } = await import('./src/api/content-lists.js').catch(() => ({ getContentLists: null }));
+      
+      if (getContentLists) {
+        const result = await getContentLists({ limit: 1 });
+        if (result && result.data && result.data.length > 0) {
+          const contentList = result.data[0];
+          
+          // Check for required v1.9 fields
+          if (!contentList.latest_first === undefined) {
+            console.log('⚠️  Content list missing latest_first field (v1.9 requirement)');
+          }
+          
+          // Check if content_items/content_types are empty (deprecated)
+          if (contentList.content_items && contentList.content_items.length > 0) {
+            console.log('⚠️  Content list still using deprecated content_items field');
+          }
+          
+          console.log('✅ Content lists API working with new structure');
+        } else {
+          console.log('ℹ️  No content lists found (expected in empty database)');
+        }
+      } else {
+        console.log('⚠️  Content lists API not available');
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new Error('Content lists endpoint not found');
+      }
+      throw error;
     }
   });
 

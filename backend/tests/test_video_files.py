@@ -148,22 +148,25 @@ class TestVideoFileCreate:
         assert "id" in data
         assert "creation_date_utc" in data
     
-    def test_create_video_file_invalid_data(self, client, admin_token):
-        """Test creation with invalid data."""
+    def test_create_video_file_minimal_data(self, client, admin_token):
+        """Test creation with minimal data (valid for two-step upload)."""
         headers = {"Authorization": f"Bearer {admin_token}"}
-        
-        # Actually invalid data - missing required file_name
-        invalid_data = {
+
+        # Minimal data - file_name is optional for two-step upload
+        minimal_data = {
             "file_url": "https://example.com/test.mp4"
-            # Missing required file_name field
+            # file_name is optional
         }
-        
+
         response = client.post(
             "/api/v1/video-files",
             headers=headers,
-            json=invalid_data
+            json=minimal_data
         )
-        assert response.status_code == 422
+        assert response.status_code == 200
+        data = response.json()
+        assert data["file_url"] == minimal_data["file_url"]
+        assert data["upload_status"] == "metadata_only"  # Default value
     
     def test_create_video_file_invalid_encoding_status(self, client, admin_token, sample_video_file_data):
         """Test creation with invalid encoding status."""

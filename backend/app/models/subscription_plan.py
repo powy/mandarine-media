@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID
-from app.models.associations import media_description_eligible_plans
+from app.models.associations import media_description_eligible_plans, user_subscription_plans
 
 
 class SubscriptionPlan(Base):
@@ -16,4 +16,7 @@ class SubscriptionPlan(Base):
     name = Column(String, nullable=False, unique=True)
     
     # Many-to-many relationships with MediaDescription
-    eligible_media = relationship("MediaDescription", secondary=media_description_eligible_plans, back_populates="eligible_plan_id_list")
+    eligible_media = relationship("MediaDescription", secondary=media_description_eligible_plans, back_populates="eligible_plans")
+
+    # Many-to-many relationships with User
+    users = relationship("User", secondary=user_subscription_plans, back_populates="subscription_plans")

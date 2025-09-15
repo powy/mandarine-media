@@ -117,4 +117,20 @@ export const usersApi = {
     const response = await apiClient.patch<User>(`/users/${id}/deactivate`);
     return response.data;
   },
+
+  // API 1.13 Subscription plan management
+  async addSubscriptionPlan(userId: string, planId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post(`/users/${userId}/subscription_plans/${planId}`);
+    return response.data;
+  },
+
+  async removeSubscriptionPlan(userId: string, planId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.delete(`/users/${userId}/subscription_plans/${planId}`);
+    return response.data;
+  },
+
+  async updateAllSubscriptionPlans(userId: string, planIds: string[]): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.put(`/users/${userId}/subscription_plans`, planIds);
+    return response.data;
+  },
 };

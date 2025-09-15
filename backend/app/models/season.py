@@ -4,6 +4,7 @@ from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
+from app.models.associations import season_episodes
 
 
 class Season(Base):
@@ -18,11 +19,12 @@ class Season(Base):
     # Optional fields
     season_name = Column(String, nullable=True)
     general_media_description_id = Column(GUID(), nullable=True)  # link to media_description
-    episodes_id_list = Column(JSONArray(), nullable=True)
+    # Note: Removed episodes_id_list - replaced with proper many-to-many relationship
     
     # Relationships
     program = relationship("Program", back_populates="seasons")
     media_descriptions = relationship("MediaDescription", back_populates="season")
+    episodes = relationship("MediaDescription", secondary=season_episodes, back_populates="seasons_episodes", order_by="season_episodes.c.episode_order")
     
     # Constraints
     __table_args__ = (

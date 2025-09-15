@@ -1,7 +1,8 @@
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 import uuid
+from .subscription_plan import SubscriptionPlan
 
 
 class UserBase(BaseModel):
@@ -9,7 +10,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     is_active: bool = True
     is_admin: bool = False
-    subscription_plans_id_list: Optional[List[str]] = None
+    subscription_plans: Optional[List[SubscriptionPlan]] = Field(default_factory=list, description="User's subscription plans")
 
 
 class UserCreate(UserBase):
@@ -22,7 +23,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
     password: Optional[str] = None
-    subscription_plans_id_list: Optional[List[str]] = None
+    subscription_plans: Optional[List[SubscriptionPlan]] = Field(default_factory=list, description="User's subscription plans")
 
 
 class UserInDBBase(UserBase):

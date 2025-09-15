@@ -111,11 +111,11 @@ class CRUDScreenDescription(CRUDBase[ScreenDescription, ScreenDescriptionCreate,
         
         return results
 
-    def add_content_list(
-        self, db: Session, *, screen_content: ScreenDescription, content_list_id: str, position: Optional[int] = None
+    def add_media_showcase(
+        self, db: Session, *, screen_content: ScreenDescription, media_showcase_id: str, position: Optional[int] = None
     ) -> ScreenDescription:
-        """Add a content list to the screen content."""
-        screen_content.add_content_list(content_list_id, position)
+        """Add a media showcase to the screen content."""
+        screen_content.add_media_showcase(media_showcase_id, position)
         db.add(screen_content)
         db.commit()
         db.refresh(screen_content)
@@ -125,15 +125,15 @@ class CRUDScreenDescription(CRUDBase[ScreenDescription, ScreenDescriptionCreate,
         
         return screen_content
 
-    def remove_content_list(
-        self, db: Session, *, screen_content: ScreenDescription, content_list_id: str
+    def remove_media_showcase(
+        self, db: Session, *, screen_content: ScreenDescription, media_showcase_id: str
     ) -> ScreenDescription:
-        """Remove a content list from the screen content."""
-        screen_content.remove_content_list(content_list_id)
+        """Remove a media showcase from the screen content."""
+        screen_content.remove_media_showcase(media_showcase_id)
         
         # Explicitly mark the field as modified for SQLAlchemy
         from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(screen_content, 'content_lists')
+        flag_modified(screen_content, 'media_showcases')
         
         db.add(screen_content)
         db.commit()
@@ -144,11 +144,11 @@ class CRUDScreenDescription(CRUDBase[ScreenDescription, ScreenDescriptionCreate,
         
         return screen_content
 
-    def reorder_content_lists(
-        self, db: Session, *, screen_content: ScreenDescription, new_content_lists: List[str]
+    def reorder_media_showcases(
+        self, db: Session, *, screen_content: ScreenDescription, new_media_showcases: List[str]
     ) -> ScreenDescription:
-        """Reorder content lists in the screen content."""
-        screen_content.reorder_content_lists(new_content_lists)
+        """Reorder media showcases in the screen content."""
+        screen_content.reorder_media_showcases(new_media_showcases)
         db.add(screen_content)
         db.commit()
         db.refresh(screen_content)
@@ -158,20 +158,20 @@ class CRUDScreenDescription(CRUDBase[ScreenDescription, ScreenDescriptionCreate,
         
         return screen_content
 
-    def get_screens_containing_content_list(
-        self, db: Session, *, content_list_id: str
+    def get_screens_containing_media_showcase(
+        self, db: Session, *, media_showcase_id: str
     ) -> List[ScreenDescription]:
-        """Find screen contents that contain a specific content list."""
+        """Find screen contents that contain a specific media showcase."""
         screen_contents = db.query(ScreenDescription).filter(ScreenDescription.is_active == True).all()
-        
+
         matching_screens = []
         for screen_content in screen_contents:
-            content_lists = screen_content.content_lists or []
-            
-            # Check if the content list exists in this screen
-            if content_list_id in content_lists:
+            media_showcases = screen_content.media_showcases or []
+
+            # Check if the media showcase exists in this screen
+            if media_showcase_id in media_showcases:
                 matching_screens.append(screen_content)
-        
+
         return matching_screens
 
     def get_screen_types_with_counts(self, db: Session) -> Dict[str, int]:

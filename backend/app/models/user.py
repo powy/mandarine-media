@@ -1,8 +1,10 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
+from app.models.associations import user_subscription_plans
 
 
 class User(Base):
@@ -15,4 +17,6 @@ class User(Base):
     full_name = Column(String)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
-    subscription_plans_id_list = Column(JSONArray(), nullable=True)
+
+    # Many-to-many relationships with SubscriptionPlan
+    subscription_plans = relationship("SubscriptionPlan", secondary=user_subscription_plans, back_populates="users")

@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from pydantic import BaseModel, Field, validator, ConfigDict, field_validator
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime, date
 from uuid import UUID
 import enum
+
+from app.schemas.media_description_person import PersonRoleSimple, PersonRoleCreate
 
 
 class MediaTypeEnum(str, enum.Enum):
@@ -37,16 +39,14 @@ class PublicPersonSimple(BaseModel):
     id: UUID
     stage_name_roman: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CountrySimple(BaseModel):
     id: UUID
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LanguageSimple(BaseModel):
@@ -54,24 +54,21 @@ class LanguageSimple(BaseModel):
     name: str
     sigle: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AudienceCategorySimple(BaseModel):
     id: UUID
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubscriptionPlanSimple(BaseModel):
     id: UUID
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VideoFileSimple(BaseModel):
@@ -80,8 +77,23 @@ class VideoFileSimple(BaseModel):
     file_url: Optional[str] = None
     duration_seconds: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MediaThemeSimple(BaseModel):
+    id: UUID
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PictureSimple(BaseModel):
+    id: UUID
+    image_url: str
+    file_name: Optional[str] = None
+    alt_text: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MediaDescriptionBase(BaseModel):
@@ -106,6 +118,9 @@ class MediaDescriptionBase(BaseModel):
     seo_description: Optional[str] = None
     seo_keywords_text_list: Optional[List[str]] = None
     hashtags_text_list: Optional[List[str]] = None
+    tags: Optional[List[str]] = Field(
+        None, description="General purpose tags (distinct from hashtags)"
+    )
     external_identifier_text: Optional[str] = Field(
         None, description="External system identifier"
     )
@@ -133,9 +148,6 @@ class MediaDescriptionBase(BaseModel):
     image_1080_1080_id: Optional[UUID] = None
     image_810_1080_id: Optional[UUID] = None
     image_1080_1920_id: Optional[UUID] = None
-    additional_images_id_list: Optional[List[str]] = Field(
-        None, description="Array of picture id stored as JSON"
-    )
 
     # v1.4 test image fields - REMOVED (ghost columns)
 
@@ -146,15 +158,7 @@ class MediaDescriptionBase(BaseModel):
     revenue_share: Optional[float] = None
     paid_token_cost: Optional[int] = None
 
-    # v1.12 fields - New JSON array fields
-    media_themes_id_list: Optional[List[str]] = None
-    actors_id_list: Optional[List[str]] = None
-    directors_id_list: Optional[List[str]] = None
-    productors_id_list: Optional[List[str]] = None
-    authors_id_list: Optional[List[str]] = None
-    available_countries_id_list: Optional[List[str]] = None
-    audience_categories_id_list: Optional[List[str]] = None
-    eligible_plans_id_list: Optional[List[str]] = None
+    # Note: Removed v1.12 JSON fields - replaced with proper relationship handling in Create/Update schemas
 
 
 class MediaDescriptionCreate(MediaDescriptionBase):
@@ -180,8 +184,16 @@ class MediaDescriptionCreate(MediaDescriptionBase):
     original_language_ids: Optional[List[str]] = Field(
         None, description="List of Language IDs for original languages"
     )
-    # Removed: audience_category_ids (handled by relationships now)
-    eligible_plan_id_list: Optional[List[str]] = Field(
+    available_subtitle_language_ids: Optional[List[str]] = Field(
+        None, description="List of Language IDs for available subtitle languages"
+    )
+    available_audio_language_ids: Optional[List[str]] = Field(
+        None, description="List of Language IDs for available audio languages"
+    )
+    audience_category_ids: Optional[List[str]] = Field(
+        None, description="List of AudienceCategory IDs"
+    )
+    eligible_plan_ids: Optional[List[str]] = Field(
         None, description="List of SubscriptionPlan IDs"
     )
     trailer_ids: Optional[List[str]] = Field(
@@ -189,6 +201,17 @@ class MediaDescriptionCreate(MediaDescriptionBase):
     )
     excerpt_ids: Optional[List[str]] = Field(
         None, description="List of VideoFile IDs for excerpts"
+    )
+    media_theme_ids: Optional[List[str]] = Field(
+        None, description="List of MediaTheme IDs"
+    )
+    additional_image_ids: Optional[List[str]] = Field(
+        None, description="List of Picture IDs for additional images"
+    )
+
+    # New unified people roles (optional alternative to individual role fields)
+    people_roles: Optional[List['PersonRoleCreate']] = Field(
+        None, description="List of person role assignments with positions"
     )
 
 
@@ -214,6 +237,7 @@ class MediaDescriptionUpdate(BaseModel):
     seo_description: Optional[str] = None
     seo_keywords_text_list: Optional[List[str]] = None
     hashtags_text_list: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
     external_identifier_text: Optional[str] = None
     rights_holder: Optional[str] = None
     friendly_url: Optional[str] = None
@@ -227,7 +251,13 @@ class MediaDescriptionUpdate(BaseModel):
     image_1080_1080_id: Optional[UUID] = None
     image_810_1080_id: Optional[UUID] = None
     image_1080_1920_id: Optional[UUID] = None
-    additional_images_id_list: Optional[List[str]] = None
+
+    # Revenue fields for updates
+    translation_share: Optional[float] = None
+    sacem_share: Optional[float] = None
+    other_share: Optional[float] = None
+    revenue_share: Optional[float] = None
+    paid_token_cost: Optional[int] = None
 
     # Relationship update fields
     actor_ids: Optional[List[str]] = None
@@ -237,10 +267,17 @@ class MediaDescriptionUpdate(BaseModel):
     origin_country_ids: Optional[List[str]] = None
     available_country_ids: Optional[List[str]] = None
     original_language_ids: Optional[List[str]] = None
-    # Removed: audience_category_ids (handled by relationships now)
-    eligible_plan_id_list: Optional[List[str]] = None
+    available_subtitle_language_ids: Optional[List[str]] = None
+    available_audio_language_ids: Optional[List[str]] = None
+    audience_category_ids: Optional[List[str]] = None
+    eligible_plan_ids: Optional[List[str]] = None
     trailer_ids: Optional[List[str]] = None
     excerpt_ids: Optional[List[str]] = None
+    media_theme_ids: Optional[List[str]] = None
+    additional_image_ids: Optional[List[str]] = None
+
+    # New unified people roles for updates
+    people_roles: Optional[List['PersonRoleCreate']] = None
 
 
 class MediaDescriptionInDBBase(MediaDescriptionBase):
@@ -248,23 +285,29 @@ class MediaDescriptionInDBBase(MediaDescriptionBase):
     creation_date_utc: datetime
     last_updated_utc: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MediaDescription(MediaDescriptionInDBBase):
-    # Include the relationship data
+    # Include the relationship data - keeping backward compatibility
     actors: Optional[List[PublicPersonSimple]] = []
     directors: Optional[List[PublicPersonSimple]] = []
     producers: Optional[List[PublicPersonSimple]] = []
     authors: Optional[List[PublicPersonSimple]] = []
+
+    # New unified people roles structure
+    people_roles: Optional[List['PersonRoleSimple']] = []
     origin_countries: Optional[List[CountrySimple]] = []
     available_countries: Optional[List[CountrySimple]] = []
     original_languages: Optional[List[LanguageSimple]] = []
+    available_subtitle_languages: Optional[List[LanguageSimple]] = []
+    available_audio_languages: Optional[List[LanguageSimple]] = []
     audience_categories: Optional[List[AudienceCategorySimple]] = []
-    eligible_plan_id_list: Optional[List[SubscriptionPlanSimple]] = []
+    eligible_plans: Optional[List[SubscriptionPlanSimple]] = []
     trailers: Optional[List[VideoFileSimple]] = []
     excerpts: Optional[List[VideoFileSimple]] = []
+    media_themes: Optional[List[MediaThemeSimple]] = []
+    additional_images: Optional[List[PictureSimple]] = []
 
 
 class MediaDescriptionInDB(MediaDescriptionInDBBase):
@@ -279,9 +322,10 @@ class MediaDescriptionList(BaseModel):
     content_status: Optional[ContentStatusEnum] = None
     creation_date_utc: Optional[datetime] = None
     is_featured: Optional[bool] = False
+    season_id: Optional[UUID] = None
+    episode_number: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MediaDescriptionListResponse(BaseModel):
@@ -344,8 +388,22 @@ class MediaDescriptionCreateFromText(BaseModel):
     )
 
     # Country fields - lookup by name
+    origin_country_names: Optional[List[str]] = Field(
+        None, description="List of origin country names"
+    )
     available_country_names: Optional[List[str]] = Field(
         None, description="List of available country names"
+    )
+
+    # Language fields - lookup by name
+    original_language_names: Optional[List[str]] = Field(
+        None, description="List of original language names"
+    )
+    available_subtitle_language_names: Optional[List[str]] = Field(
+        None, description="List of available subtitle language names"
+    )
+    available_audio_language_names: Optional[List[str]] = Field(
+        None, description="List of available audio language names"
     )
 
     # Audience category fields - lookup by name
@@ -375,6 +433,9 @@ class MediaDescriptionCreateFromText(BaseModel):
     seo_description: Optional[str] = None
     seo_keywords_text_list: Optional[List[str]] = None
     hashtags_text_list: Optional[List[str]] = None
+    tags: Optional[List[str]] = Field(
+        None, description="General purpose tags (distinct from hashtags)"
+    )
     external_identifier_text: Optional[str] = Field(
         None, description="External system identifier"
     )
@@ -389,11 +450,25 @@ class MediaDescriptionCreateFromText(BaseModel):
     human_keywords_text_list: Optional[List[str]] = Field(
         None, description="Human-readable tags/keywords"
     )
-    additional_images_id_list: Optional[List[str]] = Field(
-        None, description="Array of picture id stored as JSON"
-    )
     translation_share: Optional[float] = None
     sacem_share: Optional[float] = None
     other_share: Optional[float] = None
     revenue_share: Optional[float] = None
     paid_token_cost: Optional[int] = None
+
+    @field_validator('theme_names', 'actor_names', 'director_names', 'producer_names', 'author_names',
+                     'origin_country_names', 'available_country_names', 'original_language_names', 'audience_category_names', 'eligible_plan_names', 'tags', mode='before')
+    @classmethod
+    def normalize_semicolon_separated_lists(cls, v):
+        """
+        Handle semicolon-separated strings in list fields.
+        Converts strings like "item1 ; item2 ; item3" to ["item1", "item2", "item3"]
+        """
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            from app.utils.text_normalization import split_semicolon_separated_list
+            return split_semicolon_separated_list(v)
+        return v
