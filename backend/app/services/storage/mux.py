@@ -188,7 +188,7 @@ class MuxStorageBackend(BaseStorageBackend):
             logger.info(f"[MUX DEBUG] Fetching asset info for asset_id: {asset_id}")
             response = self.assets_api.get_asset(asset_id)
             asset = response.data
-            
+
             # Log raw playback IDs
             logger.info(f"[MUX DEBUG] Asset status: {asset.status}")
             logger.info(f"[MUX DEBUG] Number of playback_ids: {len(asset.playback_ids) if asset.playback_ids else 0}")
@@ -196,18 +196,28 @@ class MuxStorageBackend(BaseStorageBackend):
                 for idx, pb_id in enumerate(asset.playback_ids):
                     pb_policy = pb_id.policy if hasattr(pb_id, 'policy') else 'NO_POLICY_ATTR'
                     logger.info(f"[MUX DEBUG] Playback ID {idx}: id={pb_id.id}, policy={pb_policy}")
+            else:
+                logger.warning(f"[MUX DEBUG] No playback_ids found for asset {asset_id}. This suggests:")
+                logger.warning(f"[MUX DEBUG]   1. Asset was created without playback_policy")
+                logger.warning(f"[MUX DEBUG]   2. Asset failed to process correctly")
+                logger.warning(f"[MUX DEBUG]   3. Asset is not truly ready yet")
+
+                # If asset is ready but has no playback IDs, this is an error condition
+                if asset.status == 'ready':
+                    logger.error(f"[MUX DEBUG] CRITICAL: Asset {asset_id} is 'ready' but has no playback_ids!")
+                    logger.error(f"[MUX DEBUG] This indicates a configuration or processing issue.")
             
             # Helper function to determine most restrictive playback policy
             def get_most_restrictive_policy_and_id(playback_ids):
                 if not playback_ids:
-                    logger.warning(f"[MUX DEBUG] No playback_ids provided to get_most_restrictive_policy_and_id")
+                    logger.error(f"[MUX DEBUG] No playback_ids available for asset {asset_id}. This means the asset is not ready or has configuration issues.")
                     return None, None
-                
+
                 # Policy hierarchy: drm > signed > public
                 policy_priority = {"drm": 3, "signed": 2, "public": 1}
                 most_restrictive = None
                 best_priority = 0
-                
+
                 for pb in playback_ids:
                     policy = pb.policy if hasattr(pb, 'policy') else 'public'
                     priority = policy_priority.get(policy, 1)
@@ -216,11 +226,15 @@ class MuxStorageBackend(BaseStorageBackend):
                         best_priority = priority
                         most_restrictive = pb
                         logger.info(f"[MUX DEBUG] New most restrictive: id={pb.id}, policy={policy}, priority={priority}")
-                
-                final_policy = most_restrictive.policy if most_restrictive and hasattr(most_restrictive, 'policy') else 'public'
-                final_id = most_restrictive.id if most_restrictive else playback_ids[0].id
-                logger.info(f"[MUX DEBUG] Final selection: policy={final_policy}, id={final_id}, most_restrictive={most_restrictive is not None}")
-                return final_policy, final_id
+
+                if most_restrictive:
+                    final_policy = most_restrictive.policy if hasattr(most_restrictive, 'policy') else 'public'
+                    final_id = most_restrictive.id
+                    logger.info(f"[MUX DEBUG] Final selection: policy={final_policy}, id={final_id}")
+                    return final_policy, final_id
+                else:
+                    logger.error(f"[MUX DEBUG] Could not determine most restrictive playback policy for asset {asset_id}")
+                    return None, None
             
             # Get most restrictive playback policy and ID
             playback_policy, mux_playback_id = get_most_restrictive_policy_and_id(asset.playback_ids)
@@ -229,6 +243,11 @@ class MuxStorageBackend(BaseStorageBackend):
             # Generate playback URL using most restrictive playback ID
             file_url = f"https://stream.mux.com/{mux_playback_id}.m3u8" if mux_playback_id else None
             logger.info(f"[MUX DEBUG] Generated file_url: {file_url}")
+
+            # Additional warning if no file_url could be generated
+            if not file_url:
+                logger.warning(f"[MUX DEBUG] Could not generate file_url for asset {asset_id}. Asset status: {asset.status}, playback_ids available: {len(asset.playback_ids) if asset.playback_ids else 0}")
+                logger.warning(f"[MUX DEBUG] This may indicate: 1) Asset is still processing, 2) Asset failed to process, 3) Playback policy configuration issue")
             
             # Map encoding status
             encoding_status_map = {
@@ -320,7 +339,12 @@ class MuxStorageBackend(BaseStorageBackend):
                 'file_size_bytes': None,  # Not available in Mux API
                 'audio_sample_rate': None,  # Not available in Mux API
                 'unavailable_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate'],
-                'preserved_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate']  # These fields are preserved, not overwritten
+                'preserved_fields': ['bitrate_kbps', 'file_size_bytes', 'audio_sample_rate'],  # These fields are preserved, not overwritten
+                'debug_info': {
+                    'playback_ids_count': len(asset.playback_ids) if asset.playback_ids else 0,
+                    'has_file_url': file_url is not None,
+                    'playback_ids_raw': [{'id': pb.id, 'policy': getattr(pb, 'policy', 'unknown')} for pb in (asset.playback_ids or [])]
+                }
             }
             
             logger.info(f"[MUX DEBUG] Returning result with file_url: {result.get('file_url')}, mux_playback_id: {result.get('mux_playback_id')}")

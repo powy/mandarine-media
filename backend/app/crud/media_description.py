@@ -160,12 +160,13 @@ class CRUDMediaDescription(
         # Create the base object
         obj_data["id"] = str(uuid4())
         db_obj = self.model(**obj_data)
+        db.add(db_obj)
+        db.flush()  # Flush to persist the object and get an ID, but don't commit yet
 
-        # Set up relationships
+        # Set up relationships after the object is persisted
         if relationship_data:
             self._set_relationships(db, db_obj, relationship_data)
 
-        db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
         return db_obj
@@ -263,10 +264,12 @@ class CRUDMediaDescription(
 
             # Only include roles for existing persons
             for role in relationship_data["people_roles"]:
-                if role["public_person_id"] in existing_person_ids:
+                # Convert role person_id to string for comparison
+                role_person_id = str(role["public_person_id"])
+                if role_person_id in existing_person_ids:
                     validated_roles.append(role)
-
             people_roles_to_create = validated_roles
+
         # Create people relationships if we have any roles to process
         if people_roles_to_create:
             # Clear existing people relationships

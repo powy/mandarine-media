@@ -154,3 +154,21 @@ android/build/
 .temp*/
 apps/media-uploader/.temp*/
 /apps/mobile/android/.gradle
+
+# Media uploader files
+.upload-pids.json
+.upload-progress
+
+# Tauri build artifacts
+apps/media-uploader/src-tauri/target/
+apps/media-uploader/src-tauri/Cargo.lock
+apps/media-uploader/src-tauri/WixTools/
+
+# Electron build artifacts (legacy)
+apps/media-uploader/out/
+apps/media-uploader/dist/
+
+# Temporary build files
+apps/media-uploader/src-tauri/*.exe
+apps/media-uploader/src-tauri/*.msi
+apps/media-uploader/src-tauri/*.pdb

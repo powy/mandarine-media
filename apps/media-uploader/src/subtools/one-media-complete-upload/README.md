@@ -147,14 +147,14 @@ Note: Column A contains the French descriptions, Column B contains the technical
 
 ## Logging
 
-Logs are written to `./logs/one-media-complete-upload.log` by default. Configure logging in the configuration file:
+Logs are written to `../logs/one-media-complete-upload.log` by default. Configure logging in the configuration file:
 
 ```json
 {
   "logging": {
     "enabled": true,
     "level": "info",
-    "file": "./logs/one-media-complete-upload.log",
+    "file": "../logs/one-media-complete-upload.log",
     "console": true
   }
 }

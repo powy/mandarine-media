@@ -1,0 +1,56 @@
+{
+  "auth": {
+    "mux_token_id": "your-mux-token-id",
+    "mux_token_secret": "your-mux-token-secret"
+  },
+  "backend": {
+    "server_address": "https://your-backend-api.com",
+    "user": "your-username",
+    "password": "your-password"
+  },
+  "video": {
+    "filepath": "/path/to/your/large-video.mp4",
+    "title": "Enhanced Upload Test",
+    "description": "Testing enhanced chunked upload capabilities"
+  },
+  "settings": {
+    "playback_policy": ["public"],
+    "video_quality": "plus",
+    "max_resolution_tier": "1440p",
+    "normalize_audio": true,
+    "master_access": "temporary",
+    "mp4_support": "standard",
+    "cors_origin": "*"
+  },
+  "options": {
+    "timeout": 7200000,
+    "retry_attempts": 5,
+
+    "upload_method": "auto",
+    "chunk_size_mb": 10,
+    "memory_threshold_mb": 200,
+    "enable_resume": true,
+    "max_chunk_retries": 8,
+    "retry_delay_base": 1500,
+    "chunk_timeout": 300000,
+    "dynamic_chunk_size": false,
+
+    "validate_before_upload": true,
+    "network_quality_monitoring": false,
+    "adaptive_retry_delay": true
+  },
+  "metadata": {
+    "project": "Enhanced Upload Test",
+    "environment": "production",
+    "tags": ["test", "enhanced", "chunked"],
+    "version": "2.0",
+    "priority": 1
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "console": true,
+    "format": "json",
+    "file": "./logs/enhanced-upload.log"
+  }
+}

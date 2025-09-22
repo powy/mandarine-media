@@ -280,8 +280,48 @@ export class ExcelService {
         }
       }
     }
-    
+
+    // Post-process to normalize policy field names
+    this.normalizePolicyField(description);
+
     return description;
+  }
+
+  /**
+   * Normalize policy field names - check for policy, policies, or playback_policies
+   * and store the value consistently as 'policy'
+   */
+  normalizePolicyField(description) {
+    const policyFields = ['policy', 'policies', 'playback_policies'];
+    let policyValue = null;
+    let foundField = null;
+
+    // Check for any of the policy field variants
+    for (const field of policyFields) {
+      if (description[field] && description[field].toString().trim() !== '') {
+        policyValue = description[field].toString().trim();
+        foundField = field;
+        break;
+      }
+    }
+
+    if (policyValue) {
+      // Store the policy value under the standard 'policy' key
+      description.policy = policyValue;
+
+      // Clean up other policy field variants if they exist
+      policyFields.forEach(field => {
+        if (field !== 'policy' && description[field]) {
+          delete description[field];
+        }
+      });
+
+      if (this.logger) {
+        this.logger.info(`Policy field normalized: found "${foundField}" with value "${policyValue}", stored as "policy"`);
+      }
+    } else if (this.logger) {
+      this.logger.warn('No policy field found. Checked: policy, policies, playback_policies');
+    }
   }
 
   async updateExcelFile(excelPath, updates) {

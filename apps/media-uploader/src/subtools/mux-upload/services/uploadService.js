@@ -2,11 +2,13 @@ import fs from 'fs-extra';
 import axios from 'axios';
 import { createUpload } from '@mux/upchunk';
 import pg from 'pg';
-import { MuxUploadError, ErrorCodes, retryableOperation, handleDatabaseError } from '../utils/errorHandler.js';
+import { MuxUploadError, ErrorCodes, retryableOperation, handleDatabaseError, handleChunkUploadError, handleResumeStateError, handleUploadMethodError } from '../utils/errorHandler.js';
 import { validateVideoFile, createReadStream, formatFileSize } from '../utils/fileUtils.js';
 import { extractVideoMetadata, checkVideoFileExists } from '../utils/videoMetadata.js';
 import MuxService from './muxService.js';
 import BackendService from './backendService.js';
+import { EnhancedChunkUploader } from '../lib/enhanced-chunk-uploader.js';
+import { EnhancedRetryHandler } from '../utils/enhanced-retry.js';
 
 const { Client: PostgresClient } = pg;
 
@@ -18,7 +20,11 @@ export class UploadService {
     this.backendService = new BackendService(config, logger);
     this.dbClient = null;
     this.videoRecord = null;
-    
+
+    // Initialize enhanced upload components
+    this.retryHandler = new EnhancedRetryHandler(logger);
+    this.chunkUploader = new EnhancedChunkUploader(config, logger, this.retryHandler);
+
     if (config.database) {
       this.initializeDatabase();
     }
@@ -56,7 +62,9 @@ export class UploadService {
   async uploadVideo() {
     let uploadId = null;
     let assetId = null;
-    
+    const processStartTime = Date.now(); // Track total process time
+    let uploadStartTime; // Track upload duration
+
     try {
       this.logger.info('Starting enhanced video upload process with backend integration');
       
@@ -100,22 +108,42 @@ export class UploadService {
       
       this.logger.logUploadStart(fileInfo.filepath, fileInfo.size, uploadId);
       
-      // Step 8: Upload file to Mux
-      this.logger.info('Step 8: Uploading file to Mux');
-      await this.performFileUpload(upload.url, fileInfo);
-      
-      // Step 8: Monitor upload status and get asset
-      this.logger.info('Step 8: Monitoring Mux upload status');
+      // Step 8: Upload file to Mux (Enhanced)
+      this.logger.info('Step 8: Uploading file to Mux with enhanced chunked uploader');
+      uploadStartTime = Date.now(); // Track upload start
+      await this.chunkUploader.upload(upload.url, fileInfo.filepath);
+      const uploadDuration = Date.now() - uploadStartTime;
+
+      this.logger.info('Mux upload completed', {
+        duration: `${Math.round(uploadDuration / 1000)} seconds`
+      });
+
+      // Step 8b: Monitor upload status and get asset
+      this.logger.info('Step 8b: Monitoring Mux upload status');
       const asset = await this.muxService.monitorUploadStatus(uploadId);
       assetId = asset?.id;
-      
+
       // Validate asset ID before proceeding
       if (!assetId) {
         throw new Error(`Failed to get valid asset ID from Mux upload monitoring. Asset: ${JSON.stringify(asset)}`);
       }
-      
+
       this.logger.logUploadComplete(uploadId, assetId, asset.duration);
-      
+
+      // CRITICAL: Re-authenticate after long upload to prevent 401 errors on backend updates
+      if (uploadDuration > 30 * 60 * 1000 || this.backendService.isTokenNearExpiry(10)) {
+        this.logger.info('Refreshing authentication after upload completion', {
+          uploadDuration: `${Math.round(uploadDuration / 1000)} seconds`,
+          tokenNearExpiry: this.backendService.isTokenNearExpiry(10)
+        });
+        await this.backendService.authenticate(true);
+      } else {
+        this.logger.debug('Authentication check passed - no refresh needed', {
+          uploadDuration: `${Math.round(uploadDuration / 1000)} seconds`,
+          tokenExpired: this.backendService.isTokenExpired()
+        });
+      }
+
       // Update status to upload completed
       await this.backendService.updateUploadStatus(
         this.videoRecord.id, 
@@ -126,22 +154,54 @@ export class UploadService {
       // Step 9: Wait for asset to be ready
       this.logger.info('Step 9: Waiting for Mux asset to be ready');
       let readyAsset = await this.muxService.waitForAssetReady(assetId);
-      
+
+      // Validate asset data before proceeding
+      this.logger.info('Asset ready - validating data completeness', {
+        assetId,
+        status: readyAsset.status,
+        duration: readyAsset.duration,
+        playbackIds: readyAsset.playback_ids?.length || 0,
+        playbackIdDetails: readyAsset.playback_ids?.map(pb => ({
+          id: pb.id,
+          policy: pb.policy
+        })) || [],
+        tracks: readyAsset.tracks?.length || 0,
+        hasPlaybackIds: !!(readyAsset.playback_ids && readyAsset.playback_ids.length > 0)
+      });
+
+      // Warn if playback IDs are missing - this is often the source of issues
+      if (!readyAsset.playback_ids || readyAsset.playback_ids.length === 0) {
+        this.logger.warn('WARNING: Ready asset has no playback IDs - this will likely cause file_url to be null', {
+          assetId,
+          assetStatus: readyAsset.status,
+          suggestion: 'Check asset configuration and playback policies'
+        });
+      }
+
       // Step 10: Complete video file data from Mux API
       this.logger.info('Step 10: Completing video file data from Mux API');
-      const completedVideoFile = await this.backendService.completeVideoFileFromMux(this.videoRecord.id);
-      
-      if (completedVideoFile) {
-        this.logger.info('Video file completed successfully with Mux data', {
-          uuid: this.videoRecord.id,
-          duration: completedVideoFile.duration_seconds,
-          encoding_status: completedVideoFile.encoding_status
+      try {
+        const completedVideoFile = await this.backendService.completeVideoFileFromMux(this.videoRecord.id);
+
+        if (completedVideoFile) {
+          this.logger.info('Video file completed successfully with Mux data', {
+            uuid: this.videoRecord.id,
+            duration: completedVideoFile.duration_seconds,
+            encoding_status: completedVideoFile.encoding_status,
+            file_url: completedVideoFile.file_url,
+            mux_playback_id: completedVideoFile.mux_playback_id
+          });
+          // Update our local reference with completed data
+          this.videoRecord = completedVideoFile;
+        }
+      } catch (error) {
+        // The complete-from-mux endpoint failed - use fallback method
+        this.logger.warn('Complete-from-mux endpoint failed, using fallback manual update', {
+          error: error.message,
+          assetId,
+          videoRecordId: this.videoRecord.id
         });
-        // Update our local reference with completed data
-        this.videoRecord = completedVideoFile;
-      } else {
-        // Fallback to manual update if completion endpoint fails
-        this.logger.info('Falling back to manual Mux data update');
+
         await this.backendService.updateVideoFileWithMuxData(this.videoRecord.id, {
           assetId: readyAsset.id,
           status: readyAsset.status,
@@ -251,123 +311,100 @@ export class UploadService {
     }
   }
   
+  // Legacy method - replaced by enhanced chunk uploader
+  // Kept for potential fallback scenarios
   async performFileUpload(uploadUrl, fileInfo) {
-    const chunkSize = this.config.options?.chunk_size || 31457280; // 30MB default
-    
-    try {
-      if (fileInfo.size > 100 * 1024 * 1024) { // Files larger than 100MB use chunked upload
-        return await this.performChunkedUpload(uploadUrl, fileInfo, chunkSize);
-      } else {
-        return await this.performStreamUpload(uploadUrl, fileInfo);
-      }
-    } catch (error) {
-      // Update backend status on upload failure
-      if (this.videoRecord) {
-        try {
-          await this.backendService.updateUploadStatus(this.videoRecord.id, 'upload_failed');
-        } catch (statusError) {
-          this.logger.warn('Failed to update backend status on upload failure', {
-            uuid: this.videoRecord.id,
-            error: statusError.message
-          });
-        }
-      }
-      
-      throw new MuxUploadError(
-        'File upload failed',
-        ErrorCodes.UPLOAD_FAILED,
-        {
-          uploadUrl: uploadUrl.substring(0, 50) + '...',
-          fileSize: fileInfo.size,
-          error: error.message
-        }
-      );
-    }
+    this.logger.warn('Legacy performFileUpload called - using enhanced uploader instead');
+    return await this.chunkUploader.upload(uploadUrl, fileInfo.filepath);
   }
   
   async performStreamUpload(uploadUrl, fileInfo) {
     this.logger.info('Starting stream upload', {
       filename: fileInfo.filename,
-      size: fileInfo.sizeFormatted
+      size: fileInfo.sizeFormatted,
+      timeout: this.config.options?.timeout || 3600000
     });
-    
-    const fileStream = createReadStream(fileInfo.filepath);
-    let uploadedBytes = 0;
-    
-    fileStream.on('data', (chunk) => {
-      uploadedBytes += chunk.length;
-      const progress = (uploadedBytes / fileInfo.size) * 100;
-      this.logger.logUploadProgress('stream', progress, uploadedBytes, fileInfo.size);
-    });
-    
-    const response = await axios.put(uploadUrl, fileStream, {
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Content-Length': fileInfo.size
-      },
-      timeout: this.config.options?.timeout || 3600000,
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity
-    });
-    
-    this.logger.info('Stream upload completed', {
-      status: response.status,
-      uploadedBytes: uploadedBytes,
-      size: fileInfo.sizeFormatted
-    });
-    
-    return response;
+
+    try {
+      const fileStream = createReadStream(fileInfo.filepath);
+      let uploadedBytes = 0;
+
+      // Enhanced stream event logging
+      fileStream.on('open', () => {
+        this.logger.info('File stream opened successfully', { filepath: fileInfo.filepath });
+      });
+
+      fileStream.on('data', (chunk) => {
+        uploadedBytes += chunk.length;
+        const progress = (uploadedBytes / fileInfo.size) * 100;
+        this.logger.logUploadProgress('stream', progress, uploadedBytes, fileInfo.size);
+      });
+
+      fileStream.on('error', (streamError) => {
+        this.logger.error('File stream error during upload', {
+          filepath: fileInfo.filepath,
+          error: streamError.message,
+          uploadedBytes: uploadedBytes
+        });
+      });
+
+      const response = await axios.put(uploadUrl, fileStream, {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': fileInfo.size
+        },
+        timeout: this.config.options?.timeout || 3600000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.loaded && progressEvent.total) {
+            const progress = (progressEvent.loaded / progressEvent.total) * 100;
+            this.logger.info('HTTP upload progress', {
+              loaded: progressEvent.loaded,
+              total: progressEvent.total,
+              progress: progress.toFixed(2) + '%'
+            });
+          }
+        }
+      });
+
+      this.logger.info('Stream upload completed successfully', {
+        status: response.status,
+        statusText: response.statusText,
+        uploadedBytes: uploadedBytes,
+        size: fileInfo.sizeFormatted,
+        headers: {
+          'content-type': response.headers['content-type'],
+          'etag': response.headers.etag,
+          'x-amz-request-id': response.headers['x-amz-request-id']
+        }
+      });
+
+      return response;
+
+    } catch (error) {
+      this.logger.error('Stream upload failed', {
+        filename: fileInfo.filename,
+        error: error.message,
+        code: error.code,
+        errno: error.errno,
+        syscall: error.syscall,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        } : undefined
+      });
+
+      throw error;
+    }
   }
   
-  async performChunkedUpload(uploadUrl, fileInfo, chunkSize) {
-    this.logger.info('Starting chunked upload', {
-      filename: fileInfo.filename,
-      size: fileInfo.sizeFormatted,
-      chunkSize: formatFileSize(chunkSize)
-    });
-    
-    return new Promise((resolve, reject) => {
-      const upload = createUpload({
-        endpoint: uploadUrl,
-        file: fs.createReadStream(fileInfo.filepath),
-        chunkSize: chunkSize
-      });
-      
-      upload.on('progress', (progress) => {
-        const percentage = parseFloat(progress.detail);
-        const uploadedBytes = Math.round((percentage / 100) * fileInfo.size);
-        this.logger.logUploadProgress('chunked', percentage, uploadedBytes, fileInfo.size);
-      });
-      
-      upload.on('success', () => {
-        this.logger.info('Chunked upload completed', {
-          filename: fileInfo.filename,
-          size: fileInfo.sizeFormatted
-        });
-        resolve();
-      });
-      
-      upload.on('error', (error) => {
-        this.logger.error('Chunked upload failed', {
-          filename: fileInfo.filename,
-          error: error.message
-        });
-        reject(error);
-      });
-      
-      // Handle timeout
-      const timeout = setTimeout(() => {
-        upload.abort();
-        reject(new MuxUploadError(
-          'Upload timeout',
-          ErrorCodes.TIMEOUT_ERROR,
-          { filename: fileInfo.filename, timeout: this.config.options?.timeout }
-        ));
-      }, this.config.options?.timeout || 3600000);
-      
-      upload.on('success', () => clearTimeout(timeout));
-      upload.on('error', () => clearTimeout(timeout));
-    });
+  // Legacy method - replaced by enhanced chunk uploader
+  // This method had critical memory issues with large files
+  async performChunkedUpload(uploadUrl, fileInfo) {
+    this.logger.warn('Legacy performChunkedUpload called - using enhanced uploader instead');
+    return await this.chunkUploader.upload(uploadUrl, fileInfo.filepath);
   }
   
   // Legacy database save method (kept for backward compatibility)
@@ -549,6 +586,165 @@ export class UploadService {
     } catch (error) {
       this.logger.error('Upload validation failed', { error: error.message });
       throw error;
+    }
+  }
+
+  /**
+   * Comprehensive file access validation
+   */
+  async validateFileAccess(fileInfo) {
+    this.logger.info('Validating file access', { filepath: fileInfo.filepath });
+
+    try {
+      // Check if file exists
+      const fileExists = await fs.pathExists(fileInfo.filepath);
+      if (!fileExists) {
+        throw new MuxUploadError(
+          `File does not exist: ${fileInfo.filepath}`,
+          ErrorCodes.FILE_NOT_FOUND,
+          { filepath: fileInfo.filepath }
+        );
+      }
+
+      // Get detailed file stats
+      const stats = await fs.stat(fileInfo.filepath);
+
+      this.logger.info('File stats retrieved', {
+        filepath: fileInfo.filepath,
+        size: stats.size,
+        sizeFormatted: formatFileSize(stats.size),
+        birthtime: stats.birthtime,
+        mtime: stats.mtime,
+        mode: stats.mode.toString(8),
+        isFile: stats.isFile(),
+        isDirectory: stats.isDirectory()
+      });
+
+      // Verify it's actually a file
+      if (!stats.isFile()) {
+        throw new MuxUploadError(
+          `Path is not a file: ${fileInfo.filepath}`,
+          ErrorCodes.INVALID_FILE_TYPE,
+          { filepath: fileInfo.filepath, type: stats.isDirectory() ? 'directory' : 'other' }
+        );
+      }
+
+      // Check file size consistency
+      if (stats.size !== fileInfo.size) {
+        this.logger.warn('File size mismatch detected', {
+          filepath: fileInfo.filepath,
+          expectedSize: fileInfo.size,
+          actualSize: stats.size,
+          difference: Math.abs(stats.size - fileInfo.size)
+        });
+      }
+
+      // Check file permissions (readable)
+      try {
+        await fs.access(fileInfo.filepath, fs.constants.R_OK);
+        this.logger.info('File is readable', { filepath: fileInfo.filepath });
+      } catch (accessError) {
+        throw new MuxUploadError(
+          `File is not readable: ${fileInfo.filepath}`,
+          ErrorCodes.FILE_ACCESS_DENIED,
+          { filepath: fileInfo.filepath, error: accessError.message }
+        );
+      }
+
+      // Try to create a read stream as a final validation
+      try {
+        const testStream = createReadStream(fileInfo.filepath, { start: 0, end: 1024 }); // Read first 1KB
+        const streamPromise = new Promise((resolve, reject) => {
+          let bytesRead = 0;
+          testStream.on('data', (chunk) => {
+            bytesRead += chunk.length;
+          });
+          testStream.on('end', () => {
+            resolve(bytesRead);
+          });
+          testStream.on('error', reject);
+        });
+
+        const bytesRead = await streamPromise;
+        this.logger.info('File stream test successful', {
+          filepath: fileInfo.filepath,
+          testBytesRead: bytesRead
+        });
+      } catch (streamError) {
+        throw new MuxUploadError(
+          `Cannot create file stream: ${fileInfo.filepath}`,
+          ErrorCodes.FILE_STREAM_ERROR,
+          { filepath: fileInfo.filepath, error: streamError.message }
+        );
+      }
+
+      this.logger.info('File validation completed successfully', { filepath: fileInfo.filepath });
+
+    } catch (error) {
+      if (error instanceof MuxUploadError) {
+        throw error;
+      }
+
+      throw new MuxUploadError(
+        `File validation failed: ${error.message}`,
+        ErrorCodes.FILE_VALIDATION_ERROR,
+        { filepath: fileInfo.filepath, originalError: error.message }
+      );
+    }
+  }
+
+  /**
+   * Test network connectivity to upload URL
+   */
+  async testConnectivity(uploadUrl) {
+    this.logger.info('Testing connectivity to upload URL');
+
+    try {
+      // Parse URL for logging
+      const url = new URL(uploadUrl);
+      this.logger.info('Upload URL details', {
+        hostname: url.hostname,
+        protocol: url.protocol,
+        port: url.port || (url.protocol === 'https:' ? 443 : 80)
+      });
+
+      // Test connectivity with a HEAD request (no body)
+      const response = await axios.head(uploadUrl, {
+        timeout: 10000, // 10 second timeout for connectivity test
+        validateStatus: (status) => status < 500 // Accept any status code < 500 as connected
+      });
+
+      this.logger.info('Connectivity test successful', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          'content-type': response.headers['content-type'],
+          'server': response.headers.server,
+          'connection': response.headers.connection
+        }
+      });
+
+    } catch (error) {
+      const connectivityError = {
+        uploadUrl: uploadUrl.substring(0, 50) + '...',
+        error: error.message,
+        code: error.code,
+        errno: error.errno,
+        syscall: error.syscall
+      };
+
+      if (error.response) {
+        connectivityError.httpStatus = error.response.status;
+        connectivityError.httpStatusText = error.response.statusText;
+      }
+
+      this.logger.error('Connectivity test failed', connectivityError);
+
+      throw new MuxUploadError(
+        `Network connectivity test failed: ${error.message}`,
+        ErrorCodes.NETWORK_ERROR,
+        connectivityError
+      );
     }
   }
 }

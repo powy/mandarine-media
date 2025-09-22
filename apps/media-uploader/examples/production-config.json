@@ -1,0 +1,143 @@
+{
+  "auth": {
+    "mux_token_id": "your-production-mux-token-id",
+    "mux_token_secret": "your-production-mux-token-secret"
+  },
+  "backend": {
+    "server_address": "https://api.yourcompany.com",
+    "user": "production-uploader@yourcompany.com",
+    "password": "secure-production-password"
+  },
+  "video": {
+    "filepath": "/production/videos/large-content.mp4",
+    "title": "Production Video Content",
+    "description": "High-quality production video with full features"
+  },
+  "settings": {
+    "playback_policy": ["public", "signed"],
+    "video_quality": "plus",
+    "max_resolution_tier": "2160p",
+    "normalize_audio": true,
+    "master_access": "full",
+    "mp4_support": "standard",
+    "cors_origin": "https://yourcompany.com",
+    "environment_text": "production",
+    "passthrough": "production-batch-2024"
+  },
+  "options": {
+    "timeout": 10800000,
+    "retry_attempts": 8,
+
+    "upload_method": "custom",
+    "chunk_size_mb": 20,
+    "memory_threshold_mb": 500,
+    "enable_resume": true,
+    "max_chunk_retries": 10,
+    "retry_delay_base": 2000,
+    "chunk_timeout": 600000,
+    "dynamic_chunk_size": true,
+
+    "validate_before_upload": true,
+    "network_quality_monitoring": true,
+    "adaptive_retry_delay": true
+  },
+  "metadata": {
+    "project": "Production Content Pipeline",
+    "environment": "production",
+    "tags": ["production", "high-quality", "enterprise"],
+    "version": "3.0",
+    "priority": 5,
+    "content_type": "premium",
+    "upload_batch": "2024-Q1",
+    "source_system": "content-management-v2"
+  },
+  "subtitles": [
+    {
+      "url": "https://cdn.yourcompany.com/subtitles/en.vtt",
+      "language_code": "en",
+      "name": "English",
+      "text_type": "subtitles",
+      "closed_captions": false,
+      "passthrough": "english-production"
+    },
+    {
+      "url": "https://cdn.yourcompany.com/subtitles/es.vtt",
+      "language_code": "es",
+      "name": "Spanish",
+      "text_type": "subtitles",
+      "closed_captions": true,
+      "passthrough": "spanish-production"
+    }
+  ],
+  "drm": {
+    "enabled": true,
+    "configuration_id": "your-drm-config-id",
+    "license_url": "https://license.yourcompany.com/drm",
+    "certificate_url": "https://certs.yourcompany.com/drm.pem"
+  },
+  "static_renditions": {
+    "files": [
+      {
+        "name": "mobile-optimized",
+        "ext": "mp4",
+        "resolution_tier": "720p",
+        "passthrough": "mobile-rendition"
+      },
+      {
+        "name": "desktop-hd",
+        "ext": "mp4",
+        "resolution_tier": "1080p",
+        "passthrough": "desktop-rendition"
+      },
+      {
+        "name": "premium-4k",
+        "ext": "mp4",
+        "resolution_tier": "2160p",
+        "passthrough": "4k-rendition"
+      }
+    ]
+  },
+  "watermark": {
+    "url": "https://cdn.yourcompany.com/watermarks/production-logo.png",
+    "overlay_settings": {
+      "vertical_align": "bottom",
+      "vertical_margin": "5%",
+      "horizontal_align": "right",
+      "horizontal_margin": "5%",
+      "width": "15%",
+      "opacity": "80%"
+    }
+  },
+  "database": {
+    "type": "postgresql",
+    "connection": {
+      "host": "db.yourcompany.com",
+      "port": 5432,
+      "database": "mux_production",
+      "user": "mux_uploader",
+      "password": "secure-db-password"
+    },
+    "table": "mux_assets_production",
+    "save_playback_ids": true,
+    "save_tracks": true,
+    "save_metadata": true
+  },
+  "webhook": {
+    "enabled": true,
+    "url": "https://webhooks.yourcompany.com/mux-events",
+    "events": [
+      "video.asset.ready",
+      "video.asset.errored",
+      "video.asset.created",
+      "video.upload.asset_created",
+      "video.upload.errored"
+    ]
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "console": true,
+    "format": "json",
+    "file": "/var/log/mux-uploader/production.log"
+  }
+}

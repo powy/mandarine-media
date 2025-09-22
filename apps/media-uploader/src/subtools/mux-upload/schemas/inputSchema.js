@@ -110,11 +110,27 @@ const webhookSchema = Joi.object({
 });
 
 const optionsSchema = Joi.object({
+  // Legacy options (maintained for backward compatibility)
   timeout: Joi.number().integer().min(60000).default(3600000), // 1 min minimum, no maximum
   retry_attempts: Joi.number().integer().min(1).max(10).default(3),
   retry_delay: Joi.number().integer().min(1000).max(30000).default(5000), // 1-30 seconds
-  chunk_size: Joi.number().integer().min(1048576).max(104857600).default(31457280), // 1MB to 100MB
-  concurrent_uploads: Joi.number().integer().min(1).max(5).default(1)
+  chunk_size: Joi.number().integer().min(1048576).max(104857600).default(31457280), // 1MB to 100MB (legacy)
+  concurrent_uploads: Joi.number().integer().min(1).max(5).default(1),
+
+  // Enhanced upload options
+  upload_method: Joi.string().valid('auto', 'upchunk', 'custom').default('auto'),
+  chunk_size_mb: Joi.number().min(1).max(50).default(5), // New chunk size in MB
+  memory_threshold_mb: Joi.number().min(50).max(1000).default(100), // Memory threshold for method selection
+  enable_resume: Joi.boolean().default(true), // Resume capability
+  max_chunk_retries: Joi.number().integer().min(1).max(10).default(5), // Per-chunk retry attempts
+  retry_delay_base: Joi.number().integer().min(100).max(10000).default(1000), // Base retry delay in ms
+  chunk_timeout: Joi.number().integer().min(30000).max(600000).default(120000), // Per-chunk timeout (30s-10min)
+  dynamic_chunk_size: Joi.boolean().default(false), // Enable dynamic chunk sizing
+
+  // Advanced options
+  validate_before_upload: Joi.boolean().default(true), // Validate before starting upload
+  network_quality_monitoring: Joi.boolean().default(false), // Monitor network quality
+  adaptive_retry_delay: Joi.boolean().default(true) // Use adaptive retry delays
 });
 
 export const configSchema = Joi.object({

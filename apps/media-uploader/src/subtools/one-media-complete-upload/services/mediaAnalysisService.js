@@ -79,12 +79,22 @@ export class MediaAnalysisService {
     for (const image of images) {
       const fileName = image.name.toLowerCase();
       
-      // Extract dimensions from filename
+      // Extract dimensions from filename with flexible pattern matching
       for (const format of expectedFormats) {
         const formatPattern = format.replace('_', 'x'); // 1920_1080 -> 1920x1080
         const altFormatPattern = format; // 1920_1080
-        
-        if (fileName.includes(formatPattern) || fileName.includes(altFormatPattern)) {
+
+        // Create flexible regex pattern to match various separators with optional spaces
+        // Supports: 1920x1080, 1920_1080, 1920-1080, 1920 - 1080, 1920- 1080, 1920 -1080, etc.
+        const dimensionParts = format.split('_');
+        const flexiblePattern = new RegExp(
+          dimensionParts[0] + '[\\s]*[-_x×][\\s]*' + dimensionParts[1],
+          'i'
+        );
+
+        if (fileName.includes(formatPattern) ||
+            fileName.includes(altFormatPattern) ||
+            flexiblePattern.test(fileName)) {
           // Check if we already have a match for this format
           if (formatMappings[format] === null) {
             formatMappings[format] = image;
@@ -179,9 +189,11 @@ export class MediaAnalysisService {
       } else if (fileName.includes('_en') || fileName.includes('-en') || fileName.includes('.en') || 
                  fileName.includes(' en ') || fileName.endsWith(' en.srt') || fileName.endsWith(' en.vtt')) {
         detectedLanguage = 'en';
-      } else if (fileName.includes('_ko') || fileName.includes('-ko') || fileName.includes('.ko') || 
-                 fileName.includes(' ko ') || fileName.endsWith(' ko.srt') || fileName.endsWith(' ko.vtt')) {
-        detectedLanguage = 'ko';
+      } else if (fileName.includes('_ko') || fileName.includes('-ko') || fileName.includes('.ko') ||
+                 fileName.includes(' ko ') || fileName.endsWith(' ko.srt') || fileName.endsWith(' ko.vtt') ||
+                 fileName.includes('_kr') || fileName.includes('-kr') || fileName.includes('.kr') ||
+                 fileName.includes(' kr ') || fileName.endsWith(' kr.srt') || fileName.endsWith(' kr.vtt')) {
+        detectedLanguage = 'ko';  // Map both ko and kr to 'ko'
       }
       
       if (!detectedLanguage) {

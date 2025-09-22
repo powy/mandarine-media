@@ -38,7 +38,8 @@ export class ValidationService {
       }
 
       // Validate Files sheet data
-      const filesErrors = this.validateFilesSheet(excelData.files);
+      const mediaType = excelData.description.media_type?.toLowerCase() || 'video';
+      const filesErrors = this.validateFilesSheet(excelData.files, mediaType);
       if (filesErrors.length > 0) {
         context.validationErrors.push(...filesErrors);
         isValid = false;
@@ -115,15 +116,39 @@ export class ValidationService {
    */
   validateDescriptionFields(description) {
     const errors = [];
-    const required = [
-      { field: 'episode_title', name: 'Episode Title' },
-      { field: 'media_type', name: 'Media Type' }
-    ];
+    const mediaType = description.media_type?.toLowerCase() || 'video';
+
+    // Different required fields based on media type
+    let required = [];
+
+    switch(mediaType) {
+      case 'season':
+        required = [
+          { field: 'season_name', name: 'Season Name' },
+          { field: 'media_type', name: 'Media Type' },
+          { field: 'slug', name: 'Slug' }
+        ];
+        break;
+      case 'program':
+        required = [
+          { field: 'program_name', name: 'Program Name' },
+          { field: 'media_type', name: 'Media Type' },
+          { field: 'slug', name: 'Slug' }
+        ];
+        break;
+      default: // video, excerpt, trailer, webtoon
+        required = [
+          { field: 'episode_title', name: 'Episode Title' },
+          { field: 'media_type', name: 'Media Type' },
+          { field: 'slug', name: 'Slug' }
+        ];
+        break;
+    }
 
     // Check required fields
     for (const { field, name } of required) {
       if (!description[field] || description[field].toString().trim() === '') {
-        errors.push(`Missing required field: ${name} (${field})`);
+        errors.push(`Missing required field for ${mediaType} type: ${name} (${field})`);
       }
     }
 
@@ -135,30 +160,36 @@ export class ValidationService {
       }
     }
 
-    // Validate episode_number if present
-    if (description.episode_number !== undefined && description.episode_number !== null) {
+    // Validation warnings for season/program types
+    if (mediaType === 'season' && description.episode_number) {
+      errors.push(`Episode number should not be specified for season type`);
+    }
+    if (mediaType === 'program' && (description.episode_number || description.season_name)) {
+      errors.push(`Episode number and season name should not be specified for program type`);
+    }
+
+    // Validate episode_number if present (only for video types)
+    if ((mediaType === 'video' || mediaType === 'excerpt' || mediaType === 'trailer') &&
+        description.episode_number !== undefined && description.episode_number !== null) {
       const episodeNum = parseInt(description.episode_number);
       if (isNaN(episodeNum) || episodeNum < 1) {
         errors.push(`Invalid episode_number: "${description.episode_number}". Must be a positive integer.`);
       }
     }
 
-    // Validate policy field
+    // Validate policy field (should be normalized by ExcelService)
     if (description.policy) {
       const validPolicies = ['public', 'signed', 'drm'];
       if (!validPolicies.includes(description.policy.toLowerCase())) {
         errors.push(`Invalid policy: "${description.policy}". Must be one of: ${validPolicies.join(', ')}`);
       }
 
-      // Validate DRM configuration when policy is 'drm'
-      if (description.policy.toLowerCase() === 'drm') {
-        if (!description.drm_configuration_id || description.drm_configuration_id.toString().trim() === '') {
-          errors.push(`DRM policy requires 'drm_configuration_id' field to be provided`);
-        } else if (typeof description.drm_configuration_id !== 'string' && 
-                   typeof description.drm_configuration_id.toString !== 'function') {
-          errors.push(`DRM configuration ID must be a valid string`);
-        }
-      }
+      // Note: DRM configuration ID comes from tool configuration, not Excel sheet
+      // The Excel only specifies the policy ('drm'), the actual configuration ID
+      // is provided through the tool's configuration file
+    } else {
+      // Error if no policy field found (ExcelService should warn but validation should catch)
+      errors.push(`Policy field is required. Please add 'policy', 'policies', or 'playback_policies' field in Description sheet with value: 'public', 'signed', or 'drm'`);
     }
 
     return errors;
@@ -167,21 +198,27 @@ export class ValidationService {
   /**
    * Validate Files sheet data
    */
-  validateFilesSheet(files) {
+  validateFilesSheet(files, mediaType = 'video') {
     const errors = [];
 
     if (!files || files.length === 0) {
+      // For season/program types, empty files sheet is acceptable
+      if (mediaType === 'season' || mediaType === 'program') {
+        return errors; // No errors for empty files sheet
+      }
       errors.push('Files sheet is empty. Please fill at least one file entry.');
       return errors;
     }
 
-    // Check if at least one main video is specified
-    const hasMainVideo = files.some(file => 
-      file.type && file.type.toLowerCase().includes('video') && file.fileName
-    );
+    // Check if at least one main video is specified (not required for season/program)
+    if (mediaType !== 'season' && mediaType !== 'program') {
+      const hasMainVideo = files.some(file =>
+        file.type && file.type.toLowerCase().includes('video') && file.fileName
+      );
 
-    if (!hasMainVideo) {
-      errors.push('No main video file specified. Please specify at least one video file.');
+      if (!hasMainVideo) {
+        errors.push('No main video file specified. Please specify at least one video file.');
+      }
     }
 
     // Validate individual file entries

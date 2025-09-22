@@ -34,12 +34,24 @@ export const ErrorCodes = {
   FILE_ACCESS_DENIED: 'FILE_ACCESS_DENIED',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   INVALID_FILE_FORMAT: 'INVALID_FILE_FORMAT',
+  INVALID_FILE_TYPE: 'INVALID_FILE_TYPE',
+  FILE_STREAM_ERROR: 'FILE_STREAM_ERROR',
+  FILE_VALIDATION_ERROR: 'FILE_VALIDATION_ERROR',
   
   // Upload errors
   UPLOAD_FAILED: 'UPLOAD_FAILED',
   UPLOAD_TIMEOUT: 'UPLOAD_TIMEOUT',
   UPLOAD_CANCELLED: 'UPLOAD_CANCELLED',
   DIRECT_UPLOAD_CREATION_FAILED: 'DIRECT_UPLOAD_CREATION_FAILED',
+
+  // Chunk upload errors
+  CHUNK_UPLOAD_FAILED: 'CHUNK_UPLOAD_FAILED',
+  CHUNK_SIZE_ERROR: 'CHUNK_SIZE_ERROR',
+  CHUNK_RANGE_ERROR: 'CHUNK_RANGE_ERROR',
+  CHUNK_TIMEOUT: 'CHUNK_TIMEOUT',
+  CHUNK_RETRY_EXHAUSTED: 'CHUNK_RETRY_EXHAUSTED',
+  RESUME_STATE_ERROR: 'RESUME_STATE_ERROR',
+  UPLOAD_METHOD_ERROR: 'UPLOAD_METHOD_ERROR',
   
   // Subtitle errors
   SUBTITLE_FAILED: 'SUBTITLE_FAILED',
@@ -290,6 +302,157 @@ export function handleDatabaseError(error, operation = 'Database operation') {
   }
 }
 
+export function handleChunkUploadError(error, chunkInfo = {}, operation = 'Chunk upload') {
+  const { chunkNumber, start, end, size, attempt } = chunkInfo;
+
+  // Handle specific chunk upload error scenarios
+  if (error.response) {
+    const status = error.response.status;
+    const data = error.response.data;
+
+    switch (status) {
+      case 400:
+        throw new MuxUploadError(
+          'Invalid chunk range or malformed request',
+          ErrorCodes.CHUNK_RANGE_ERROR,
+          {
+            status,
+            data,
+            chunkNumber,
+            range: `${start}-${end}`,
+            operation
+          }
+        );
+      case 408:
+        throw new MuxUploadError(
+          'Chunk upload timeout',
+          ErrorCodes.CHUNK_TIMEOUT,
+          {
+            status,
+            data,
+            chunkNumber,
+            size,
+            operation,
+            retryable: true
+          }
+        );
+      case 416:
+        throw new MuxUploadError(
+          'Invalid chunk range requested',
+          ErrorCodes.CHUNK_RANGE_ERROR,
+          {
+            status,
+            data,
+            chunkNumber,
+            range: `${start}-${end}`,
+            operation
+          }
+        );
+      case 429:
+        throw new MuxUploadError(
+          'Too many chunk upload requests. Rate limited.',
+          ErrorCodes.NETWORK_ERROR,
+          {
+            status,
+            data,
+            chunkNumber,
+            operation,
+            retryable: true
+          }
+        );
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        throw new MuxUploadError(
+          `Server error during chunk upload: ${status}`,
+          ErrorCodes.CHUNK_UPLOAD_FAILED,
+          {
+            status,
+            data,
+            chunkNumber,
+            operation,
+            retryable: true
+          }
+        );
+      default:
+        throw new MuxUploadError(
+          `Chunk upload failed with HTTP ${status}: ${data?.message || error.message}`,
+          ErrorCodes.CHUNK_UPLOAD_FAILED,
+          {
+            status,
+            data,
+            chunkNumber,
+            operation
+          }
+        );
+    }
+  }
+
+  // Handle network and timeout errors
+  if (error.code === 'ETIMEDOUT' || error.message?.toLowerCase().includes('timeout')) {
+    throw new MuxUploadError(
+      'Chunk upload timed out',
+      ErrorCodes.CHUNK_TIMEOUT,
+      {
+        chunkNumber,
+        size,
+        originalError: error.message,
+        operation,
+        retryable: true
+      }
+    );
+  }
+
+  if (error.code === 'ECONNRESET' || error.message?.includes('socket hang up')) {
+    throw new MuxUploadError(
+      'Connection reset during chunk upload',
+      ErrorCodes.CHUNK_UPLOAD_FAILED,
+      {
+        chunkNumber,
+        originalError: error.message,
+        operation,
+        retryable: true
+      }
+    );
+  }
+
+  // Generic chunk upload error
+  throw new MuxUploadError(
+    `Chunk ${chunkNumber || 'unknown'} upload failed: ${error.message}`,
+    ErrorCodes.CHUNK_UPLOAD_FAILED,
+    {
+      chunkNumber,
+      originalError: error.message,
+      operation
+    }
+  );
+}
+
+export function handleResumeStateError(error, filepath, operation = 'Resume state operation') {
+  throw new MuxUploadError(
+    `Resume state ${operation.toLowerCase()} failed: ${error.message}`,
+    ErrorCodes.RESUME_STATE_ERROR,
+    {
+      filepath,
+      originalError: error.message,
+      operation
+    }
+  );
+}
+
+export function handleUploadMethodError(method, error, operation = 'Upload method selection') {
+  throw new MuxUploadError(
+    `Upload method '${method}' failed: ${error.message}`,
+    ErrorCodes.UPLOAD_METHOD_ERROR,
+    {
+      method,
+      originalError: error.message,
+      operation
+    }
+  );
+}
+
 export function createErrorContext(operation, details = {}) {
   return {
     operation,
@@ -305,5 +468,8 @@ export default {
   handleMuxError,
   handleFileError,
   handleDatabaseError,
+  handleChunkUploadError,
+  handleResumeStateError,
+  handleUploadMethodError,
   createErrorContext
 };

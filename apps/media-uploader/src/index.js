@@ -205,6 +205,62 @@ class UploaderToolCLI {
         }
       });
 
+    // Upload GUI Command
+    this.program
+      .command('gui')
+      .alias('upload-gui')
+      .description('Launch graphical interface for media upload')
+      .option('-c, --config <path>', 'Path to config.ini file (default: ./config.ini)')
+      .option('--create-config', 'Create a sample configuration file and exit')
+      .option('-v, --verbose', 'Enable verbose output')
+      .action(async (options) => {
+        try {
+          console.log(chalk.blue.bold('🖥️  Media Upload GUI\n'));
+          const { launchUploadGUI } = await import('./subtools/upload-gui/wrapper.js');
+          await launchUploadGUI(options);
+        } catch (error) {
+          console.error(chalk.red(`❌ GUI launch failed: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
+      });
+
+    // Excel Batch Editor Command
+    this.program
+      .command('excel-batch-update')
+      .alias('batch-excel')
+      .description('Update specific fields in Excel files across multiple subfolders')
+      .requiredOption('-f, --folder <path>', 'Main folder containing subfolders with Excel files')
+      .requiredOption('--field <name>', 'Field name to update (e.g., "policy")')
+      .requiredOption('--value <value>', 'New value for the field')
+      .option('-p, --pattern <pattern>', 'File pattern to match (default: "0_desc")', '0_desc')
+      .option('--dry-run', 'Preview changes without modifying files')
+      .option('-v, --verbose', 'Verbose output for detailed logging')
+      .action(async (options) => {
+        try {
+          console.log(chalk.blue.bold('📊 Excel Batch Editor\n'));
+          const result = await this.wrappers.batchUpdateExcel(options);
+
+          if (result.dryRun) {
+            console.log(chalk.yellow('✓ Dry run completed successfully'));
+          } else if (result.success) {
+            console.log(chalk.green('✅ Batch update completed successfully'));
+          } else {
+            console.log(chalk.red('❌ Batch update completed with errors'));
+          }
+
+          process.exit(result.success ? 0 : 1);
+        } catch (error) {
+          console.error(chalk.red(`❌ Excel batch update failed: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
+      });
+
     // Global help enhancement
     this.program.on('--help', () => {
       console.log('');
@@ -214,6 +270,9 @@ class UploaderToolCLI {
       console.log('  $ media-uploader upload-subtitles --config subtitle-config.json');
       console.log('  $ media-uploader upload-picture --config picture-config.json --verbose');
       console.log('  $ media-uploader complete-upload --config config.json --folder /path/to/media');
+      console.log('  $ media-uploader excel-batch-update --folder /path/to/main --field policy --value "public"');
+      console.log('  $ media-uploader gui --config config.ini');
+      console.log('  $ media-uploader gui --create-config');
       console.log('');
       console.log(chalk.cyan('Individual Tool Help:'));
       console.log('  $ media-uploader analyze --help');
@@ -221,6 +280,8 @@ class UploaderToolCLI {
       console.log('  $ media-uploader upload-subtitles --help');
       console.log('  $ media-uploader upload-picture --help');
       console.log('  $ media-uploader complete-upload --help');
+      console.log('  $ media-uploader excel-batch-update --help');
+      console.log('  $ media-uploader gui --help');
       console.log('');
     });
   }
@@ -251,13 +312,15 @@ async function main() {
     const { uploadSubtitlesToMux } = await import('./subtools/mux-subtitle-upload/wrapper.js');
     const { uploadPicture } = await import('./subtools/picture-upload/wrapper.js');
     const { oneMediaCompleteUpload } = await import('./subtools/one-media-complete-upload/wrapper.js');
+    const { batchUpdateExcel } = await import('./subtools/excel-batch-editor/wrapper.js');
 
     const wrappers = {
       analyzeMedia: mediaAnalyzerPkg.default.analyzeMedia,
       uploadToMux,
       uploadSubtitlesToMux,
       uploadPicture,
-      oneMediaCompleteUpload
+      oneMediaCompleteUpload,
+      batchUpdateExcel
     };
 
     // Create and run CLI

@@ -51,14 +51,20 @@ export class MuxService {
         playback_policy: settings.playback_policy || ['public'],
         video_quality: settings.video_quality || 'basic',
         max_resolution_tier: settings.max_resolution_tier || '1080p',
-        normalize_audio: settings.normalize_audio || false,
-        master_access: settings.master_access || 'none',
-        mp4_support: settings.mp4_support || 'none'
+        normalize_audio: settings.normalize_audio !== undefined ? settings.normalize_audio : false,
+        master_access: settings.master_access || 'none'
       }
     };
+
+    // Only add mp4_support if explicitly provided in settings (don't send by default)
+    if (settings.mp4_support !== undefined) {
+      uploadConfig.new_asset_settings.mp4_support = settings.mp4_support;
+    }
+
+    // Don't send encoding_tier parameter at all (as per requirements)
     
-    // Add passthrough if provided (check both settings and video sections)
-    const passthrough = settings.passthrough || video.passthrough || video.title;
+    // Add passthrough if provided (only from settings as per schema)
+    const passthrough = settings.passthrough || video.title;
     if (passthrough) {
       uploadConfig.new_asset_settings.passthrough = passthrough;
     }

@@ -75,12 +75,12 @@ emulator -avd <your_emulator_name>
 emulator -avd Pixel_4_API_35
 ```
 
-## uspadte sdtabase
+## update database
 
 ```bash
 Basic Commands:
   # From the backend directory:
-  cd /home/powy/code/media_workspace/kyool-media/backend
+  cd kyool-media/backend
 
   # Create a new migration after model changes:
   alembic revision --autogenerate -m "Description of changes"
@@ -95,4 +95,32 @@ Basic Commands:
   alembic history
 
 
+```
+
+## Deploy Web App to S3
+
+### Build and Deploy Web App
+
+```bash
+# Build the web app for production
+npx nx build web --prod
+
+# Sync built files to S3 bucket (replace with actual bucket name)
+aws s3 sync apps/web/dist/ s3://your-web-app-bucket-name --delete
+
+# Invalidate CloudFront cache if using CloudFront (replace with distribution ID)
+aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
+```
+
+### Alternative deployment with specific AWS profile
+
+```bash
+# Build the web app
+npx nx build web --prod
+
+# Deploy with specific AWS profile
+aws s3 sync apps/web/dist/ s3://your-web-app-bucket-name --delete --profile your-aws-profile
+
+# Invalidate CloudFront cache with profile
+aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*" --profile your-aws-profile
 ```

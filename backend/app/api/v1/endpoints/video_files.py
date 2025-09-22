@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
 import time
+import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
 from sqlalchemy.orm import Session
@@ -748,8 +749,39 @@ async def complete_video_file_from_mux(
         from app.services.storage.mux import MuxStorageBackend
         mux_service = MuxStorageBackend(upload_config['backends']['mux'])
         
-        # Get complete asset information from Mux
+        # Get complete asset information from Mux with retry for incomplete data
         asset_info = await mux_service.get_complete_asset_info(video_file.mux_asset_id)
+
+        # If the asset info is incomplete but successful, try a few more times
+        # This handles cases where the asset is "ready" but playback IDs aren't available yet
+        max_retries = 3
+        retry_delay = 2  # seconds
+
+        for retry_attempt in range(max_retries):
+            if asset_info.get('success') and asset_info.get('debug_info'):
+                debug_info = asset_info['debug_info']
+
+                # Check if we have essential data
+                has_playback_ids = debug_info.get('has_file_url', False)
+                playback_count = debug_info.get('playback_ids_count', 0)
+
+                if not has_playback_ids and playback_count == 0:
+                    logger.warning(f"[VIDEO_FILES DEBUG] Asset {video_file.mux_asset_id} is missing playback IDs (attempt {retry_attempt + 1}/{max_retries + 1})")
+
+                    if retry_attempt < max_retries:
+                        logger.info(f"[VIDEO_FILES DEBUG] Retrying asset info retrieval in {retry_delay} seconds...")
+                        await asyncio.sleep(retry_delay)
+                        asset_info = await mux_service.get_complete_asset_info(video_file.mux_asset_id)
+                        continue
+                    else:
+                        logger.warning(f"[VIDEO_FILES DEBUG] Max retries reached - proceeding with incomplete data")
+                        break
+                else:
+                    logger.info(f"[VIDEO_FILES DEBUG] Asset data appears complete on attempt {retry_attempt + 1}")
+                    break
+            else:
+                # If the call failed entirely, don't retry here - let it fail
+                break
         
         logger.info(f"[VIDEO_FILES DEBUG] Received asset_info from Mux service:")
         logger.info(f"[VIDEO_FILES DEBUG] - success: {asset_info.get('success')}")
@@ -777,11 +809,17 @@ async def complete_video_file_from_mux(
         
         # Always update these fields if they have values or are explicitly None
         logger.info(f"[VIDEO_FILES DEBUG] Checking file_url: asset_info.get('file_url') = {repr(asset_info.get('file_url'))}")
-        if asset_info.get('file_url'):
+
+        # Always try to update file_url, even if it's None - this clears invalid data
+        if 'file_url' in asset_info:
             update_data['file_url'] = asset_info['file_url']
             logger.info(f"[VIDEO_FILES DEBUG] Added file_url to update_data: {asset_info['file_url']}")
+
+            # Log warning if file_url is None - this indicates missing playback ID
+            if asset_info['file_url'] is None:
+                logger.warning(f"[VIDEO_FILES DEBUG] file_url is None - likely missing Mux playback ID for asset {video_file.mux_asset_id}")
         else:
-            logger.warning(f"[VIDEO_FILES DEBUG] file_url NOT added to update_data. Value was: {repr(asset_info.get('file_url'))}")
+            logger.warning(f"[VIDEO_FILES DEBUG] file_url key missing from asset_info")
         if asset_info.get('duration_seconds') is not None:
             update_data['duration_seconds'] = asset_info['duration_seconds']
         if 'max_resolution_width' in asset_info:
@@ -817,13 +855,25 @@ async def complete_video_file_from_mux(
         logger.info(f"[VIDEO_FILES DEBUG] Final update_data dictionary:")
         for key, value in update_data.items():
             logger.info(f"[VIDEO_FILES DEBUG]   - {key}: {repr(value)}")
-        
+
+        # Log debug info if available
+        if 'debug_info' in asset_info:
+            debug = asset_info['debug_info']
+            logger.info(f"[VIDEO_FILES DEBUG] Mux asset debug info:")
+            logger.info(f"[VIDEO_FILES DEBUG]   - playback_ids_count: {debug.get('playback_ids_count', 'unknown')}")
+            logger.info(f"[VIDEO_FILES DEBUG]   - has_file_url: {debug.get('has_file_url', 'unknown')}")
+            logger.info(f"[VIDEO_FILES DEBUG]   - playback_ids_raw: {debug.get('playback_ids_raw', [])}")
+
         logger.info(f"Updating video file {id} with {len(update_data)} fields from Mux")
-        
+
         # Update the video file
         video_file = crud.video_file.update(db=db, db_obj=video_file, obj_in=update_data)
-        
+
         logger.info(f"Successfully completed video file {id} from Mux asset {video_file.mux_asset_id}")
+
+        # Log final status
+        if asset_info.get('file_url') is None:
+            logger.warning(f"Video file {id} was updated but file_url is None - this may indicate Mux asset is not fully ready")
         
         return video_file
         

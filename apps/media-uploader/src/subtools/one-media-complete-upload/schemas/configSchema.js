@@ -25,7 +25,11 @@ export const configSchema = Joi.object({
       keyPrefix: Joi.string().default('subtitles/')
     }).required()
   }).required(),
-  
+
+  drm: Joi.object({
+    configurationId: Joi.string().required()
+  }).optional(),
+
   settings: Joi.object({
     videoQuality: Joi.string().valid('basic', 'plus').default('plus'),
     playbackPolicy: Joi.array().items(Joi.string().valid('public', 'signed')).default(['public']),
@@ -38,7 +42,7 @@ export const configSchema = Joi.object({
   logging: Joi.object({
     enabled: Joi.boolean().default(true),
     level: Joi.string().valid('error', 'warn', 'info', 'debug').default('info'),
-    file: Joi.string().default('./logs/one-media-complete-upload.log'),
+    file: Joi.string().default('../logs/one-media-complete-upload.log'),
     console: Joi.boolean().default(true)
   }).default(),
   

@@ -106,10 +106,10 @@ class Config {
         this.MOVIE_MIN_DURATION = 1800;   // 30 minutes min for movies
         
         // Patterns pour détecter les dimensions d'images (à ignorer dans l'analyse d'épisodes)
+        // Enhanced patterns to support various separators with optional spaces
         this.IMAGE_DIMENSION_PATTERNS = [
-            /\b(\d{3,4})[-\s.x_](\d{3,4})\b/gi,     // 1920x1080, 1920-1080, 1920 1080, etc.
-            /\b(\d{3,4})p\b/gi,                      // 1080p, 720p, etc.
-            /\b(\d{2,4})\s*[x×]\s*(\d{2,4})\b/gi    // Various x separators
+            /\b(\d{3,4})\s*[-_x×]\s*(\d{3,4})\b/gi,  // Flexible separator with spaces: 1920x1080, 1920-1080, 1920 - 1080, etc.
+            /\b(\d{3,4})p\b/gi,                       // 1080p, 720p, etc.
         ];
         
         // Seuils

@@ -15,6 +15,15 @@ export class OrchestrationService {
   }
 
   /**
+   * Force IPv4 by replacing localhost with 127.0.0.1 to avoid IPv6 connection issues
+   * @param {string} url - The URL to process
+   * @returns {string} - URL with localhost replaced by 127.0.0.1
+   */
+  forceIPv4Url(url) {
+    return url.replace(/localhost/gi, '127.0.0.1');
+  }
+
+  /**
    * Normalize semicolon-separated string by removing spaces around semicolons
    * before splitting into array
    * @param {string} str - The semicolon-separated string to process
@@ -57,7 +66,7 @@ export class OrchestrationService {
     const datePatterns = [
       // dd/mm/yyyy or dd-mm-yyyy or dd mm yyyy (European format)
       {
-        pattern: /^(\d{1,2})[\/\-\s](\d{1,2})[\/\-\s](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+        pattern: /^(\d{1,2})[/\-\s](\d{1,2})[/\-\s](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
         format: 'DD/MM/YYYY',
         dayIndex: 1,
         monthIndex: 2,
@@ -65,7 +74,7 @@ export class OrchestrationService {
       },
       // yyyy/mm/dd or yyyy-mm-dd (ISO format)
       {
-        pattern: /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+        pattern: /^(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
         format: 'YYYY/MM/DD',
         dayIndex: 3,
         monthIndex: 2,
@@ -186,49 +195,84 @@ export class OrchestrationService {
 
     try {
       this.logger.info('Starting orchestrated upload process');
-      console.log(chalk.blue('\n🚀 Processing media uploads...'));
-      
+
+      // Determine media type and requirements
+      const mediaType = excelData.description.media_type?.toLowerCase() || 'video';
+      const requiresVideo = mediaType === 'video' || mediaType === 'excerpt' || mediaType === 'trailer';
+
+      console.log(chalk.blue.bold(`\n📦 Processing ${mediaType.toUpperCase()} Upload\n`));
+
+      // Display mode-specific information
+      switch(mediaType) {
+        case 'season':
+          console.log(chalk.cyan('📺 Season Mode:'));
+          console.log(chalk.gray(`  • Season Name: ${excelData.description.season_name || 'Not specified'}`));
+          console.log(chalk.gray(`  • Videos: Optional (none expected)`));
+          console.log(chalk.gray(`  • Will create/link season entity`));
+          break;
+
+        case 'program':
+          console.log(chalk.cyan('📺 Program Mode:'));
+          console.log(chalk.gray(`  • Program Name: ${excelData.description.program_name || 'Not specified'}`));
+          console.log(chalk.gray(`  • Videos: Optional (none expected)`));
+          console.log(chalk.gray(`  • Will create/link program entity`));
+          break;
+
+        default:
+          console.log(chalk.cyan('🎬 Video Mode:'));
+          console.log(chalk.gray(`  • Episode: ${excelData.description.episode_title || 'Not specified'}`));
+          console.log(chalk.gray(`  • Videos: Required`));
+          console.log(chalk.gray(`  • Standard video upload flow`));
+          break;
+      }
+
       // Ensure temp config directory exists
       await fs.ensureDir(this.tempConfigDir);
-      
-      // Step 1: Upload main videos to Mux
-      console.log(chalk.cyan('📹 Uploading videos to Mux...'));
-      const videoResults = await this.uploadVideosToMux(excelData.files, mediaFiles, folderPath, excelData.description);
-      results.uploads.videos = videoResults.successes;
-      if (videoResults.errors.length > 0) {
-        results.errors.push(...videoResults.errors);
+
+      // Step 1: Upload videos to Mux (CONDITIONAL)
+      if (requiresVideo) {
+        console.log(chalk.cyan('📹 Uploading videos to Mux...'));
+        const videoResults = await this.uploadVideosToMux(excelData.files, mediaFiles, folderPath, excelData.description);
+        results.uploads.videos = videoResults.successes;
+        if (videoResults.errors.length > 0) {
+          results.errors.push(...videoResults.errors);
+        }
+
+        // Get main video asset for subtitle upload
+        const mainVideoAsset = videoResults.successes.find(v => v.isMainVideo);
+
+        // Step 2: Upload subtitles to Mux (after videos are ready)
+        if (videoResults.successes.length > 0) {
+          console.log(chalk.cyan('📝 Uploading subtitles to Mux...'));
+          const subtitleResults = await this.uploadSubtitlesToMux(
+            excelData.files,
+            mediaFiles,
+            folderPath,
+            videoResults.successes // Pass all video assets instead of just main
+          );
+          results.uploads.subtitles = subtitleResults.successes;
+          if (subtitleResults.errors.length > 0) {
+            results.errors.push(...subtitleResults.errors);
+          }
+        }
+      } else {
+        console.log(chalk.yellow(`ℹ️  Media type "${mediaType}" does not require video uploads - skipping video processing`));
       }
-      
-      // Get main video asset for subtitle upload
-      const mainVideoAsset = videoResults.successes.find(v => v.isMainVideo);
-      
-      // Step 2: Upload subtitles to Mux (after videos are ready)
-      console.log(chalk.cyan('📝 Uploading subtitles to Mux...'));
-      const subtitleResults = await this.uploadSubtitlesToMux(
-        excelData.files, 
-        mediaFiles, 
-        folderPath, 
-        videoResults.successes // Pass all video assets instead of just main
-      );
-      results.uploads.subtitles = subtitleResults.successes;
-      if (subtitleResults.errors.length > 0) {
-        results.errors.push(...subtitleResults.errors);
-      }
-      
-      // Step 3: Upload images to S3
+
+      // Step 3: Upload images to S3 (always required)
       console.log(chalk.cyan('🖼️  Uploading images to S3...'));
       const imageResults = await this.uploadImagesToS3(excelData.files, mediaFiles, folderPath);
       results.uploads.images = imageResults.successes;
       if (imageResults.errors.length > 0) {
         results.errors.push(...imageResults.errors);
       }
-      
+
       // Step 4: Create media description via API (two-step process)
       console.log(chalk.cyan('📄 Creating media description...'));
       const apiResult = await this.createMediaDescription(
-        excelData.description, 
+        excelData.description,
         results.uploads.images,
-        videoResults.successes // Pass all video assets instead of just main
+        results.uploads.videos // Use results.uploads.videos instead of videoResults.successes
       );
       
       if (apiResult.success) {
@@ -307,7 +351,26 @@ export class OrchestrationService {
   async uploadVideosToMux(filesData, mediaFiles, folderPath, descriptionData) {
     const successes = [];
     const errors = [];
-    
+
+    const mediaType = descriptionData.media_type?.toLowerCase() || 'video';
+
+    // For season/program types, check if videos are actually specified
+    if (mediaType === 'season' || mediaType === 'program') {
+      const videoEntries = filesData.filter(file => {
+        if (!file.type || !file.fileName) return false;
+        const type = file.type.toLowerCase();
+        return type.includes('video') || type.includes('trailer') || type.includes('excerpt');
+      });
+
+      if (videoEntries.length === 0) {
+        this.logger.info(`No videos specified for ${mediaType} type - this is acceptable`);
+        console.log(chalk.gray(`  No video files specified for ${mediaType} - this is normal`));
+        return { successes: [], errors: [] };
+      } else {
+        console.log(chalk.gray(`  Found ${videoEntries.length} video(s) for ${mediaType} - processing as optional content`));
+      }
+    }
+
     // Log all entries from Excel for debugging
     this.logger.info(`All Excel file entries (${filesData.length} total):`, {
       entries: filesData.map(entry => `"${entry.type}": ${entry.fileName}`).join(', ')
@@ -432,10 +495,46 @@ export class OrchestrationService {
         console.log(chalk.green(`    ✅ ${videoFile.name} uploaded (Asset: ${result.asset.id}, Type: ${entry.type})`));
         
       } catch (error) {
+        const isMainVideo = entry.type.toLowerCase() === 'video';
+        const isTrailer = entry.type.toLowerCase() === 'trailer';
+        const isCritical = isMainVideo || isTrailer;
+
         const errorMsg = `Failed to upload video ${entry.fileName}: ${error.message}`;
         errors.push(errorMsg);
+
+        // Enhanced error logging with detailed context
+        const errorContext = {
+          fileName: entry.fileName,
+          type: entry.type,
+          isCritical: isCritical,
+          error: error.message,
+          code: error.code,
+          errno: error.errno,
+          stack: error.stack
+        };
+
+        // Add detailed error information if available
+        if (error.details) {
+          errorContext.details = error.details;
+        }
+
         console.log(chalk.red(`    ❌ ${entry.fileName}: ${error.message}`));
-        this.logger.error(errorMsg);
+        this.logger.error('Video upload failed with detailed context', errorContext);
+
+        // Critical failure handling - stop immediately for main videos
+        if (isCritical) {
+          console.log(chalk.red.bold(`\n🚨 CRITICAL UPLOAD FAILURE`));
+          console.log(chalk.red(`Main video upload failed: ${entry.fileName}`));
+          console.log(chalk.red(`Process terminated to prevent incomplete upload.`));
+
+          this.logger.error('Critical video upload failure - terminating process', {
+            fileName: entry.fileName,
+            type: entry.type,
+            error: error.message
+          });
+
+          throw new Error(`Critical upload failure: ${errorMsg}`);
+        }
       }
     }
     
@@ -445,7 +544,22 @@ export class OrchestrationService {
   async uploadImagesToS3(filesData, mediaFiles, folderPath) {
     const successes = [];
     const errors = [];
-    
+
+    // Build a map of image files to their dimensions from Excel
+    const imageDimensionMap = new Map();
+
+    filesData.forEach(file => {
+      // Process image_* rows to extract dimension mappings
+      if (file.type && file.type.toLowerCase().startsWith('image_') && file.fileName) {
+        // Extract dimension from row type: "image_1920_1080" -> "1920x1080"
+        const dimension = file.type.replace(/^image_/, '').replace('_', 'x');
+        imageDimensionMap.set(file.fileName.toLowerCase(), dimension);
+        this.logger.info(`Excel dimension mapping: ${file.fileName} -> ${dimension} (from row type: ${file.type})`);
+      }
+    });
+
+    this.logger.info(`Built dimension mappings from Excel for ${imageDimensionMap.size} images`);
+
     // Collect image files from both poster column AND image entries in Files sheet
     const imageFiles = new Set();
     filesData.forEach(file => {
@@ -485,12 +599,21 @@ export class OrchestrationService {
           verbose: false
         });
         
+        // Get dimensions from Excel mapping instead of guessing from filename
+        const dimensions = imageDimensionMap.get(imageFile.name.toLowerCase());
+
+        if (dimensions) {
+          this.logger.info(`Using Excel dimension mapping for ${imageFile.name}: ${dimensions}`);
+        } else {
+          this.logger.warn(`No dimension mapping found in Excel for image: ${imageFile.name}`);
+        }
+
         successes.push({
           fileName: imageFile.name,
           s3Url: result.s3.url,
           s3Key: result.s3.key,
           pictureId: result.api.id,
-          dimensions: this.guessDimensionsFromFilename(imageFile.name),
+          dimensions: dimensions, // From Excel mapping, not guessed from filename
           result
         });
         
@@ -517,6 +640,8 @@ export class OrchestrationService {
       if (file.frSubtitle) subtitleFiles.push({ fileName: file.frSubtitle, language: 'fr', name: 'Français', isDefault: true });
       if (file.enSubtitle) subtitleFiles.push({ fileName: file.enSubtitle, language: 'en', name: 'English', isDefault: false });
       if (file.koSubtitle) subtitleFiles.push({ fileName: file.koSubtitle, language: 'ko', name: '한국어', isDefault: false });
+      // Handle kr files as Korean too (common variant in real-world files)
+      if (file.krSubtitle) subtitleFiles.push({ fileName: file.krSubtitle, language: 'ko', name: '한국어', isDefault: false });
     });
     
     if (subtitleFiles.length === 0) {
@@ -600,12 +725,13 @@ export class OrchestrationService {
    */
   findMatchingVideoAssetForSubtitle(subtitleFileName, videoAssets) {
     // Extract the base name from subtitle filename (remove language suffix)
-    // Examples: 
+    // Examples:
     // "pompom bag - fr.srt" -> "pompom bag"
-    // "trailer 01 - pompom bag - fr.srt" -> "trailer 01 - pompom bag"  
+    // "trailer 01 - pompom bag - fr.srt" -> "trailer 01 - pompom bag"
     // "EX 01 - pompom bag - en.srt" -> "EX 01 - pompom bag"
-    
-    const baseNameMatch = subtitleFileName.match(/^(.+?)\s*-\s*(fr|en|ko)\.srt$/i);
+    // "BecomingTheMonarch_EP01_FR.srt" -> "BecomingTheMonarch_EP01"
+
+    const baseNameMatch = subtitleFileName.match(/^(.+?)(?:\s*[-_]\s*)(fr|en|ko|kr|FR|EN|KO|KR)\.(srt|vtt)$/i);
     if (!baseNameMatch) {
       this.logger.warn(`Could not parse subtitle filename pattern: ${subtitleFileName}`);
       return null;
@@ -616,13 +742,19 @@ export class OrchestrationService {
     
     // Try to find matching video asset by comparing base names
     const matchingAsset = videoAssets.find(asset => {
-      const videoBaseName = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '');
+      // Remove extension and language suffix from video filename
+      let videoBaseName = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '');
+
+      // Handle both underscore and space-dash patterns for language suffix
+      videoBaseName = videoBaseName.replace(/[-_](en|fr|ko|kr)$/i, ''); // _en, _fr, _ko, _kr
+      videoBaseName = videoBaseName.replace(/\s*-\s*(en|fr|ko|kr)$/i, ''); // - en, - fr, - ko, - kr
+
       const matches = videoBaseName === baseName;
-      
+
       if (matches) {
         this.logger.debug(`Found match: "${baseName}" -> "${videoBaseName}" (${asset.type})`);
       }
-      
+
       return matches;
     });
     
@@ -639,8 +771,8 @@ export class OrchestrationService {
    */
   async authenticateWithBackend() {
     try {
-      const loginUrl = `${this.config.backend.baseUrl}/api/v1/auth/login`;
-      
+      const loginUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/auth/login`);
+
       this.logger.info(`Authenticating with backend: ${loginUrl}`);
       
       const loginData = new URLSearchParams();
@@ -694,8 +826,8 @@ export class OrchestrationService {
         };
       }
 
-      const apiUrl = `${this.config.backend.baseUrl}/api/v1/media-descriptions`;
-      
+      const apiUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/media-descriptions`);
+
       this.logger.info(`Checking for duplicates via API: ${apiUrl}`);
       
       // Query API for existing media descriptions
@@ -790,12 +922,61 @@ export class OrchestrationService {
           details: authResult.details
         };
       }
-      
-      // STEP 1: Create media description without asset IDs (text-only fields)
+
+      // Handle season and program types differently
+      const mediaType = descriptionData.media_type?.toLowerCase() || 'video';
+      let seasonId = null;
+      let programId = null;
+
+      // For SEASON type: get or create season first
+      if (mediaType === 'season') {
+        if (!descriptionData.season_name) {
+          throw new Error('Season name is required for season type media');
+        }
+
+        console.log(chalk.cyan('📂 Processing Season type - managing season entity...'));
+
+        const season = await this.getOrCreateSeason(descriptionData.season_name);
+        seasonId = season.id;
+
+        // For season type, use season name as episode title (required field)
+        if (!descriptionData.episode_title) {
+          descriptionData.episode_title = descriptionData.season_name;
+        }
+      }
+
+      // For PROGRAM type: get or create program first
+      else if (mediaType === 'program') {
+        if (!descriptionData.program_name) {
+          throw new Error('Program name is required for program type media');
+        }
+
+        console.log(chalk.cyan('📂 Processing Program type - managing program entity...'));
+
+        const program = await this.getOrCreateProgram(descriptionData.program_name);
+        programId = program.id;
+
+        // For program type, use program name as episode title (required field)
+        if (!descriptionData.episode_title) {
+          descriptionData.episode_title = descriptionData.program_name;
+        }
+      }
+
+      // STEP 1: Create media description with text-only fields
       this.logger.info('Step 1: Creating media description with text-only fields...');
       const textOnlyData = this.mapExcelToApiSchemaTextOnly(descriptionData);
+
+      // Add the season or program ID if applicable
+      if (seasonId) {
+        textOnlyData.season_id = seasonId;
+        console.log(chalk.gray(`  • Linking to season ID: ${seasonId}`));
+      }
+      if (programId) {
+        textOnlyData.program_id = programId;
+        console.log(chalk.gray(`  • Linking to program ID: ${programId}`));
+      }
       
-      const createUrl = `${this.config.backend.baseUrl}/api/v1/media-descriptions/from-text`;
+      const createUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/media-descriptions/from-text`);
       
       this.logger.info(`Creating media description via API: ${createUrl}`);
       this.logger.info(`Using JWT Bearer token authentication`);
@@ -907,7 +1088,7 @@ export class OrchestrationService {
         };
       }
       
-      const patchUrl = `${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`;
+      const patchUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`);
       
       this.logger.info(`Patching media description via API: ${patchUrl}`);
       this.logger.info(`Asset patch payload keys: ${Object.keys(assetData).join(', ')}`);
@@ -1552,16 +1733,16 @@ export class OrchestrationService {
   mapAssetsToApiSchema(uploadedImages, videoAssets, mediaDescriptionId) {
     const assetData = {};
 
-    // Associate uploaded images by dimensions
+    // Associate uploaded images by dimensions (from Excel mapping)
     this.logger.info(`Processing ${uploadedImages.length} uploaded images for asset mapping`);
     uploadedImages.forEach(image => {
-      const dimensions = image.dimensions;
+      const dimensions = image.dimensions; // From Excel mapping, not filename guessing
       if (dimensions && image.pictureId) {
         const fieldName = `image_${dimensions.replace('x', '_')}_id`;
         assetData[fieldName] = image.pictureId;
-        this.logger.info(`Mapped image field: ${fieldName} = "${image.pictureId}"`);
+        this.logger.info(`Mapped image field from Excel: ${image.fileName} -> ${fieldName} = "${image.pictureId}" (dimension: ${dimensions})`);
       } else {
-        this.logger.warn(`Image missing dimensions or picture ID - skipping: "${image.fileName}" (dimensions: ${dimensions}, pictureId: ${image.pictureId})`);
+        this.logger.warn(`Image missing Excel dimension mapping or picture ID - skipping: "${image.fileName}" (dimensions: ${dimensions}, pictureId: ${image.pictureId})`);
       }
     });
 
@@ -1600,6 +1781,147 @@ export class OrchestrationService {
   }
 
   /**
+   * Get or create a season by name
+   */
+  async getOrCreateSeason(seasonName, programId = null) {
+    try {
+      const authResult = await this.authenticateWithBackend();
+      if (!authResult.success) {
+        throw new Error(`Authentication failed: ${authResult.error}`);
+      }
+
+      // Search for existing season
+      const searchUrl = this.forceIPv4Url(
+        `${this.config.backend.baseUrl}/api/v1/seasons?q=${encodeURIComponent(seasonName)}&limit=50`
+      );
+
+      console.log(chalk.gray(`  Searching for season: "${seasonName}"`));
+
+      const searchResponse = await axios.get(searchUrl, {
+        headers: { 'Authorization': `Bearer ${authResult.token}` },
+        timeout: 30000
+      });
+
+      const existingSeasons = searchResponse.data.data || [];
+      let season = existingSeasons.find(s =>
+        s.season_name && s.season_name.toLowerCase() === seasonName.toLowerCase()
+      );
+
+      if (season) {
+        console.log(chalk.green(`  ✅ Using existing season: ${season.season_name} (ID: ${season.id})`));
+        return season;
+      }
+
+      // Create new season
+      console.log(chalk.yellow(`  Creating new season: ${seasonName}`));
+
+      const createUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/seasons`);
+
+      const seasonData = {
+        season_name: seasonName,
+        season_number: 1 // Default
+      };
+
+      if (programId) {
+        seasonData.program_id = programId;
+      }
+
+      const createResponse = await axios.post(createUrl, seasonData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authResult.token}`
+        },
+        timeout: 30000
+      });
+
+      season = createResponse.data;
+      console.log(chalk.green(`  ✅ Created season: ${season.season_name} (ID: ${season.id})`));
+
+      return season;
+
+    } catch (error) {
+      this.logger.error(`Season get/create failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get or create a program by name
+   */
+  async getOrCreateProgram(programName) {
+    try {
+      const authResult = await this.authenticateWithBackend();
+      if (!authResult.success) {
+        throw new Error(`Authentication failed: ${authResult.error}`);
+      }
+
+      // Search for existing program
+      const searchUrl = this.forceIPv4Url(
+        `${this.config.backend.baseUrl}/api/v1/programs?q=${encodeURIComponent(programName)}&limit=50`
+      );
+
+      console.log(chalk.gray(`  Searching for program: "${programName}"`));
+
+      const searchResponse = await axios.get(searchUrl, {
+        headers: { 'Authorization': `Bearer ${authResult.token}` },
+        timeout: 30000
+      });
+
+      const existingPrograms = searchResponse.data.data || [];
+      let program = existingPrograms.find(p =>
+        p.program_name && p.program_name.toLowerCase() === programName.toLowerCase()
+      );
+
+      if (program) {
+        console.log(chalk.green(`  ✅ Using existing program: ${program.program_name} (ID: ${program.id})`));
+        return program;
+      }
+
+      // Create new program
+      console.log(chalk.yellow(`  Creating new program: ${programName}`));
+
+      const createUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/programs`);
+
+      const programData = {
+        program_name: programName
+      };
+
+      const createResponse = await axios.post(createUrl, programData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authResult.token}`
+        },
+        timeout: 30000
+      });
+
+      program = createResponse.data;
+      console.log(chalk.green(`  ✅ Created program: ${program.program_name} (ID: ${program.id})`));
+
+      return program;
+
+    } catch (error) {
+      this.logger.error(`Program get/create failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Derive video quality from playback policy
+   */
+  deriveVideoQualityFromPolicy(policy) {
+    const policyStr = Array.isArray(policy) ? policy[0] : policy;
+    const normalizedPolicy = policyStr?.toLowerCase();
+
+    if (normalizedPolicy === 'drm' || normalizedPolicy === 'signed') {
+      return 'plus';
+    } else if (normalizedPolicy === 'public') {
+      return 'basic';
+    } else {
+      throw new Error(`Invalid playback policy: ${policyStr}. Must be 'public', 'signed', or 'drm'`);
+    }
+  }
+
+  /**
    * Generate temporary config file for mux-upload with proper policy and DRM handling
    */
   async generateMuxUploadConfig(videoFile, entry, descriptionData) {
@@ -1613,12 +1935,12 @@ export class OrchestrationService {
       
       // Handle DRM configuration for main video
       if (descriptionData?.policy?.toLowerCase() === 'drm') {
-        if (!descriptionData.drm_configuration_id) {
-          throw new Error('DRM policy requires drm_configuration_id in Description sheet');
+        if (!this.config.drm?.configurationId) {
+          throw new Error('DRM policy requires drm.configurationId in configuration file');
         }
         drmConfig = {
           enabled: true,
-          configuration_id: descriptionData.drm_configuration_id.toString().trim()
+          configuration_id: this.config.drm.configurationId.toString().trim()
         };
         this.logger.info(`Configuring DRM for main video with configuration ID: ${drmConfig.configuration_id}`);
       }
@@ -1627,6 +1949,10 @@ export class OrchestrationService {
       policy = ['public'];
       this.logger.info(`Setting public policy for ${entry.type.toLowerCase()}: ${videoFile.name}`);
     }
+
+    // Generate passthrough from episode_title if available
+    const passthrough = descriptionData?.episode_title?.toString().trim() ||
+                       this.generateVideoTitle(videoFile.name, entry.type);
 
     const config = {
       video: {
@@ -1642,19 +1968,18 @@ export class OrchestrationService {
         mux_token_secret: this.config.mux.tokenSecret
       },
       backend: {
-        server_address: this.config.backend.baseUrl,
+        server_address: this.forceIPv4Url(this.config.backend.baseUrl),
         user: this.config.backend.username,
         password: this.config.backend.password
       },
       settings: {
-        playback_policy: policy,  // Override with determined policy
-        video_quality: this.config.settings.videoQuality || 'basic',
-        max_resolution_tier: this.config.settings.maxResolutionTier || '1080p',
-        normalize_audio: this.config.settings.normalizeAudio || false,
-        master_access: this.config.settings.masterAccess || 'none',
-        mp4_support: this.config.settings.mp4Support || 'none',
-        cors_origin: this.config.settings.corsOrigin || '*',
-        environment_text: this.config.settings.environmentText
+        playback_policy: policy,  // Decided based on excel input
+        video_quality: this.deriveVideoQualityFromPolicy(policy),  // Auto-derived from policy
+        normalize_audio: false,  // Always false
+        master_access: "none",   // Always "none"
+        max_resolution_tier: "1080p",  // Always "1080p"
+        passthrough: passthrough
+        // Note: mp4_support and encoding_tier are NOT included (don't send)
       },
       logging: {
         enabled: true,
@@ -1668,7 +1993,7 @@ export class OrchestrationService {
       config.drm = drmConfig;
     }
 
-    this.logger.info(`Generated Mux config for ${videoFile.name}: policy=${policy.join(',')}, drm=${!!drmConfig}`);
+    this.logger.info(`Generated Mux config for ${videoFile.name}: policy=${policy.join(',')}, passthrough="${passthrough}", drm=${!!drmConfig}`);
 
     const configPath = path.join(this.tempConfigDir, `mux-upload-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.json`);
     await fs.writeJson(configPath, config, { spaces: 2 });
@@ -1747,19 +2072,6 @@ export class OrchestrationService {
     return configPath;
   }
 
-  /**
-   * Guess image dimensions from filename
-   */
-  guessDimensionsFromFilename(filename) {
-    const name = filename.toLowerCase();
-    if (name.includes('1920x1080') || name.includes('1920_1080')) return '1920x1080';
-    if (name.includes('1920x720') || name.includes('1920_720')) return '1920x720';
-    if (name.includes('1080x1080') || name.includes('1080_1080')) return '1080x1080';
-    if (name.includes('810x1080') || name.includes('810_1080')) return '810x1080';
-    if (name.includes('810x1920') || name.includes('810_1920')) return '810x1920';
-    if (name.includes('1080x1920') || name.includes('1080_1920')) return '1080x1920';
-    return null;
-  }
 
   /**
    * Build files context for error reporting

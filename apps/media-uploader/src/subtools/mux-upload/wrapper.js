@@ -73,14 +73,54 @@ export async function uploadToMux(options) {
     return result;
     
   } catch (error) {
+    const errorDetails = {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall,
+      stack: error.stack
+    };
+
+    // Add detailed context from MuxUploadError if available
+    if (error.details) {
+      errorDetails.details = error.details;
+    }
+
     if (logger) {
-      logger.error('Upload failed', { error: error.message, stack: error.stack });
+      logger.error('Upload failed with detailed context', errorDetails);
     }
-    
+
+    // Enhanced console error output
     console.error('❌ Mux upload failed:', error.message);
-    if (options.verbose) {
-      console.error(error.stack);
+
+    // Show detailed error information
+    if (error.details) {
+      if (error.details.filepath) {
+        console.error(`   File: ${error.details.filepath}`);
+      }
+      if (error.details.fileSize) {
+        console.error(`   Size: ${error.details.sizeFormatted || error.details.fileSize + ' bytes'}`);
+      }
+      if (error.details.uploadMethod) {
+        console.error(`   Method: ${error.details.uploadMethod} upload`);
+      }
+      if (error.details.httpStatus) {
+        console.error(`   HTTP Status: ${error.details.httpStatus} ${error.details.httpStatusText || ''}`);
+      }
+      if (error.details.networkCode) {
+        console.error(`   Network Code: ${error.details.networkCode}`);
+      }
     }
+
+    if (options.verbose) {
+      console.error('Full error stack:');
+      console.error(error.stack);
+      if (error.details) {
+        console.error('Error details:');
+        console.error(JSON.stringify(error.details, null, 2));
+      }
+    }
+
     throw error;
   }
 }

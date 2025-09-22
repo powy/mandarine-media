@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   List,
   Datagrid,
@@ -25,8 +25,64 @@ import {
   ReferenceInput,
   AutocompleteInput,
   FunctionField,
+  Button,
+  useNotify,
+  useRefresh,
+  useRecordContext,
+  ListButton,
 } from 'react-admin';
 import { Alert } from '@mui/material';
+import { completeFromMux } from 'share';
+
+// Complete from Mux Button Component
+const CompleteFromMuxButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCompleteFromMux = async () => {
+    // Validation: Check if record exists and has mux_asset_id
+    if (!record?.id) {
+      notify('No video file selected', { type: 'warning' });
+      return;
+    }
+
+    if (!record.mux_asset_id) {
+      notify('This video file has no Mux Asset ID. Upload to Mux first.', { type: 'warning' });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Call the API function
+      const updatedVideoFile = await completeFromMux(record.id);
+
+      // Success notification with details
+      notify(`Successfully retrieved Mux data for "${record.file_name}"`, { type: 'success' });
+
+      // Refresh the view to show updated data
+      refresh();
+    } catch (error) {
+      // Error handling with specific messages
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Unknown error occurred';
+      notify(`Failed to complete from Mux: ${errorMessage}`, { type: 'error' });
+      console.error('Complete from Mux error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleCompleteFromMux}
+      disabled={isLoading}
+      label={isLoading ? "Retrieving from Mux..." : "Complete from Mux"}
+      variant="outlined"
+      color="secondary"
+    />
+  );
+};
 
 // Filters for the list view
 const VideoFileFilters = (props: any) => (
@@ -222,8 +278,17 @@ export const VideoFileEdit = () => (
   </Edit>
 );
 
+// Custom actions toolbar for VideoFileShow
+const VideoFileShowActions = () => (
+  <TopToolbar>
+    <EditButton />
+    <CompleteFromMuxButton />
+    <ListButton />
+  </TopToolbar>
+);
+
 export const VideoFileShow = () => (
-  <Show>
+  <Show actions={<VideoFileShowActions />}>
     <SimpleShowLayout>
       <TextField source="id" />
       <TextField source="file_name" />

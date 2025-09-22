@@ -28,7 +28,10 @@ export function createLogger(config = {}) {
   if (config.video?.filepath && !logFilePath) {
     const videoBasename = path.basename(config.video.filepath, path.extname(config.video.filepath));
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const logsDir = path.join(process.cwd(), 'logs');
+
+    // Use a logs directory outside src-tauri to avoid triggering Tauri rebuilds
+    // When running in Tauri context, process.cwd() points to src-tauri directory
+    const logsDir = path.join(process.cwd(), '..', 'logs');
     logFilePath = path.join(logsDir, `upload_log_${timestamp}_${videoBasename}.log`);
   }
   
@@ -284,9 +287,95 @@ export function createLogger(config = {}) {
     });
   };
   
+  // Add compatibility methods and properties for enhanced-chunk-uploader
+  logger.startTime = null;
+  logger.lastLogTime = Date.now();
+
+  logger.formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  };
+
+  logger.formatTime = (seconds) => {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    if (seconds < 3600) return `${Math.round(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Wrapper for logUploadStart with mux-test signature
+  const originalLogUploadStart = logger.logUploadStart;
+  logger.logUploadStart = (filepath, fileSize, uploadId = null) => {
+    logger.startTime = Date.now();
+    if (uploadId) {
+      // Use existing Winston method
+      originalLogUploadStart(filepath, fileSize, uploadId);
+    } else {
+      // Use mux-test compatible logging
+      logger.info(`Starting upload`, {
+        file: filepath,
+        size: logger.formatBytes(fileSize),
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  // Wrapper for logProgress with mux-test signature
+  logger.logProgress = (uploadedBytes, totalBytes, chunkNumber = null) => {
+    const now = Date.now();
+    const elapsed = now - logger.startTime;
+    const progress = (uploadedBytes / totalBytes) * 100;
+    const speed = uploadedBytes / (elapsed / 1000);
+    const eta = speed > 0 ? (totalBytes - uploadedBytes) / speed : 0;
+
+    const progressInfo = {
+      progress: `${progress.toFixed(1)}%`,
+      uploaded: logger.formatBytes(uploadedBytes),
+      total: logger.formatBytes(totalBytes),
+      speed: `${logger.formatBytes(speed)}/s`,
+      eta: logger.formatTime(eta)
+    };
+
+    if (chunkNumber !== null) {
+      progressInfo.chunk = chunkNumber;
+    }
+
+    // Log progress every 5% or every 30 seconds
+    const timeSinceLastLog = now - logger.lastLogTime;
+    if (progress % 5 < 0.1 || timeSinceLastLog > 30000) {
+      logger.info(`Upload progress`, progressInfo);
+      logger.lastLogTime = now;
+    }
+  };
+
+  // Wrapper for logUploadComplete with mux-test signature
+  const originalLogUploadComplete = logger.logUploadComplete;
+  logger.logUploadComplete = (duration, assetId = null, uploadId = null) => {
+    if (uploadId) {
+      // Use existing Winston method
+      originalLogUploadComplete(uploadId, assetId, duration);
+    } else {
+      // Use mux-test compatible logging
+      const completionInfo = {
+        duration: logger.formatTime(duration / 1000),
+        completedAt: new Date().toISOString()
+      };
+
+      if (assetId) {
+        completionInfo.assetId = assetId;
+      }
+
+      logger.info(`Upload completed successfully`, completionInfo);
+    }
+  };
+
   // Store the log file path for reference
   logger.logFilePath = logFilePath;
-  
+
   return logger;
 }
 

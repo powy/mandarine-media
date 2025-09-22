@@ -43,8 +43,22 @@ class MuxUploadCLI {
       .option('--no-progress', 'Disable upload progress bar')
       .option('-v, --verbose', 'Verbose output')
       .option('-q, --quiet', 'Quiet mode (errors only)')
+
+      // Enhanced chunked upload options
+      .option('--upload-method <method>', 'Upload method: auto, upchunk, or custom', 'auto')
+      .option('--chunk-size <mb>', 'Chunk size in MB (1-50)', parseInt, 5)
+      .option('--memory-threshold <mb>', 'Memory threshold in MB for method selection (50-1000)', parseInt, 100)
+      .option('--no-resume', 'Disable upload resume capability')
+      .option('--chunk-retries <count>', 'Per-chunk retry attempts (1-10)', parseInt, 5)
+      .option('--chunk-timeout <seconds>', 'Per-chunk timeout in seconds (30-600)', parseInt, 120)
+      .option('--adaptive-retry', 'Enable adaptive retry delays', true)
+      .option('--no-adaptive-retry', 'Disable adaptive retry delays')
+      .option('--dynamic-chunks', 'Enable dynamic chunk sizing')
+      .option('--validate-upload', 'Validate before starting upload', true)
+      .option('--no-validate-upload', 'Skip upload validation')
+
       .helpOption('-h, --help', 'Display help for command');
-    
+
     this.program.parse();
     return this.program.opts();
   }
@@ -143,7 +157,7 @@ class MuxUploadCLI {
   mergeCLIOptions(config, cliOptions) {
     // Override logging level
     config.logging = config.logging || {};
-    
+
     if (cliOptions.debug) {
       config.logging.level = 'debug';
     } else if (cliOptions.quiet) {
@@ -152,18 +166,59 @@ class MuxUploadCLI {
     } else if (cliOptions.verbose) {
       config.logging.level = 'debug';
     }
-    
+
     // Override timeout and retry options
     config.options = config.options || {};
-    
+
     if (cliOptions.timeout) {
       config.options.timeout = cliOptions.timeout * 1000; // Convert to milliseconds
     }
-    
+
     if (cliOptions.retry) {
       config.options.retry_attempts = cliOptions.retry;
     }
-    
+
+    // Enhanced chunked upload options
+    if (cliOptions.uploadMethod) {
+      config.options.upload_method = cliOptions.uploadMethod;
+    }
+
+    if (cliOptions.chunkSize) {
+      config.options.chunk_size_mb = cliOptions.chunkSize;
+    }
+
+    if (cliOptions.memoryThreshold) {
+      config.options.memory_threshold_mb = cliOptions.memoryThreshold;
+    }
+
+    if (cliOptions.noResume) {
+      config.options.enable_resume = false;
+    }
+
+    if (cliOptions.chunkRetries) {
+      config.options.max_chunk_retries = cliOptions.chunkRetries;
+    }
+
+    if (cliOptions.chunkTimeout) {
+      config.options.chunk_timeout = cliOptions.chunkTimeout * 1000; // Convert to milliseconds
+    }
+
+    if (cliOptions.noAdaptiveRetry) {
+      config.options.adaptive_retry_delay = false;
+    } else if (cliOptions.adaptiveRetry) {
+      config.options.adaptive_retry_delay = true;
+    }
+
+    if (cliOptions.dynamicChunks) {
+      config.options.dynamic_chunk_size = true;
+    }
+
+    if (cliOptions.noValidateUpload) {
+      config.options.validate_before_upload = false;
+    } else if (cliOptions.validateUpload) {
+      config.options.validate_before_upload = true;
+    }
+
     // Store CLI flags
     config._cli = {
       dryRun: cliOptions.dryRun || false,
@@ -355,6 +410,27 @@ class MuxUploadCLI {
         'Check your internet connection',
         'Try with a smaller file first',
         'Increase timeout settings if uploading large files'
+      ],
+      [ErrorCodes.CHUNK_UPLOAD_FAILED]: [
+        'Check your network stability',
+        'Try reducing chunk size with --chunk-size option',
+        'Increase chunk timeout with --chunk-timeout option',
+        'Enable resume capability for large files'
+      ],
+      [ErrorCodes.CHUNK_TIMEOUT]: [
+        'Increase chunk timeout with --chunk-timeout option',
+        'Reduce chunk size with --chunk-size option',
+        'Check network stability and bandwidth'
+      ],
+      [ErrorCodes.CHUNK_RETRY_EXHAUSTED]: [
+        'Increase chunk retry attempts with --chunk-retries option',
+        'Check network stability',
+        'Try using custom upload method with --upload-method custom'
+      ],
+      [ErrorCodes.UPLOAD_METHOD_ERROR]: [
+        'Use a valid upload method: auto, upchunk, or custom',
+        'Try --upload-method auto for automatic selection',
+        'Use --upload-method custom for large files'
       ]
     };
     
@@ -387,6 +463,30 @@ class MuxUploadCLI {
         console.log(chalk.blue.bold('Mux Video Upload Tool v1.0.0\n'));
         console.log(`Configuration: ${chalk.white(configPath)}`);
         console.log(`Video file: ${chalk.white(config.video.filepath)}`);
+
+        // Show enhanced upload options in verbose mode
+        if (config._cli?.verbose && config.options) {
+          console.log(chalk.cyan('Enhanced Upload Settings:'));
+          if (config.options.upload_method) {
+            console.log(`  Upload method: ${chalk.white(config.options.upload_method)}`);
+          }
+          if (config.options.chunk_size_mb) {
+            console.log(`  Chunk size: ${chalk.white(config.options.chunk_size_mb)}MB`);
+          }
+          if (config.options.memory_threshold_mb) {
+            console.log(`  Memory threshold: ${chalk.white(config.options.memory_threshold_mb)}MB`);
+          }
+          if (config.options.enable_resume !== undefined) {
+            console.log(`  Resume capability: ${chalk.white(config.options.enable_resume ? 'enabled' : 'disabled')}`);
+          }
+          if (config.options.max_chunk_retries) {
+            console.log(`  Chunk retries: ${chalk.white(config.options.max_chunk_retries)}`);
+          }
+          if (config.options.chunk_timeout) {
+            console.log(`  Chunk timeout: ${chalk.white(config.options.chunk_timeout / 1000)}s`);
+          }
+        }
+
         console.log('');
       }
       

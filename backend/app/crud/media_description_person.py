@@ -147,7 +147,8 @@ class CRUDMediaDescriptionPerson(CRUDBase[MediaDescriptionPerson, MediaDescripti
         db: Session,
         *,
         obj_in: PersonRoleCreate,
-        media_description_id: UUID
+        media_description_id: UUID,
+        commit: bool = True
     ) -> MediaDescriptionPerson:
         """Create a person role assignment with automatic position assignment if not provided"""
 
@@ -182,8 +183,10 @@ class CRUDMediaDescriptionPerson(CRUDBase[MediaDescriptionPerson, MediaDescripti
 
         db_obj = self.model(**db_obj_data)
         db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        db.flush()  # This ensures the object gets an ID without committing
+        if commit:
+            db.commit()
+            db.refresh(db_obj)
         return db_obj
 
     def update_position(
@@ -267,21 +270,61 @@ class CRUDMediaDescriptionPerson(CRUDBase[MediaDescriptionPerson, MediaDescripti
     ) -> List[MediaDescriptionPerson]:
         """Create multiple person role assignments for a media description"""
 
-        created_assignments = []
+        # Validate that the media description exists before creating relationships
+        from app.models.media_description import MediaDescription
+        media_desc = db.query(MediaDescription).filter(MediaDescription.id == media_description_id).first()
+        if not media_desc:
+            raise ValueError(f"Media description with ID {media_description_id} does not exist")
 
-        for person_role in people_roles:
-            try:
-                assignment = self.create_with_auto_position(
-                    db=db,
-                    obj_in=person_role,
-                    media_description_id=media_description_id
-                )
-                created_assignments.append(assignment)
-            except ValueError as e:
-                # Log the error but continue with other assignments
-                # In a real implementation, you might want to collect all errors
-                print(f"Error creating assignment: {e}")
-                continue
+        created_assignments = []
+        errors = []
+
+        # Keep track of positions used in this bulk operation to catch conflicts early
+        used_positions = {}  # role -> set of positions
+
+        try:
+            for person_role in people_roles:
+                try:
+                    # Check for position conflicts within this bulk operation
+                    role_key = person_role.role.value if hasattr(person_role.role, 'value') else person_role.role
+                    if role_key not in used_positions:
+                        used_positions[role_key] = set()
+
+                    # If position is specified and not 0, check for conflicts
+                    if person_role.position != 0:
+                        if person_role.position in used_positions[role_key]:
+                            errors.append(f"Position conflict within bulk operation: {person_role.position} already used for role {role_key}")
+                            continue
+                        used_positions[role_key].add(person_role.position)
+
+                    assignment = self.create_with_auto_position(
+                        db=db,
+                        obj_in=person_role,
+                        media_description_id=media_description_id,
+                        commit=False  # Defer commits until all are created
+                    )
+                    created_assignments.append(assignment)
+
+                    # Track auto-assigned positions too
+                    if person_role.position == 0:
+                        used_positions[role_key].add(assignment.position)
+
+                except ValueError as e:
+                    # Collect errors but continue with other assignments
+                    errors.append(f"Error creating assignment: {e}")
+                    continue
+
+            # Note: Do not commit here - let the parent transaction handle the commit
+            # This ensures atomicity with the media description creation
+
+            # Log any non-critical errors
+            for error in errors:
+                print(f"ERROR: {error}")
+
+        except Exception as e:
+            # Do not rollback here - let the parent transaction handle rollback
+            # to maintain transaction atomicity
+            raise ValueError(f"Failed to create person role assignments: {e}")
 
         return created_assignments
 

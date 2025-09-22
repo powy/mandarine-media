@@ -1,0 +1,16 @@
+{
+  "auth": {
+    "mux_token_id": "your-mux-token-id",
+    "mux_token_secret": "your-mux-token-secret"
+  },
+  "backend": {
+    "server_address": "https://your-backend-api.com",
+    "user": "your-username",
+    "password": "your-password"
+  },
+  "video": {
+    "filepath": "/path/to/your/video.mp4",
+    "title": "My Video Upload",
+    "description": "Basic video upload using minimal configuration"
+  }
+}

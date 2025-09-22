@@ -23,7 +23,383 @@ export class OneMediaCompleteUpload {
     this.validationService = null;
   }
 
+  /**
+   * Prepare Excel file with template and auto-fill Files sheet
+   * @returns {Promise<Object>} Result with Excel path and data
+   */
+  async prepareExcel() {
+    let mediaFiles = null;
+
+    try {
+      console.log(chalk.blue.bold('\n📋 Excel Preparation Mode\n'));
+
+      // Load and validate configuration
+      await this.loadConfiguration();
+
+      // Initialize services
+      this.initializeServices();
+
+      // Validate folder path
+      await this.validateFolderPath();
+
+      // Scan folder for media files
+      mediaFiles = await this.scanMediaFiles();
+
+      // Handle Excel file creation/auto-fill
+      const excelResult = await this.handleExcelFile();
+
+      let excelPath, isNewlyCreated = false;
+      if (typeof excelResult === 'object' && excelResult.path) {
+        excelPath = excelResult.path;
+        isNewlyCreated = excelResult.newlyCreated;
+      } else {
+        excelPath = excelResult;
+      }
+
+      if (!excelPath) {
+        return {
+          success: false,
+          error: 'Failed to create Excel file',
+          phase: 'excel-creation-failed'
+        };
+      }
+
+      // Read Excel data to return current state
+      const excelData = await this.excelService.readExcelFile(excelPath);
+
+      // Check if auto-fill is needed for existing Excel files
+      if (!isNewlyCreated) {
+        const shouldAutoFill = this.excelService.isFilesSheetEmpty(excelData.files);
+
+        if (shouldAutoFill) {
+          console.log(chalk.yellow('📋 Files sheet is empty. Running auto-fill analysis...'));
+          await this.performAutoFill(excelPath, mediaFiles);
+
+          // Re-read the Excel data after auto-fill
+          const updatedExcelData = await this.excelService.readExcelFile(excelPath);
+
+          return {
+            success: true,
+            message: 'Files sheet auto-filled with intelligent mappings. Excel is ready for Description sheet completion.',
+            phase: 'auto-filled',
+            excelPath,
+            data: {
+              mediaFiles,
+              excelData: updatedExcelData
+            }
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Excel file is ready. Files sheet is already populated.',
+            phase: 'excel-ready',
+            excelPath,
+            data: {
+              mediaFiles,
+              excelData
+            }
+          };
+        }
+      } else {
+        // For newly created files
+        return {
+          success: true,
+          message: 'Excel template created with Files sheet auto-filled. Please fill Description sheet.',
+          phase: 'template-created-and-filled',
+          excelPath,
+          data: {
+            mediaFiles,
+            excelData
+          }
+        };
+      }
+
+    } catch (error) {
+      if (this.logger) {
+        this.logger.error(`Excel preparation failed: ${error.message}`);
+      }
+      console.error(chalk.red(`❌ Excel preparation error: ${error.message}`));
+
+      return {
+        success: false,
+        error: `Excel preparation failed: ${error.message}`,
+        phase: 'preparation-error',
+        context: {
+          folderPath: this.options.folder,
+          errorDetails: {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+          },
+          filesFound: mediaFiles ? this.buildFilesContext(mediaFiles) : null
+        }
+      };
+    }
+  }
+
+  /**
+   * Execute upload process (assumes Excel file already exists and is filled)
+   * @returns {Promise<Object>} Upload results
+   */
+  async executeUpload() {
+    let mediaFiles = null;
+    let excelData = null;
+    let excelPath = null;
+
+    try {
+      console.log(chalk.blue.bold('\n🚀 Upload Execution Mode\n'));
+
+      // Load and validate configuration
+      await this.loadConfiguration();
+
+      // Initialize services
+      this.initializeServices();
+
+      // Validate folder path
+      await this.validateFolderPath();
+
+      // Scan folder for media files
+      mediaFiles = await this.scanMediaFiles();
+
+      // Find existing Excel file (required for upload mode)
+      console.log(chalk.gray('Looking for existing Excel file...'));
+      excelPath = await this.excelService.findExistingExcelFile();
+
+      if (!excelPath) {
+        return {
+          success: false,
+          error: 'No Excel file found. Please run prepare mode first to create and fill the Excel file.',
+          phase: 'excel-not-found',
+          context: {
+            folderPath: this.options.folder,
+            filesFound: mediaFiles ? this.buildFilesContext(mediaFiles) : null
+          }
+        };
+      }
+
+      console.log(chalk.green(`✅ Found Excel file: ${path.basename(excelPath)}`));
+
+      // Read Excel data
+      excelData = await this.excelService.readExcelFile(excelPath);
+
+      // Check if media_description ID already exists (indicating already uploaded)
+      if (excelData.description.id) {
+        console.log(chalk.yellow('⚠️  Media already uploaded - ID field detected'));
+        console.log(chalk.yellow(`   Existing ID: ${excelData.description.id}`));
+        console.log(chalk.cyan('\n   This content has already been uploaded to the system.'));
+        console.log(chalk.cyan('   To force re-upload, remove the ID row from the Description sheet.'));
+
+        return {
+          success: false,
+          error: 'Media already uploaded. ID field is filled in Excel.',
+          phase: 'already-uploaded',
+          mediaDescriptionId: excelData.description.id,
+          context: {
+            folderPath: this.options.folder,
+            existingId: excelData.description.id,
+            message: 'Remove ID row from Description sheet to allow re-upload'
+          }
+        };
+      }
+
+      // Perform comprehensive validation before upload
+      console.log(chalk.blue('\n🔍 Validating data and files...'));
+      const validationResult = await this.validationService.validateComplete(
+        excelData,
+        mediaFiles,
+        this.options.folder
+      );
+
+      if (!validationResult.valid) {
+        console.log(chalk.red('❌ Validation failed:'));
+        validationResult.context.validationErrors.forEach(error => {
+          console.log(chalk.red(`  • ${error}`));
+        });
+
+        if (validationResult.context.missingFiles.length > 0) {
+          console.log(chalk.red('\n📋 Missing files:'));
+          validationResult.context.missingFiles.forEach(file => {
+            console.log(chalk.red(`  • ${file.name} (${file.type})`));
+          });
+        }
+
+        return this.validationService.createErrorReport(
+          validationResult.context,
+          ['Upload cannot proceed due to validation errors']
+        );
+      }
+
+      console.log(chalk.green('✅ Validation passed'));
+
+      // Check for existing duplicates before starting uploads
+      console.log(chalk.cyan('\n🔍 Checking for existing media descriptions...'));
+      const duplicateCheck = await this.orchestrationService.checkForDuplicates(excelData.description);
+
+      if (!duplicateCheck.success) {
+        console.log(chalk.red(`❌ Duplicate check failed: ${duplicateCheck.error}`));
+        return this.validationService.createErrorReport(
+          validationResult.context,
+          [`Duplicate check failed: ${duplicateCheck.error}`]
+        );
+      }
+
+      const { duplicates } = duplicateCheck;
+
+      // Check for slug duplicates (blocking error)
+      if (duplicates.bySlug) {
+        console.log(chalk.red(`❌ Duplicate slug found: "${excelData.description.slug}"`));
+        console.log(chalk.yellow(`   Existing media description ID: ${duplicates.bySlug.id}`));
+        if (duplicates.bySlug.creation_date_utc) {
+          console.log(chalk.yellow(`   Created: ${duplicates.bySlug.creation_date_utc}`));
+        }
+        console.log(chalk.cyan('\n   Please either:'));
+        console.log(chalk.cyan('   1. Change the slug in your Excel file'));
+        console.log(chalk.cyan('   2. Delete the existing media description'));
+        console.log(chalk.cyan(`   3. Use a different slug (e.g., "${excelData.description.slug}_v2")`));
+
+        return this.validationService.createErrorReport(
+          validationResult.context,
+          [
+            `Duplicate slug exists: "${excelData.description.slug}"`,
+            `Existing record ID: ${duplicates.bySlug.id}`,
+            'Change the slug in your Excel file or delete the existing record'
+          ]
+        );
+      }
+
+      // Check for title duplicates (error - stop execution)
+      if (duplicates.byTitle) {
+        console.log(chalk.red(`❌ Error: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
+        console.log(chalk.red(`   Existing media description ID: ${duplicates.byTitle.id}`));
+        console.log(chalk.red('   Stopping upload to prevent duplicates.'));
+        throw new Error(`Duplicate episode title detected: "${duplicates.byTitle.episode_title}"`);
+      }
+
+      if (!duplicates.bySlug && !duplicates.byTitle) {
+        console.log(chalk.green(`✅ No duplicates found (checked ${duplicateCheck.totalChecked} records)`));
+      }
+
+      // Begin upload process
+      console.log(chalk.blue('\n🚀 Starting upload process...'));
+      const uploadResults = await this.orchestrationService.processUploads(
+        excelData,
+        mediaFiles,
+        this.options.folder,
+        excelPath
+      );
+
+      if (uploadResults.success) {
+        // Success - display final results
+        console.log(chalk.green.bold('\n🎉 Upload completed successfully!'));
+        console.log(chalk.green(`📄 Media Description ID: ${chalk.white(uploadResults.mediaDescriptionId)}`));
+
+        // Show Excel update information
+        if (uploadResults.updatedExcelPath) {
+          console.log(chalk.green(`📋 Excel file updated: ${chalk.white(path.basename(uploadResults.updatedExcelPath))}`));
+        }
+
+        // Show upload summary
+        const { uploads } = uploadResults;
+        if (uploads.videos.length > 0) {
+          console.log(chalk.cyan(`\n🎬 Videos uploaded: ${uploads.videos.length}`));
+          uploads.videos.forEach(video => {
+            console.log(chalk.gray(`  • ${video.fileName} → Asset: ${video.assetId}`));
+          });
+        }
+
+        if (uploads.images.length > 0) {
+          console.log(chalk.cyan(`\n🖼️  Images uploaded: ${uploads.images.length}`));
+          uploads.images.forEach(image => {
+            console.log(chalk.gray(`  • ${image.fileName} → ${image.dimensions || 'unknown size'}`));
+          });
+        }
+
+        if (uploads.subtitles.length > 0) {
+          console.log(chalk.cyan(`\n📝 Subtitles uploaded: ${uploads.subtitles.length}`));
+          uploads.subtitles.forEach(subtitle => {
+            console.log(chalk.gray(`  • ${subtitle.fileName} (${subtitle.language})`));
+          });
+        }
+
+        return {
+          success: true,
+          message: `Upload completed successfully! Media Description ID: ${uploadResults.mediaDescriptionId}`,
+          phase: 'completed',
+          mediaDescriptionId: uploadResults.mediaDescriptionId,
+          data: uploadResults
+        };
+
+      } else {
+        // Upload failed - return detailed error context
+        console.log(chalk.red.bold('\n❌ Upload failed'));
+
+        if (uploadResults.errors.length > 0) {
+          console.log(chalk.red('\n📋 Errors encountered:'));
+          uploadResults.errors.forEach(error => {
+            console.log(chalk.red(`  • ${error}`));
+          });
+        }
+
+        return {
+          success: false,
+          error: `Upload failed with ${uploadResults.errors.length} error(s)`,
+          phase: 'upload-failed',
+          context: {
+            ...uploadResults.context,
+            uploadErrors: uploadResults.errors,
+            partialResults: {
+              videosUploaded: uploadResults.uploads.videos.length,
+              imagesUploaded: uploadResults.uploads.images.length,
+              subtitlesUploaded: uploadResults.uploads.subtitles.length
+            },
+            summary: {
+              totalErrors: uploadResults.errors.length,
+              filesFound: uploadResults.context.filesFound.total,
+              hasDescription: !!uploadResults.context.excelData?.description,
+              hasFiles: !!(uploadResults.context.excelData?.files && uploadResults.context.excelData.files.length > 0),
+              mediaDescriptionCreated: !!uploadResults.mediaDescriptionId
+            }
+          }
+        };
+      }
+
+    } catch (error) {
+      if (this.logger) {
+        this.logger.error(`Upload execution failed: ${error.message}`);
+      }
+      console.error(chalk.red(`❌ Upload execution error: ${error.message}`));
+
+      return {
+        success: false,
+        error: `Upload execution failed: ${error.message}`,
+        phase: 'upload-execution-error',
+        context: {
+          folderPath: this.options.folder,
+          excelPath,
+          errorDetails: {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+          },
+          filesFound: mediaFiles ? this.buildFilesContext(mediaFiles) : null,
+          excelData: excelData ? {
+            hasDescription: !!excelData.description,
+            hasFiles: !!(excelData.files && excelData.files.length > 0)
+          } : null
+        }
+      };
+    }
+  }
+
   async run() {
+    // Check for mode parameter
+    if (this.options.mode === 'prepare') {
+      return this.prepareExcel();
+    } else if (this.options.mode === 'upload') {
+      return this.executeUpload();
+    }
+
+    // Default auto mode - keep existing behavior
     let mediaFiles = null;
     
     try {
@@ -64,7 +440,27 @@ export class OneMediaCompleteUpload {
       
       // Read Excel data
       const excelData = await this.excelService.readExcelFile(excelPath);
-      
+
+      // Check if media_description ID already exists (indicating already uploaded)
+      if (excelData.description.id) {
+        console.log(chalk.yellow('⚠️  Media already uploaded - ID field detected'));
+        console.log(chalk.yellow(`   Existing ID: ${excelData.description.id}`));
+        console.log(chalk.cyan('\n   This content has already been uploaded to the system.'));
+        console.log(chalk.cyan('   To force re-upload, remove the ID row from the Description sheet.'));
+
+        return {
+          success: false,
+          error: 'Media already uploaded. ID field is filled in Excel.',
+          phase: 'already-uploaded',
+          mediaDescriptionId: excelData.description.id,
+          context: {
+            folderPath: this.options.folder,
+            existingId: excelData.description.id,
+            message: 'Remove ID row from Description sheet to allow re-upload'
+          }
+        };
+      }
+
       // Only check for auto-fill if this is an existing file, not a newly created one
       if (!isNewlyCreated) {
         const shouldAutoFill = this.excelService.isFilesSheetEmpty(excelData.files);
@@ -499,28 +895,70 @@ export class OneMediaCompleteUpload {
 async function main() {
   try {
     if (process.argv.length < 4) {
-      console.log('Usage: node index.js <folder_path> <config_path>');
+      console.log('Usage: node index.js <folder_path> <config_path> [mode]');
       console.log('  folder_path: Path to folder containing media files and Excel files');
       console.log('  config_path: Path to JSON configuration file');
+      console.log('  mode: Operation mode (optional)');
+      console.log('    - "prepare": Only create and fill Excel template');
+      console.log('    - "upload": Only execute upload (Excel must exist and be filled)');
+      console.log('    - omitted: Auto mode (current behavior - create Excel if needed, then upload)');
       process.exit(1);
     }
-    
+
     const folderPath = process.argv[2];
     const configPath = process.argv[3];
-    
+    const mode = process.argv[4]; // Optional mode parameter
+
+    // Validate mode parameter
+    if (mode && !['prepare', 'upload'].includes(mode)) {
+      console.log(chalk.red(`❌ Invalid mode: "${mode}". Valid modes are: prepare, upload`));
+      process.exit(1);
+    }
+
     const uploader = new OneMediaCompleteUpload({
       folder: folderPath,
       config: configPath,
-      verbose: true
+      verbose: true,
+      mode: mode // Pass mode to the uploader
     });
-    
-    const result = await uploader.run();
+
+    let result;
+
+    // Call appropriate method based on mode
+    if (mode === 'prepare') {
+      console.log(chalk.cyan('📋 Running in Excel Preparation mode'));
+      result = await uploader.prepareExcel();
+    } else if (mode === 'upload') {
+      console.log(chalk.cyan('🚀 Running in Upload Execution mode'));
+      result = await uploader.executeUpload();
+    } else {
+      console.log(chalk.cyan('🔄 Running in Auto mode'));
+      result = await uploader.run();
+    }
     
     if (result.success) {
-      console.log(chalk.green.bold('\n✅ Upload completed successfully!'));
+      if (mode === 'prepare') {
+        console.log(chalk.green.bold('\n✅ Excel preparation completed successfully!'));
+        if (result.excelPath) {
+          console.log(chalk.green(`📋 Excel file ready: ${path.basename(result.excelPath)}`));
+        }
+      } else if (mode === 'upload') {
+        console.log(chalk.green.bold('\n✅ Upload execution completed successfully!'));
+        if (result.mediaDescriptionId) {
+          console.log(chalk.green(`🎯 Media Description ID: ${result.mediaDescriptionId}`));
+        }
+      } else {
+        console.log(chalk.green.bold('\n✅ Process completed successfully!'));
+      }
       process.exit(0);
     } else {
-      console.log(chalk.red.bold('\n❌ Upload failed!'));
+      if (mode === 'prepare') {
+        console.log(chalk.red.bold('\n❌ Excel preparation failed!'));
+      } else if (mode === 'upload') {
+        console.log(chalk.red.bold('\n❌ Upload execution failed!'));
+      } else {
+        console.log(chalk.red.bold('\n❌ Process failed!'));
+      }
       console.log(chalk.red(`Error: ${result.error}`));
       if (result.context) {
         console.log('\nContext:', JSON.stringify(result.context, null, 2));

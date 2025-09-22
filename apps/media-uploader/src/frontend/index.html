@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyool Media Uploader</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📦 Kyool Media Uploader</h1>
+            <div class="config-info">
+                <span class="config-label">Config:</span>
+                <span id="config-path" class="config-path">config.ini</span>
+                <button id="config-button" class="config-button" title="Select configuration file">⚙️</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Folder Selection Section -->
+            <section class="section folder-section">
+                <h2>📁 Folder Selection</h2>
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="folder-path"
+                        class="folder-input"
+                        placeholder="Type or paste folder path, or click Browse..."
+                    >
+                    <button id="browse-folder" class="browse-button">
+                        Browse...
+                    </button>
+                </div>
+            </section>
+
+            <!-- Action Buttons Section -->
+            <section class="section actions-section">
+                <h2>🎬 Single Folder Actions</h2>
+                <div class="button-group">
+                    <button id="prepare-excel" class="action-button prepare-button" disabled>
+                        <span class="button-icon">📋</span>
+                        <span class="button-text">Prepare Excel</span>
+                        <span class="button-subtitle">Create and fill Excel template</span>
+                    </button>
+
+                    <button id="execute-upload" class="action-button upload-button" disabled>
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Execute Upload</span>
+                        <span class="button-subtitle">Upload media to servers</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Batch Action Buttons Section -->
+            <section class="section batch-actions-section">
+                <h2>📦 Batch Actions (All Subfolders)</h2>
+
+                <!-- Parallel Processing Controls -->
+                <div class="parallel-controls">
+                    <div class="control-group">
+                        <label for="max-concurrent" class="control-label">Max Concurrent Uploads:</label>
+                        <input type="range" id="max-concurrent" class="range-input"
+                               min="1" max="20" value="10" step="1">
+                        <span id="concurrent-value" class="control-value">10</span>
+                    </div>
+                    <div class="parallel-mode-toggle">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="parallel-mode" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Parallel Processing</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="prepare-excel-batch" class="action-button batch-prepare-button" disabled>
+                        <span class="button-icon">📋</span>
+                        <span class="button-text">Prepare Excel (All Subfolders)</span>
+                        <span class="button-subtitle">Process all immediate subfolders for Excel creation</span>
+                    </button>
+
+                    <button id="execute-upload-batch" class="action-button batch-upload-button" disabled>
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Execute Upload (All Subfolders)</span>
+                        <span class="button-subtitle">Upload all subfolders to servers</span>
+                    </button>
+                </div>
+
+                <!-- Excel Bulk Edit Section -->
+                <div class="excel-bulk-edit-section">
+                    <h3>✏️ Excel Bulk Edit</h3>
+                    <div class="bulk-edit-controls">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="excel-field-name" class="input-label">Field Name:</label>
+                                <input type="text" id="excel-field-name" class="bulk-edit-input" placeholder="e.g., policy" title="Enter the field name to update (e.g., policy, status)">
+                            </div>
+                            <div class="input-group">
+                                <label for="excel-field-value" class="input-label">New Value:</label>
+                                <input type="text" id="excel-field-value" class="bulk-edit-input" placeholder="e.g., public" title="Enter the new value for this field">
+                            </div>
+                        </div>
+                        <div class="options-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="excel-dry-run" checked>
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">Dry Run (preview changes only)</span>
+                            </label>
+                            <button id="excel-bulk-edit" class="action-button bulk-edit-button" disabled>
+                                <span class="button-icon">✏️</span>
+                                <span class="button-text">Bulk Edit Excel</span>
+                                <span class="button-subtitle">Update field in all Excel files</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parallel Process Controls -->
+                <div id="parallel-process-controls" class="process-controls hidden">
+                    <div class="process-header">
+                        <h3>🔄 Active Processes</h3>
+                        <div class="process-summary">
+                            <span class="summary-item">Total: <span id="total-count">0</span></span>
+                            <span class="summary-item">Running: <span id="running-count">0</span></span>
+                            <span class="summary-item">Queued: <span id="queued-count">0</span></span>
+                            <span class="summary-item">Completed: <span id="completed-count">0</span></span>
+                            <span class="summary-item">Failed: <span id="failed-count">0</span></span>
+                        </div>
+                        <div class="process-actions">
+                            <button id="pause-all" class="control-button" disabled>Pause All</button>
+                            <button id="resume-all" class="control-button" disabled>Resume All</button>
+                            <button id="cancel-all" class="control-button" disabled>Cancel All</button>
+                        </div>
+                    </div>
+                    <div id="process-list" class="process-list">
+                        <!-- Dynamic process items will be added here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Status Section -->
+            <section class="section status-section">
+                <div class="status-bar">
+                    <div class="status-indicator">
+                        <span id="status-icon" class="status-icon">⚪</span>
+                        <span id="status-text" class="status-text">Ready</span>
+                    </div>
+                    <div class="status-progress">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Log Window -->
+        <section class="section logs-section">
+            <div class="logs-header">
+                <h2>📝 Logs</h2>
+                <div class="logs-controls">
+                    <button id="clear-logs" class="control-button">Clear</button>
+                    <button id="scroll-toggle" class="control-button active" data-auto-scroll="true">
+                        Auto-scroll
+                    </button>
+                </div>
+            </div>
+            <div id="logs-container" class="logs-container">
+                <div id="logs-content" class="logs-content">
+                    <!-- Log messages will appear here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div id="loading-text" class="loading-text">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Ignore log files and directories that shouldn't trigger rebuilds
+logs/
+*.log
+
+# Ignore temporary upload files
+.temp-configs/
+.upload-progress/
+
+# Ignore node_modules in subtools (already bundled)
+target/debug/_up_/node_modules/
+
+# Ignore build artifacts
+target/
+gen/
+
+# Ignore config files that change frequently
+config.ini

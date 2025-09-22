@@ -1,0 +1,42 @@
+{
+  "auth": {
+    "mux_token_id": "your-mux-token-id",
+    "mux_token_secret": "your-mux-token-secret"
+  },
+  "backend": {
+    "server_address": "https://your-backend-api.com",
+    "user": "your-username",
+    "password": "your-password"
+  },
+  "video": {
+    "filepath": "/path/to/your/video.mp4",
+    "title": "Legacy Config Migration",
+    "description": "Example showing legacy options alongside new ones"
+  },
+  "settings": {
+    "playback_policy": ["public"],
+    "video_quality": "basic",
+    "max_resolution_tier": "1080p"
+  },
+  "options": {
+    "timeout": 3600000,
+    "retry_attempts": 3,
+    "retry_delay": 5000,
+    "chunk_size": 31457280,
+    "concurrent_uploads": 1,
+
+    "upload_method": "auto",
+    "chunk_size_mb": 5,
+    "memory_threshold_mb": 100,
+    "enable_resume": true,
+    "max_chunk_retries": 5,
+    "retry_delay_base": 1000,
+    "chunk_timeout": 120000,
+    "adaptive_retry_delay": true
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "console": true
+  }
+}
