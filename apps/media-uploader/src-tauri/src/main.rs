@@ -783,11 +783,18 @@ async fn execute_upload_batch_parallel(
         let total_subfolders = extract_total_subfolders(&stdout);
         let failed_folders = extract_failed_folders(&stdout);
 
-        emit_log_message(&window, "success", "Parallel batch upload completed").await;
+        // Create a more detailed success message based on output
+        let success_message = if stdout.contains("Worker pool parallel") {
+            "Worker pool parallel batch upload completed"
+        } else {
+            "Parallel batch upload completed"
+        };
+
+        emit_log_message(&window, "success", success_message).await;
 
         Ok(ProcessResult {
             success: true,
-            message: Some("Parallel batch upload completed".to_string()),
+            message: Some(success_message.to_string()),
             error: None,
             phase: Some("completed".to_string()),
             excel_path: None,
@@ -887,17 +894,25 @@ async fn run_command_with_streaming(
             if let Ok(line) = line {
                 stdout_lines.push(line.clone());
 
-                // Parse and emit different types of messages
-                let level = if line.contains("✅") || line.contains("Upload completed successfully") {
+                // Parse and emit different types of messages with enhanced patterns
+                let level = if line.contains("✅") || line.contains("Successfully uploaded") || line.contains("Upload completed successfully") || line.contains("completed:") {
                     "success"
-                } else if line.contains("❌") || line.contains("Error:") || line.contains("Failed:") {
+                } else if line.contains("❌") || line.contains("Error:") || line.contains("Failed:") || line.contains("failed:") || line.contains("Error uploading") {
                     "error"
-                } else if line.contains("⚠️") || line.contains("Warning:") {
+                } else if line.contains("⚠️") || line.contains("Warning:") || line.contains("Skipping") || line.contains("Skipped") {
                     "warning"
-                } else if line.contains("🚀") || line.contains("Starting") {
+                } else if line.contains("🚀") || line.contains("Starting") || line.contains("Starting upload") {
                     "info"
-                } else if line.contains("📋") || line.contains("Found:") || line.contains("Processing:") {
+                } else if line.contains("📊") || line.contains("Status update") || line.contains("active") || line.contains("queued") {
                     "info"
+                } else if line.contains("⏳") || line.contains("Currently uploading") {
+                    "info"
+                } else if line.contains("📋") || line.contains("Found:") || line.contains("Processing:") || line.contains("batch of") {
+                    "info"
+                } else if line.contains("🔍") || line.contains("Validating") || line.contains("Excel file") {
+                    "info"
+                } else if line.contains("🎉") || line.contains("completed:") {
+                    "success"
                 } else {
                     "info"
                 };

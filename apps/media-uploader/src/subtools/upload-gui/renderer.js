@@ -385,6 +385,22 @@ class UploadGUI {
           message: `✅ ${result.message}`
         });
 
+        // Show information about skipped folders if any
+        if (result.skippedFolders > 0) {
+          this.addLogMessage({
+            timestamp: new Date().toLocaleTimeString(),
+            level: 'warning',
+            message: `⚠️ Skipped ${result.skippedFolders} folders without Excel files: ${result.skippedFolderNames.join(', ')}`
+          });
+        }
+
+        // Show summary of what will be processed
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'info',
+          message: `📊 Processing summary: ${result.validFolders} valid folders, ${result.skippedFolders} skipped, ${result.queuedCount} queued for upload`
+        });
+
         // Initialize process tracking
         this.initializeProcessTracking(result.taskIds);
 

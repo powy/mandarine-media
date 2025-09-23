@@ -126,12 +126,19 @@ export class ProcessManager {
    * Process the queue by starting workers up to concurrency limit
    */
   async processQueue() {
+    console.log(`🔄 Processing queue: ${this.running}/${this.maxConcurrent} workers running, ${this.queue.length} tasks queued`);
+
     while (this.running < this.maxConcurrent && this.queue.length > 0) {
       const task = this.queue.shift();
       if (task && task.status === 'queued') {
+        console.log(`🚀 Starting new worker for: ${path.basename(task.folderPath)}`);
         await this.spawnWorker(task);
+      } else if (task) {
+        console.log(`⚠️ Skipping task with status: ${task.status} for: ${path.basename(task.folderPath)}`);
       }
     }
+
+    console.log(`📊 Queue processing complete: ${this.running}/${this.maxConcurrent} workers running, ${this.queue.length} tasks remaining`);
   }
 
   /**
@@ -245,7 +252,12 @@ export class ProcessManager {
    */
   async handleWorkerClose(taskId, code) {
     const processInfo = this.processes.get(taskId);
-    if (!processInfo) return;
+    if (!processInfo) {
+      console.log(`⚠️ Worker close called for unknown task: ${taskId}`);
+      return;
+    }
+
+    console.log(`🔚 Worker closed for ${path.basename(processInfo.folderPath)} (PID: ${processInfo.pid}, Code: ${code})`);
 
     this.running--;
     processInfo.endTime = new Date();
@@ -260,8 +272,11 @@ export class ProcessManager {
 
       // Attempt retry if under limit
       if (processInfo.retryCount < this.retryAttempts) {
+        console.log(`🔄 Will retry ${path.basename(processInfo.folderPath)} (attempt ${processInfo.retryCount + 1}/${this.retryAttempts})`);
         await this.retryTask(taskId);
         return;
+      } else {
+        console.log(`❌ Max retries reached for ${path.basename(processInfo.folderPath)}`);
       }
     }
 
@@ -270,6 +285,8 @@ export class ProcessManager {
 
     this.processes.set(taskId, processInfo);
     this.notifyProcessUpdate(taskId, processInfo);
+
+    console.log(`🔄 Worker completed, continuing queue processing...`);
 
     // Continue processing queue
     await this.processQueue();
@@ -285,25 +302,32 @@ export class ProcessManager {
    */
   async handleWorkerError(taskId, error) {
     const processInfo = this.processes.get(taskId);
-    if (!processInfo) return;
+    if (!processInfo) {
+      console.log(`⚠️ Worker error called for unknown task: ${taskId}`);
+      return;
+    }
+
+    console.error(`💥 Worker error for ${path.basename(processInfo.folderPath)} (PID: ${processInfo.pid}):`, error.message);
 
     this.running--;
     processInfo.status = 'failed';
     processInfo.error = error.message;
     processInfo.endTime = new Date();
 
-    console.error(`❌ Worker error for ${path.basename(processInfo.folderPath)}:`, error.message);
-
     // Clean up process reference
     this.processRefs.delete(taskId);
 
     // Attempt retry if under limit
     if (processInfo.retryCount < this.retryAttempts) {
+      console.log(`🔄 Will retry ${path.basename(processInfo.folderPath)} after error (attempt ${processInfo.retryCount + 1}/${this.retryAttempts})`);
       await this.retryTask(taskId);
     } else {
+      console.log(`❌ Max retries reached for ${path.basename(processInfo.folderPath)} after error`);
       this.processes.set(taskId, processInfo);
       this.notifyProcessUpdate(taskId, processInfo);
     }
+
+    console.log(`🔄 Worker error handled, continuing queue processing...`);
 
     // Continue processing queue
     await this.processQueue();

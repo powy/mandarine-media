@@ -562,6 +562,34 @@ export class UploadService {
   }
 
   /**
+   * Check if a folder has Excel files (.xlsx or .xls)
+   * @param {string} folderPath - Path to the folder to check
+   * @returns {Promise<Object>} Result with Excel file information
+   */
+  async hasExcelFiles(folderPath) {
+    try {
+      const files = await fs.promises.readdir(folderPath);
+      const excelFiles = files.filter(file =>
+        file.toLowerCase().endsWith('.xlsx') || file.toLowerCase().endsWith('.xls')
+      );
+
+      return {
+        hasExcel: excelFiles.length > 0,
+        excelFiles,
+        count: excelFiles.length
+      };
+    } catch (error) {
+      this.logMessage('error', `Failed to check Excel files in ${folderPath}: ${error.message}`);
+      return {
+        hasExcel: false,
+        excelFiles: [],
+        count: 0,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Execute upload for all subfolders using parallel processing
    * @param {string} parentFolderPath - Path to the parent folder containing subfolders
    * @param {number} maxConcurrent - Maximum concurrent uploads (optional)
@@ -592,12 +620,47 @@ export class UploadService {
 
       this.logMessage('info', `Found ${subfolders.length} subfolders to upload in parallel`);
 
+      // Validate Excel files in each subfolder before queueing
+      const validFolders = [];
+      const skippedFolders = [];
+
+      for (const folder of subfolders) {
+        const folderName = path.basename(folder);
+        this.logMessage('info', `🔍 Checking Excel files in: ${folderName}`);
+
+        const excelCheck = await this.hasExcelFiles(folder);
+        if (excelCheck.hasExcel) {
+          validFolders.push(folder);
+          this.logMessage('info', `✅ ${folderName} has ${excelCheck.count} Excel file(s): ${excelCheck.excelFiles.join(', ')}`);
+        } else {
+          skippedFolders.push(folderName);
+          this.logMessage('warning', `⚠️ Skipping ${folderName}: No Excel files found`);
+        }
+      }
+
+      if (validFolders.length === 0) {
+        return {
+          success: false,
+          error: `No folders with Excel files found. Skipped ${skippedFolders.length} folders: ${skippedFolders.join(', ')}`,
+          processedCount: 0,
+          totalSubfolders: subfolders.length,
+          validFolders: 0,
+          skippedFolders: skippedFolders.length,
+          taskIds: []
+        };
+      }
+
+      this.logMessage('info', `📋 Queueing ${validFolders.length} folders with Excel files for upload`);
+      if (skippedFolders.length > 0) {
+        this.logMessage('warning', `⚠️ Skipped ${skippedFolders.length} folders without Excel files: ${skippedFolders.join(', ')}`);
+      }
+
       // Create temp config for workers
       const configPath = await this.createTempConfig();
 
-      // Queue all uploads
+      // Queue uploads for valid folders only
       const taskIds = [];
-      for (const folder of subfolders) {
+      for (const folder of validFolders) {
         try {
           this.logMessage('info', `📋 Queuing upload: ${path.basename(folder)}`);
 
@@ -627,12 +690,19 @@ export class UploadService {
       this.logMessage('info', `✅ Queued ${taskIds.length} uploads. Processing will start automatically.`);
       this.logMessage('info', `📊 Max concurrent: ${this.processManager.maxConcurrent}, Queue: ${taskIds.length}`);
 
+      const successMessage = skippedFolders.length > 0
+        ? `Parallel batch upload started: ${taskIds.length} uploads queued, ${skippedFolders.length} folders skipped (no Excel files)`
+        : `Parallel batch upload started: ${taskIds.length} uploads queued`;
+
       // Return immediate success - monitoring happens via callbacks
       return {
         success: true,
-        message: `Parallel batch upload started: ${taskIds.length} uploads queued`,
+        message: successMessage,
         processedCount: 0, // Will be updated via progress callbacks
         totalSubfolders: subfolders.length,
+        validFolders: validFolders.length,
+        skippedFolders: skippedFolders.length,
+        skippedFolderNames: skippedFolders,
         queuedCount: taskIds.length,
         taskIds,
         mode: 'parallel'

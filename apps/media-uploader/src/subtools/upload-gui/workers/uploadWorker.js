@@ -183,8 +183,9 @@ class UploadWorker {
       await this.log('info', `📋 Found ${excelFiles.length} Excel file(s): ${excelFiles.join(', ')}`);
 
       if (excelFiles.length === 0) {
-        await this.log('warning', '⚠️ No Excel files found in target folder');
+        await this.log('error', '❌ No Excel files found in target folder - upload cannot proceed');
         await this.log('info', `📁 Folder contents: ${files.join(', ')}`);
+        throw new Error('No Excel files found in target folder. Excel file is required for upload.');
       } else {
         for (const excelFile of excelFiles) {
           const fullPath = path.join(this.folderPath, excelFile);
@@ -194,6 +195,7 @@ class UploadWorker {
       }
     } catch (error) {
       await this.log('error', `❌ Error checking Excel files: ${error.message}`);
+      throw error; // Re-throw the error to fail validation
     }
   }
 

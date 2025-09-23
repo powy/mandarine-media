@@ -393,11 +393,32 @@ class MediaUploaderGUI {
       });
 
       if (result.success) {
+        // Show information about processing summary
+        const totalFolders = result.total_subfolders || 0;
+        const validFolders = result.valid_folders || 0;
+        const skippedFolders = result.skipped_folders || 0;
+        const processedCount = result.processed_count || 0;
+
+        let statusMessage = `Worker pool parallel batch upload completed for ${totalFolders} folders`;
+        if (skippedFolders > 0) {
+          statusMessage += ` (${validFolders} valid, ${skippedFolders} skipped without Excel files)`;
+        }
+        statusMessage += ` - ${processedCount} successful`;
+
         this.addLogMessage({
           timestamp: new Date().toLocaleTimeString(),
           level: 'success',
-          message: `Parallel batch upload started for ${result.total_subfolders || 0} folders (${result.processed_count || 0} successful)`
+          message: statusMessage
         });
+
+        // Show information about skipped folders if any
+        if (skippedFolders > 0 && result.skipped_folder_names) {
+          this.addLogMessage({
+            timestamp: new Date().toLocaleTimeString(),
+            level: 'warning',
+            message: `⚠️ Skipped ${skippedFolders} folders without Excel files: ${result.skipped_folder_names.join(', ')}`
+          });
+        }
 
         // Show the parallel process controls
         this.showParallelProcessControls(true);

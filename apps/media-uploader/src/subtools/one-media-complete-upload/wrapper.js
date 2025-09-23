@@ -433,7 +433,33 @@ async function main() {
 }
 
 /**
- * Process batch folder operation with parallel uploads
+ * Check if a folder has Excel files
+ */
+async function hasExcelFiles(folderPath) {
+  const { readdirSync } = await import('fs');
+  try {
+    const files = readdirSync(folderPath);
+    const excelFiles = files.filter(file =>
+      file.toLowerCase().endsWith('.xlsx') || file.toLowerCase().endsWith('.xls')
+    );
+    return {
+      hasExcel: excelFiles.length > 0,
+      excelFiles,
+      count: excelFiles.length
+    };
+  } catch (error) {
+    console.error(`❌ Error checking Excel files in ${folderPath}: ${error.message}`);
+    return {
+      hasExcel: false,
+      excelFiles: [],
+      count: 0,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Process batch folder operation with proper worker pool parallel uploads
  */
 async function processBatchFolderParallel(parentFolderPath, options, maxConcurrent = 3) {
   const { readdirSync, statSync } = await import('fs');
@@ -450,82 +476,181 @@ async function processBatchFolderParallel(parentFolderPath, options, maxConcurre
       return statSync(itemPath).isDirectory();
     });
 
-    console.log(`🚀 Starting parallel batch upload for ${subfolders.length} folders (max ${maxConcurrent} concurrent)`);
+    if (subfolders.length === 0) {
+      console.log(`⚠️ No subfolders found in: ${parentFolderPath}`);
+      return {
+        success: false,
+        error: 'No subfolders found in the specified directory',
+        processedCount: 0,
+        totalSubfolders: 0,
+        failedFolders: null,
+        skippedFolders: 0,
+        parallel: true
+      };
+    }
 
-    // Process folders in parallel with limited concurrency
+    console.log(`🔍 Validating Excel files in ${subfolders.length} folders...`);
+
+    // Validate Excel files in each subfolder before processing
+    const validFolders = [];
+    const skippedFolders = [];
+
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(parentFolderPath, subfolder);
+      const excelCheck = await hasExcelFiles(subfolderPath);
+
+      if (excelCheck.hasExcel) {
+        validFolders.push(subfolder);
+        console.log(`✅ ${subfolder} has ${excelCheck.count} Excel file(s): ${excelCheck.excelFiles.join(', ')}`);
+      } else {
+        skippedFolders.push(subfolder);
+        console.log(`⚠️ Skipping ${subfolder}: No Excel files found`);
+      }
+    }
+
+    if (validFolders.length === 0) {
+      console.log(`❌ No folders with Excel files found. Skipped ${skippedFolders.length} folders: ${skippedFolders.join(', ')}`);
+      return {
+        success: false,
+        error: `No folders with Excel files found. Skipped ${skippedFolders.length} folders: ${skippedFolders.join(', ')}`,
+        processedCount: 0,
+        totalSubfolders: subfolders.length,
+        validFolders: 0,
+        skippedFolders: skippedFolders.length,
+        skippedFolderNames: skippedFolders,
+        failedFolders: null,
+        parallel: true
+      };
+    }
+
+    console.log(`🚀 Starting proper worker pool parallel batch upload for ${validFolders.length} valid folders (max ${maxConcurrent} concurrent)`);
+    if (skippedFolders.length > 0) {
+      console.log(`⚠️ Skipped ${skippedFolders.length} folders without Excel files: ${skippedFolders.join(', ')}`);
+    }
+
+    // Worker pool implementation
     const results = [];
     const failedFolders = [];
     let processedCount = 0;
     let completedCount = 0;
+    let runningWorkers = 0;
+    const folderQueue = [...validFolders]; // Copy of folders to process
+    const activeUploads = new Map(); // Track active uploads
 
-    // Process in chunks based on maxConcurrent
-    for (let i = 0; i < subfolders.length; i += maxConcurrent) {
-      const chunk = subfolders.slice(i, i + maxConcurrent);
-      const chunkNumber = Math.floor(i / maxConcurrent) + 1;
-      const totalChunks = Math.ceil(subfolders.length / maxConcurrent);
+    // Function to start a single upload
+    const startUpload = async (subfolder) => {
+      const subfolderPath = path.join(parentFolderPath, subfolder);
+      runningWorkers++;
+      activeUploads.set(subfolder, { startTime: Date.now(), status: 'running' });
 
-      console.log(`📋 Processing chunk ${chunkNumber}/${totalChunks}: ${chunk.join(', ')}`);
+      console.log(`🚀 Starting upload: ${subfolder} (${runningWorkers} workers active, ${folderQueue.length} queued)`);
 
-      const chunkPromises = chunk.map(async (subfolder) => {
-        const subfolderPath = path.join(parentFolderPath, subfolder);
-        console.log(`🚀 Starting upload: ${subfolder}`);
+      const subfolderOptions = {
+        ...options,
+        config: configPath,
+        folder: subfolderPath,
+        mode: 'auto'
+      };
 
-        const subfolderOptions = {
-          ...options,
-          config: configPath,
-          folder: subfolderPath,
-          mode: 'auto'
-        };
+      try {
+        const result = await oneMediaCompleteUpload(subfolderOptions);
 
-        try {
-          const result = await oneMediaCompleteUpload(subfolderOptions);
+        runningWorkers--;
+        completedCount++;
+        activeUploads.delete(subfolder);
+        const overallProgress = Math.round((completedCount / validFolders.length) * 100);
 
-          completedCount++;
-          const overallProgress = Math.round((completedCount / subfolders.length) * 100);
-
-          if (result.success) {
-            processedCount++;
-            console.log(`✅ Successfully uploaded: ${subfolder} (${completedCount}/${subfolders.length} - ${overallProgress}%)`);
-          } else {
-            failedFolders.push(subfolder);
-            console.log(`❌ Failed to upload: ${subfolder} - ${result.error || 'Unknown error'} (${completedCount}/${subfolders.length} - ${overallProgress}%)`);
-          }
-
-          return { folder: subfolder, result };
-        } catch (error) {
-          completedCount++;
-          const overallProgress = Math.round((completedCount / subfolders.length) * 100);
-          failedFolders.push(subfolder);
-          console.log(`❌ Error uploading: ${subfolder} - ${error.message} (${completedCount}/${subfolders.length} - ${overallProgress}%)`);
-          return {
+        if (result.success) {
+          processedCount++;
+          console.log(`✅ Successfully uploaded: ${subfolder} (${completedCount}/${validFolders.length} - ${overallProgress}%)`);
+          results.push({
             folder: subfolder,
-            result: {
-              success: false,
-              error: error.message
-            }
-          };
+            result,
+            status: 'completed'
+          });
+        } else {
+          failedFolders.push(subfolder);
+          console.log(`❌ Failed to upload: ${subfolder} - ${result.error} (${completedCount}/${validFolders.length} - ${overallProgress}%)`);
+          results.push({
+            folder: subfolder,
+            result,
+            status: 'failed'
+          });
         }
-      });
+      } catch (error) {
+        runningWorkers--;
+        completedCount++;
+        activeUploads.delete(subfolder);
+        failedFolders.push(subfolder);
+        const overallProgress = Math.round((completedCount / validFolders.length) * 100);
+        console.log(`❌ Error uploading: ${subfolder} - ${error.message} (${completedCount}/${validFolders.length} - ${overallProgress}%)`);
+        results.push({
+          folder: subfolder,
+          result: {
+            success: false,
+            error: error.message
+          },
+          status: 'error'
+        });
+      }
 
-      // Wait for current chunk to complete
-      const chunkResults = await Promise.all(chunkPromises);
-      results.push(...chunkResults);
+      // Start next upload if queue has folders and we're under the limit
+      if (folderQueue.length > 0 && runningWorkers < maxConcurrent) {
+        const nextFolder = folderQueue.shift();
+        // Don't await here - let it run concurrently
+        startUpload(nextFolder).catch(console.error);
+      }
+    };
 
-      console.log(`📋 Completed chunk ${chunkNumber}/${totalChunks}`);
+    // Start initial batch of uploads
+    const initialBatchSize = Math.min(maxConcurrent, validFolders.length);
+    console.log(`📋 Starting initial batch of ${initialBatchSize} uploads...`);
+
+    for (let i = 0; i < initialBatchSize; i++) {
+      const folder = folderQueue.shift();
+      if (folder) {
+        // Don't await here - let them run concurrently
+        startUpload(folder).catch(console.error);
+      }
+    }
+
+    // Wait for all uploads to complete
+    while (completedCount < validFolders.length) {
+      // Log current status every 5 seconds
+      const activeCount = runningWorkers;
+      const queueCount = folderQueue.length;
+      console.log(`📊 Status update: ${activeCount} active, ${queueCount} queued, ${completedCount}/${validFolders.length} completed (${Math.round((completedCount / validFolders.length) * 100)}%)`);
+
+      if (activeUploads.size > 0) {
+        const activeList = Array.from(activeUploads.keys()).join(', ');
+        console.log(`⏳ Currently uploading: ${activeList}`);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
     }
 
     // Final summary
-    console.log(`🎉 Parallel batch upload completed: ${processedCount}/${subfolders.length} successful, ${failedFolders.length} failed`);
+    console.log(`🎉 Worker pool parallel batch upload completed: ${processedCount}/${validFolders.length} successful, ${failedFolders.length} failed`);
     if (failedFolders.length > 0) {
       console.log(`❌ Failed uploads: ${failedFolders.join(', ')}`);
     }
+    if (skippedFolders.length > 0) {
+      console.log(`⚠️ Skipped folders (no Excel): ${skippedFolders.join(', ')}`);
+    }
+
+    const successMessage = skippedFolders.length > 0
+      ? `Worker pool parallel processing completed: ${processedCount} successful, ${failedFolders.length} failed, ${skippedFolders.length} skipped`
+      : `Worker pool parallel processing completed: ${processedCount} successful, ${failedFolders.length} failed`;
 
     return {
       success: processedCount > 0,
-      message: `Parallel batch processing completed`,
+      message: successMessage,
       processedCount: processedCount,
       totalSubfolders: subfolders.length,
-      taskIds: subfolders,
+      validFolders: validFolders.length,
+      skippedFolders: skippedFolders.length,
+      skippedFolderNames: skippedFolders,
+      taskIds: validFolders,
       failedFolders: failedFolders.length > 0 ? failedFolders : null,
       parallel: true,
       maxConcurrent: maxConcurrent,
@@ -533,6 +658,8 @@ async function processBatchFolderParallel(parentFolderPath, options, maxConcurre
     };
 
   } catch (error) {
+    console.error(`❌ Parallel batch processing error: ${error.message}`);
+    console.error(`❌ Error stack: ${error.stack}`);
     return {
       success: false,
       error: error.message,
