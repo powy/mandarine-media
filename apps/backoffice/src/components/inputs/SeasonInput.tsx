@@ -81,7 +81,7 @@ export const SeasonInput: React.FC<SeasonInputProps> = ({
         filterToQuery={(searchText) => ({ q: searchText })}
       >
         <AutocompleteInput
-          optionText={(record) => `Season ${record.season_number}${record.title ? ` - ${record.title}` : ''}`}
+          optionText={(record) => record.title || `Season ${record.season_number}`}
           optionValue="id"
           matchSuggestion={(searchText, suggestion) => {
             if (!searchText) return true;

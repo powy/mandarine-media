@@ -452,16 +452,14 @@ export const MediaShowcaseCreate = () => (
         validate={[required()]}
         defaultValue={100}
         min={1}
-        max={100}
-        helperText="Width percentage (1-100, default 100)"
+        helperText="Width percentage (minimum 1, default 100)"
       />
       <NumberInput
         source="percentage_height"
         validate={[required()]}
         defaultValue={100}
         min={1}
-        max={100}
-        helperText="Height percentage (1-100, default 100)"
+        helperText="Height percentage (minimum 1, default 100)"
       />
       <BooleanInput source="is_active" defaultValue={true} />
       <NumberInput
@@ -525,16 +523,14 @@ export const MediaShowcaseEdit = () => (
         validate={[required()]}
         defaultValue={100}
         min={1}
-        max={100}
-        helperText="Width percentage (1-100, default 100)"
+        helperText="Width percentage (minimum 1, default 100)"
       />
       <NumberInput
         source="percentage_height"
         validate={[required()]}
         defaultValue={100}
         min={1}
-        max={100}
-        helperText="Height percentage (1-100, default 100)"
+        helperText="Height percentage (minimum 1, default 100)"
       />
       <BooleanInput source="is_active" />
       <NumberInput

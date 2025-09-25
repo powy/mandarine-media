@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getSeasonScreenData } from 'share';
+import { getSeasonScreenData, resolveMediaDescriptionId } from 'share';
 import type { MediaDescription, Season, Program, PublicPerson, Language, Country } from 'share';
 
 interface SeasonScreenData {
@@ -23,6 +23,32 @@ const SeasonScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // Check if ID might be a MediaDescription ID and resolve it
+  useEffect(() => {
+    const checkAndResolveId = async () => {
+      if (!id) return;
+
+      try {
+        console.log('🔍 SeasonScreen: Checking if ID is a MediaDescription:', id);
+        const resolution = await resolveMediaDescriptionId(id);
+
+        if (resolution.isMediaDescription) {
+          console.log('✅ SeasonScreen: Detected MediaDescription, resolving:', resolution);
+
+          if (resolution.redirectPath && resolution.redirectPath !== `/season/${id}`) {
+            console.log('🔄 SeasonScreen: Redirecting to correct path:', resolution.redirectPath);
+            navigate(resolution.redirectPath, { replace: true });
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('🔍 SeasonScreen: ID resolution failed, continuing with original ID');
+      }
+    };
+
+    checkAndResolveId();
+  }, [id, navigate]);
+
   const {
     data: seasonData,
     isLoading,
@@ -40,10 +66,14 @@ const SeasonScreen: React.FC = () => {
       } catch (error) {
         console.error('❌ SeasonScreen: API call failed:', error);
         console.error('❌ SeasonScreen: Error details:', {
+          seasonId: id,
           message: (error as any)?.message,
           response: (error as any)?.response,
           status: (error as any)?.response?.status,
-          data: (error as any)?.response?.data
+          data: (error as any)?.response?.data,
+          possibleCause: (error as any)?.response?.status === 404
+            ? 'Season not found - verify the season ID exists in the database or check if a MediaDescription ID was passed'
+            : 'Unknown API error'
         });
         throw error;
       }
@@ -72,8 +102,8 @@ const SeasonScreen: React.FC = () => {
     navigate(`/video/${episodeId}`);
   };
 
-  const handleProgramClick = (seasonId: string) => {
-    navigate(`/program/${seasonId}`);
+  const handleProgramClick = (programId: string) => {
+    navigate(`/program/${programId}`);
   };
 
   const handleSeasonNavigation = (seasonId: string) => {
@@ -93,7 +123,17 @@ const SeasonScreen: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-red-500 mb-4">Erreur</h1>
-          <p className="text-gray-300">Impossible de charger cette saison.</p>
+          <p className="text-gray-300 mb-2">Impossible de charger cette saison.</p>
+          {id && (
+            <p className="text-gray-400 text-sm">
+              ID de saison: {id}
+            </p>
+          )}
+          {(error as any)?.response?.status === 404 && (
+            <p className="text-yellow-400 text-sm mt-2">
+              Cette saison n'existe pas ou a été supprimée.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -138,7 +178,7 @@ const SeasonScreen: React.FC = () => {
             <div className="mb-6 relative">
               <div className="text-center">
                 <button
-                  onClick={() => handleProgramClick(season.id)}
+                  onClick={() => handleProgramClick(program.id)}
                   className="text-xl text-gray-300 hover:text-kyool-blue transition-colors cursor-pointer"
                 >
                   {program.program_name}

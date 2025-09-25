@@ -16,10 +16,14 @@ export const useProgramScreen = (programId: string | undefined) => {
       } catch (error) {
         console.error('❌ useProgramScreen: API call failed:', error);
         console.error('❌ useProgramScreen: Error details:', {
+          programId: programId,
           message: (error as any)?.message,
           response: (error as any)?.response,
           status: (error as any)?.response?.status,
-          data: (error as any)?.response?.data
+          data: (error as any)?.response?.data,
+          possibleCause: (error as any)?.response?.status === 404
+            ? 'Program not found - verify the program ID exists or check if a season ID was passed instead'
+            : 'Unknown API error'
         });
         throw error;
       }

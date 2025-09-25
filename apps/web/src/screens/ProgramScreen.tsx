@@ -9,12 +9,39 @@ import {
   formatEpisodeCount,
   formatSeasonTitle,
   formatCrewRole,
-  getSeasonRoute
+  getSeasonRoute,
+  resolveMediaDescriptionId
 } from 'share';
 
 const ProgramScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  // Check if ID might be a MediaDescription ID and resolve it
+  useEffect(() => {
+    const checkAndResolveId = async () => {
+      if (!id) return;
+
+      try {
+        console.log('🔍 ProgramScreen: Checking if ID is a MediaDescription:', id);
+        const resolution = await resolveMediaDescriptionId(id);
+
+        if (resolution.isMediaDescription) {
+          console.log('✅ ProgramScreen: Detected MediaDescription, resolving:', resolution);
+
+          if (resolution.redirectPath && resolution.redirectPath !== `/program/${id}`) {
+            console.log('🔄 ProgramScreen: Redirecting to correct path:', resolution.redirectPath);
+            navigate(resolution.redirectPath, { replace: true });
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('🔍 ProgramScreen: ID resolution failed, continuing with original ID');
+      }
+    };
+
+    checkAndResolveId();
+  }, [id, navigate]);
 
   const { data: programData, isLoading, error } = useProgramScreen(id);
 
@@ -50,7 +77,17 @@ const ProgramScreen: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-red-500 mb-4">Erreur</h1>
-          <p className="text-gray-300">Impossible de charger ce programme.</p>
+          <p className="text-gray-300 mb-2">Impossible de charger ce programme.</p>
+          {id && (
+            <p className="text-gray-400 text-sm">
+              ID de programme: {id}
+            </p>
+          )}
+          {(error as any)?.response?.status === 404 && (
+            <p className="text-yellow-400 text-sm mt-2">
+              Ce programme n'existe pas ou un ID de saison a été passé au lieu d'un ID de programme.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -194,11 +231,12 @@ const ProgramScreen: React.FC = () => {
         )}
 
         {/* List of Seasons Section */}
-        {allSeasons.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-kyool-blue mb-4">
-              Liste des saisons ({allSeasons.length})
-            </h3>
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-kyool-blue mb-4">
+            {allSeasons.length > 0 ? `Liste des saisons (${allSeasons.length})` : 'Saisons'}
+          </h3>
+
+          {allSeasons.length > 0 ? (
             <div className="space-y-3">
               {allSeasons.map((season) => (
                 <div
@@ -245,8 +283,17 @@ const ProgramScreen: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="p-6 bg-gray-800 rounded-lg text-center">
+              <p className="text-gray-400 text-sm mb-2">
+                Aucune saison disponible pour ce programme
+              </p>
+              <p className="text-gray-500 text-xs">
+                Les saisons seront ajoutées prochainement
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

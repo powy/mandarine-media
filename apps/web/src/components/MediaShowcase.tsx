@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useMediaShowcaseLogic,
-  getMediaShowcaseItemRoute
+  getMediaShowcaseItemRoute,
+  resolveMediaDescriptionId
 } from 'share';
 import type { MediaShowcaseItem } from 'share';
 
@@ -43,9 +44,27 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
     return null;
   }
 
-  const handleItemClick = (item: MediaShowcaseItem) => {
+  const handleItemClick = async (item: MediaShowcaseItem) => {
     console.log('MediaShowcase: Item clicked:', item);
-    navigate(getMediaShowcaseItemRoute(item));
+
+    try {
+      console.log('🔍 MediaShowcase: Resolving MediaDescription for navigation:', item.id);
+      const resolution = await resolveMediaDescriptionId(item.id);
+
+      if (resolution.isMediaDescription && resolution.redirectPath) {
+        console.log('✅ MediaShowcase: Navigating to resolved path:', resolution.redirectPath);
+        navigate(resolution.redirectPath);
+      } else {
+        console.log('🔄 MediaShowcase: Using fallback navigation logic');
+        // Fallback to original logic for non-MediaDescription items or direct entity IDs
+        navigate(getMediaShowcaseItemRoute(item));
+      }
+    } catch (error) {
+      console.error('❌ MediaShowcase: Failed to resolve MediaDescription for navigation:', error);
+      // Fallback to video route if resolution fails
+      console.log('🔄 MediaShowcase: Falling back to video route');
+      navigate(`/video/${item.id}`);
+    }
   };
 
   const checkScrollButtons = () => {

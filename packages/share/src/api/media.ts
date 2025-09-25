@@ -994,7 +994,48 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
     }
 
     if (!currentSeason) {
-      throw new Error('No seasons found for this program');
+      console.log('⚠️ getProgramScreenDataByProgramId: No seasons found for program, continuing with program-only data');
+
+      // Try to get basic program metadata from the program's general MediaDescription if available
+      let programImageUrl = null;
+      let synopsis = null;
+      let description = null;
+      let genres: any[] = [];
+      let releaseDate = null;
+
+      if (program.general_media_description_id) {
+        try {
+          console.log('🔍 getProgramScreenDataByProgramId: Fetching general MediaDescription for metadata');
+          const generalMediaDescription = await mediaApi.getMediaDescription(program.general_media_description_id);
+
+          synopsis = generalMediaDescription.synopsis_text || null;
+          description = generalMediaDescription.descriptive_summary_text || null;
+          genres = generalMediaDescription.media_categories_list || [];
+          releaseDate = generalMediaDescription.production_year || null;
+          programImageUrl = generalMediaDescription.main_thumbnail_url || null;
+
+          console.log('✅ getProgramScreenDataByProgramId: Got metadata from general MediaDescription');
+        } catch (error) {
+          console.warn('⚠️ getProgramScreenDataByProgramId: Failed to fetch general MediaDescription:', error);
+        }
+      }
+
+      return {
+        program,
+        currentSeason: null,
+        programImageUrl,
+        synopsis,
+        description,
+        genres,
+        audioLanguages: [],
+        subtitleLanguages: [],
+        releaseDate,
+        originCountries: [],
+        actors: [],
+        directors: [],
+        producers: [],
+        allSeasons: [] // Empty array instead of throwing error
+      };
     }
 
     console.log('✅ getProgramScreenDataByProgramId: Current season selected:', currentSeason);

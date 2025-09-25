@@ -11,3 +11,4 @@ export * from './posterSelection';
 export * from './regionValidation';
 export * from './navigation';
 export * from './displayFormatters';
+export * from './media-description-resolver';

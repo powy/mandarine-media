@@ -26,30 +26,73 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Define endpoints that do NOT require authentication (public read-only endpoints)
+const PUBLIC_READ_ONLY_PATTERNS = [
+  // Public media content
+  /^\/media-descriptions$/,
+  /^\/media-descriptions\/[^\/]+$/,
+  /^\/programs$/,
+  /^\/programs\/[^\/]+$/,
+  /^\/seasons$/,
+  /^\/seasons\/[^\/]+$/,
+  /^\/media-showcases$/,
+  /^\/media-showcases\/[^\/]+$/,
+  /^\/media-showcases\/[^\/]+\/json$/,
+  /^\/video-files$/,
+  /^\/video-files\/[^\/]+$/,
+  /^\/persons$/,
+  /^\/persons\/[^\/]+$/,
+  /^\/languages$/,
+  /^\/languages\/[^\/]+$/,
+  /^\/countries$/,
+  /^\/countries\/[^\/]+$/,
+];
+
+// Check if endpoint is public and doesn't need authentication
+const isPublicEndpoint = (method: string, url?: string): boolean => {
+  if (!url) return false;
+
+  // Only GET requests can be public
+  if (method.toUpperCase() !== 'GET') return false;
+
+  // Check if URL matches public patterns
+  return PUBLIC_READ_ONLY_PATTERNS.some(pattern => pattern.test(url));
+};
+
+// Request interceptor to add auth token when needed
 apiClient.interceptors.request.use(
   async (config) => {
+    const method = config.method?.toUpperCase() || 'GET';
+    const isPublic = isPublicEndpoint(method, config.url);
+
     // Enhanced logging for debugging
     console.log('🔍 API Client: Making request:', {
-      method: config.method?.toUpperCase(),
+      method: method,
       url: config.url,
       baseURL: config.baseURL,
       fullUrl: `${config.baseURL}${config.url}`,
       params: config.params,
+      isPublic: isPublic,
       timestamp: new Date().toISOString()
     });
-    
-    try {
-      const token = await authTokenStorage.getAccessToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-        console.log('🔑 API Client: Auth token added to request');
-      } else {
-        console.warn('⚠️ API Client: No auth token found for request:', config.url);
+
+    if (!isPublic) {
+      // Add auth token for non-public endpoints
+      try {
+        const token = await authTokenStorage.getAccessToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+          console.log('🔑 API Client: Auth token added to request');
+        } else {
+          console.warn('⚠️ API Client: No auth token found for request:', config.url);
+        }
+      } catch (error) {
+        console.warn('❌ API Client: Failed to get token from storage:', error);
       }
-    } catch (error) {
-      console.warn('❌ API Client: Failed to get token from storage:', error);
+    } else {
+      console.log('📖 API Client: Public endpoint, no auth required:', config.url);
     }
+
     return config;
   },
   (error) => {
