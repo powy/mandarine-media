@@ -27,7 +27,7 @@ class MediaShowcase(Base):
     thumbnail_format = Column(String, nullable=False)  # "1920x1080", "1920x720", "1080x1080", "810x1080", "1080x1920"
     is_active = Column(Boolean, default=True, nullable=False)
     priority_in_screen = Column(Integer, default=0, nullable=False)  # Order of showcase on screen
-    list_type = Column(String, nullable=False)  # "classic" or "carousel"
+    list_type = Column(String, nullable=False)  # "classic", "carousel", "hero", "field", or "ranking"
     percentage_width = Column(Integer, nullable=False)
     percentage_height = Column(Integer, nullable=False)
 

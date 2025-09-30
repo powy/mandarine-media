@@ -304,7 +304,7 @@ export interface MediaShowcase {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   priority_in_screen: number;
-  list_type: 'classic' | 'carousel';
+  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   percentage_width: number;
   percentage_height: number;
   media_type?: string;
@@ -912,7 +912,7 @@ export interface ContentList {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
-  list_type: 'classic' | 'carousel'; // Required field
+  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking'; // Required field
   percentage_width: number; // Required field (0-100)
   percentage_height: number; // Required field (0-100)
   latest_first: boolean; // v1.9 new required field
@@ -938,7 +938,7 @@ export interface ContentListCreate {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
-  list_type: 'classic' | 'carousel'; // Required field
+  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking'; // Required field
   percentage_width: number; // Required field (0-100)
   percentage_height: number; // Required field (0-100)
   latest_first: boolean; // v1.9 new required field
@@ -962,7 +962,7 @@ export interface ContentListUpdate {
   thumbnail_format?: ThumbnailFormatEnum;
   is_active?: boolean;
   display_order?: number;
-  list_type?: 'classic' | 'carousel'; // Optional field
+  list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking'; // Optional field
   percentage_width?: number; // Optional field (0-100)
   percentage_height?: number; // Optional field (0-100)
   latest_first?: boolean; // v1.9 field
@@ -1245,7 +1245,7 @@ export interface MediaShowcaseCreate {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   priority_in_screen?: number;
-  list_type: 'classic' | 'carousel';
+  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   percentage_width: number;
   percentage_height: number;
   media_type?: string;
@@ -1262,7 +1262,7 @@ export interface MediaShowcaseUpdate {
   thumbnail_format?: ThumbnailFormatEnum;
   is_active?: boolean;
   priority_in_screen?: number;
-  list_type?: 'classic' | 'carousel';
+  list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   percentage_width?: number;
   percentage_height?: number;
   media_type?: string;
@@ -1274,7 +1274,7 @@ export interface MediaShowcaseUpdate {
 export interface MediaShowcaseFilters {
   skip?: number;
   limit?: number;
-  list_type?: 'classic' | 'carousel';
+  list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   is_active?: boolean;
   thumbnail_format?: ThumbnailFormatEnum;
 }

@@ -351,7 +351,10 @@ describe('Media Showcases API', () => {
     test('should support all valid list types', async () => {
       const listTypes = [
         'classic',
-        'carousel'
+        'carousel',
+        'hero',
+        'field',
+        'ranking'
       ] as const;
 
       const mockResponse = { data: { id: 'test', title: 'Test' } };
@@ -388,6 +391,18 @@ describe('Media Showcases API', () => {
       // Test carousel
       await mediaShowcasesApi.getMediaShowcases({ list_type: 'carousel' });
       expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?list_type=carousel');
+
+      // Test hero
+      await mediaShowcasesApi.getMediaShowcases({ list_type: 'hero' });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?list_type=hero');
+
+      // Test field
+      await mediaShowcasesApi.getMediaShowcases({ list_type: 'field' });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?list_type=field');
+
+      // Test ranking
+      await mediaShowcasesApi.getMediaShowcases({ list_type: 'ranking' });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?list_type=ranking');
     });
   });
 

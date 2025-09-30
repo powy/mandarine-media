@@ -18,6 +18,9 @@ class ListTypeEnum(str, enum.Enum):
     """Enum defining list display types"""
     classic = "classic"
     carousel = "carousel"
+    hero = "hero"
+    field = "field"
+    ranking = "ranking"
 
 
 # MediaShowcase schemas
@@ -27,9 +30,9 @@ class MediaShowcaseBase(BaseModel):
     thumbnail_format: ThumbnailFormatEnum = Field(..., description="Thumbnail format for all items in this showcase")
     is_active: bool = Field(True, description="Whether the media showcase is active")
     priority_in_screen: int = Field(0, description="Priority order on screen", ge=0)
-    list_type: ListTypeEnum = Field(..., description="List type: classic or carousel")
-    percentage_width: int = Field(..., description="Percentage width", ge=0, le=100)
-    percentage_height: int = Field(..., description="Percentage height", ge=0, le=100)
+    list_type: ListTypeEnum = Field(..., description="List type: classic, carousel, hero, field, or ranking")
+    percentage_width: int = Field(..., description="Percentage width", ge=1)
+    percentage_height: int = Field(..., description="Percentage height", ge=1)
 
     # Content filtering and organization
     media_type: Optional[str] = Field(None, description="Filter content by media type")
@@ -49,9 +52,9 @@ class MediaShowcaseUpdate(BaseModel):
     thumbnail_format: Optional[ThumbnailFormatEnum] = Field(None, description="Thumbnail format for all items in this showcase")
     is_active: Optional[bool] = Field(None, description="Whether the media showcase is active")
     priority_in_screen: Optional[int] = Field(None, description="Priority order on screen", ge=0)
-    list_type: Optional[ListTypeEnum] = Field(None, description="List type: classic or carousel")
-    percentage_width: Optional[int] = Field(None, description="Percentage width", ge=0, le=100)
-    percentage_height: Optional[int] = Field(None, description="Percentage height", ge=0, le=100)
+    list_type: Optional[ListTypeEnum] = Field(None, description="List type: classic, carousel, hero, field, or ranking")
+    percentage_width: Optional[int] = Field(None, description="Percentage width", ge=1)
+    percentage_height: Optional[int] = Field(None, description="Percentage height", ge=1)
 
     # Content filtering and organization
     media_type: Optional[str] = Field(None, description="Filter content by media type")

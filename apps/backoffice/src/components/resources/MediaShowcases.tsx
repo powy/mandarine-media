@@ -61,6 +61,9 @@ import {
 const listTypeChoices = [
   { id: 'classic', name: 'Classic' },
   { id: 'carousel', name: 'Carousel' },
+  { id: 'hero', name: 'Hero' },
+  { id: 'field', name: 'Field' },
+  { id: 'ranking', name: 'Ranking' },
 ];
 
 // Define thumbnail format choices

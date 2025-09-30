@@ -433,7 +433,7 @@ class TestMediaShowcaseAPI:
         invalid_data = {
             "title": "",  # Empty title should fail
             "thumbnail_format": "invalid_format",
-            "percentage_width": 150  # Over 100 should fail
+            "percentage_width": 0  # Below minimum (ge=1) should fail
         }
 
         response = client.post("/api/v1/media-showcases/", json=invalid_data, headers=headers)
