@@ -346,12 +346,12 @@ class TestSeasonsEdgeCases:
         # Very large skip value
         response1 = client.get("/api/v1/seasons?skip=999999", headers=headers)
         assert response1.status_code == 200
-        assert response1.json() == []
-        
+        assert response1.json()["data"] == []
+
         # Skip larger than total count
         response2 = client.get("/api/v1/seasons?skip=1000000", headers=headers)
         assert response2.status_code == 200
-        assert response2.json() == []
+        assert response2.json()["data"] == []
         
         # Maximum limit
         response3 = client.get("/api/v1/seasons?limit=100", headers=headers)
@@ -361,7 +361,7 @@ class TestSeasonsEdgeCases:
         response4 = client.get("/api/v1/seasons?limit=1", headers=headers)
         assert response4.status_code == 200
         seasons = response4.json()
-        assert len(seasons) <= 1
+        assert len(seasons["data"]) <= 1
 
     def test_season_operations_with_expired_token(self, client, admin_token):
         """Test season operations with various token issues."""

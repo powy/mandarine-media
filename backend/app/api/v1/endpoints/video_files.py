@@ -12,33 +12,49 @@ from app.api import deps
 from app.core.config import settings
 from app.services.upload_service import MediaUploadService
 from app.services.mux_token_service import mux_token_service
+from app.models.video_file import VideoFile
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=schemas.video_file.VideoFileList)
+@router.get("", response_model=PaginatedResponse[schemas.video_file.VideoFile])
 def read_video_files(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    encoding_status: Optional[str] = Query(None, description="Filter by encoding status"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve video files.
     """
-    video_files = crud.video_file.get_multi(db=db, skip=skip, limit=limit)
-    total = len(video_files)  # Simple count for now
-    total_pages = (total + limit - 1) // limit
-    
-    return {
-        "data": video_files,
-        "pagination": {
-            "page": (skip // limit) + 1,
-            "limit": limit,
-            "total": total,
-            "total_pages": total_pages,
-        }
-    }
+    query = db.query(VideoFile)
+
+    if encoding_status:
+        query = query.filter(VideoFile.encoding_status == encoding_status)
+
+    video_files, pagination = paginate_query(
+        query,
+        VideoFile,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='creation_date_utc',
+        allowed_sort_fields=(
+            'creation_date_utc',
+            'file_name',
+            'encoding_status',
+            'upload_status',
+            'id',
+        ),
+    )
+
+    return PaginatedResponse[schemas.video_file.VideoFile](data=video_files, pagination=pagination)
 
 
 @router.post("", response_model=schemas.video_file.VideoFile)

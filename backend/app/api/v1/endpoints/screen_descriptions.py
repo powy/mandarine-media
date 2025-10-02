@@ -41,12 +41,12 @@ def get_screen_descriptions(
             screen_descriptions = crud.screen_description.get_multi_ordered(
                 db=db, skip=skip, limit=limit, active_only=False
             )
-            total = len(crud.screen_description.get_multi(db=db, skip=0, limit=10000))  # Simple count
+            total = crud.screen_description.count_total(db=db)
     else:
         screen_descriptions = crud.screen_description.get_multi_ordered(
             db=db, skip=skip, limit=limit, active_only=False
         )
-        total = len(crud.screen_description.get_multi(db=db, skip=0, limit=10000))  # Simple count
+        total = crud.screen_description.count_total(db=db)
     
     # Calculate pagination info
     total_pages = (total + limit - 1) // limit if total > 0 else 1

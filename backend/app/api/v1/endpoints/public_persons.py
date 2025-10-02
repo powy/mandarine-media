@@ -2,46 +2,70 @@ from typing import Any, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
 from app.core.config import settings
+from app.models.public_person import PublicPerson
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=schemas.public_person.PublicPersonList)
+@router.get("", response_model=PaginatedResponse[schemas.public_person.PublicPerson])
 def read_public_persons(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     search: str = Query(None, description="Search by name"),
     profession: str = Query(None, description="Filter by profession"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve public persons with optional filtering (v1.5).
     """
+    query = db.query(PublicPerson)
+
     if search:
-        public_persons = crud.public_person.search_by_name(db=db, name=search, skip=skip, limit=limit)
-    elif profession:
-        public_persons = crud.public_person.get_by_profession(db=db, profession=profession, skip=skip, limit=limit)
-    else:
-        public_persons = crud.public_person.get_multi(db=db, skip=skip, limit=limit)
-    
-    total = len(public_persons)  # Simple count for now
-    total_pages = (total + limit - 1) // limit
-    
-    return {
-        "data": public_persons,
-        "pagination": {
-            "page": (skip // limit) + 1,
-            "limit": limit,
-            "total": total,
-            "total_pages": total_pages,
-        }
-    }
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                PublicPerson.first_name_hangul.ilike(search_term),
+                PublicPerson.last_name_hangul.ilike(search_term),
+                PublicPerson.first_name_roman.ilike(search_term),
+                PublicPerson.last_name_roman.ilike(search_term),
+                PublicPerson.stage_name_hangul.ilike(search_term),
+                PublicPerson.stage_name_roman.ilike(search_term),
+            )
+        )
+
+    if profession:
+        query = query.filter(PublicPerson.profession_list.contains([profession]))
+
+    public_persons, pagination = paginate_query(
+        query,
+        PublicPerson,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='stage_name_roman',
+        allowed_sort_fields=(
+            'stage_name_roman',
+            'creation_date_utc',
+            'id',
+        ),
+    )
+
+    return PaginatedResponse[schemas.public_person.PublicPerson](
+        data=public_persons,
+        pagination=pagination,
+    )
 
 
 @router.post("", response_model=schemas.public_person.PublicPerson)
@@ -139,5 +163,4 @@ def read_public_persons_by_profession(
     Get public persons by profession.
     """
     return crud.public_person.get_by_profession(db=db, profession=profession, skip=skip, limit=limit)
-
 

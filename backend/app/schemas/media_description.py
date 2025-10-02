@@ -5,6 +5,7 @@ from uuid import UUID
 import enum
 
 from app.schemas.media_description_person import PersonRoleSimple, PersonRoleCreate
+from app.schemas.pagination import PaginatedResponse
 
 
 class MediaTypeEnum(str, enum.Enum):
@@ -97,7 +98,7 @@ class PictureSimple(BaseModel):
 
 
 class MediaDescriptionBase(BaseModel):
-    file_number: int = Field(..., description="Human-readable unique ID")
+    file_number: int = Field(..., description="Human-readable unique ID (auto-generated, provided values are ignored)")
     episode_title: str = Field(..., description="Content title")
     media_type: MediaTypeEnum = Field(..., description="Content type")
     expected_filename: Optional[str] = None
@@ -328,9 +329,8 @@ class MediaDescriptionList(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MediaDescriptionListResponse(BaseModel):
-    data: List[MediaDescriptionList]
-    pagination: dict
+class MediaDescriptionListResponse(PaginatedResponse[MediaDescriptionList]):
+    pass
 
 
 class MediaDescriptionCreateFromText(BaseModel):

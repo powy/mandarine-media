@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,22 +6,46 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.models.subscription_plan import SubscriptionPlan
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.subscription_plan.SubscriptionPlan])
+@router.get("", response_model=PaginatedResponse[schemas.subscription_plan.SubscriptionPlan])
 def read_subscription_plans(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by plan name"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve subscription plans.
     """
-    subscription_plans = crud.subscription_plan.get_multi(db=db, skip=skip, limit=limit)
-    return subscription_plans
+    query = db.query(SubscriptionPlan)
+
+    if q:
+        query = query.filter(SubscriptionPlan.name.ilike(f"%{q.strip()}%"))
+
+    subscription_plans, pagination = paginate_query(
+        query,
+        SubscriptionPlan,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='name',
+        allowed_sort_fields=('name', 'creation_date_utc', 'id'),
+    )
+
+    return PaginatedResponse[schemas.subscription_plan.SubscriptionPlan](
+        data=subscription_plans,
+        pagination=pagination,
+    )
 
 
 @router.post("", response_model=schemas.subscription_plan.SubscriptionPlan)

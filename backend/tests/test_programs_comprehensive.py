@@ -315,12 +315,12 @@ class TestProgramsEdgeCases:
         # Very large skip value
         response1 = client.get("/api/v1/programs?skip=999999", headers=headers)
         assert response1.status_code == 200
-        assert response1.json() == []
-        
+        assert response1.json()["data"] == []
+
         # Skip larger than total count
         response2 = client.get("/api/v1/programs?skip=1000000", headers=headers)
         assert response2.status_code == 200
-        assert response2.json() == []
+        assert response2.json()["data"] == []
         
         # Maximum limit
         response3 = client.get("/api/v1/programs?limit=100", headers=headers)
@@ -330,7 +330,7 @@ class TestProgramsEdgeCases:
         response4 = client.get("/api/v1/programs?limit=1", headers=headers)
         assert response4.status_code == 200
         programs = response4.json()
-        assert len(programs) <= 1
+        assert len(programs["data"]) <= 1
 
     def test_program_operations_with_expired_token(self, client, admin_token):
         """Test program operations with various token issues."""
@@ -450,24 +450,24 @@ class TestProgramsEdgeCases:
         
         # Get initial count
         initial_response = client.get("/api/v1/programs", headers=user_headers)
-        initial_count = len(initial_response.json())
-        
+        initial_count = len(initial_response.json()["data"])
+
         # Create program
         data = {"program_name": "List Consistency Test"}
         create_response = client.post("/api/v1/programs", json=data, headers=admin_headers)
         assert create_response.status_code == 200
         program_id = create_response.json()["id"]
-        
+
         # List should include new program
         after_create_response = client.get("/api/v1/programs", headers=user_headers)
-        after_create_count = len(after_create_response.json())
+        after_create_count = len(after_create_response.json()["data"])
         assert after_create_count == initial_count + 1
-        
+
         # Delete program
         delete_response = client.delete(f"/api/v1/programs/{program_id}", headers=admin_headers)
         assert delete_response.status_code == 200
-        
+
         # List should return to original count
         after_delete_response = client.get("/api/v1/programs", headers=user_headers)
-        after_delete_count = len(after_delete_response.json())
+        after_delete_count = len(after_delete_response.json()["data"])
         assert after_delete_count == initial_count

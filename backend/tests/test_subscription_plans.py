@@ -64,11 +64,13 @@ class TestSubscriptionPlansCRUD:
     def test_list_subscription_plans_success(self, client, user_token):
         """Test successful retrieval of subscription plans list."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/subscription-plans", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_subscription_plans_requires_auth(self, client):
         """Test subscription plans list requires authentication."""
@@ -238,9 +240,9 @@ class TestSubscriptionPlansCRUD:
         response = client.get("/api/v1/subscription-plans?skip=0&limit=2", headers=user_headers)
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        
+        assert len(data["data"]) == 2
+
         response = client.get("/api/v1/subscription-plans?skip=2&limit=3", headers=user_headers)
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 3
+        assert len(data["data"]) == 3

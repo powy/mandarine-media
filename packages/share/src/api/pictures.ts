@@ -3,16 +3,24 @@ import { Picture, PictureCreate, PictureUpdate, PicturesApiParams, PaginatedPict
 
 export const picturesApi = {
   getAll: async (params: PicturesApiParams = {}): Promise<PaginatedPicturesResponse> => {
-    const { skip = 0, limit = 20, q } = params;
+    const { skip = 0, limit = 20, q, order_by, order_dir } = params;
     const searchParams = new URLSearchParams({
       skip: skip.toString(),
       limit: limit.toString(),
     });
-    
+
     if (q) {
       searchParams.append('q', q);
     }
-    
+
+    if (order_by) {
+      searchParams.append('order_by', order_by);
+    }
+
+    if (order_dir) {
+      searchParams.append('order_dir', order_dir.toLowerCase());
+    }
+
     const response = await apiClient.get(`/pictures?${searchParams.toString()}`);
     return response.data as PaginatedPicturesResponse;
   },

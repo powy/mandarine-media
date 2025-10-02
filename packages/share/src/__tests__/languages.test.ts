@@ -21,53 +21,59 @@ describe('Languages API', () => {
     vi.clearAllMocks();
   });
 
-  describe('getLanguages', () => {
+  describe('getAll', () => {
     it('should fetch languages with default pagination', async () => {
-      const mockLanguages: Language[] = [
-        { id: 1, name: 'English', sigle: 'en' },
-        { id: 2, name: 'Spanish', sigle: 'es' },
-      ];
+      const mockResponse = {
+        data: [
+          { id: 1, name: 'English', sigle: 'en' },
+          { id: 2, name: 'Spanish', sigle: 'es' },
+        ],
+        total: 2,
+        skip: 0,
+        limit: 20
+      };
 
-      mockApiClient.get.mockResolvedValue({ data: mockLanguages });
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      const result = await languagesApi.getLanguages();
+      const result = await languagesApi.getAll();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/languages', {
-        params: { skip: 0, limit: 50 },
-      });
-      expect(result).toEqual(mockLanguages);
+      expect(mockApiClient.get).toHaveBeenCalledWith('/languages?skip=0&limit=20');
+      expect(result).toEqual(mockResponse);
     });
 
     it('should fetch languages with custom pagination', async () => {
-      const mockLanguages: Language[] = [
-        { id: 1, name: 'English', sigle: 'en' },
-      ];
+      const mockResponse = {
+        data: [
+          { id: 1, name: 'English', sigle: 'en' },
+        ],
+        total: 1,
+        skip: 10,
+        limit: 20
+      };
 
-      mockApiClient.get.mockResolvedValue({ data: mockLanguages });
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      const result = await languagesApi.getLanguages(10, 20);
+      const result = await languagesApi.getAll({ skip: 10, limit: 20 });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/languages', {
-        params: { skip: 10, limit: 20 },
-      });
-      expect(result).toEqual(mockLanguages);
+      expect(mockApiClient.get).toHaveBeenCalledWith('/languages?skip=10&limit=20');
+      expect(result).toEqual(mockResponse);
     });
 
     it('should handle API errors', async () => {
       const error = new Error('Network error');
       mockApiClient.get.mockRejectedValue(error);
 
-      await expect(languagesApi.getLanguages()).rejects.toThrow('Network error');
+      await expect(languagesApi.getAll()).rejects.toThrow('Network error');
     });
   });
 
-  describe('getLanguage', () => {
+  describe('getById', () => {
     it('should fetch a single language by ID', async () => {
       const mockLanguage: Language = { id: 1, name: 'English', sigle: 'en' };
 
       mockApiClient.get.mockResolvedValue({ data: mockLanguage });
 
-      const result = await languagesApi.getLanguage(1);
+      const result = await languagesApi.getById('1');
 
       expect(mockApiClient.get).toHaveBeenCalledWith('/languages/1');
       expect(result).toEqual(mockLanguage);
@@ -77,18 +83,18 @@ describe('Languages API', () => {
       const error = new Error('Language not found');
       mockApiClient.get.mockRejectedValue(error);
 
-      await expect(languagesApi.getLanguage(999)).rejects.toThrow('Language not found');
+      await expect(languagesApi.getById('999')).rejects.toThrow('Language not found');
     });
   });
 
-  describe('createLanguage', () => {
+  describe('create', () => {
     it('should create a new language', async () => {
       const newLanguage = { name: 'French', sigle: 'fr' };
       const createdLanguage: Language = { id: 3, ...newLanguage };
 
       mockApiClient.post.mockResolvedValue({ data: createdLanguage });
 
-      const result = await languagesApi.createLanguage(newLanguage);
+      const result = await languagesApi.create(newLanguage);
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/languages', newLanguage);
       expect(result).toEqual(createdLanguage);
@@ -99,18 +105,18 @@ describe('Languages API', () => {
       const error = new Error('Language already exists');
       mockApiClient.post.mockRejectedValue(error);
 
-      await expect(languagesApi.createLanguage(newLanguage)).rejects.toThrow('Language already exists');
+      await expect(languagesApi.create(newLanguage)).rejects.toThrow('Language already exists');
     });
   });
 
-  describe('updateLanguage', () => {
+  describe('update', () => {
     it('should update an existing language', async () => {
       const updateData = { name: 'Updated French' };
       const updatedLanguage: Language = { id: 3, name: 'Updated French', sigle: 'fr' };
 
       mockApiClient.put.mockResolvedValue({ data: updatedLanguage });
 
-      const result = await languagesApi.updateLanguage(3, updateData);
+      const result = await languagesApi.update('3', updateData);
 
       expect(mockApiClient.put).toHaveBeenCalledWith('/languages/3', updateData);
       expect(result).toEqual(updatedLanguage);
@@ -121,61 +127,61 @@ describe('Languages API', () => {
       const error = new Error('Language not found');
       mockApiClient.put.mockRejectedValue(error);
 
-      await expect(languagesApi.updateLanguage(999, updateData)).rejects.toThrow('Language not found');
+      await expect(languagesApi.update('999', updateData)).rejects.toThrow('Language not found');
     });
   });
 
-  describe('deleteLanguage', () => {
+  describe('delete', () => {
     it('should delete a language', async () => {
-      mockApiClient.delete.mockResolvedValue({ data: { message: 'Language deleted' } });
+      const deletedLanguage: Language = { id: 3, name: 'French', sigle: 'fr' };
+      mockApiClient.delete.mockResolvedValue({ data: deletedLanguage });
 
-      const result = await languagesApi.deleteLanguage(3);
+      const result = await languagesApi.delete('3');
 
       expect(mockApiClient.delete).toHaveBeenCalledWith('/languages/3');
-      expect(result).toEqual({ message: 'Language deleted' });
+      expect(result).toEqual(deletedLanguage);
     });
 
     it('should handle deletion errors', async () => {
       const error = new Error('Cannot delete language');
       mockApiClient.delete.mockRejectedValue(error);
 
-      await expect(languagesApi.deleteLanguage(999)).rejects.toThrow('Cannot delete language');
+      await expect(languagesApi.delete('999')).rejects.toThrow('Cannot delete language');
     });
   });
 
   describe('Edge Cases', () => {
     it('should handle zero pagination values', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      const mockResponse = { data: [], total: 0, skip: 0, limit: 0 };
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      await languagesApi.getLanguages(0, 0);
+      await languagesApi.getAll({ skip: 0, limit: 0 });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/languages', {
-        params: { skip: 0, limit: 0 },
-      });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/languages?skip=0&limit=0');
     });
 
     it('should handle negative pagination values', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      const mockResponse = { data: [], total: 0, skip: -10, limit: -5 };
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      await languagesApi.getLanguages(-10, -5);
+      await languagesApi.getAll({ skip: -10, limit: -5 });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/languages', {
-        params: { skip: -10, limit: -5 },
-      });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/languages?skip=-10&limit=-5');
     });
 
     it('should handle empty response data', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      const mockResponse = { data: [], total: 0, skip: 0, limit: 20 };
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      const result = await languagesApi.getLanguages();
+      const result = await languagesApi.getAll();
 
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
     });
 
     it('should handle malformed response', async () => {
       mockApiClient.get.mockResolvedValue({ data: null });
 
-      const result = await languagesApi.getLanguages();
+      const result = await languagesApi.getAll();
 
       expect(result).toBeNull();
     });
@@ -185,17 +191,16 @@ describe('Languages API', () => {
       timeoutError.name = 'TimeoutError';
       mockApiClient.get.mockRejectedValue(timeoutError);
 
-      await expect(languagesApi.getLanguages()).rejects.toThrow('Request timeout');
+      await expect(languagesApi.getAll()).rejects.toThrow('Request timeout');
     });
 
     it('should handle very large pagination values', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      const mockResponse = { data: [], total: 0, skip: 1000000, limit: 1000000 };
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      await languagesApi.getLanguages(1000000, 1000000);
+      await languagesApi.getAll({ skip: 1000000, limit: 1000000 });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/languages', {
-        params: { skip: 1000000, limit: 1000000 },
-      });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/languages?skip=1000000&limit=1000000');
     });
   });
 
@@ -209,7 +214,7 @@ describe('Languages API', () => {
 
       mockApiClient.get.mockResolvedValue({ data: specialLanguage });
 
-      const result = await languagesApi.getLanguage(1);
+      const result = await languagesApi.getById('1');
 
       expect(result).toEqual(specialLanguage);
     });
@@ -223,7 +228,7 @@ describe('Languages API', () => {
 
       mockApiClient.post.mockResolvedValue({ data: unicodeLanguage });
 
-      const result = await languagesApi.createLanguage({
+      const result = await languagesApi.create({
         name: '中文 (Chinese)',
         sigle: 'zh-CN',
       });
@@ -236,7 +241,7 @@ describe('Languages API', () => {
 
       mockApiClient.post.mockResolvedValue({ data: { id: 1, ...emptyFieldLanguage } });
 
-      const result = await languagesApi.createLanguage(emptyFieldLanguage);
+      const result = await languagesApi.create(emptyFieldLanguage);
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/languages', emptyFieldLanguage);
       expect(result.name).toBe('');

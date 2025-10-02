@@ -100,3 +100,4 @@ from .media_description_person import (
     PersonRoleUpdate,
     BulkPersonRoleAssignment,
 )
+from .pagination import Pagination, PaginatedResponse

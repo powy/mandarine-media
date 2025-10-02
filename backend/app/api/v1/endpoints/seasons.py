@@ -1,30 +1,65 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.models.season import Season
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.Season])
+@router.get("", response_model=PaginatedResponse[schemas.Season])
 def read_seasons(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     program_id: Optional[UUID] = Query(None),
+    q: Optional[str] = Query(None, description="Search by season name or number"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve seasons.
     """
-    seasons = crud.season.get_multi(db, skip=skip, limit=limit)
+    query = db.query(Season)
+
     if program_id:
-        seasons = [season for season in seasons if season.program_id == program_id]
-    return seasons
+        query = query.filter(Season.program_id == program_id)
+
+    if q:
+        search_term = q.strip()
+        filters = []
+        if search_term:
+            filters.append(Season.season_name.ilike(f"%{search_term}%"))
+            if search_term.isdigit():
+                filters.append(Season.season_number == int(search_term))
+        if filters:
+            query = query.filter(or_(*filters))
+
+    seasons, pagination = paginate_query(
+        query,
+        Season,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='creation_date_utc',
+        allowed_sort_fields=(
+            'creation_date_utc',
+            'season_number',
+            'season_name',
+            'id',
+        ),
+    )
+
+    return PaginatedResponse[schemas.Season](data=seasons, pagination=pagination)
 
 
 @router.post("", response_model=schemas.Season)

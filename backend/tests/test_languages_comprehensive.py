@@ -421,12 +421,12 @@ class TestLanguagesEdgeCases:
         # Very large skip value
         response1 = client.get("/api/v1/languages?skip=999999", headers=headers)
         assert response1.status_code == 200
-        assert response1.json() == []
-        
+        assert response1.json()["data"] == []
+
         # Skip larger than total count
         response2 = client.get("/api/v1/languages?skip=1000000", headers=headers)
         assert response2.status_code == 200
-        assert response2.json() == []
+        assert response2.json()["data"] == []
         
         # Maximum limit
         response3 = client.get("/api/v1/languages?limit=100", headers=headers)
@@ -436,7 +436,7 @@ class TestLanguagesEdgeCases:
         response4 = client.get("/api/v1/languages?limit=1", headers=headers)
         assert response4.status_code == 200
         languages = response4.json()
-        assert len(languages) <= 1
+        assert len(languages["data"]) <= 1
 
     def test_language_operations_with_expired_token(self, client, admin_token):
         """Test language operations with various token issues."""

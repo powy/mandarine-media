@@ -317,22 +317,22 @@ class TestCountriesEdgeCases:
         # Very large skip value
         response1 = client.get("/api/v1/countries?skip=999999", headers=headers)
         assert response1.status_code == 200
-        assert response1.json() == []
-        
+        assert response1.json()["data"] == []
+
         # Skip larger than total count
         response2 = client.get("/api/v1/countries?skip=1000000", headers=headers)
         assert response2.status_code == 200
-        assert response2.json() == []
-        
+        assert response2.json()["data"] == []
+
         # Maximum limit
         response3 = client.get("/api/v1/countries?limit=100", headers=headers)
         assert response3.status_code == 200
-        
+
         # Limit of 1
         response4 = client.get("/api/v1/countries?limit=1", headers=headers)
         assert response4.status_code == 200
         countries = response4.json()
-        assert len(countries) <= 1
+        assert len(countries["data"]) <= 1
 
     def test_country_operations_with_expired_token(self, client, admin_token):
         """Test country operations with various token issues."""
@@ -405,26 +405,26 @@ class TestCountriesEdgeCases:
         
         # Get initial count
         initial_response = client.get("/api/v1/countries", headers=user_headers)
-        initial_count = len(initial_response.json())
-        
+        initial_count = len(initial_response.json()["data"])
+
         # Create country
         data = {"name": "List Consistency Test"}
         create_response = client.post("/api/v1/countries", json=data, headers=admin_headers)
         assert create_response.status_code == 200
         country_id = create_response.json()["id"]
-        
+
         # List should include new country
         after_create_response = client.get("/api/v1/countries", headers=user_headers)
-        after_create_count = len(after_create_response.json())
+        after_create_count = len(after_create_response.json()["data"])
         assert after_create_count == initial_count + 1
-        
+
         # Delete country
         delete_response = client.delete(f"/api/v1/countries/{country_id}", headers=admin_headers)
         assert delete_response.status_code == 200
-        
+
         # List should return to original count
         after_delete_response = client.get("/api/v1/countries", headers=user_headers)
-        after_delete_count = len(after_delete_response.json())
+        after_delete_count = len(after_delete_response.json()["data"])
         assert after_delete_count == initial_count
 
     def test_country_unicode_handling(self, client, admin_token):

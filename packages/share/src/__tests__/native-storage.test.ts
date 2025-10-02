@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NativeStorage } from '../utils/native-storage';
+import { NativeAuthStorage } from '../utils/native-storage';
 
 // Mock AsyncStorage for React Native environment
 const mockAsyncStorage = {
@@ -18,12 +18,12 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   default: mockAsyncStorage,
 }));
 
-describe('NativeStorage', () => {
-  let nativeStorage: NativeStorage;
+describe('NativeAuthStorage', () => {
+  let nativeStorage: NativeAuthStorage;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    nativeStorage = new NativeStorage();
+    nativeStorage = new NativeAuthStorage(mockAsyncStorage);
   });
 
   describe('Basic Storage Operations', () => {
@@ -60,12 +60,13 @@ describe('NativeStorage', () => {
       expect(mockAsyncStorage.removeItem).toHaveBeenCalledWith('test-key');
     });
 
-    it('should clear all items from AsyncStorage', async () => {
-      mockAsyncStorage.clear.mockResolvedValue(undefined);
+    it('should clear only auth-related keys from AsyncStorage', async () => {
+      mockAsyncStorage.multiRemove.mockResolvedValue(undefined);
 
       await nativeStorage.clear();
 
-      expect(mockAsyncStorage.clear).toHaveBeenCalled();
+      // Should use multiRemove with auth keys array
+      expect(mockAsyncStorage.multiRemove).toHaveBeenCalledWith(['access_token', 'refresh_token', 'user_data']);
     });
   });
 
@@ -92,11 +93,13 @@ describe('NativeStorage', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle AsyncStorage access errors', async () => {
+    it('should handle AsyncStorage access errors and return null', async () => {
       const accessError = new Error('AsyncStorage is not available');
       mockAsyncStorage.getItem.mockRejectedValue(accessError);
 
-      await expect(nativeStorage.getItem('test-key')).rejects.toThrow('AsyncStorage is not available');
+      // getItem catches errors and returns null
+      const value = await nativeStorage.getItem('test-key');
+      expect(value).toBeNull();
     });
 
     it('should handle AsyncStorage write errors', async () => {
@@ -113,11 +116,13 @@ describe('NativeStorage', () => {
       await expect(nativeStorage.removeItem('test-key')).rejects.toThrow('Cannot remove item');
     });
 
-    it('should handle AsyncStorage clear errors', async () => {
+    it('should handle AsyncStorage clear errors with fallback', async () => {
       const clearError = new Error('Cannot clear storage');
-      mockAsyncStorage.clear.mockRejectedValue(clearError);
+      mockAsyncStorage.multiRemove.mockRejectedValue(clearError);
+      // Fallback should also fail
+      mockAsyncStorage.removeItem.mockRejectedValue(new Error('Critical: Could not clear access_token from storage'));
 
-      await expect(nativeStorage.clear()).rejects.toThrow('Cannot clear storage');
+      await expect(nativeStorage.clear()).rejects.toThrow('Critical: Could not clear access_token from storage');
     });
   });
 
@@ -169,8 +174,8 @@ describe('NativeStorage', () => {
       // Simulate setting data
       await nativeStorage.setItem('persist-key', 'persisted-value');
 
-      // Simulate app restart by creating new instance
-      const newStorage = new NativeStorage();
+      // Simulate app restart by creating new instance with same AsyncStorage mock
+      const newStorage = new NativeAuthStorage(mockAsyncStorage);
       const value = await newStorage.getItem('persist-key');
 
       expect(value).toBe('persisted-value');
@@ -180,7 +185,9 @@ describe('NativeStorage', () => {
       const corruptionError = new Error('Data corruption detected');
       mockAsyncStorage.getItem.mockRejectedValue(corruptionError);
 
-      await expect(nativeStorage.getItem('corrupt-key')).rejects.toThrow('Data corruption detected');
+      // getItem catches errors and returns null
+      const value = await nativeStorage.getItem('corrupt-key');
+      expect(value).toBeNull();
     });
   });
 

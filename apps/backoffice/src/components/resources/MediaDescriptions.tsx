@@ -173,7 +173,6 @@ export const MediaDescriptionCreate = () => (
   <Create redirect="list" transform={transformFormData}>
     <SimpleForm>
       {/* Basic Information */}
-      <NumberInput source="file_number" validate={[required()]} />
       <TextInput source="episode_title" label="Title" validate={[required()]} fullWidth />
       <SelectInput 
         source="media_type" 
@@ -346,7 +345,7 @@ export const MediaDescriptionEdit = () => (
   <Edit transform={transformFormData}>
     <SimpleForm>
       {/* Basic Information */}
-      <NumberInput source="file_number" validate={[required()]} />
+      <NumberInput source="file_number" disabled helperText="Auto-generated, cannot be modified" />
       <TextInput source="episode_title" label="Title" validate={[required()]} fullWidth />
       <SelectInput 
         source="media_type" 

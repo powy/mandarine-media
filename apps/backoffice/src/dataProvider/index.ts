@@ -37,6 +37,10 @@ export const dataProvider: DataProvider = {
     const { page, perPage } = params.pagination;
     const skip = (page - 1) * perPage;
     const filters = params.filter || {};
+    const sortField = params.sort?.field;
+    const sortOrderRaw = params.sort?.order?.toLowerCase?.();
+    const order_by = sortField;
+    const order_dir = sortOrderRaw === 'asc' || sortOrderRaw === 'desc' ? sortOrderRaw : undefined;
 
     try {
       switch (resource) {
@@ -46,11 +50,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: searchQuery,
+            order_by,
+            order_dir,
             ...otherFilters 
           });
-          // Handle both direct array and paginated response formats
-          const countriesData = Array.isArray(countriesResponse) ? countriesResponse : countriesResponse.data || [];
-          const countriesTotal = Array.isArray(countriesResponse) ? countriesData.length : countriesResponse.pagination?.total || countriesData.length;
+          const countriesData = countriesResponse?.data ?? [];
+          const countriesTotal = countriesResponse?.pagination?.total ?? countriesData.length;
           return {
             data: resourceMappers.countries.mapList(countriesData),
             total: countriesTotal,
@@ -61,11 +66,12 @@ export const dataProvider: DataProvider = {
           const mediaResponse = await mediaApi.getMediaDescriptions({
             skip,
             limit: perPage,
+            order_by,
+            order_dir,
             ...filters
           });
-          // Handle both direct array and paginated response formats
-          const mediaData = Array.isArray(mediaResponse) ? mediaResponse : mediaResponse.data || [];
-          const mediaTotal = Array.isArray(mediaResponse) ? mediaData.length : mediaResponse.pagination?.total || mediaData.length;
+          const mediaData = mediaResponse?.data ?? [];
+          const mediaTotal = mediaResponse?.pagination?.total ?? mediaData.length;
           return {
             data: resourceMappers.mediaDescriptions.mapList(mediaData),
             total: mediaTotal,
@@ -77,11 +83,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: languageQuery,
+            order_by,
+            order_dir,
             ...otherLanguageFilters 
           });
-          // Handle both direct array and paginated response formats
-          const languagesData = Array.isArray(languagesResponse) ? languagesResponse : languagesResponse.data || [];
-          const languagesTotal = Array.isArray(languagesResponse) ? languagesData.length : languagesResponse.pagination?.total || languagesData.length;
+          const languagesData = languagesResponse?.data ?? [];
+          const languagesTotal = languagesResponse?.pagination?.total ?? languagesData.length;
           return {
             data: resourceMappers.languages.mapList(languagesData),
             total: languagesTotal,
@@ -94,11 +101,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: pictureQuery,
+            order_by,
+            order_dir,
             ...otherPictureFilters 
           });
-          // Handle both direct array and paginated response formats
-          const picturesData = Array.isArray(picturesResponse) ? picturesResponse : picturesResponse.data || [];
-          const picturesTotal = Array.isArray(picturesResponse) ? picturesData.length : picturesResponse.pagination?.total || picturesData.length;
+          const picturesData = picturesResponse?.data ?? [];
+          const picturesTotal = picturesResponse?.pagination?.total ?? picturesData.length;
           return {
             data: resourceMappers.pictures.mapList(picturesData),
             total: picturesTotal,
@@ -110,11 +118,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: programQuery,
+            order_by,
+            order_dir,
             ...otherProgramFilters 
           });
-          // Handle both direct array and paginated response formats
-          const programsData = Array.isArray(programsResponse) ? programsResponse : programsResponse.data || [];
-          const programsTotal = Array.isArray(programsResponse) ? programsData.length : programsResponse.pagination?.total || programsData.length;
+          const programsData = programsResponse?.data ?? [];
+          const programsTotal = programsResponse?.pagination?.total ?? programsData.length;
           return {
             data: resourceMappers.programs.mapList(programsData),
             total: programsTotal,
@@ -127,11 +136,12 @@ export const dataProvider: DataProvider = {
             limit: perPage,
             q: seasonQuery,
             program_id,
+            order_by,
+            order_dir,
             ...otherSeasonFilters 
           });
-          // Handle both direct array and paginated response formats
-          const seasonsData = Array.isArray(seasonsResponse) ? seasonsResponse : seasonsResponse.data || [];
-          const seasonsTotal = Array.isArray(seasonsResponse) ? seasonsData.length : seasonsResponse.pagination?.total || seasonsData.length;
+          const seasonsData = seasonsResponse?.data ?? [];
+          const seasonsTotal = seasonsResponse?.pagination?.total ?? seasonsData.length;
           return {
             data: resourceMappers.seasons.mapList(seasonsData),
             total: seasonsTotal,
@@ -145,11 +155,12 @@ export const dataProvider: DataProvider = {
             limit: perPage,
             q: personQuery,
             profession,
+            order_by,
+            order_dir,
             ...otherPersonFilters 
           });
-          // Handle both direct array and paginated response formats
-          const personsData = Array.isArray(personsResponse) ? personsResponse : personsResponse.data || [];
-          const personsTotal = Array.isArray(personsResponse) ? personsData.length : personsResponse.pagination?.total || personsData.length;
+          const personsData = personsResponse?.data ?? [];
+          const personsTotal = personsResponse?.pagination?.total ?? personsData.length;
           return {
             data: resourceMappers.publicPersons.mapList(personsData),
             total: personsTotal,
@@ -163,11 +174,12 @@ export const dataProvider: DataProvider = {
             q: userQuery,
             is_active,
             is_admin,
+            order_by,
+            order_dir,
             ...otherUserFilters 
           });
-          // Handle both direct array and paginated response formats
-          const usersData = Array.isArray(usersResponse) ? usersResponse : usersResponse.data || [];
-          const usersTotal = Array.isArray(usersResponse) ? usersData.length : usersResponse.pagination?.total || usersData.length;
+          const usersData = usersResponse?.data ?? [];
+          const usersTotal = usersResponse?.pagination?.total ?? usersData.length;
           return {
             data: resourceMappers.users.mapList(usersData),
             total: usersTotal,
@@ -216,11 +228,12 @@ export const dataProvider: DataProvider = {
           const videoFilesResponse = await mediaApi.getVideoFiles({
             skip,
             limit: perPage,
+            order_by,
+            order_dir,
             ...filters
           });
-          // Handle both direct array and paginated response formats
-          const videoFilesData = Array.isArray(videoFilesResponse) ? videoFilesResponse : videoFilesResponse.data || [];
-          const videoFilesTotal = Array.isArray(videoFilesResponse) ? videoFilesData.length : videoFilesResponse.pagination?.total || videoFilesData.length;
+          const videoFilesData = videoFilesResponse?.data ?? [];
+          const videoFilesTotal = videoFilesResponse?.pagination?.total ?? videoFilesData.length;
           return {
             data: resourceMappers.videoFiles.mapList(videoFilesData),
             total: videoFilesTotal,
@@ -234,11 +247,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: audienceCategoryQuery,
+            order_by,
+            order_dir,
             ...otherAudienceCategoryFilters 
           });
-          // Handle both direct array and paginated response formats
-          const audienceCategoriesData = Array.isArray(audienceCategoriesResponse) ? audienceCategoriesResponse : audienceCategoriesResponse.data || [];
-          const audienceCategoriesTotal = Array.isArray(audienceCategoriesResponse) ? audienceCategoriesData.length : audienceCategoriesResponse.pagination?.total || audienceCategoriesData.length;
+          const audienceCategoriesData = audienceCategoriesResponse?.data ?? [];
+          const audienceCategoriesTotal = audienceCategoriesResponse?.pagination?.total ?? audienceCategoriesData.length;
           return {
             data: resourceMappers.audienceCategories.mapList(audienceCategoriesData),
             total: audienceCategoriesTotal,
@@ -251,11 +265,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: subscriptionPlanQuery,
+            order_by,
+            order_dir,
             ...otherSubscriptionPlanFilters 
           });
-          // Handle both direct array and paginated response formats
-          const subscriptionPlansData = Array.isArray(subscriptionPlansResponse) ? subscriptionPlansResponse : subscriptionPlansResponse.data || [];
-          const subscriptionPlansTotal = Array.isArray(subscriptionPlansResponse) ? subscriptionPlansData.length : subscriptionPlansResponse.pagination?.total || subscriptionPlansData.length;
+          const subscriptionPlansData = subscriptionPlansResponse?.data ?? [];
+          const subscriptionPlansTotal = subscriptionPlansResponse?.pagination?.total ?? subscriptionPlansData.length;
           return {
             data: resourceMappers.subscriptionPlans.mapList(subscriptionPlansData),
             total: subscriptionPlansTotal,
@@ -283,11 +298,12 @@ export const dataProvider: DataProvider = {
             skip, 
             limit: perPage,
             q: themeQuery,
+            order_by,
+            order_dir,
             ...otherThemeFilters 
           });
-          // Handle both direct array and paginated response formats
-          const mediaThemesData = Array.isArray(mediaThemesResponse) ? mediaThemesResponse : mediaThemesResponse.data || [];
-          const mediaThemesTotal = Array.isArray(mediaThemesResponse) ? mediaThemesData.length : mediaThemesResponse.pagination?.total || mediaThemesData.length;
+          const mediaThemesData = mediaThemesResponse?.data ?? [];
+          const mediaThemesTotal = mediaThemesResponse?.pagination?.total ?? mediaThemesData.length;
           return {
             data: resourceMappers.mediaThemes.mapList(mediaThemesData),
             total: mediaThemesTotal,
@@ -406,6 +422,10 @@ export const dataProvider: DataProvider = {
     const { target, id, pagination, filter } = params;
     const { page, perPage } = pagination;
     const skip = (page - 1) * perPage;
+    const sortField = params.sort?.field;
+    const sortOrderRaw = params.sort?.order?.toLowerCase?.();
+    const order_by = sortField;
+    const order_dir = sortOrderRaw === 'asc' || sortOrderRaw === 'desc' ? sortOrderRaw : undefined;
 
     try {
       switch (resource) {
@@ -415,11 +435,12 @@ export const dataProvider: DataProvider = {
               skip,
               limit: perPage,
               program_id: id,
+              order_by,
+              order_dir,
               ...filter
             });
-            // Handle both direct array and paginated response formats
-            const seasonsData = Array.isArray(seasonsResponse) ? seasonsResponse : seasonsResponse.data || [];
-            const seasonsTotal = Array.isArray(seasonsResponse) ? seasonsData.length : seasonsResponse.pagination?.total || seasonsData.length;
+            const seasonsData = seasonsResponse?.data ?? [];
+            const seasonsTotal = seasonsResponse?.pagination?.total ?? seasonsData.length;
             return {
               data: resourceMappers.seasons.mapList(seasonsData),
               total: seasonsTotal,
@@ -432,11 +453,12 @@ export const dataProvider: DataProvider = {
             const mediaResponse = await mediaApi.getMediaDescriptions({
               skip,
               limit: perPage,
+              order_by,
+              order_dir,
               ...filter
             });
-            // Handle both direct array and paginated response formats
-            const mediaData = Array.isArray(mediaResponse) ? mediaResponse : mediaResponse.data || [];
-            const mediaTotal = Array.isArray(mediaResponse) ? mediaData.length : mediaResponse.pagination?.total || mediaData.length;
+            const mediaData = mediaResponse?.data ?? [];
+            const mediaTotal = mediaResponse?.pagination?.total ?? mediaData.length;
             return {
               data: resourceMappers.mediaDescriptions.mapList(mediaData),
               total: mediaTotal,

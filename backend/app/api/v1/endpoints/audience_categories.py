@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,22 +6,46 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.models.audience_category import AudienceCategory
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.audience_category.AudienceCategory])
+@router.get("", response_model=PaginatedResponse[schemas.audience_category.AudienceCategory])
 def read_audience_categories(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by category name"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve audience categories.
     """
-    audience_categories = crud.audience_category.get_multi(db=db, skip=skip, limit=limit)
-    return audience_categories
+    query = db.query(AudienceCategory)
+
+    if q:
+        query = query.filter(AudienceCategory.name.ilike(f"%{q.strip()}%"))
+
+    audience_categories, pagination = paginate_query(
+        query,
+        AudienceCategory,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='name',
+        allowed_sort_fields=('name', 'creation_date_utc', 'id'),
+    )
+
+    return PaginatedResponse[schemas.audience_category.AudienceCategory](
+        data=audience_categories,
+        pagination=pagination,
+    )
 
 
 @router.post("", response_model=schemas.audience_category.AudienceCategory)

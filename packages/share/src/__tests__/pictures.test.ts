@@ -21,71 +21,77 @@ describe('Pictures API', () => {
     vi.clearAllMocks();
   });
 
-  describe('getPictures', () => {
+  describe('getAll', () => {
     it('should fetch pictures with default pagination', async () => {
-      const mockPictures: Picture[] = [
-        {
-          id: 1,
-          title: 'Test Image 1',
-          file_path: '/images/test1.jpg',
-          file_size_bytes: 1024,
-          width: 1920,
-          height: 1080,
-          format: 'jpg',
-        },
-        {
-          id: 2,
-          title: 'Test Image 2',
-          file_path: '/images/test2.png',
-          file_size_bytes: 2048,
-          width: 1280,
-          height: 720,
-          format: 'png',
-        },
-      ];
+      const mockResponse = {
+        items: [
+          {
+            id: 1,
+            title: 'Test Image 1',
+            file_path: '/images/test1.jpg',
+            file_size_bytes: 1024,
+            width: 1920,
+            height: 1080,
+            format: 'jpg',
+          },
+          {
+            id: 2,
+            title: 'Test Image 2',
+            file_path: '/images/test2.png',
+            file_size_bytes: 2048,
+            width: 1280,
+            height: 720,
+            format: 'png',
+          },
+        ],
+        total: 2,
+        skip: 0,
+        limit: 20,
+      };
 
-      mockApiClient.get.mockResolvedValue({ data: mockPictures });
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      const result = await picturesApi.getPictures();
+      const result = await picturesApi.getAll();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/pictures', {
-        params: { skip: 0, limit: 50 },
-      });
-      expect(result).toEqual(mockPictures);
+      expect(mockApiClient.get).toHaveBeenCalledWith('/pictures?skip=0&limit=20');
+      expect(result).toEqual(mockResponse);
     });
 
     it('should fetch pictures with custom pagination', async () => {
-      const mockPictures: Picture[] = [
-        {
-          id: 1,
-          title: 'Test Image',
-          file_path: '/images/test.jpg',
-          file_size_bytes: 1024,
-          width: 1920,
-          height: 1080,
-          format: 'jpg',
-        },
-      ];
+      const mockResponse = {
+        items: [
+          {
+            id: 1,
+            title: 'Test Image',
+            file_path: '/images/test.jpg',
+            file_size_bytes: 1024,
+            width: 1920,
+            height: 1080,
+            format: 'jpg',
+          },
+        ],
+        total: 1,
+        skip: 20,
+        limit: 10,
+      };
 
-      mockApiClient.get.mockResolvedValue({ data: mockPictures });
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
 
-      const result = await picturesApi.getPictures(20, 10);
+      const result = await picturesApi.getAll({ skip: 20, limit: 10 });
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/pictures', {
-        params: { skip: 20, limit: 10 },
-      });
-      expect(result).toEqual(mockPictures);
+      expect(mockApiClient.get).toHaveBeenCalledWith('/pictures?skip=20&limit=10');
+      expect(result).toEqual(mockResponse);
     });
 
     it('should handle API errors', async () => {
       const error = new Error('Failed to fetch pictures');
       mockApiClient.get.mockRejectedValue(error);
 
-      await expect(picturesApi.getPictures()).rejects.toThrow('Failed to fetch pictures');
+      await expect(picturesApi.getAll()).rejects.toThrow('Failed to fetch pictures');
     });
   });
 
-  describe('getPicture', () => {
+  describe('getById', () => {
     it('should fetch a single picture by ID', async () => {
       const mockPicture: Picture = {
         id: 1,
@@ -101,7 +107,7 @@ describe('Pictures API', () => {
 
       mockApiClient.get.mockResolvedValue({ data: mockPicture });
 
-      const result = await picturesApi.getPicture(1);
+      const result = await picturesApi.getById('1');
 
       expect(mockApiClient.get).toHaveBeenCalledWith('/pictures/1');
       expect(result).toEqual(mockPicture);
@@ -111,60 +117,59 @@ describe('Pictures API', () => {
       const error = new Error('Picture not found');
       mockApiClient.get.mockRejectedValue(error);
 
-      await expect(picturesApi.getPicture(999)).rejects.toThrow('Picture not found');
+      await expect(picturesApi.getById('999')).rejects.toThrow('Picture not found');
     });
   });
 
-  describe('uploadPicture', () => {
-    it('should upload a picture file', async () => {
-      const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const uploadData = {
-        file: mockFile,
-        title: 'Uploaded Image',
-        description: 'An uploaded test image',
+  describe('create', () => {
+    it('should create a picture', async () => {
+      const createData = {
+        image_url: 'https://example.com/images/uploaded.jpg',
+        file_name: 'uploaded.jpg',
+        file_size_bytes: 1024,
+        width: 1920,
+        height: 1080,
+        alt_text: 'An uploaded test image',
       };
 
-      const uploadedPicture: Picture = {
+      const createdPicture: Picture = {
         id: 3,
         title: 'Uploaded Image',
         file_path: '/images/uploaded.jpg',
-        file_size_bytes: mockFile.size,
+        file_size_bytes: 1024,
         width: 1920,
         height: 1080,
         format: 'jpg',
         description: 'An uploaded test image',
       };
 
-      mockApiClient.post.mockResolvedValue({ data: uploadedPicture });
+      mockApiClient.post.mockResolvedValue({ data: createdPicture });
 
-      const result = await picturesApi.uploadPicture(uploadData);
+      const result = await picturesApi.create(createData);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/pictures/upload', expect.any(FormData), {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      expect(result).toEqual(uploadedPicture);
+      expect(mockApiClient.post).toHaveBeenCalledWith('/pictures', createData);
+      expect(result).toEqual(createdPicture);
     });
 
-    it('should handle upload errors', async () => {
-      const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const uploadData = {
-        file: mockFile,
-        title: 'Uploaded Image',
+    it('should handle create errors', async () => {
+      const createData = {
+        image_url: 'https://example.com/images/uploaded.jpg',
       };
 
-      const error = new Error('Upload failed');
+      const error = new Error('Create failed');
       mockApiClient.post.mockRejectedValue(error);
 
-      await expect(picturesApi.uploadPicture(uploadData)).rejects.toThrow('Upload failed');
+      await expect(picturesApi.create(createData)).rejects.toThrow('Create failed');
     });
   });
 
-  describe('updatePicture', () => {
+  describe('update', () => {
     it('should update picture metadata', async () => {
       const updateData = {
-        title: 'Updated Title',
-        description: 'Updated description',
+        image_url: 'https://example.com/images/updated.jpg',
         alt_text: 'Updated alt text',
+        width: 1920,
+        height: 1080,
       };
 
       const updatedPicture: Picture = {
@@ -181,36 +186,46 @@ describe('Pictures API', () => {
 
       mockApiClient.put.mockResolvedValue({ data: updatedPicture });
 
-      const result = await picturesApi.updatePicture(1, updateData);
+      const result = await picturesApi.update('1', updateData);
 
       expect(mockApiClient.put).toHaveBeenCalledWith('/pictures/1', updateData);
       expect(result).toEqual(updatedPicture);
     });
 
     it('should handle update errors', async () => {
-      const updateData = { title: 'Updated Title' };
+      const updateData = { image_url: 'https://example.com/images/updated.jpg' };
       const error = new Error('Update failed');
       mockApiClient.put.mockRejectedValue(error);
 
-      await expect(picturesApi.updatePicture(999, updateData)).rejects.toThrow('Update failed');
+      await expect(picturesApi.update('999', updateData)).rejects.toThrow('Update failed');
     });
   });
 
-  describe('deletePicture', () => {
+  describe('delete', () => {
     it('should delete a picture', async () => {
-      mockApiClient.delete.mockResolvedValue({ data: { message: 'Picture deleted successfully' } });
+      const deletedPicture: Picture = {
+        id: 1,
+        title: 'Deleted Image',
+        file_path: '/images/test.jpg',
+        file_size_bytes: 1024,
+        width: 1920,
+        height: 1080,
+        format: 'jpg',
+      };
 
-      const result = await picturesApi.deletePicture(1);
+      mockApiClient.delete.mockResolvedValue({ data: deletedPicture });
+
+      const result = await picturesApi.delete('1');
 
       expect(mockApiClient.delete).toHaveBeenCalledWith('/pictures/1');
-      expect(result).toEqual({ message: 'Picture deleted successfully' });
+      expect(result).toEqual(deletedPicture);
     });
 
     it('should handle deletion errors', async () => {
       const error = new Error('Cannot delete picture');
       mockApiClient.delete.mockRejectedValue(error);
 
-      await expect(picturesApi.deletePicture(999)).rejects.toThrow('Cannot delete picture');
+      await expect(picturesApi.delete('999')).rejects.toThrow('Cannot delete picture');
     });
   });
 
@@ -219,53 +234,56 @@ describe('Pictures API', () => {
       const formats = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
       for (const format of formats) {
-        const mockFile = new File(['test'], `test.${format}`, { type: `image/${format}` });
-        const uploadData = {
-          file: mockFile,
-          title: `Test ${format.toUpperCase()}`,
+        const createData = {
+          image_url: `https://example.com/images/test.${format}`,
+          file_name: `test.${format}`,
+          width: 1920,
+          height: 1080,
         };
 
-        const uploadedPicture: Picture = {
+        const createdPicture: Picture = {
           id: 1,
           title: `Test ${format.toUpperCase()}`,
           file_path: `/images/test.${format}`,
-          file_size_bytes: mockFile.size,
+          file_size_bytes: 1024,
           width: 1920,
           height: 1080,
           format,
         };
 
-        mockApiClient.post.mockResolvedValue({ data: uploadedPicture });
+        mockApiClient.post.mockResolvedValue({ data: createdPicture });
 
-        const result = await picturesApi.uploadPicture(uploadData);
+        const result = await picturesApi.create(createData);
 
         expect(result.format).toBe(format);
       }
     });
 
-    it('should handle large file uploads', async () => {
-      // Create a mock large file (10MB)
-      const largeFile = new File(['x'.repeat(10 * 1024 * 1024)], 'large.jpg', { type: 'image/jpeg' });
-      const uploadData = {
-        file: largeFile,
-        title: 'Large Image',
+    it('should handle large file size', async () => {
+      const largeFileSize = 10 * 1024 * 1024; // 10MB
+      const createData = {
+        image_url: 'https://example.com/images/large.jpg',
+        file_name: 'large.jpg',
+        file_size_bytes: largeFileSize,
+        width: 4096,
+        height: 3072,
       };
 
-      const uploadedPicture: Picture = {
+      const createdPicture: Picture = {
         id: 1,
         title: 'Large Image',
         file_path: '/images/large.jpg',
-        file_size_bytes: largeFile.size,
+        file_size_bytes: largeFileSize,
         width: 4096,
         height: 3072,
         format: 'jpg',
       };
 
-      mockApiClient.post.mockResolvedValue({ data: uploadedPicture });
+      mockApiClient.post.mockResolvedValue({ data: createdPicture });
 
-      const result = await picturesApi.uploadPicture(uploadData);
+      const result = await picturesApi.create(createData);
 
-      expect(result.file_size_bytes).toBe(largeFile.size);
+      expect(result.file_size_bytes).toBe(largeFileSize);
     });
   });
 
@@ -283,20 +301,23 @@ describe('Pictures API', () => {
 
       mockApiClient.get.mockResolvedValue({ data: pictureWithoutDimensions });
 
-      const result = await picturesApi.getPicture(1);
+      const result = await picturesApi.getById('1');
 
       expect(result.width).toBe(0);
       expect(result.height).toBe(0);
     });
 
-    it('should handle pictures with very long titles', async () => {
-      const longTitle = 'A'.repeat(1000);
-      const updateData = { title: longTitle };
+    it('should handle pictures with very long file names', async () => {
+      const longFileName = 'A'.repeat(1000) + '.jpg';
+      const updateData = {
+        file_name: longFileName,
+        image_url: 'https://example.com/images/long.jpg',
+      };
 
       const updatedPicture: Picture = {
         id: 1,
-        title: longTitle,
-        file_path: '/images/test.jpg',
+        title: 'Long filename',
+        file_path: '/images/long.jpg',
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
@@ -305,9 +326,9 @@ describe('Pictures API', () => {
 
       mockApiClient.put.mockResolvedValue({ data: updatedPicture });
 
-      const result = await picturesApi.updatePicture(1, updateData);
+      const result = await picturesApi.update('1', updateData);
 
-      expect(result.title).toBe(longTitle);
+      expect(result).toEqual(updatedPicture);
     });
 
     it('should handle special characters in filenames', async () => {
@@ -324,25 +345,36 @@ describe('Pictures API', () => {
 
       mockApiClient.get.mockResolvedValue({ data: picture });
 
-      const result = await picturesApi.getPicture(1);
+      const result = await picturesApi.getById('1');
 
       expect(result.file_path).toContain(specialFilename);
     });
 
     it('should handle empty result sets', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      const emptyResponse = {
+        items: [],
+        total: 0,
+        skip: 0,
+        limit: 20,
+      };
 
-      const result = await picturesApi.getPictures();
+      mockApiClient.get.mockResolvedValue({ data: emptyResponse });
 
-      expect(result).toEqual([]);
+      const result = await picturesApi.getAll();
+
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(0);
     });
 
-    it('should handle concurrent uploads', async () => {
-      const file1 = new File(['test1'], 'test1.jpg', { type: 'image/jpeg' });
-      const file2 = new File(['test2'], 'test2.jpg', { type: 'image/jpeg' });
-
-      const uploadData1 = { file: file1, title: 'Image 1' };
-      const uploadData2 = { file: file2, title: 'Image 2' };
+    it('should handle concurrent creates', async () => {
+      const createData1 = {
+        image_url: 'https://example.com/images/test1.jpg',
+        file_name: 'test1.jpg',
+      };
+      const createData2 = {
+        image_url: 'https://example.com/images/test2.jpg',
+        file_name: 'test2.jpg',
+      };
 
       mockApiClient.post
         .mockResolvedValueOnce({
@@ -350,7 +382,7 @@ describe('Pictures API', () => {
             id: 1,
             title: 'Image 1',
             file_path: '/images/test1.jpg',
-            file_size_bytes: file1.size,
+            file_size_bytes: 1024,
             width: 1920,
             height: 1080,
             format: 'jpg',
@@ -361,7 +393,7 @@ describe('Pictures API', () => {
             id: 2,
             title: 'Image 2',
             file_path: '/images/test2.jpg',
-            file_size_bytes: file2.size,
+            file_size_bytes: 2048,
             width: 1920,
             height: 1080,
             format: 'jpg',
@@ -369,8 +401,8 @@ describe('Pictures API', () => {
         });
 
       const [result1, result2] = await Promise.all([
-        picturesApi.uploadPicture(uploadData1),
-        picturesApi.uploadPicture(uploadData2),
+        picturesApi.create(createData1),
+        picturesApi.create(createData2),
       ]);
 
       expect(result1.id).toBe(1);
@@ -379,42 +411,50 @@ describe('Pictures API', () => {
     });
   });
 
-  describe('FormData Handling', () => {
-    it('should create FormData correctly for file upload', async () => {
-      const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const uploadData = {
-        file: mockFile,
-        title: 'Test Upload',
-        description: 'Test description',
-        alt_text: 'Test alt text',
-      };
-
-      let capturedFormData: FormData;
-      mockApiClient.post.mockImplementation((url, data) => {
-        capturedFormData = data;
-        return Promise.resolve({
-          data: {
+  describe('Search and Filtering', () => {
+    it('should handle search query parameter', async () => {
+      const mockResponse = {
+        items: [
+          {
             id: 1,
-            title: 'Test Upload',
-            file_path: '/images/test.jpg',
-            file_size_bytes: mockFile.size,
+            title: 'Searchable Image',
+            file_path: '/images/search.jpg',
+            file_size_bytes: 1024,
             width: 1920,
             height: 1080,
             format: 'jpg',
           },
-        });
+        ],
+        total: 1,
+        skip: 0,
+        limit: 20,
+      };
+
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
+
+      const result = await picturesApi.getAll({ q: 'searchable' });
+
+      expect(mockApiClient.get).toHaveBeenCalledWith('/pictures?skip=0&limit=20&q=searchable');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should handle order_by and order_dir parameters', async () => {
+      const mockResponse = {
+        items: [],
+        total: 0,
+        skip: 0,
+        limit: 20,
+      };
+
+      mockApiClient.get.mockResolvedValue({ data: mockResponse });
+
+      const result = await picturesApi.getAll({
+        order_by: 'created_at',
+        order_dir: 'DESC'
       });
 
-      await picturesApi.uploadPicture(uploadData);
-
-      expect(capturedFormData!).toBeInstanceOf(FormData);
-      expect(mockApiClient.post).toHaveBeenCalledWith(
-        '/pictures/upload',
-        expect.any(FormData),
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }
-      );
+      expect(mockApiClient.get).toHaveBeenCalledWith('/pictures?skip=0&limit=20&order_by=created_at&order_dir=desc');
+      expect(result).toEqual(mockResponse);
     });
   });
 });

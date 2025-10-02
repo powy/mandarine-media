@@ -134,3 +134,47 @@ def find_best_text_match(target_text: str, candidates: list) -> list:
         matches.append(candidate)
 
     return matches
+
+
+def slugify(text: Optional[str]) -> str:
+    """
+    Convert text to a URL-friendly slug.
+
+    - Converts to lowercase
+    - Removes accents and diacritics
+    - Replaces spaces and underscores with hyphens
+    - Removes special characters
+    - Handles multiple consecutive hyphens
+
+    Args:
+        text: The text to convert to a slug
+
+    Returns:
+        URL-friendly slug string (empty string if input is None/empty)
+    """
+    if not text or not text.strip():
+        return ""
+
+    # Convert to lowercase
+    slug = text.lower().strip()
+
+    # Remove accents and diacritics using Unicode normalization
+    slug = unicodedata.normalize('NFD', slug)
+    slug = ''.join(
+        char for char in slug
+        if unicodedata.category(char) != 'Mn'
+    )
+
+    # Replace spaces and underscores with hyphens
+    slug = re.sub(r'[\s_]+', '-', slug)
+
+    # Remove all non-alphanumeric characters except hyphens
+    slug = re.sub(r'[^a-z0-9-]', '', slug)
+
+    # Replace multiple consecutive hyphens with a single hyphen
+    slug = re.sub(r'-+', '-', slug)
+
+    # Remove leading and trailing hyphens
+    slug = slug.strip('-')
+
+    return slug if slug else ""

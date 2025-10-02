@@ -1,31 +1,49 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.models.media_theme import MediaTheme
 from app.models.user import User
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.MediaTheme])
+@router.get("", response_model=PaginatedResponse[schemas.MediaTheme])
 def read_media_themes(
     db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-    q: Optional[str] = None,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by theme name"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve media themes.
     """
-    media_themes = crud.media_theme.get_multi_by_name(
-        db=db, name_filter=q, skip=skip, limit=limit
+    query = db.query(MediaTheme)
+
+    if q:
+        query = query.filter(MediaTheme.name.ilike(f"%{q.strip()}%"))
+
+    media_themes, pagination = paginate_query(
+        query,
+        MediaTheme,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='name',
+        allowed_sort_fields=('name', 'creation_date_utc', 'id'),
     )
-    return media_themes
+
+    return PaginatedResponse[schemas.MediaTheme](data=media_themes, pagination=pagination)
 
 
 @router.post("", response_model=schemas.MediaTheme)

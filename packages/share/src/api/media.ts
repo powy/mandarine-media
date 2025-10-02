@@ -29,6 +29,9 @@ export const mediaApi = {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.is_featured !== undefined) params.append('is_featured', filters.is_featured.toString());
     if (filters?.is_premium !== undefined) params.append('is_premium', filters.is_premium.toString());
+    if (filters?.season_id) params.append('season_id', filters.season_id);
+    if (filters?.order_by) params.append('order_by', filters.order_by);
+    if (filters?.order_dir) params.append('order_dir', filters.order_dir.toLowerCase());
 
     // v1.9: Updated to flat URL structure
     const response = await apiClient.get<MediaDescriptionListResponse>(`/media-descriptions?${params}`);
@@ -81,6 +84,8 @@ export const mediaApi = {
     const params = new URLSearchParams();
     if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
     if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
+    if (filters?.order_by) params.append('order_by', filters.order_by);
+    if (filters?.order_dir) params.append('order_dir', filters.order_dir.toLowerCase());
 
     // v1.9: Updated to flat URL structure
     const response = await apiClient.get<VideoFileListResponse>(`/video-files?${params}`);
@@ -398,16 +403,16 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
       season = await seasonsApi.getById(mediaDescription.season_id);
       console.log('✅ getVideoScreenData: Season fetched:', season);
       
-      // Get other episodes in the same season
+      // Get other episodes in the same season using season_id filter
       const episodesResponse = await mediaApi.getMediaDescriptions({
         skip: 0,
-        limit: 100, // Get all episodes
+        limit: 100,
+        season_id: mediaDescription.season_id,
       });
-      
-      // Filter episodes that belong to the same season
+
+      // Filter out the current episode
       relatedEpisodes = episodesResponse.data.filter(
-        episode => episode.season_id === mediaDescription.season_id &&
-                  episode.id !== mediaDescriptionId
+        episode => episode.id !== mediaDescriptionId
       ).sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
 
       console.log('✅ getVideoScreenData: Related episodes found:', {
@@ -619,16 +624,15 @@ export const getSeasonScreenData = async (seasonId: string) => {
       program = await programsApi.getById(season.program_id);
     }
     
-    // Get all episodes for this season
+    // Get all episodes for this season using season_id filter
     const episodesResponse = await mediaApi.getMediaDescriptions({
       skip: 0,
-      limit: 100, // Get all episodes
+      limit: 100,
+      season_id: seasonId,
     });
-    
-    // Filter episodes that belong to this season
-    const episodes = episodesResponse.data.filter(
-      episode => episode.season_id === seasonId
-    ).sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+
+    // Sort episodes by episode number
+    const episodes = episodesResponse.data.sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
     
     // Get next and previous seasons
     let nextSeason = null;
@@ -807,16 +811,15 @@ export const getProgramScreenData = async (seasonId: string) => {
     const seasonsWithThumbnails = [];
     
     for (const seasonItem of allSeasons) {
-      // Get episodes for this season
+      // Get episodes for this season using season_id filter
       const episodesResponse = await mediaApi.getMediaDescriptions({
         skip: 0,
         limit: 100,
+        season_id: seasonItem.id,
       });
-      
-      // Filter episodes that belong to this season
-      const seasonEpisodes = episodesResponse.data.filter(
-        episode => episode.season_id === seasonItem.id
-      ).sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+
+      // Sort episodes by episode number
+      const seasonEpisodes = episodesResponse.data.sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
       
       // Find thumbnail for this season (1920x720 preferred, fallback to any)
       let seasonThumbnailUrl = null;
@@ -849,16 +852,15 @@ export const getProgramScreenData = async (seasonId: string) => {
       });
     }
     
-    // Get detailed information from the current season's episodes
+    // Get detailed information from the current season's episodes using season_id filter
     const currentSeasonEpisodesResponse = await mediaApi.getMediaDescriptions({
       skip: 0,
       limit: 100,
+      season_id: seasonId,
     });
-    
-    // Filter episodes that belong to current season
-    const currentSeasonEpisodes = currentSeasonEpisodesResponse.data.filter(
-      episode => episode.season_id === seasonId
-    ).sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+
+    // Sort episodes by episode number
+    const currentSeasonEpisodes = currentSeasonEpisodesResponse.data.sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
     
     // Get cast and crew information from current season episodes
     let actors: any[] = [];

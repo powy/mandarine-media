@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   ReferenceInput,
   AutocompleteInput,
@@ -21,18 +20,6 @@ const validateMediaDescriptionId = (value: string) => {
   return undefined;
 };
 
-// Component that shows the UUID and title of the selected media description
-const MediaDescriptionDisplay = ({ record }: { record: any }) => {
-  if (!record) return null;
-  
-  return (
-    <Box display="flex" alignItems="center" gap={1}>
-      <Chip label={record.id} size="small" variant="outlined" />
-      <Typography variant="body2">{record.episode_title}</Typography>
-    </Box>
-  );
-};
-
 interface MediaDescriptionInputProps {
   source: string;
   label?: string;
@@ -41,13 +28,13 @@ interface MediaDescriptionInputProps {
   allowDirectUUID?: boolean;
 }
 
-export const MediaDescriptionInput: React.FC<MediaDescriptionInputProps> = ({
+export const MediaDescriptionInput = ({
   source,
   label = "Media Description",
   validate = [],
   fullWidth = true,
   allowDirectUUID = true,
-}) => {
+}: MediaDescriptionInputProps) => {
   const [inputMode, setInputMode] = useState<'reference' | 'direct'>('reference');
   console.log('🚀 MediaDescriptionInput is rendering!', { source, inputMode });
   

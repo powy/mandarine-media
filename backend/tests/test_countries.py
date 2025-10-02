@@ -37,11 +37,13 @@ class TestCountriesCRUD:
     def test_list_countries_success(self, client, user_token):
         """Test successful retrieval of countries list."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/countries", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_get_country_success(self, client, user_token, admin_token, sample_country_data):
         """Test successful country retrieval."""

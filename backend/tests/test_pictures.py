@@ -95,20 +95,24 @@ class TestPicturesCRUD:
     def test_list_pictures_success(self, client, user_token):
         """Test successful retrieval of pictures list."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/pictures", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_pictures_with_pagination(self, client, user_token):
         """Test pictures list with pagination parameters."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/pictures?skip=0&limit=10", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_get_picture_success(self, client, user_token, admin_token, sample_picture_data):
         """Test successful picture retrieval."""

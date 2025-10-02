@@ -1,27 +1,55 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.models.picture import Picture
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.Picture])
+@router.get("", response_model=PaginatedResponse[schemas.Picture])
 def read_pictures(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by file name or URL"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve pictures.
     """
-    pictures = crud.picture.get_multi(db, skip=skip, limit=limit)
-    return pictures
+    query = db.query(Picture)
+
+    if q:
+        search_term = f"%{q.strip()}%"
+        query = query.filter(or_(Picture.file_name.ilike(search_term), Picture.image_url.ilike(search_term)))
+
+    pictures, pagination = paginate_query(
+        query,
+        Picture,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='creation_date_utc',
+        allowed_sort_fields=(
+            'creation_date_utc',
+            'file_name',
+            'image_url',
+            'id',
+        ),
+    )
+
+    return PaginatedResponse[schemas.Picture](data=pictures, pagination=pagination)
 
 
 @router.post("", response_model=schemas.Picture)

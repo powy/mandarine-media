@@ -27,28 +27,34 @@ class TestLanguagesList:
     def test_list_languages_success(self, client, user_token):
         """Test successful retrieval of languages list."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/languages", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_languages_with_pagination(self, client, user_token):
         """Test languages list with pagination parameters."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/languages?skip=0&limit=10", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_languages_unauthenticated(self, client):
         """(Test languages list without authentication (now allowed).)"""
         response = client.get("/api/v1/languages")
-        
+
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert "data" in data
+        assert "pagination" in data
+        assert isinstance(data["data"], list)
 
 
 class TestLanguagesCreate:

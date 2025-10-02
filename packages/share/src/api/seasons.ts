@@ -3,7 +3,7 @@ import { Season, SeasonCreate, SeasonUpdate, SeasonsApiParams, PaginatedSeasonsR
 
 export const seasonsApi = {
   getAll: async (params: SeasonsApiParams = {}): Promise<PaginatedSeasonsResponse> => {
-    const { skip = 0, limit = 20, program_id, q } = params;
+    const { skip = 0, limit = 20, program_id, q, order_by, order_dir } = params;
     const queryParams = new URLSearchParams({
       skip: skip.toString(),
       limit: limit.toString(),
@@ -15,6 +15,14 @@ export const seasonsApi = {
     
     if (q) {
       queryParams.append('q', q);
+    }
+
+    if (order_by) {
+      queryParams.append('order_by', order_by);
+    }
+
+    if (order_dir) {
+      queryParams.append('order_dir', order_dir.toLowerCase());
     }
     
     const response = await apiClient.get(`/seasons?${queryParams}`);

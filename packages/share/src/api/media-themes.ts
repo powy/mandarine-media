@@ -1,25 +1,24 @@
-import { 
-  MediaTheme, 
-  MediaThemeCreate, 
-  MediaThemeUpdate, 
+import {
+  MediaTheme,
+  MediaThemeCreate,
+  MediaThemeUpdate,
   MediaThemeApiParams,
   PaginatedMediaThemesResponse
 } from '../types';
 import { apiClient } from './client';
 
 export async function getMediaThemes(params?: MediaThemeApiParams): Promise<PaginatedMediaThemesResponse> {
-  const response = await apiClient.get<MediaTheme[]>('/media-themes/', { params });
-  // Convert simple array response to paginated format for consistency
-  return {
-    data: response.data,
-    pagination: {
-      total: response.data.length,
-      page: Math.floor((params?.skip || 0) / (params?.limit || 20)) + 1,
-      skip: params?.skip || 0,
-      limit: params?.limit || 20,
-      pages: Math.ceil(response.data.length / (params?.limit || 20))
-    }
-  };
+  const normalizedParams = params ? { ...params } : undefined;
+
+  if (normalizedParams?.order_dir) {
+    normalizedParams.order_dir = normalizedParams.order_dir.toLowerCase() as MediaThemeApiParams['order_dir'];
+  }
+
+  const response = await apiClient.get<PaginatedMediaThemesResponse>('/media-themes', {
+    params: normalizedParams,
+  });
+
+  return response.data;
 }
 
 export async function getMediaTheme(id: string): Promise<MediaTheme> {

@@ -83,6 +83,10 @@ class CRUDScreenDescription(CRUDBase[ScreenDescription, ScreenDescriptionCreate,
             .count()
         )
 
+    def count_total(self, db: Session) -> int:
+        """Get total count of all screen descriptions"""
+        return db.query(self.model).count()
+
     def update_json_cache(self, db: Session, *, screen_content: ScreenDescription) -> Optional[Dict[str, Any]]:
         """Update JSON cache for a screen content."""
         json_data = screen_content.update_json(db_session=db)

@@ -548,7 +548,7 @@ class TestPublicPersonSearch:
             params={"name": "Kim"}
         )
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert isinstance(response.json(), list)  # This endpoint returns List, not paginated
 
 
 class TestPublicPersonByProfession:

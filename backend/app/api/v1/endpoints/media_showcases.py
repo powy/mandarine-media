@@ -30,34 +30,32 @@ def get_media_showcases(
         showcases = crud.media_showcase.get_by_list_type(
             db=db, list_type=list_type, skip=skip, limit=limit
         )
-        total = len(crud.media_showcase.get_by_list_type(
-            db=db, list_type=list_type, skip=0, limit=10000
-        ))
+        total = crud.media_showcase.count_by_list_type(
+            db=db, list_type=list_type
+        )
     elif thumbnail_format:
         showcases = crud.media_showcase.get_by_thumbnail_format(
             db=db, thumbnail_format=thumbnail_format, skip=skip, limit=limit
         )
-        total = len(crud.media_showcase.get_by_thumbnail_format(
-            db=db, thumbnail_format=thumbnail_format, skip=0, limit=10000
-        ))
+        total = crud.media_showcase.count_by_thumbnail_format(
+            db=db, thumbnail_format=thumbnail_format
+        )
     elif is_active is not None:
         if is_active:
             showcases = crud.media_showcase.get_active_showcases(
                 db=db, skip=skip, limit=limit
             )
-            total = len(crud.media_showcase.get_active_showcases(
-                db=db, skip=0, limit=10000
-            ))
+            total = crud.media_showcase.count_active(db=db)
         else:
             showcases = crud.media_showcase.get_multi_ordered(
                 db=db, skip=skip, limit=limit, active_only=False
             )
-            total = len(crud.media_showcase.get_multi(db=db, skip=0, limit=10000))
+            total = crud.media_showcase.count_total(db=db)
     else:
         showcases = crud.media_showcase.get_multi_ordered(
             db=db, skip=skip, limit=limit, active_only=False
         )
-        total = len(crud.media_showcase.get_multi(db=db, skip=0, limit=10000))
+        total = crud.media_showcase.count_total(db=db)
     
     return {
         "data": showcases,
@@ -389,10 +387,10 @@ def search_media_showcases(
     showcases = crud.media_showcase.search_by_title(
         db=db, search_term=q, skip=skip, limit=limit, active_only=active_only
     )
-    
-    total = len(crud.media_showcase.search_by_title(
-        db=db, search_term=q, skip=0, limit=10000, active_only=active_only
-    ))
+
+    total = crud.media_showcase.count_by_title_search(
+        db=db, search_term=q, active_only=active_only
+    )
 
     return {
         "data": showcases,

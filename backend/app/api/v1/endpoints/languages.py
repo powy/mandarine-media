@@ -1,27 +1,50 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.models.language import Language
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 from app.api import deps
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.Language])
+@router.get("", response_model=PaginatedResponse[schemas.Language])
 def read_languages(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by language name or code"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve languages.
     """
-    languages = crud.language.get_multi(db, skip=skip, limit=limit)
-    return languages
+    query = db.query(Language)
+
+    if q:
+        search_term = f"%{q.strip()}%"
+        query = query.filter(or_(Language.name.ilike(search_term), Language.sigle.ilike(search_term)))
+
+    languages, pagination = paginate_query(
+        query,
+        Language,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='name',
+        allowed_sort_fields=('name', 'sigle', 'creation_date_utc', 'id'),
+    )
+
+    return PaginatedResponse[schemas.Language](data=languages, pagination=pagination)
 
 
 @router.post("", response_model=schemas.Language)

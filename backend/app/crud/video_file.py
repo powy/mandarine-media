@@ -238,5 +238,9 @@ class CRUDVideoFile(CRUDBase[VideoFile, VideoFileCreate, VideoFileUpdate]):
             db.refresh(video_file_obj)
         return video_file_obj
 
+    def count_total(self, db: Session) -> int:
+        """Get total count of all video files"""
+        return db.query(self.model).count()
+
 
 video_file = CRUDVideoFile(VideoFile)

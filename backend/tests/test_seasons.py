@@ -42,38 +42,46 @@ class TestSeasonsList:
     def test_list_seasons_success(self, client, user_token):
         """Test successful retrieval of seasons list."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/seasons", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_seasons_with_pagination(self, client, user_token):
         """Test seasons list with pagination parameters."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get("/api/v1/seasons?skip=0&limit=10", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_seasons_by_program(self, client, user_token, created_program):
         """Test seasons list filtered by program."""
         headers = {"Authorization": f"Bearer {user_token}"}
         program_id = created_program["id"]
-        
+
         response = client.get(f"/api/v1/seasons?program_id={program_id}", headers=headers)
-        
+
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert "data" in response.json()
+        assert "pagination" in response.json()
+        assert isinstance(response.json()["data"], list)
 
     def test_list_seasons_unauthenticated(self, client):
         """(Test seasons list without authentication (now allowed).)"""
         response = client.get("/api/v1/seasons")
-        
+
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert "data" in data
+        assert "pagination" in data
+        assert isinstance(data["data"], list)
 
 
 class TestSeasonsCreate:

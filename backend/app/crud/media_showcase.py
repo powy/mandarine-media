@@ -551,6 +551,43 @@ class CRUDMediaShowcase(CRUDBase[MediaShowcase, MediaShowcaseCreate, MediaShowca
             "errors": errors
         }
 
+    def count_total(self, db: Session) -> int:
+        """Get total count of all media showcases"""
+        return db.query(self.model).count()
+
+    def count_active(self, db: Session) -> int:
+        """Count active media showcases"""
+        return db.query(self.model).filter(MediaShowcase.is_active == True).count()
+
+    def count_by_list_type(self, db: Session, *, list_type: str) -> int:
+        """Count media showcases by list type"""
+        return (
+            db.query(self.model)
+            .filter(MediaShowcase.list_type == list_type)
+            .filter(MediaShowcase.is_active == True)
+            .count()
+        )
+
+    def count_by_thumbnail_format(self, db: Session, *, thumbnail_format: str) -> int:
+        """Count media showcases by thumbnail format"""
+        return (
+            db.query(self.model)
+            .filter(MediaShowcase.thumbnail_format == thumbnail_format)
+            .filter(MediaShowcase.is_active == True)
+            .count()
+        )
+
+    def count_by_title_search(self, db: Session, *, search_term: str, active_only: bool = True) -> int:
+        """Count media showcases matching title search"""
+        query = db.query(self.model).filter(
+            MediaShowcase.title.ilike(f"%{search_term}%")
+        )
+
+        if active_only:
+            query = query.filter(MediaShowcase.is_active == True)
+
+        return query.count()
+
 
 # Create instance
 media_showcase = CRUDMediaShowcase(MediaShowcase)

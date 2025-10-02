@@ -58,8 +58,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 update_data = obj_in.model_dump(exclude_unset=True)
             else:
                 update_data = jsonable_encoder(obj_in, exclude_unset=True)
-        for field in obj_data:
-            if field in update_data:
+        for field in update_data:
+            if field in obj_data:
                 setattr(db_obj, field, update_data[field])
         db.add(db_obj)
         db.commit()

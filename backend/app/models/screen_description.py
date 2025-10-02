@@ -71,17 +71,14 @@ class ScreenDescription(Base):
             for i, media_showcase_id in enumerate(media_showcases):
                 try:
                     media_showcase_uuid = uuid.UUID(media_showcase_id) if isinstance(media_showcase_id, str) else media_showcase_id
-                    
+
                     # Fetch media showcase
                     if db_session:
                         media_showcase_obj = crud_media_showcase.get(db_session, id=media_showcase_uuid)
-                        
+
                         if media_showcase_obj and media_showcase_obj.is_active:
-                            # Get or generate JSON data for the media showcase
-                            media_showcase_json = media_showcase_obj.get_json_data()
-                            if not media_showcase_json:
-                                # Generate fresh JSON if not available
-                                media_showcase_json = media_showcase_obj.update_json(db_session)
+                            # Always regenerate JSON for the media showcase to ensure freshness
+                            media_showcase_json = media_showcase_obj.update_json(db_session)
 
                             if media_showcase_json:
                                 # Add the media showcase with its display order

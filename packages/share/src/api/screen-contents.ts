@@ -121,3 +121,21 @@ export const getScreenContentByType = async (screenType: string): Promise<Screen
   const result = await getScreenDescriptionByType(screenType);
   return [result];
 };
+
+// v1.9: Bulk regenerate all screen description JSON caches
+export const regenerateAllScreenDescriptionJSON = async (): Promise<{
+  message: string;
+  results: {
+    updated: number;
+    failed: number;
+    errors: string[];
+  };
+}> => {
+  const response = await apiClient.post('/screen-descriptions/regenerate-all-json');
+  return response.data;
+};
+
+// Legacy function for backward compatibility
+export const regenerateAllScreenContentJSON = async () => {
+  return regenerateAllScreenDescriptionJSON();
+};

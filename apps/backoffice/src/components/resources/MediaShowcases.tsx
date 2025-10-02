@@ -41,9 +41,10 @@ import {
   ReferenceArrayInput,
   AutocompleteArrayInput,
   DateInput,
+  useDataProvider,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, Alert, IconButton, List as MuiList, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, Alert, IconButton, List as MuiList, ListItem, ListItemText, ListItemSecondaryAction, TextField as MuiTextField, Button as MuiButton } from '@mui/material';
 import { DragHandle, Delete } from '@mui/icons-material';
 // Import API functions from share package
 import {
@@ -263,7 +264,12 @@ const RefreshJsonButton = () => {
 // Custom component for managing media descriptions with ordering
 const MediaDescriptionManager = ({ source, ...props }) => {
   const record = useRecordContext();
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
   const [selectedIds, setSelectedIds] = React.useState(record?.[source] || []);
+  const [manualId, setManualId] = React.useState('');
+  const [manualError, setManualError] = React.useState<string | null>(null);
+  const [isAddingById, setIsAddingById] = React.useState(false);
 
   const handleAdd = (newIds) => {
     const uniqueIds = [...new Set([...selectedIds, ...newIds])];
@@ -298,6 +304,46 @@ const MediaDescriptionManager = ({ source, ...props }) => {
     }
   }, [record, source]);
 
+  React.useEffect(() => {
+    if (Array.isArray(props?.value) && JSON.stringify(props.value) !== JSON.stringify(selectedIds)) {
+      setSelectedIds(props.value);
+    }
+  }, [props?.value, selectedIds]);
+
+  const handleManualAdd = async () => {
+    const trimmedId = manualId.trim();
+
+    if (!trimmedId) {
+      setManualError('Enter a media description ID');
+      return;
+    }
+
+    if (selectedIds.includes(trimmedId)) {
+      setManualError('Media description already added');
+      return;
+    }
+
+    setManualError(null);
+    setIsAddingById(true);
+
+    try {
+      const result = await dataProvider.getOne('media-descriptions', { id: trimmedId });
+      handleAdd([trimmedId]);
+      notify(
+        result?.data?.episode_title
+          ? `Added ${result.data.episode_title}`
+          : 'Media description added',
+        { type: 'info' }
+      );
+      setManualId('');
+    } catch (error) {
+      setManualError('Media description not found');
+      notify(`Unable to find media description ${trimmedId}`, { type: 'warning' });
+    } finally {
+      setIsAddingById(false);
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -317,6 +363,31 @@ const MediaDescriptionManager = ({ source, ...props }) => {
           filterToQuery={searchText => ({ episode_title: searchText })}
         />
       </ReferenceArrayInput>
+
+      <Box mt={2}>
+        <Typography variant="subtitle1" gutterBottom>
+          Add by ID
+        </Typography>
+        <Box display="flex" gap={2} alignItems="flex-start">
+          <TextField
+            label="Media Description ID"
+            value={manualId}
+            onChange={event => setManualId(event.target.value)}
+            size="small"
+            fullWidth
+            error={Boolean(manualError)}
+            helperText={manualError || 'Paste a MediaDescription UUID to append it directly'}
+          />
+          <MuiButton
+            variant="contained"
+            color="primary"
+            onClick={handleManualAdd}
+            disabled={isAddingById}
+          >
+            {isAddingById ? 'Adding…' : 'Add'}
+          </MuiButton>
+        </Box>
+      </Box>
 
       {/* Display current items with reordering */}
       <Box mt={2}>

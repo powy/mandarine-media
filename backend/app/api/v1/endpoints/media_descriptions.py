@@ -9,6 +9,8 @@ from app import crud, schemas
 from app.api import deps
 from app.core.config import settings
 from app.schemas import description_report
+from app.models.media_description import MediaDescription
+from app.utils.pagination import paginate_query
 from app.services.text_to_uuid_service import (
     get_or_create_program, get_or_create_season, get_or_create_themes,
     get_or_create_persons, get_image_by_filename, get_or_create_countries,
@@ -27,40 +29,43 @@ def read_media_descriptions(
     media_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     is_featured: Optional[bool] = Query(None),
+    season_id: Optional[UUID] = Query(None, description="Filter by season ID"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve media descriptions with optional filtering.
     """
-    # Get filtered results using the available method
-    media_descriptions = crud.media_description.get_multi_with_filters(
-        db=db,
+    query = crud.media_description.build_filter_query(
+        db,
+        media_type=media_type,
+        status=status,
+        is_featured=is_featured,
+        season_id=season_id,
+    )
+
+    media_descriptions, pagination = paginate_query(
+        query,
+        MediaDescription,
         skip=skip,
         limit=limit,
-        media_type=media_type,
-        status=status,
-        is_featured=is_featured,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='creation_date_utc',
+        allowed_sort_fields=(
+            'creation_date_utc',
+            'file_number',
+            'episode_title',
+            'media_type',
+            'content_status',
+            'id',
+        ),
     )
-    
-    # Get total count with same filters
-    total = crud.media_description.count_with_filters(
-        db=db,
-        media_type=media_type,
-        status=status,
-        is_featured=is_featured,
-    )
-    
+
     return schemas.media_description.MediaDescriptionListResponse(
         data=media_descriptions,
-        pagination={
-            "skip": skip,
-            "limit": limit,
-            "total": total,
-            "page": (skip // limit) + 1,
-            "total_pages": (total + limit - 1) // limit,
-            "has_next": skip + limit < total,
-            "has_prev": skip > 0
-        }
+        pagination=pagination,
     )
 
 
@@ -73,16 +78,17 @@ def create_media_description(
 ) -> Any:
     """
     Create new media description. Admin only.
+    Note: file_number is auto-generated and any provided value is ignored.
     """
-    # Check if file_number already exists
-    existing = crud.media_description.get_by_file_number(db=db, file_number=media_description_in.file_number)
-    if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Media description with file_number {media_description_in.file_number} already exists",
-        )
-    
-    media_description = crud.media_description.create(db=db, obj_in=media_description_in)
+    # Auto-generate file_number (ignore provided value)
+    auto_file_number = get_next_available_file_number(db)
+
+    # Create a modified version of the input with the auto-generated file_number
+    media_data = media_description_in.model_dump()
+    media_data['file_number'] = auto_file_number
+    media_description_create = schemas.media_description.MediaDescriptionCreate(**media_data)
+
+    media_description = crud.media_description.create(db=db, obj_in=media_description_create)
     return media_description
 
 
@@ -96,28 +102,9 @@ def create_bulk_media_descriptions(
     """
     Create multiple media descriptions at once. Admin only.
     Returns a summary with reports for each description creation attempt.
+    Note: file_numbers are auto-generated and any provided values are ignored.
     """
     try:
-        # Check for duplicate file_numbers in the request
-        file_numbers = [desc.file_number for desc in bulk_data.descriptions]
-        if len(file_numbers) != len(set(file_numbers)):
-            raise HTTPException(
-                status_code=400,
-                detail="Duplicate file_numbers found in the request"
-            )
-        
-        # Check for existing file_numbers in database
-        existing_numbers = []
-        for file_number in file_numbers:
-            existing = crud.media_description.get_by_file_number(db=db, file_number=file_number)
-            if existing:
-                existing_numbers.append(file_number)
-        
-        if existing_numbers:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Media descriptions with file_numbers {existing_numbers} already exist"
-            )
         
         # Handle empty descriptions list
         if not bulk_data.descriptions:
@@ -132,10 +119,16 @@ def create_bulk_media_descriptions(
         created_descriptions = []
         reports = []
         batch_id = str(uuid4())
-        
+
         for desc in bulk_data.descriptions:
             try:
-                created_desc = crud.media_description.create(db=db, obj_in=desc)
+                # Auto-generate file_number for each description (ignore provided value)
+                auto_file_number = get_next_available_file_number(db)
+                desc_data = desc.model_dump()
+                desc_data['file_number'] = auto_file_number
+                desc_with_auto_number = schemas.media_description.MediaDescriptionCreate(**desc_data)
+
+                created_desc = crud.media_description.create(db=db, obj_in=desc_with_auto_number)
                 created_descriptions.append(created_desc)
                 
                 # Create and save report to database
@@ -150,7 +143,7 @@ def create_bulk_media_descriptions(
                 reports.append({
                     "batch_id": batch_id,
                     "description_id": str(created_desc.id),
-                    "file_number": desc.file_number,
+                    "file_number": created_desc.file_number,
                     "title": created_desc.episode_title,
                     "status": "success",
                     "message": "Created successfully",
@@ -173,9 +166,9 @@ def create_bulk_media_descriptions(
                 reports.append({
                     "batch_id": batch_id,
                     "description_id": None,
-                    "file_number": desc.file_number,
+                    "file_number": None,  # Failed before file_number could be assigned
                     "title": desc.episode_title,
-                    "status": "failed", 
+                    "status": "failed",
                     "message": str(e),
                     "success_associated_file": False,
                     "timestamp": datetime.now(timezone.utc).isoformat()
@@ -354,18 +347,8 @@ def create_media_description_from_text(
     using get-or-create logic. Fields with multiple matches will be logged as errors 
     and set to None.
     """
-    # Handle file_number - generate if not provided
-    file_number = media_description_in.file_number
-    if file_number is None:
-        file_number = get_next_available_file_number(db)
-    else:
-        # Check if file_number already exists
-        existing = crud.media_description.get_by_file_number(db=db, file_number=file_number)
-        if existing:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Media description with file_number {file_number} already exists",
-            )
+    # Handle file_number - always auto-generate (ignore provided value)
+    file_number = get_next_available_file_number(db)
     
     # Convert text fields to UUIDs
     program_id = None

@@ -1,34 +1,62 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_active_user, get_current_admin_user
 from app.crud.user import user as crud_user
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.user import User as UserSchema, UserCreate, UserUpdate
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("")
+@router.get("", response_model=PaginatedResponse[UserSchema])
 def read_users(
     db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    is_active: Optional[bool] = Query(None),
+    is_admin: Optional[bool] = Query(None),
+    q: Optional[str] = Query(None, description="Search by email or name"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_admin: User = Depends(get_current_admin_user),
 ):
-    users = crud_user.get_multi(db, skip=skip, limit=limit)
-    total = db.query(User).count()
-    return {
-        "data": users,
-        "pagination": {
-            "page": (skip // limit) + 1,
-            "limit": limit,
-            "total": total,
-            "total_pages": (total + limit - 1) // limit
-        }
-    }
+    query = db.query(User)
+
+    if is_active is not None:
+        query = query.filter(User.is_active == is_active)
+
+    if is_admin is not None:
+        query = query.filter(User.is_admin == is_admin)
+
+    if q:
+        search_term = f"%{q.strip()}%"
+        query = query.filter(or_(User.email.ilike(search_term), User.full_name.ilike(search_term)))
+
+    users, pagination = paginate_query(
+        query,
+        User,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='creation_date_utc',
+        allowed_sort_fields=(
+            'creation_date_utc',
+            'email',
+            'full_name',
+            'is_active',
+            'is_admin',
+            'id',
+        ),
+    )
+
+    return PaginatedResponse[UserSchema](data=users, pagination=pagination)
 
 
 @router.get("/me", response_model=UserSchema)

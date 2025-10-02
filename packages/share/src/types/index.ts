@@ -389,12 +389,19 @@ export interface RegisterRequest {
 }
 
 // API Response types
+export type OrderDirection = 'asc' | 'desc';
+
 export interface PaginationInfo {
   skip: number;
   limit: number;
   total: number;
   page: number;
   pages: number;
+  total_pages?: number;
+  has_next?: boolean;
+  has_prev?: boolean;
+  order_by?: string | null;
+  order_dir?: OrderDirection;
 }
 
 // Generic paginated response type
@@ -407,6 +414,8 @@ export interface PaginatedResponse<T> {
 export interface BaseApiParams {
   skip?: number;
   limit?: number;
+  order_by?: string;
+  order_dir?: OrderDirection;
 }
 
 export interface CountriesApiParams extends BaseApiParams {
@@ -480,6 +489,8 @@ export interface MediaFilters {
   is_premium?: boolean;
   season_id?: string;
   program_id?: string;
+  order_by?: string;
+  order_dir?: OrderDirection;
 }
 
 export interface VideoFileFilters {
@@ -487,6 +498,8 @@ export interface VideoFileFilters {
   limit?: number;
   media_description_id?: string;
   encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
+  order_by?: string;
+  order_dir?: OrderDirection;
 }
 
 // v1.9 new interfaces for video file operations

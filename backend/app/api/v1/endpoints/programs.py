@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,22 +6,43 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.models.program import Program
+from app.schemas.pagination import PaginatedResponse
+from app.utils.pagination import paginate_query
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[schemas.Program])
+@router.get("", response_model=PaginatedResponse[schemas.Program])
 def read_programs(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by program name"),
+    order_by: Optional[str] = Query(None, description="Field to sort by"),
+    order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
 ) -> Any:
     """
     Retrieve programs.
     """
-    programs = crud.program.get_multi(db, skip=skip, limit=limit)
-    return programs
+    query = db.query(Program)
+
+    if q:
+        query = query.filter(Program.program_name.ilike(f"%{q.strip()}%"))
+
+    programs, pagination = paginate_query(
+        query,
+        Program,
+        skip=skip,
+        limit=limit,
+        order_by=order_by,
+        order_dir=order_dir,
+        default_sort='program_name',
+        allowed_sort_fields=('program_name', 'creation_date_utc', 'id'),
+    )
+
+    return PaginatedResponse[schemas.Program](data=programs, pagination=pagination)
 
 
 @router.post("")

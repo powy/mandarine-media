@@ -42,7 +42,7 @@ import {
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box } from '@mui/material';
-import { getScreenDescriptionJSON, regenerateScreenDescriptionJSON, reorderScreenDescriptionLists } from 'share';
+import { getScreenDescriptionJSON, regenerateScreenDescriptionJSON, reorderScreenDescriptionLists, regenerateAllScreenDescriptionJSON } from 'share';
 
 
 // Define filters for the screen content list
@@ -74,11 +74,49 @@ const ScreenContentToolbar = () => {
   );
 };
 
+// Bulk regenerate JSON button component
+const BulkRegenerateJsonButton = () => {
+  const notify = useNotify();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRegenerateAll = async () => {
+    setIsLoading(true);
+    try {
+      const result = await regenerateAllScreenDescriptionJSON();
+      notify(
+        `Successfully regenerated ${result.results.updated} screen description JSONs`,
+        { type: 'success' }
+      );
+      if (result.results.failed > 0) {
+        notify(
+          `${result.results.failed} screen descriptions failed to regenerate`,
+          { type: 'warning' }
+        );
+      }
+    } catch (error) {
+      notify(`Error regenerating all JSONs: ${error.message}`, { type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRegenerateAll}
+      disabled={isLoading}
+      label={isLoading ? "Regenerating..." : "Regenerate All JSONs"}
+      variant="outlined"
+      color="primary"
+    />
+  );
+};
+
 const ScreenContentListActions = () => (
   <TopToolbar>
     <FilterButton />
     <CreateButton />
     <ExportButton />
+    <BulkRegenerateJsonButton />
   </TopToolbar>
 );
 

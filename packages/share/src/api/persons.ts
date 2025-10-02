@@ -3,20 +3,28 @@ import { PublicPerson, PublicPersonCreate, PublicPersonUpdate, PersonsApiParams,
 
 export const personsApi = {
   getAll: async (params: PersonsApiParams = {}): Promise<PaginatedPersonsResponse> => {
-    const { skip = 0, limit = 20, profession, q } = params;
+    const { skip = 0, limit = 20, profession, q, order_by, order_dir } = params;
     const searchParams = new URLSearchParams({
       skip: skip.toString(),
       limit: limit.toString(),
     });
-    
+
     if (profession) {
       searchParams.append('profession', profession);
     }
-    
+
     if (q) {
       searchParams.append('search', q);
     }
-    
+
+    if (order_by) {
+      searchParams.append('order_by', order_by);
+    }
+
+    if (order_dir) {
+      searchParams.append('order_dir', order_dir.toLowerCase());
+    }
+
     const response = await apiClient.get(`/persons?${searchParams.toString()}`);
     return response.data as PaginatedPersonsResponse;
   },

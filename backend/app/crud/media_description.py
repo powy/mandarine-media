@@ -66,6 +66,43 @@ class CRUDMediaDescription(
             .first()
         )
 
+    def build_filter_query(
+        self,
+        db: Session,
+        *,
+        media_type: Optional[str] = None,
+        status: Optional[str] = None,
+        is_featured: Optional[bool] = None,
+        season_id: Optional[UUID] = None,
+        country_ids: Optional[List[str]] = None,
+        language_ids: Optional[List[str]] = None,
+    ):
+        query = db.query(self.model)
+
+        if media_type:
+            query = query.filter(MediaDescription.media_type == media_type)
+
+        if status:
+            query = query.filter(MediaDescription.content_status == status)
+
+        if is_featured is not None:
+            query = query.filter(MediaDescription.is_featured == is_featured)
+
+        if season_id is not None:
+            query = query.filter(MediaDescription.season_id == season_id)
+
+        if country_ids:
+            query = query.join(MediaDescription.origin_countries).filter(
+                Country.id.in_(country_ids)
+            )
+
+        if language_ids:
+            query = query.join(MediaDescription.original_languages).filter(
+                Language.id.in_(language_ids)
+            )
+
+        return query
+
     def get_multi_with_filters(
         self,
         db: Session,
@@ -78,30 +115,14 @@ class CRUDMediaDescription(
         country_ids: Optional[List[str]] = None,
         language_ids: Optional[List[str]] = None
     ) -> List[MediaDescription]:
-        query = db.query(self.model)
-
-        if media_type:
-            query = query.filter(MediaDescription.media_type == media_type)
-
-        if status:
-            query = query.filter(MediaDescription.content_status == status)
-
-        if is_featured is not None:
-            query = query.filter(MediaDescription.is_featured == is_featured)
-
-        # Filter by themes
-
-        # Filter by origin countries
-        if country_ids:
-            query = query.join(MediaDescription.origin_countries).filter(
-                Country.id.in_(country_ids)
-            )
-
-        # Filter by original languages
-        if language_ids:
-            query = query.join(MediaDescription.original_languages).filter(
-                Language.id.in_(language_ids)
-            )
+        query = self.build_filter_query(
+            db,
+            media_type=media_type,
+            status=status,
+            is_featured=is_featured,
+            country_ids=country_ids,
+            language_ids=language_ids,
+        )
 
         return query.offset(skip).limit(limit).all()
 
@@ -153,9 +174,13 @@ class CRUDMediaDescription(
                 if value:  # Only store non-empty values for relationship processing
                     relationship_data[field] = value
 
-        # Ensure slug uniqueness if provided
-        if obj_data.get("slug"):
-            obj_data["slug"] = self.ensure_unique_slug(db=db, base_slug=obj_data["slug"])
+        # Handle slug: auto-generate from title if not provided or empty
+        if not obj_data.get("slug"):
+            from app.utils.text_normalization import slugify
+            obj_data["slug"] = slugify(obj_data.get("episode_title", ""))
+
+        # Ensure slug uniqueness for all slugs (both provided and auto-generated)
+        obj_data["slug"] = self.ensure_unique_slug(db=db, base_slug=obj_data["slug"])
 
         # Create the base object
         obj_data["id"] = str(uuid4())
@@ -200,6 +225,12 @@ class CRUDMediaDescription(
         ]:
             if field in obj_data:
                 relationship_data[field] = obj_data.pop(field)
+
+        # Handle slug updates: ensure uniqueness if being updated
+        if "slug" in obj_data and obj_data["slug"]:
+            # Check if the slug is different from current one
+            if obj_data["slug"] != db_obj.slug:
+                obj_data["slug"] = self.ensure_unique_slug(db=db, base_slug=obj_data["slug"])
 
         # Update base fields
         for field, value in obj_data.items():
@@ -474,30 +505,14 @@ class CRUDMediaDescription(
         language_ids: Optional[List[str]] = None
     ) -> int:
         """Count media descriptions with filters"""
-        query = db.query(self.model)
-
-        if media_type:
-            query = query.filter(MediaDescription.media_type == media_type)
-
-        if status:
-            query = query.filter(MediaDescription.content_status == status)
-
-        if is_featured is not None:
-            query = query.filter(MediaDescription.is_featured == is_featured)
-
-        # Filter by themes
-
-        # Filter by origin countries
-        if country_ids:
-            query = query.join(MediaDescription.origin_countries).filter(
-                Country.id.in_(country_ids)
-            )
-
-        # Filter by original languages
-        if language_ids:
-            query = query.join(MediaDescription.original_languages).filter(
-                Language.id.in_(language_ids)
-            )
+        query = self.build_filter_query(
+            db,
+            media_type=media_type,
+            status=status,
+            is_featured=is_featured,
+            country_ids=country_ids,
+            language_ids=language_ids,
+        )
 
         return query.count()
 

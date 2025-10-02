@@ -29,7 +29,7 @@ export interface UserFilters extends UsersApiParams {
 
 export const usersApi = {
   getAll: async (params: UsersApiParams = {}): Promise<PaginatedUsersResponse> => {
-    const { skip = 0, limit = 20, is_active, is_admin, q } = params;
+    const { skip = 0, limit = 20, is_active, is_admin, q, order_by, order_dir } = params;
     const searchParams = new URLSearchParams({
       skip: skip.toString(),
       limit: limit.toString(),
@@ -46,7 +46,15 @@ export const usersApi = {
     if (q) {
       searchParams.append('q', q);
     }
-    
+
+    if (order_by) {
+      searchParams.append('order_by', order_by);
+    }
+
+    if (order_dir) {
+      searchParams.append('order_dir', order_dir.toLowerCase());
+    }
+
     const response = await apiClient.get(`/users?${searchParams.toString()}`);
     return response.data as PaginatedUsersResponse;
   },
@@ -61,6 +69,9 @@ export const usersApi = {
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.role && filters.role !== '') params.append('role', filters.role);
     if (filters?.search && filters.search !== '') params.append('search', filters.search);
+
+    if (filters?.order_by) params.append('order_by', filters.order_by);
+    if (filters?.order_dir) params.append('order_dir', filters.order_dir.toLowerCase());
 
     const response = await apiClient.get(`/users?${params}`);
     return response.data as UserListResponse;
