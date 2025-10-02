@@ -23,33 +23,13 @@ const Header: React.FC = () => {
     retry: 1,
   });
 
-  // Build navigation items dynamically
-  const navigationItems = [
-    // Keep "A la une" hardcoded for now as requested
-    { label: 'A la une', path: '/content' },
-
-    // Add dynamic screen descriptions
-    ...(screenDescriptions?.data || [])
-      .filter((screen) => screen.title !== 'A la une') // Avoid duplicate
-      .sort((a, b) => a.display_order - b.display_order)
-      .map((screen) => ({
-        label: screen.title,
-        path: `/screen/${screen.id}`,
-      })),
-  ];
-
-  // Fallback to static navigation if API fails
-  const fallbackItems = [
-    { label: 'A la une', path: '/content' },
-    { label: 'Films', path: '/films' },
-    { label: 'Dramas', path: '/dramas' },
-    { label: 'Tv-Shows', path: '/tv-shows' },
-    { label: 'Autre', path: '/autre' },
-  ];
-
-  const finalNavigationItems = screenDescriptions
-    ? navigationItems
-    : fallbackItems;
+  // Build navigation items dynamically from screen descriptions
+  const navigationItems = (screenDescriptions?.data || [])
+    .sort((a, b) => a.display_order - b.display_order)
+    .map((screen) => ({
+      label: screen.title,
+      path: `/screen/${screen.id}`,
+    }));
 
   const handleLogoClick = () => {
     navigate('/');
@@ -156,7 +136,7 @@ const Header: React.FC = () => {
       {/* Second line: Navigation */}
       <nav className="border-t border-gray-800">
         <div className="flex items-center px-4 py-2 gap-6 overflow-x-auto">
-          {finalNavigationItems.map((item, index) => (
+          {navigationItems.map((item, index) => (
             <button
               key={index}
               onClick={() => navigate(item.path)}

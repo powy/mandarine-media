@@ -4,13 +4,12 @@ import { MediaDescription } from '../types';
 const AUTHORIZED_COUNTRIES = [
   'FR', // France
   'GP', // Guadeloupe (French territory)
-  'MQ', // Martinique (French territory)  
+  'MQ', // Martinique (French territory)
   'RE', // Réunion (French territory)
   'GF', // French Guiana (French territory)
   'YT', // Mayotte (French territory)
   'NC', // New Caledonia (French territory)
   'PF', // French Polynesia (French territory)
-  'KR', // South Korea
   'BE', // Belgium
   'CH', // Switzerland
   'LU', // Luxembourg
@@ -75,16 +74,22 @@ function isDevelopmentEnvironment(): boolean {
 }
 
 /**
- * Fetches user's country from IP-API.com (primary service)
+ * Fetches user's country from IP-API.com (development only)
+ * Note: IP-API.com only supports HTTP, which causes mixed content issues in production
  */
 async function fetchCountryFromIPApi(): Promise<string | null> {
+  // Skip IP-API.com in production to avoid HTTP/HTTPS mixed content blocking
+  if (!isDevelopmentEnvironment()) {
+    console.warn('Skipping IP-API.com in production due to HTTP/HTTPS mixed content issues');
+    return null;
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
 
   try {
-    // Use HTTPS for production, but allow mixed content for localhost testing
-    const protocol = isDevelopmentEnvironment() ? 'http' : 'http'; // IP-API.com uses HTTP
-    
+    const protocol = 'http'; // IP-API.com only supports HTTP (development only)
+
     const response = await fetch(
       `${protocol}://ip-api.com/json/?fields=status,country,countryCode`,
       {
@@ -102,9 +107,9 @@ async function fetchCountryFromIPApi(): Promise<string | null> {
     }
 
     const data: IPApiResponse = await response.json();
-    
+
     console.log('IP-API.com response:', data);
-    
+
     if (data.status === 'success' && data.countryCode) {
       console.log('IP-API.com detected country:', data.countryCode, data.country);
       return data.countryCode;
@@ -114,12 +119,12 @@ async function fetchCountryFromIPApi(): Promise<string | null> {
   } catch (error) {
     clearTimeout(timeoutId);
     console.warn('IP-API.com failed:', error);
-    
+
     // Log more details about the error
     if (error instanceof TypeError && error.message.includes('fetch')) {
       console.warn('Network error - possibly CORS or mixed content issue');
     }
-    
+
     return null;
   }
 }
@@ -192,7 +197,7 @@ export async function getUserCountry(): Promise<string | null> {
   // Development environment fallback for testing
   if (isDevelopmentEnvironment()) {
     console.log('Development environment detected - checking geolocation services...');
-    
+
     // Try the services, but if they all fail, use a default country for testing
     let countryCode = await fetchCountryFromIPApi();
     if (countryCode) {
@@ -213,15 +218,11 @@ export async function getUserCountry(): Promise<string | null> {
     return devCountry;
   }
 
-  // Production environment - try all services
-  let countryCode = await fetchCountryFromIPApi();
-  if (countryCode) {
-    setCachedCountry(countryCode);
-    return countryCode;
-  }
+  // Production environment - prioritize HTTPS services first
+  console.log('Production environment: trying HTTPS geolocation services...');
 
-  // Try fallback service: IPGeolocation.io
-  countryCode = await fetchCountryFromIPGeolocation();
+  // Try HTTPS service first: IPGeolocation.io
+  let countryCode = await fetchCountryFromIPGeolocation();
   if (countryCode) {
     setCachedCountry(countryCode);
     return countryCode;
@@ -234,8 +235,16 @@ export async function getUserCountry(): Promise<string | null> {
     return countryCode;
   }
 
+  // Try HTTP service (will be skipped in production, but kept for completeness)
+  countryCode = await fetchCountryFromIPApi();
+  if (countryCode) {
+    setCachedCountry(countryCode);
+    return countryCode;
+  }
+
   // All methods failed in production
   console.error('All geolocation methods failed in production');
+  console.error('User will be blocked from accessing content due to geolocation verification failure');
   return null;
 }
 
