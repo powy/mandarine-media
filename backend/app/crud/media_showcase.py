@@ -141,20 +141,74 @@ class CRUDMediaShowcase(CRUDBase[MediaShowcase, MediaShowcaseCreate, MediaShowca
         return db_obj
 
     def get(self, db: Session, id: UUID) -> Optional[MediaShowcase]:
-        """Get MediaShowcase with eager-loaded relationships."""
+        """Get MediaShowcase with eager-loaded relationships including nested MediaDescription relationships."""
         return (
             db.query(MediaShowcase)
-            .options(joinedload(MediaShowcase.media_descriptions))
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.program)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.season)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_720)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_810_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1920)
+            )
             .options(joinedload(MediaShowcase.media_themes))
             .filter(MediaShowcase.id == id)
             .first()
         )
 
     def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[MediaShowcase]:
-        """Get multiple MediaShowcases with eager-loaded relationships."""
+        """Get multiple MediaShowcases with eager-loaded relationships including nested MediaDescription relationships."""
         return (
             db.query(MediaShowcase)
-            .options(joinedload(MediaShowcase.media_descriptions))
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.program)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.season)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_720)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_810_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1920)
+            )
             .options(joinedload(MediaShowcase.media_themes))
             .offset(skip)
             .limit(limit)
@@ -172,10 +226,37 @@ class CRUDMediaShowcase(CRUDBase[MediaShowcase, MediaShowcaseCreate, MediaShowca
     def get_active_showcases(
         self, db: Session, *, skip: int = 0, limit: int = 100
     ) -> List[MediaShowcase]:
-        """Get only active media showcases ordered by priority_in_screen."""
+        """Get only active media showcases ordered by priority_in_screen with nested relationships."""
         return (
             db.query(MediaShowcase)
-            .options(joinedload(MediaShowcase.media_descriptions))
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.program)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.season)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_720)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_810_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1920)
+            )
             .options(joinedload(MediaShowcase.media_themes))
             .filter(MediaShowcase.is_active == True)
             .order_by(asc(MediaShowcase.priority_in_screen), asc(MediaShowcase.title))
@@ -215,10 +296,38 @@ class CRUDMediaShowcase(CRUDBase[MediaShowcase, MediaShowcaseCreate, MediaShowca
     def get_multi_ordered(
         self, db: Session, *, skip: int = 0, limit: int = 100, active_only: bool = False
     ) -> List[MediaShowcase]:
-        """Get media showcases ordered by priority_in_screen and title."""
-        query = db.query(MediaShowcase).options(
-            joinedload(MediaShowcase.media_descriptions),
-            joinedload(MediaShowcase.media_themes)
+        """Get media showcases ordered by priority_in_screen and title with nested relationships."""
+        query = (
+            db.query(MediaShowcase)
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.program)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.season)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_720)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_810_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1920)
+            )
+            .options(joinedload(MediaShowcase.media_themes))
         )
 
         if active_only:
@@ -233,10 +342,37 @@ class CRUDMediaShowcase(CRUDBase[MediaShowcase, MediaShowcaseCreate, MediaShowca
         )
 
     def get_with_items(self, db: Session, *, showcase_id: UUID) -> Optional[MediaShowcase]:
-        """Get media showcase with its ordered media descriptions."""
+        """Get media showcase with its ordered media descriptions and nested relationships."""
         return (
             db.query(MediaShowcase)
-            .options(joinedload(MediaShowcase.media_descriptions))
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.program)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.season)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1920_720)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_810_1080)
+            )
+            .options(
+                joinedload(MediaShowcase.media_descriptions)
+                .joinedload(MediaDescription.image_1080_1920)
+            )
             .options(joinedload(MediaShowcase.media_themes))
             .filter(MediaShowcase.id == showcase_id)
             .first()
