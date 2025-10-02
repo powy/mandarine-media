@@ -42,10 +42,14 @@ import {
   AutocompleteArrayInput,
   DateInput,
   useDataProvider,
+  useInput,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, Alert, IconButton, List as MuiList, ListItem, ListItemText, ListItemSecondaryAction, TextField as MuiTextField, Button as MuiButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, Alert, IconButton, List as MuiList, ListItem, ListItemText, ListItemSecondaryAction, TextField as MuiTextField, Button as MuiButton, Autocomplete, Card, CardContent, CardMedia, CircularProgress } from '@mui/material';
 import { DragHandle, Delete } from '@mui/icons-material';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 // Import API functions from share package
 import {
   getMediaShowcases,
@@ -261,54 +265,234 @@ const RefreshJsonButton = () => {
   );
 };
 
+// Media item card with drag and drop support
+interface MediaItemData {
+  id: string;
+  episode_title?: string;
+  image_url?: string;
+  loading?: boolean;
+}
+
+const MediaItemCard: React.FC<{
+  item: MediaItemData;
+  onRemove: (id: string) => void;
+}> = ({ item, onRemove }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      sx={{
+        mb: 1,
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'grab',
+        '&:active': { cursor: 'grabbing' },
+      }}
+    >
+      <Box {...attributes} {...listeners} sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+        <DragHandle sx={{ color: 'action.active' }} />
+      </Box>
+
+      {item.loading ? (
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={60} />
+          <Typography>Loading...</Typography>
+        </Box>
+      ) : (
+        <>
+          {item.image_url ? (
+            <CardMedia
+              component="img"
+              sx={{ width: 80, height: 80, objectFit: 'cover' }}
+              image={item.image_url}
+              alt={item.episode_title || 'Media thumbnail'}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                bgcolor: 'grey.300',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                No image
+              </Typography>
+            </Box>
+          )}
+          <CardContent sx={{ flex: 1 }}>
+            <Typography variant="body1" fontWeight="medium">
+              {item.episode_title || 'Untitled'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {item.id}
+            </Typography>
+          </CardContent>
+        </>
+      )}
+
+      <IconButton
+        onClick={() => onRemove(item.id)}
+        sx={{ mr: 1 }}
+        color="error"
+        size="small"
+      >
+        <Delete />
+      </IconButton>
+    </Card>
+  );
+};
+
 // Custom component for managing media descriptions with ordering
 const MediaDescriptionManager = ({ source, ...props }) => {
-  const record = useRecordContext();
+  const { field } = useInput({ source, ...props });
   const dataProvider = useDataProvider();
   const notify = useNotify();
-  const [selectedIds, setSelectedIds] = React.useState(record?.[source] || []);
   const [manualId, setManualId] = React.useState('');
   const [manualError, setManualError] = React.useState<string | null>(null);
   const [isAddingById, setIsAddingById] = React.useState(false);
+  const [searchOptions, setSearchOptions] = React.useState([]);
+  const [searchLoading, setSearchLoading] = React.useState(false);
+  const [searchText, setSearchText] = React.useState('');
+  const [mediaItems, setMediaItems] = React.useState<MediaItemData[]>([]);
+  const [loadingItems, setLoadingItems] = React.useState<Set<string>>(new Set());
+
+  const selectedIds = field.value || [];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Fetch MediaDescription data with images when selectedIds changes
+  React.useEffect(() => {
+    const fetchMediaData = async () => {
+      if (!selectedIds.length) {
+        setMediaItems([]);
+        return;
+      }
+
+      // Create initial loading items
+      const loadingItems = selectedIds.map(id => ({
+        id,
+        loading: true,
+      }));
+      setMediaItems(loadingItems);
+
+      // Fetch each media description with its image
+      const fetchedItems = await Promise.all(
+        selectedIds.map(async (id) => {
+          try {
+            // Fetch the MediaDescription
+            const mediaDesc = await dataProvider.getOne('media-descriptions', { id });
+
+            // Try to get the 1080x1080 image first, fallback to 1920x1080
+            let imageUrl = null;
+            const imageId = mediaDesc.data.image_1080_1080_id || mediaDesc.data.image_1920_1080_id;
+
+            if (imageId) {
+              try {
+                const pictureData = await dataProvider.getOne('pictures', { id: imageId });
+                imageUrl = pictureData.data.image_url;
+              } catch (error) {
+                console.warn(`Failed to fetch picture ${imageId}:`, error);
+              }
+            }
+
+            return {
+              id,
+              episode_title: mediaDesc.data.episode_title,
+              image_url: imageUrl,
+              loading: false,
+            };
+          } catch (error) {
+            console.error(`Failed to fetch media description ${id}:`, error);
+            return {
+              id,
+              episode_title: 'Error loading',
+              image_url: null,
+              loading: false,
+            };
+          }
+        })
+      );
+
+      setMediaItems(fetchedItems);
+    };
+
+    fetchMediaData();
+  }, [selectedIds, dataProvider]);
 
   const handleAdd = (newIds) => {
     const uniqueIds = [...new Set([...selectedIds, ...newIds])];
-    setSelectedIds(uniqueIds);
-    // Update the record
-    if (props.onChange) {
-      props.onChange(uniqueIds);
-    }
+    field.onChange(uniqueIds);
   };
 
   const handleRemove = (idToRemove) => {
     const updatedIds = selectedIds.filter(id => id !== idToRemove);
-    setSelectedIds(updatedIds);
-    if (props.onChange) {
-      props.onChange(updatedIds);
-    }
+    field.onChange(updatedIds);
   };
 
   const handleReorder = (fromIndex, toIndex) => {
     const reorderedIds = [...selectedIds];
     const [removed] = reorderedIds.splice(fromIndex, 1);
     reorderedIds.splice(toIndex, 0, removed);
-    setSelectedIds(reorderedIds);
-    if (props.onChange) {
-      props.onChange(reorderedIds);
+    field.onChange(reorderedIds);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = selectedIds.indexOf(active.id as string);
+      const newIndex = selectedIds.indexOf(over.id as string);
+      const reorderedIds = arrayMove(selectedIds, oldIndex, newIndex);
+      field.onChange(reorderedIds);
     }
   };
 
-  React.useEffect(() => {
-    if (record?.[source] && JSON.stringify(record[source]) !== JSON.stringify(selectedIds)) {
-      setSelectedIds(record[source]);
+  const handleSearchChange = async (value: string) => {
+    setSearchText(value);
+    if (!value || value.length < 2) {
+      setSearchOptions([]);
+      return;
     }
-  }, [record, source]);
 
-  React.useEffect(() => {
-    if (Array.isArray(props?.value) && JSON.stringify(props.value) !== JSON.stringify(selectedIds)) {
-      setSelectedIds(props.value);
+    setSearchLoading(true);
+    try {
+      const { data } = await dataProvider.getList('media-descriptions', {
+        pagination: { page: 1, perPage: 20 },
+        filter: { episode_title: value },
+        sort: { field: 'episode_title', order: 'ASC' }
+      });
+      setSearchOptions(data || []);
+    } catch (error) {
+      notify('Error searching media descriptions', { type: 'error' });
+      setSearchOptions([]);
+    } finally {
+      setSearchLoading(false);
     }
-  }, [props?.value, selectedIds]);
+  };
 
   const handleManualAdd = async () => {
     const trimmedId = manualId.trim();
@@ -351,25 +535,42 @@ const MediaDescriptionManager = ({ source, ...props }) => {
       </Typography>
 
       {/* Add new items */}
-      <ReferenceArrayInput
-        source={source}
-        reference="media-descriptions"
-        label="Add Media Items"
-        value={selectedIds}
-        onChange={handleAdd}
-      >
-        <AutocompleteArrayInput
-          optionText="episode_title"
-          filterToQuery={searchText => ({ episode_title: searchText })}
+      <Box mb={2}>
+        <Autocomplete
+          options={searchOptions}
+          getOptionLabel={(option) => option.episode_title || ''}
+          loading={searchLoading}
+          onInputChange={(event, value) => handleSearchChange(value)}
+          onChange={(event, newValue) => {
+            if (newValue?.id) {
+              handleAdd([newValue.id]);
+              notify(
+                `Added ${newValue.episode_title || 'media description'}`,
+                { type: 'info' }
+              );
+              setSearchText('');
+              setSearchOptions([]);
+            }
+          }}
+          inputValue={searchText}
+          renderInput={(params) => (
+            <MuiTextField
+              {...params}
+              label="Search and Add Media Items"
+              helperText="Type to search media descriptions by title"
+            />
+          )}
+          noOptionsText="Type to search..."
+          filterOptions={(x) => x}
         />
-      </ReferenceArrayInput>
+      </Box>
 
       <Box mt={2}>
         <Typography variant="subtitle1" gutterBottom>
           Add by ID
         </Typography>
         <Box display="flex" gap={2} alignItems="flex-start">
-          <TextField
+          <MuiTextField
             label="Media Description ID"
             value={manualId}
             onChange={event => setManualId(event.target.value)}
@@ -389,38 +590,34 @@ const MediaDescriptionManager = ({ source, ...props }) => {
         </Box>
       </Box>
 
-      {/* Display current items with reordering */}
+      {/* Display current items with drag-and-drop reordering */}
       <Box mt={2}>
         <Typography variant="subtitle1" gutterBottom>
           Current Items (drag to reorder):
         </Typography>
-        <MuiList>
-          {selectedIds.map((id, index) => (
-            <ListItem key={id} divider>
-              <IconButton size="small">
-                <DragHandle />
-              </IconButton>
-              <ListItemText
-                primary={`Item ${index + 1}`}
-                secondary={`ID: ${id}`}
-              />
-              <ListItemSecondaryAction>
-                <IconButton
-                  edge="end"
-                  onClick={() => handleRemove(id)}
-                  size="small"
-                  color="error"
-                >
-                  <Delete />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-        </MuiList>
-        {selectedIds.length === 0 && (
+        {mediaItems.length === 0 && selectedIds.length === 0 ? (
           <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic' }}>
             No media items added yet. Use the selector above to add items.
           </Typography>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={mediaItems.map(item => item.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {mediaItems.map((item) => (
+                <MediaItemCard
+                  key={item.id}
+                  item={item}
+                  onRemove={handleRemove}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </Box>
     </Box>
