@@ -4,6 +4,7 @@ import { programsApi } from './programs';
 import { personsApi } from './persons';
 import { languagesApi } from './languages';
 import { countriesApi } from './countries';
+import { picturesApi } from './pictures';
 import { 
   MediaDescription, 
   VideoFile, 
@@ -408,6 +409,7 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
         skip: 0,
         limit: 100,
         season_id: mediaDescription.season_id,
+        media_type: 'video'  // Only fetch actual episodes
       });
 
       // Filter out the current episode
@@ -424,7 +426,56 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
           episode_title: ep.episode_title
         }))
       });
-      
+
+      // Fetch pictures for related episodes
+      console.log('🔍 getVideoScreenData: Related episodes image check:', {
+        totalRelatedEpisodes: relatedEpisodes.length,
+        episodesWithImageId: relatedEpisodes.filter(ep => ep.image_1920_1080_id).length,
+        episodeDetails: relatedEpisodes.map(ep => ({
+          id: ep.id,
+          episodeNumber: ep.episode_number,
+          title: ep.episode_title,
+          hasImageId: !!ep.image_1920_1080_id,
+          imageId: ep.image_1920_1080_id
+        }))
+      });
+
+      for (const episode of relatedEpisodes) {
+        if (episode.image_1920_1080_id) {
+          try {
+            console.log(`🔍 getVideoScreenData: Fetching picture for related episode ${episode.episode_number}:`, episode.image_1920_1080_id);
+            const picture = await picturesApi.getById(episode.image_1920_1080_id);
+            console.log(`✅ getVideoScreenData: Picture fetched for related episode ${episode.episode_number}:`, {
+              pictureId: picture.id,
+              hasImageUrl: !!picture.image_url,
+              imageUrl: picture.image_url
+            });
+            (episode as any).image_1920_1080_url = picture.image_url;
+          } catch (error) {
+            console.error('❌ getVideoScreenData: Failed to fetch picture for related episode:', {
+              episodeId: episode.id,
+              episodeNumber: episode.episode_number,
+              episodeTitle: episode.episode_title,
+              pictureId: episode.image_1920_1080_id,
+              error: error instanceof Error ? error.message : error,
+              errorDetails: error
+            });
+          }
+        }
+      }
+
+      console.log('✅ getVideoScreenData: Related episodes after picture fetch:', {
+        totalRelatedEpisodes: relatedEpisodes.length,
+        episodesWithUrls: relatedEpisodes.filter(ep => (ep as any).image_1920_1080_url).length,
+        episodeUrlDetails: relatedEpisodes.map(ep => ({
+          id: ep.id,
+          episodeNumber: ep.episode_number,
+          title: ep.episode_title,
+          hasUrl: !!(ep as any).image_1920_1080_url,
+          url: (ep as any).image_1920_1080_url
+        }))
+      });
+
       // If season has a program, get program info
       if (season.program_id) {
         program = await programsApi.getById(season.program_id);
@@ -617,22 +668,119 @@ export const getSeasonScreenData = async (seasonId: string) => {
     // Get the season information
     const season = await seasonsApi.getById(seasonId);
     console.log('✅ getSeasonScreenData: Season data received:', season);
-    
+
     // Get program information
     let program = null;
     if (season.program_id) {
       program = await programsApi.getById(season.program_id);
     }
-    
+
+    // Try to get season metadata from season's general_media_description_id
+    let synopsis = null;
+    let description = null;
+    let genres: any[] = [];
+    let releaseDate = null;
+    let seasonImageUrl = null;
+
+    if (season.general_media_description_id) {
+      try {
+        console.log('🔍 getSeasonScreenData: Fetching season general MediaDescription');
+        const seasonMediaDescription = await mediaApi.getMediaDescription(season.general_media_description_id);
+
+        synopsis = seasonMediaDescription.synopsis_text || null;
+        description = seasonMediaDescription.descriptive_summary_text || null;
+        genres = seasonMediaDescription.media_categories_list || [];
+        releaseDate = seasonMediaDescription.production_year || null;
+        // Fetch picture if season media description has one
+        if (seasonMediaDescription.image_1920_1080_id) {
+          try {
+            const picture = await picturesApi.getById(seasonMediaDescription.image_1920_1080_id);
+            seasonImageUrl = picture.image_url;
+          } catch (error) {
+            console.warn('⚠️ Failed to fetch picture for season media description');
+          }
+        }
+
+        console.log('✅ getSeasonScreenData: Got metadata from season general MediaDescription');
+      } catch (error) {
+        console.warn('⚠️ getSeasonScreenData: Failed to fetch season general MediaDescription:', error);
+      }
+    }
+
     // Get all episodes for this season using season_id filter
     const episodesResponse = await mediaApi.getMediaDescriptions({
       skip: 0,
       limit: 100,
       season_id: seasonId,
+      media_type: 'video'  // Only fetch actual episodes, exclude season descriptions
     });
 
     // Sort episodes by episode number
     const episodes = episodesResponse.data.sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+
+    // Fetch pictures for episodes
+    console.log('🔍 getSeasonScreenData: Episodes image check:', {
+      totalEpisodes: episodes.length,
+      episodesWithImageId: episodes.filter(ep => ep.image_1920_1080_id).length,
+      episodeDetails: episodes.map(ep => ({
+        id: ep.id,
+        episodeNumber: ep.episode_number,
+        title: ep.episode_title,
+        hasImageId: !!ep.image_1920_1080_id,
+        imageId: ep.image_1920_1080_id
+      }))
+    });
+
+    for (const episode of episodes) {
+      if (episode.image_1920_1080_id) {
+        try {
+          console.log(`🔍 getSeasonScreenData: Fetching picture for episode ${episode.episode_number}:`, episode.image_1920_1080_id);
+          const picture = await picturesApi.getById(episode.image_1920_1080_id);
+          console.log(`✅ getSeasonScreenData: Picture fetched for episode ${episode.episode_number}:`, {
+            pictureId: picture.id,
+            hasImageUrl: !!picture.image_url,
+            imageUrl: picture.image_url
+          });
+          (episode as any).image_1920_1080_url = picture.image_url;
+        } catch (error) {
+          console.error('❌ getSeasonScreenData: Failed to fetch picture:', {
+            episodeId: episode.id,
+            episodeNumber: episode.episode_number,
+            episodeTitle: episode.episode_title,
+            pictureId: episode.image_1920_1080_id,
+            error: error instanceof Error ? error.message : error,
+            errorDetails: error
+          });
+        }
+      }
+    }
+
+    console.log('✅ getSeasonScreenData: Episodes after picture fetch:', {
+      totalEpisodes: episodes.length,
+      episodesWithUrls: episodes.filter(ep => (ep as any).image_1920_1080_url).length,
+      episodeUrlDetails: episodes.map(ep => ({
+        id: ep.id,
+        episodeNumber: ep.episode_number,
+        title: ep.episode_title,
+        hasUrl: !!(ep as any).image_1920_1080_url,
+        url: (ep as any).image_1920_1080_url
+      }))
+    });
+
+    // Fallback to first episode metadata if season has no general_media_description
+    const firstEpisode = episodes[0];
+    if (!synopsis && !description && !genres.length && firstEpisode) {
+      synopsis = firstEpisode.synopsis_text || null;
+      description = firstEpisode.descriptive_summary_text || null;
+      genres = firstEpisode.media_categories_list || [];
+      releaseDate = firstEpisode.production_year || null;
+      console.log('✅ getSeasonScreenData: Using first episode metadata as fallback');
+    }
+
+    // Fallback for seasonImageUrl if not set from season's media_description
+    if (!seasonImageUrl && (firstEpisode as any)?.image_1920_1080_url) {
+      seasonImageUrl = (firstEpisode as any).image_1920_1080_url;
+    }
     
     // Get next and previous seasons
     let nextSeason = null;
@@ -664,16 +812,7 @@ export const getSeasonScreenData = async (seasonId: string) => {
         }
       }
     }
-    
-    // Extract season image from the first episode that has one
-    let seasonImageUrl = null;
-    for (const episode of episodes) {
-      if (episode.main_thumbnail_url) {
-        seasonImageUrl = episode.main_thumbnail_url;
-        break;
-      }
-    }
-    
+
     // Get cast and crew from all episodes (deduplicated)
     let actors: any[] = [];
     let directors: any[] = [];
@@ -755,6 +894,10 @@ export const getSeasonScreenData = async (seasonId: string) => {
       nextSeason,
       previousSeason,
       seasonImageUrl,
+      synopsis,
+      description,
+      genres,
+      releaseDate,
       actors,
       directors,
       producers,
@@ -816,30 +959,78 @@ export const getProgramScreenData = async (seasonId: string) => {
         skip: 0,
         limit: 100,
         season_id: seasonItem.id,
+        media_type: 'video'  // Only fetch actual episodes
       });
 
       // Sort episodes by episode number
       const seasonEpisodes = episodesResponse.data.sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
-      
-      // Find thumbnail for this season (1920x720 preferred, fallback to any)
+
+      // Fetch pictures for season episodes
+      console.log(`🔍 getProgramScreenData: Season ${seasonItem.season_number} episodes image check:`, {
+        seasonId: seasonItem.id,
+        totalEpisodes: seasonEpisodes.length,
+        episodesWithImageId: seasonEpisodes.filter(ep => ep.image_1920_1080_id).length,
+        episodeDetails: seasonEpisodes.map(ep => ({
+          id: ep.id,
+          episodeNumber: ep.episode_number,
+          title: ep.episode_title,
+          hasImageId: !!ep.image_1920_1080_id,
+          imageId: ep.image_1920_1080_id
+        }))
+      });
+
+      for (const episode of seasonEpisodes) {
+        if (episode.image_1920_1080_id) {
+          try {
+            console.log(`🔍 getProgramScreenData: Fetching picture for season ${seasonItem.season_number}, episode ${episode.episode_number}:`, episode.image_1920_1080_id);
+            const picture = await picturesApi.getById(episode.image_1920_1080_id);
+            console.log(`✅ getProgramScreenData: Picture fetched for season ${seasonItem.season_number}, episode ${episode.episode_number}:`, {
+              pictureId: picture.id,
+              hasImageUrl: !!picture.image_url,
+              imageUrl: picture.image_url
+            });
+            (episode as any).image_1920_1080_url = picture.image_url;
+          } catch (error) {
+            console.error('❌ getProgramScreenData: Failed to fetch picture:', {
+              seasonId: seasonItem.id,
+              seasonNumber: seasonItem.season_number,
+              episodeId: episode.id,
+              episodeNumber: episode.episode_number,
+              episodeTitle: episode.episode_title,
+              pictureId: episode.image_1920_1080_id,
+              error: error instanceof Error ? error.message : error,
+              errorDetails: error
+            });
+          }
+        }
+      }
+
+      console.log(`✅ getProgramScreenData: Season ${seasonItem.season_number} episodes after picture fetch:`, {
+        totalEpisodes: seasonEpisodes.length,
+        episodesWithUrls: seasonEpisodes.filter(ep => (ep as any).image_1920_1080_url).length,
+        episodeUrlDetails: seasonEpisodes.map(ep => ({
+          id: ep.id,
+          episodeNumber: ep.episode_number,
+          title: ep.episode_title,
+          hasUrl: !!(ep as any).image_1920_1080_url,
+          url: (ep as any).image_1920_1080_url
+        }))
+      });
+
+      // Find thumbnail for this season
       let seasonThumbnailUrl = null;
       for (const episode of seasonEpisodes) {
-        if (episode.main_thumbnail_url) {
-          seasonThumbnailUrl = episode.main_thumbnail_url;
+        if ((episode as any).image_1920_1080_url) {
+          seasonThumbnailUrl = (episode as any).image_1920_1080_url;
           break;
         }
       }
-      
-      // If this is the current season and we don't have a program image yet, 
-      // look for 1920x1080 image in media_description
+
+      // If this is the current season and we don't have a program image yet, use first episode image
       if (seasonItem.id === seasonId && !programImageUrl) {
         for (const episode of seasonEpisodes) {
-          // Check various image fields for 1920x1080 image
-          if (episode.image_fullscreen) {
-            programImageUrl = episode.image_fullscreen;
-            break;
-          } else if (episode.main_thumbnail_url) {
-            programImageUrl = episode.main_thumbnail_url;
+          if ((episode as any).image_1920_1080_url) {
+            programImageUrl = (episode as any).image_1920_1080_url;
             break;
           }
         }
@@ -857,6 +1048,7 @@ export const getProgramScreenData = async (seasonId: string) => {
       skip: 0,
       limit: 100,
       season_id: seasonId,
+      media_type: 'video'  // Only fetch actual episodes
     });
 
     // Sort episodes by episode number
@@ -995,32 +1187,71 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
       currentSeason = sortedSeasons[0];
     }
 
-    if (!currentSeason) {
-      console.log('⚠️ getProgramScreenDataByProgramId: No seasons found for program, continuing with program-only data');
+    // Try to get basic program metadata - fallback hierarchy: Program → Latest Season → Episode
+    let programImageUrl = null;
+    let synopsis = null;
+    let description = null;
+    let genres: any[] = [];
+    let releaseDate = null;
 
-      // Try to get basic program metadata from the program's general MediaDescription if available
-      let programImageUrl = null;
-      let synopsis = null;
-      let description = null;
-      let genres: any[] = [];
-      let releaseDate = null;
+    // First: Try program's general_media_description_id
+    if (program.general_media_description_id) {
+      try {
+        console.log('🔍 getProgramScreenDataByProgramId: Fetching program general MediaDescription');
+        const generalMediaDescription = await mediaApi.getMediaDescription(program.general_media_description_id);
 
-      if (program.general_media_description_id) {
+        synopsis = generalMediaDescription.synopsis_text || null;
+        description = generalMediaDescription.descriptive_summary_text || null;
+        genres = generalMediaDescription.media_categories_list || [];
+        releaseDate = generalMediaDescription.production_year || null;
+        // Fetch picture if program media description has one
+        if (generalMediaDescription.image_1920_1080_id) {
+          try {
+            const picture = await picturesApi.getById(generalMediaDescription.image_1920_1080_id);
+            programImageUrl = picture.image_url;
+          } catch (error) {
+            console.warn('⚠️ Failed to fetch picture for program media description');
+          }
+        }
+
+        console.log('✅ getProgramScreenDataByProgramId: Got metadata from program general MediaDescription');
+      } catch (error) {
+        console.warn('⚠️ getProgramScreenDataByProgramId: Failed to fetch program general MediaDescription:', error);
+      }
+    }
+    // Second: Try latest season's general_media_description_id (if no program metadata)
+    else if (allSeasons.length > 0) {
+      const latestSeason = [...allSeasons].sort((a, b) => b.season_number - a.season_number)[0];
+
+      if (latestSeason.general_media_description_id) {
         try {
-          console.log('🔍 getProgramScreenDataByProgramId: Fetching general MediaDescription for metadata');
-          const generalMediaDescription = await mediaApi.getMediaDescription(program.general_media_description_id);
+          console.log('🔍 getProgramScreenDataByProgramId: Fetching latest season general MediaDescription');
+          const seasonMediaDescription = await mediaApi.getMediaDescription(latestSeason.general_media_description_id);
 
-          synopsis = generalMediaDescription.synopsis_text || null;
-          description = generalMediaDescription.descriptive_summary_text || null;
-          genres = generalMediaDescription.media_categories_list || [];
-          releaseDate = generalMediaDescription.production_year || null;
-          programImageUrl = generalMediaDescription.main_thumbnail_url || null;
+          synopsis = seasonMediaDescription.synopsis_text || null;
+          description = seasonMediaDescription.descriptive_summary_text || null;
+          genres = seasonMediaDescription.media_categories_list || [];
+          releaseDate = seasonMediaDescription.production_year || null;
+          // Fetch picture if season media description has one
+          if (seasonMediaDescription.image_1920_1080_id) {
+            try {
+              const picture = await picturesApi.getById(seasonMediaDescription.image_1920_1080_id);
+              programImageUrl = picture.image_url;
+            } catch (error) {
+              console.warn('⚠️ Failed to fetch picture for season media description');
+            }
+          }
 
-          console.log('✅ getProgramScreenDataByProgramId: Got metadata from general MediaDescription');
+          console.log('✅ getProgramScreenDataByProgramId: Got metadata from latest season general MediaDescription');
         } catch (error) {
-          console.warn('⚠️ getProgramScreenDataByProgramId: Failed to fetch general MediaDescription:', error);
+          console.warn('⚠️ getProgramScreenDataByProgramId: Failed to fetch season general MediaDescription:', error);
         }
       }
+    }
+
+    // If no seasons exist, return program-only data with whatever metadata we found
+    if (!currentSeason) {
+      console.log('⚠️ getProgramScreenDataByProgramId: No seasons found for program, returning program-only data');
 
       return {
         program,
@@ -1046,21 +1277,75 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
     const mediaDescriptionsResponse = await mediaApi.getMediaDescriptions({
       skip: 0,
       limit: 100,
-      season_id: currentSeason.id
+      season_id: currentSeason.id,
+      media_type: 'video'  // Only fetch actual episodes
     });
     console.log('✅ getProgramScreenDataByProgramId: Media descriptions received:', mediaDescriptionsResponse);
-    
+
     const episodes = mediaDescriptionsResponse.data || [];
 
-    // Extract common metadata from episodes
-    const firstEpisode = episodes[0];
-    const synopsis = firstEpisode?.synopsis_text || null;
-    const description = firstEpisode?.descriptive_summary_text || null;
-    const genres = firstEpisode?.media_categories_list || [];
-    const releaseDate = firstEpisode?.production_year || null;
+    // Fetch pictures for episodes
+    console.log('🔍 getProgramScreenDataByProgramId: Episodes image check:', {
+      totalEpisodes: episodes.length,
+      episodesWithImageId: episodes.filter(ep => ep.image_1920_1080_id).length,
+      episodeDetails: episodes.map(ep => ({
+        id: ep.id,
+        episodeNumber: ep.episode_number,
+        title: ep.episode_title,
+        hasImageId: !!ep.image_1920_1080_id,
+        imageId: ep.image_1920_1080_id
+      }))
+    });
 
-    // Get program image from the first episode or season
-    const programImageUrl = firstEpisode?.main_thumbnail_url || null;
+    for (const episode of episodes) {
+      if (episode.image_1920_1080_id) {
+        try {
+          console.log(`🔍 getProgramScreenDataByProgramId: Fetching picture for episode ${episode.episode_number}:`, episode.image_1920_1080_id);
+          const picture = await picturesApi.getById(episode.image_1920_1080_id);
+          console.log(`✅ getProgramScreenDataByProgramId: Picture fetched for episode ${episode.episode_number}:`, {
+            pictureId: picture.id,
+            hasImageUrl: !!picture.image_url,
+            imageUrl: picture.image_url
+          });
+          (episode as any).image_1920_1080_url = picture.image_url;
+        } catch (error) {
+          console.error('❌ getProgramScreenDataByProgramId: Failed to fetch picture for episode:', {
+            episodeId: episode.id,
+            episodeNumber: episode.episode_number,
+            episodeTitle: episode.episode_title,
+            pictureId: episode.image_1920_1080_id,
+            error: error instanceof Error ? error.message : error,
+            errorDetails: error
+          });
+        }
+      }
+    }
+
+    console.log('✅ getProgramScreenDataByProgramId: Episodes after picture fetch:', {
+      totalEpisodes: episodes.length,
+      episodesWithUrls: episodes.filter(ep => (ep as any).image_1920_1080_url).length,
+      episodeUrlDetails: episodes.map(ep => ({
+        id: ep.id,
+        episodeNumber: ep.episode_number,
+        title: ep.episode_title,
+        hasUrl: !!(ep as any).image_1920_1080_url,
+        url: (ep as any).image_1920_1080_url
+      }))
+    });
+
+    // Third: If still no metadata, extract from first episode as final fallback
+    const firstEpisode = episodes[0];
+    if (!synopsis && !description && !genres.length) {
+      synopsis = firstEpisode?.synopsis_text || null;
+      description = firstEpisode?.descriptive_summary_text || null;
+      genres = firstEpisode?.media_categories_list || [];
+      releaseDate = firstEpisode?.production_year || null;
+      programImageUrl = (firstEpisode as any)?.image_1920_1080_url || programImageUrl;
+      console.log('✅ getProgramScreenDataByProgramId: Using first episode metadata as fallback');
+    } else if (!programImageUrl) {
+      // If we have metadata but no image, try to get image from first episode
+      programImageUrl = (firstEpisode as any)?.image_1920_1080_url || null;
+    }
 
     // Collect unique person IDs across all roles
     const actorIds = new Set<string>();
@@ -1105,12 +1390,37 @@ export const getProgramScreenDataByProgramId = async (programId: string) => {
         const seasonEpisodes = await mediaApi.getMediaDescriptions({
           skip: 0,
           limit: 1, // Just need the first episode for thumbnail
-          season_id: season.id
+          season_id: season.id,
+          media_type: 'video'  // Only fetch actual episodes
         });
-        
+
         const episodeCount = seasonEpisodes.pagination?.total || 0;
-        const thumbnailUrl = seasonEpisodes.data?.[0]?.main_thumbnail_url || null;
-        
+        let thumbnailUrl = null;
+
+        // Fetch picture for first episode if it has one
+        const firstSeasonEpisode = seasonEpisodes.data?.[0];
+        if (firstSeasonEpisode?.image_1920_1080_id) {
+          try {
+            console.log(`🔍 getProgramScreenDataByProgramId: Fetching season ${season.season_number} thumbnail picture:`, firstSeasonEpisode.image_1920_1080_id);
+            const picture = await picturesApi.getById(firstSeasonEpisode.image_1920_1080_id);
+            console.log(`✅ getProgramScreenDataByProgramId: Season ${season.season_number} thumbnail picture fetched:`, {
+              pictureId: picture.id,
+              hasImageUrl: !!picture.image_url,
+              imageUrl: picture.image_url
+            });
+            thumbnailUrl = picture.image_url;
+          } catch (error) {
+            console.error('❌ getProgramScreenDataByProgramId: Failed to fetch season thumbnail picture:', {
+              seasonId: season.id,
+              seasonNumber: season.season_number,
+              episodeId: firstSeasonEpisode.id,
+              pictureId: firstSeasonEpisode.image_1920_1080_id,
+              error: error instanceof Error ? error.message : error,
+              errorDetails: error
+            });
+          }
+        }
+
         return {
           ...season,
           episodeCount,

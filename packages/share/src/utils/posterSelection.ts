@@ -1,5 +1,6 @@
 import { MediaDescription, VideoFile, Picture } from '../types';
 import { picturesApi } from '../api/pictures';
+import { usePicture } from '../hooks/usePicture';
 
 /**
  * Determines if a video is horizontal or vertical based on its dimensions
@@ -66,9 +67,9 @@ export function getPosterUrlSync(
   pictures: Record<string, Picture>
 ): string | null {
   const orientation = getVideoOrientation(videoFile);
-  
+
   let imageId: string | null = null;
-  
+
   if (orientation === 'horizontal' && mediaDescription.image_1920_1080_id) {
     // For horizontal videos, prefer 1920x1080 image
     imageId = mediaDescription.image_1920_1080_id;
@@ -76,10 +77,46 @@ export function getPosterUrlSync(
     // For vertical videos, prefer 1080x1920 image
     imageId = mediaDescription.image_1080_1920_id;
   }
-  
+
   if (imageId && pictures[imageId]) {
     return pictures[imageId].image_url;
   }
-  
+
   return null;
+}
+
+/**
+ * React hook to get the appropriate poster URL with React Query caching
+ * Use this in React components for automatic caching and re-fetching
+ *
+ * @param mediaDescription - The media description containing image references
+ * @param videoFile - The video file to determine orientation
+ * @returns Object with poster URL, loading state, and error
+ *
+ * @example
+ * const { posterUrl, isLoading, error } = usePosterUrl(mediaDescription, videoFile);
+ */
+export function usePosterUrl(
+  mediaDescription: MediaDescription | null,
+  videoFile: VideoFile | null
+) {
+  const orientation = getVideoOrientation(videoFile);
+
+  let imageId: string | null = null;
+
+  if (mediaDescription) {
+    if (orientation === 'horizontal' && mediaDescription.image_1920_1080_id) {
+      imageId = mediaDescription.image_1920_1080_id;
+    } else if (orientation === 'vertical' && mediaDescription.image_1080_1920_id) {
+      imageId = mediaDescription.image_1080_1920_id;
+    }
+  }
+
+  const { data: picture, isLoading, error } = usePicture(imageId);
+
+  return {
+    posterUrl: picture?.image_url || null,
+    isLoading,
+    error,
+  };
 }

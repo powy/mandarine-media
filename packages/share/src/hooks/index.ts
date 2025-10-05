@@ -10,3 +10,4 @@ export * from './useMediaShowcases';
 export * from './useProgramScreen';
 export { useMediaShowcase as useMediaShowcaseLogic } from './useMediaShowcase';
 export * from './useContentList';
+export * from './usePicture';

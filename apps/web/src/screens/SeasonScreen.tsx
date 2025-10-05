@@ -328,9 +328,9 @@ const SeasonScreen: React.FC = () => {
 
                   {/* Episode Thumbnail */}
                   <div className="flex-shrink-0 w-32 h-20 ml-4 mr-4">
-                    {episode.main_thumbnail_url ? (
+                    {episode.image_1920_1080_url ? (
                       <img
-                        src={episode.main_thumbnail_url}
+                        src={episode.image_1920_1080_url}
                         alt={episode.episode_title}
                         className="w-full h-full object-cover rounded"
                       />

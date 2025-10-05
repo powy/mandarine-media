@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MuxPlayer from '@mux/mux-player-react';
-import { getVideoScreenData, getPosterUrl, apiClient, useAuth, useRegionAccessById } from 'share';
+import { getVideoScreenData, getPosterUrl, apiClient, useAuth, useRegionAccessById, resolveMediaDescriptionId } from 'share';
 import type { MediaDescription, VideoFile, Program, Season, PublicPerson, Language, Country } from 'share';
 
 interface VideoScreenData {
@@ -27,11 +27,51 @@ const VideoScreen: React.FC = () => {
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [playbackToken, setPlaybackToken] = useState<string | null>(null);
   const [drmToken, setDrmToken] = useState<string | null>(null);
-  
+  const [isResolvingMediaType, setIsResolvingMediaType] = useState<boolean>(true);
+
   const { isAuthenticated } = useAuth();
 
   // Check region access using video ID
   const regionAccess = useRegionAccessById(id || '');
+
+  // Resolve MediaDescription type and redirect if necessary
+  useEffect(() => {
+    const checkMediaType = async () => {
+      if (!id) {
+        setIsResolvingMediaType(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 VideoScreen: Checking media type for ID:', id);
+        const resolution = await resolveMediaDescriptionId(id);
+
+        console.log('✅ VideoScreen: Media type resolved:', {
+          isMediaDescription: resolution.isMediaDescription,
+          mediaType: resolution.mediaType,
+          redirectPath: resolution.redirectPath
+        });
+
+        // If this is a season or program MediaDescription, redirect
+        if (resolution.isMediaDescription && resolution.redirectPath) {
+          if (resolution.mediaType === 'season' || resolution.mediaType === 'program') {
+            console.log('🔄 VideoScreen: Redirecting to appropriate screen:', resolution.redirectPath);
+            navigate(resolution.redirectPath, { replace: true });
+            return; // Don't set isResolvingMediaType to false - we're redirecting
+          }
+        }
+
+        // Valid video type or not a MediaDescription - proceed with loading
+        setIsResolvingMediaType(false);
+      } catch (error) {
+        console.error('❌ VideoScreen: Error resolving media type:', error);
+        // On error, assume it's a valid video ID and proceed
+        setIsResolvingMediaType(false);
+      }
+    };
+
+    checkMediaType();
+  }, [id, navigate]);
 
   const {
     data: videoData,
@@ -41,10 +81,10 @@ const VideoScreen: React.FC = () => {
     queryKey: ['video-screen', id],
     queryFn: async () => {
       if (!id) throw new Error('Video ID is required');
-      
+
       console.log('🔍 VideoScreen: Starting getVideoScreenData for ID:', id);
       console.log('🔍 VideoScreen: Authentication state:', { isAuthenticated });
-      
+
       try {
         const result = await getVideoScreenData(id);
         console.log('✅ VideoScreen: getVideoScreenData success:', {
@@ -71,7 +111,7 @@ const VideoScreen: React.FC = () => {
         throw fetchError;
       }
     },
-    enabled: !!id,
+    enabled: !!id && !isResolvingMediaType,
   });
 
   useEffect(() => {
@@ -219,6 +259,10 @@ const VideoScreen: React.FC = () => {
     navigate(`/video/${episodeId}`);
   };
 
+  const handleSeasonClick = (seasonId: string) => {
+    navigate(`/season/${seasonId}`);
+  };
+
   // Extract playback ID from Mux URL (based on alpha app implementation)
   const extractPlaybackId = (input: string): string | null => {
     if (!input) return null;
@@ -294,10 +338,12 @@ const VideoScreen: React.FC = () => {
     return null;
   };
 
-  if (isLoading) {
+  if (isResolvingMediaType || isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-kyool-blue">Chargement de la vidéo...</div>
+        <div className="text-kyool-blue">
+          {isResolvingMediaType ? 'Vérification du type de contenu...' : 'Chargement de la vidéo...'}
+        </div>
       </div>
     );
   }
@@ -587,14 +633,15 @@ const VideoScreen: React.FC = () => {
             {mediaDescription.episode_title}
           </h1>
           
-          {/* Program and Season Info */}
-          {program && (
+          {/* Season and Episode Info */}
+          {season && mediaDescription.episode_number && (
             <div className="mb-6">
-              <h2 className="text-xl text-gray-300">
-                {program.program_name}
-                {season && ` - Saison ${season.season_number}`}
-                {mediaDescription.episode_number && ` - Épisode ${mediaDescription.episode_number}`}
-              </h2>
+              <button
+                onClick={() => handleSeasonClick(season.id)}
+                className="text-xl text-gray-300 hover:text-kyool-blue transition-colors cursor-pointer"
+              >
+                {season.season_name} - Épisode {mediaDescription.episode_number}
+              </button>
             </div>
           )}
 
@@ -758,7 +805,8 @@ const VideoScreen: React.FC = () => {
             </div>
           )}
 
-          {/* Internal Section */}
+          {/* Internal Section - Hidden from display */}
+          {/*
           {(mediaDescription.seo_title || mediaDescription.seo_description ||
             mediaDescription.seo_keywords_text_list?.length ||
             mediaDescription.available_countries?.length || mediaDescription.eligible_plans?.length ||
@@ -766,7 +814,7 @@ const VideoScreen: React.FC = () => {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-kyool-blue mb-3">Informations internes</h3>
               <div className="space-y-3">
-                {/* SEO Subsection */}
+                {/* SEO Subsection *\/}
                 {(mediaDescription.seo_title || mediaDescription.seo_description || mediaDescription.seo_keywords_text_list?.length) && (
                   <div>
                     <h4 className="text-md font-semibold text-gray-300 mb-2">SEO</h4>
@@ -793,7 +841,7 @@ const VideoScreen: React.FC = () => {
                   </div>
                 )}
 
-                {/* Other Internal Info */}
+                {/* Other Internal Info *\/}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   {mediaDescription.available_countries?.length > 0 && (
                     <div>
@@ -827,8 +875,10 @@ const VideoScreen: React.FC = () => {
               </div>
             </div>
           )}
+          */}
 
-          {/* Descriptive Summary */}
+          {/* Descriptive Summary - Hidden from display */}
+          {/*
           {mediaDescription.descriptive_summary_text && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-kyool-blue mb-2">Résumé descriptif</h3>
@@ -837,10 +887,11 @@ const VideoScreen: React.FC = () => {
               </p>
             </div>
           )}
+          */}
         </div>
 
-        {/* Other Episodes Section */}
-        {relatedEpisodes.length > 0 && (
+        {/* Other Episodes Section - Hidden for now, logic kept for navigation buttons */}
+        {/* {relatedEpisodes.length > 0 && (
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-kyool-blue mb-4">
               {season ? `Autres épisodes de la saison ${season.season_number}` : 'Autres épisodes'}
@@ -852,10 +903,9 @@ const VideoScreen: React.FC = () => {
                   onClick={() => handleEpisodeClick(episode.id)}
                   className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-700 transition-colors"
                 >
-                  {/* Episode Thumbnail */}
-                  {episode.main_thumbnail_url ? (
+                  {episode.image_1920_1080_url ? (
                     <img
-                      src={episode.main_thumbnail_url}
+                      src={episode.image_1920_1080_url}
                       alt={episode.episode_title}
                       className="w-full h-32 object-cover"
                     />
@@ -864,8 +914,7 @@ const VideoScreen: React.FC = () => {
                       <span className="text-gray-400">Pas d'image</span>
                     </div>
                   )}
-                  
-                  {/* Episode Info */}
+
                   <div className="p-3">
                     <h4 className="font-semibold text-white text-sm mb-1 truncate">
                       {episode.episode_number && `Ép. ${episode.episode_number}: `}
@@ -881,7 +930,7 @@ const VideoScreen: React.FC = () => {
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

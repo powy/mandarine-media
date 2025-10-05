@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from 'share';
 import kyoolLogo from '../assets/kyool_black.svg';
 
@@ -7,16 +7,18 @@ const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showError, setShowError] = useState(false);
-  
+
   const { login, isLoggingIn, loginError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from || '/';
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ const LoginScreen: React.FC = () => {
 
     try {
       await login({ email, password });
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (error) {
       setShowError(true);
     }
@@ -33,6 +35,28 @@ const LoginScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center text-kyool-blue hover:text-white transition-colors"
+          aria-label="Retour"
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Retour
+        </button>
+
         {/* Logo */}
         <div className="text-center mb-8">
           <img src={kyoolLogo} alt="KYOOL" className="h-12 mx-auto mb-4" />

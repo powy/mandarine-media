@@ -326,6 +326,19 @@ class MediaDescriptionList(BaseModel):
     season_id: Optional[UUID] = None
     episode_number: Optional[int] = None
 
+    # Image fields - needed for episode/season list displays
+    image_1920_1080_id: Optional[UUID] = None
+    image_1920_720_id: Optional[UUID] = None
+    image_1080_1080_id: Optional[UUID] = None
+    image_810_1080_id: Optional[UUID] = None
+    image_1080_1920_id: Optional[UUID] = None
+
+    # Media categories - lightweight enum list for filtering
+    media_categories_list: Optional[List[MediaCategoryEnum]] = None
+
+    # Media themes - relationship objects for filtering
+    media_themes: Optional[List[MediaThemeSimple]] = []
+
     model_config = ConfigDict(from_attributes=True)
 
 

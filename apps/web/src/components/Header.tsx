@@ -39,7 +39,7 @@ const Header: React.FC = () => {
     if (isAuthenticated) {
       setShowUserMenu(!showUserMenu);
     } else {
-      navigate('/login');
+      navigate('/login', { state: { from: location.pathname } });
     }
   };
 

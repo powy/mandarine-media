@@ -109,7 +109,11 @@ export interface MediaDescription {
   rating_system?: string;
   trailer_url?: string;
   secondary_thumbnail_url?: string;
+  /** @deprecated Use image_1920_1080_url instead (fetched from image_1920_1080_id) */
   main_thumbnail_url?: string;
+
+  // Computed fields (fetched on-demand)
+  image_1920_1080_url?: string;
   // public_person_id_list removed in v1.12
   audience_category_id?: string;
   // media_categories_id_list removed in v1.12 (replaced by media_categories_list)
@@ -333,6 +337,7 @@ export interface Season {
   season_name: string;  // API 1.13: season name field
   season_number: number;
   program_id?: string;  // API 1.13: optional parent program
+  general_media_description_id?: string;  // Link to season's general media description
   // Relationships
   program?: Program;
   media_descriptions?: MediaDescription[];
@@ -669,11 +674,15 @@ export interface ProgramUpdate {
 export interface SeasonCreate {
   program_id?: string;  // v1.12: now optional
   season_number: number;
+  season_name?: string;
+  general_media_description_id?: string;
 }
 
 export interface SeasonUpdate {
   program_id?: string;  // v1.12: now optional
   season_number?: number;
+  season_name?: string;
+  general_media_description_id?: string;
 }
 
 export interface LanguageCreate {
