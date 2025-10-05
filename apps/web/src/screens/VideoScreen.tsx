@@ -132,23 +132,43 @@ const VideoScreen: React.FC = () => {
   // Fetch playback token if video has signed playback policy
   useEffect(() => {
     const fetchTokens = async () => {
-      if (videoData?.videoFile?.id && 
-          (videoData.videoFile.playback_policy === 'signed' || 
+      // Only fetch tokens if user is authenticated and region is authorized
+      if (!isAuthenticated) {
+        console.log('Skipping token fetch: user not authenticated');
+        setPlaybackToken(null);
+        setDrmToken(null);
+        return;
+      }
+
+      if (regionAccess.isLoading) {
+        console.log('Skipping token fetch: region check in progress');
+        return; // Don't set tokens to null yet, wait for region check
+      }
+
+      if (regionAccess.isAuthorized === false) {
+        console.log('Skipping token fetch: region not authorized');
+        setPlaybackToken(null);
+        setDrmToken(null);
+        return;
+      }
+
+      if (videoData?.videoFile?.id &&
+          (videoData.videoFile.playback_policy === 'signed' ||
            videoData.videoFile.playback_policy === 'drm')) {
         try {
           console.log('Video requires signed playback, fetching tokens...');
           console.log('Video file ID:', videoData.videoFile.id);
           console.log('Playback policy:', videoData.videoFile.playback_policy);
-          
+
           // Fetch playback token
           const playbackResponse = await apiClient.post(
             `/video-files/${videoData.videoFile.id}/playback-token`,
             {},
             { params: { expiration_minutes: 120 } }
           );
-          
+
           console.log('Playback token response:', playbackResponse.data);
-          
+
           if (playbackResponse.data?.token) {
             console.log('Playback token received successfully');
             console.log('Playback token (first 50 chars):', playbackResponse.data.token.substring(0, 50) + '...');
@@ -156,19 +176,19 @@ const VideoScreen: React.FC = () => {
           } else {
             console.error('No playback token in response:', playbackResponse.data);
           }
-          
+
           // If DRM policy, also fetch DRM token
           if (videoData.videoFile.playback_policy === 'drm') {
             console.log('Video requires DRM, fetching DRM token...');
-            
+
             const drmResponse = await apiClient.post(
               `/video-files/${videoData.videoFile.id}/drm-token`,
               {},
               { params: { expiration_minutes: 120 } }
             );
-            
+
             console.log('DRM token response:', drmResponse.data);
-            
+
             if (drmResponse.data?.drm_token) {
               console.log('DRM token received successfully');
               console.log('DRM token (first 50 chars):', drmResponse.data.drm_token.substring(0, 50) + '...');
@@ -191,9 +211,9 @@ const VideoScreen: React.FC = () => {
         setDrmToken(null);
       }
     };
-    
+
     fetchTokens();
-  }, [videoData?.videoFile?.id, videoData?.videoFile?.playback_policy]);
+  }, [videoData?.videoFile?.id, videoData?.videoFile?.playback_policy, isAuthenticated, regionAccess.isLoading, regionAccess.isAuthorized]);
 
   const handleEpisodeClick = (episodeId: string) => {
     navigate(`/video/${episodeId}`);
@@ -311,9 +331,9 @@ const VideoScreen: React.FC = () => {
   const playbackId = videoFile ? getPlaybackId(videoFile) : null;
   const needsToken = videoFile?.playback_policy === 'signed' || videoFile?.playback_policy === 'drm';
   const needsDrmToken = videoFile?.playback_policy === 'drm';
-  const isReadyToPlay = playbackId && 
-    (!needsToken || playbackToken !== undefined) && 
-    (!needsDrmToken || drmToken !== undefined);
+  const isReadyToPlay = playbackId &&
+    (!needsToken || playbackToken != null) &&
+    (!needsDrmToken || drmToken != null);
   
   // Debug logging
   console.log('Video Screen Debug:', {
@@ -457,12 +477,12 @@ const VideoScreen: React.FC = () => {
                 return <MuxPlayer {...muxPlayerProps} />;
               })()}
             </div>
-          ) : videoFile && playbackId && needsToken && (playbackToken === undefined || (needsDrmToken && drmToken === undefined)) ? (
+          ) : videoFile && playbackId && needsToken && (playbackToken == null || (needsDrmToken && drmToken == null)) ? (
             <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
               <div className="text-center">
                 <p className="text-blue-400 text-xl mb-2">Chargement de l'autorisation...</p>
                 <p className="text-gray-400">
-                  {needsDrmToken 
+                  {needsDrmToken
                     ? 'Récupération des tokens de lecture sécurisée et DRM'
                     : 'Récupération du token de lecture sécurisée'}
                 </p>

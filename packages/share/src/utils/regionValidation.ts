@@ -19,16 +19,11 @@ const AUTHORIZED_COUNTRIES = [
 // Cache key for session storage
 const COUNTRY_CACHE_KEY = 'user_country_code';
 
-// Interfaces for API responses
-interface IPApiResponse {
-  status: string;
-  country: string;
-  countryCode: string;
-}
-
-interface IPGeolocationResponse {
-  country_code2: string;
+// Interface for ipapi.co API response
+interface IPApiCoResponse {
+  country_code: string;
   country_name: string;
+  ip: string;
 }
 
 interface RegionAccessResult {
@@ -74,71 +69,16 @@ function isDevelopmentEnvironment(): boolean {
 }
 
 /**
- * Fetches user's country from IP-API.com (development only)
- * Note: IP-API.com only supports HTTP, which causes mixed content issues in production
+ * Fetches user's country from ipapi.co (free HTTPS service, no API key required)
+ * Free tier: 1000 requests per day
  */
-async function fetchCountryFromIPApi(): Promise<string | null> {
-  // Skip IP-API.com in production to avoid HTTP/HTTPS mixed content blocking
-  if (!isDevelopmentEnvironment()) {
-    console.warn('Skipping IP-API.com in production due to HTTP/HTTPS mixed content issues');
-    return null;
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-  try {
-    const protocol = 'http'; // IP-API.com only supports HTTP (development only)
-
-    const response = await fetch(
-      `${protocol}://ip-api.com/json/?fields=status,country,countryCode`,
-      {
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
-    );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data: IPApiResponse = await response.json();
-
-    console.log('IP-API.com response:', data);
-
-    if (data.status === 'success' && data.countryCode) {
-      console.log('IP-API.com detected country:', data.countryCode, data.country);
-      return data.countryCode;
-    }
-
-    throw new Error(`Invalid response status: ${data.status}`);
-  } catch (error) {
-    clearTimeout(timeoutId);
-    console.warn('IP-API.com failed:', error);
-
-    // Log more details about the error
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.warn('Network error - possibly CORS or mixed content issue');
-    }
-
-    return null;
-  }
-}
-
-/**
- * Fetches user's country from IPGeolocation.io (fallback service)
- */
-async function fetchCountryFromIPGeolocation(): Promise<string | null> {
+async function fetchCountryFromIPApiCo(): Promise<string | null> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
 
   try {
     const response = await fetch(
-      'https://api.ipgeolocation.io/ipgeo?apiKey=free',
+      'https://ipapi.co/json/',
       {
         signal: controller.signal,
         headers: {
@@ -153,17 +93,17 @@ async function fetchCountryFromIPGeolocation(): Promise<string | null> {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const data: IPGeolocationResponse = await response.json();
-    
-    if (data.country_code2) {
-      console.log('IPGeolocation.io detected country:', data.country_code2, data.country_name);
-      return data.country_code2;
+    const data: IPApiCoResponse = await response.json();
+
+    if (data.country_code) {
+      console.log('ipapi.co detected country:', data.country_code, data.country_name);
+      return data.country_code;
     }
 
-    throw new Error('Invalid response: missing country_code2');
+    throw new Error('Invalid response: missing country_code');
   } catch (error) {
     clearTimeout(timeoutId);
-    console.warn('IPGeolocation.io failed:', error);
+    console.warn('ipapi.co failed:', error);
     return null;
   }
 }
@@ -185,6 +125,7 @@ function getCountryFromCloudflare(): string | null {
 
 /**
  * Gets user's country code using multiple fallback methods
+ * Uses same logic for both development and production environments
  */
 export async function getUserCountry(): Promise<string | null> {
   // Check cache first
@@ -194,35 +135,11 @@ export async function getUserCountry(): Promise<string | null> {
     return cachedCountry;
   }
 
-  // Development environment fallback for testing
-  if (isDevelopmentEnvironment()) {
-    console.log('Development environment detected - checking geolocation services...');
+  const isDev = isDevelopmentEnvironment();
+  console.log(`${isDev ? 'Development' : 'Production'} environment: checking geolocation services...`);
 
-    // Try the services, but if they all fail, use a default country for testing
-    let countryCode = await fetchCountryFromIPApi();
-    if (countryCode) {
-      setCachedCountry(countryCode);
-      return countryCode;
-    }
-
-    countryCode = await fetchCountryFromIPGeolocation();
-    if (countryCode) {
-      setCachedCountry(countryCode);
-      return countryCode;
-    }
-
-    // All services failed in development - use France as default for testing
-    console.warn('All geolocation services failed in development. Using FR for testing.');
-    const devCountry = 'FR'; // France - authorized country for testing
-    setCachedCountry(devCountry);
-    return devCountry;
-  }
-
-  // Production environment - prioritize HTTPS services first
-  console.log('Production environment: trying HTTPS geolocation services...');
-
-  // Try HTTPS service first: IPGeolocation.io
-  let countryCode = await fetchCountryFromIPGeolocation();
+  // Try HTTPS service first: ipapi.co (free, no API key required, works everywhere)
+  let countryCode = await fetchCountryFromIPApiCo();
   if (countryCode) {
     setCachedCountry(countryCode);
     return countryCode;
@@ -235,14 +152,15 @@ export async function getUserCountry(): Promise<string | null> {
     return countryCode;
   }
 
-  // Try HTTP service (will be skipped in production, but kept for completeness)
-  countryCode = await fetchCountryFromIPApi();
-  if (countryCode) {
-    setCachedCountry(countryCode);
-    return countryCode;
+  // Development-only: Fallback to France for testing when all services fail
+  if (isDev) {
+    console.warn('All geolocation services failed in development. Using FR for testing.');
+    const devCountry = 'FR'; // France - authorized country for testing
+    setCachedCountry(devCountry);
+    return devCountry;
   }
 
-  // All methods failed in production
+  // Production: All methods failed - block access
   console.error('All geolocation methods failed in production');
   console.error('User will be blocked from accessing content due to geolocation verification failure');
   return null;
@@ -261,21 +179,28 @@ export function isCountryAuthorized(countryCode: string): boolean {
  * Future: will prioritize mediaDescription.available_countries_list when available
  */
 export async function checkRegionAccess(_mediaDescription: MediaDescription): Promise<RegionAccessResult> {
+  // Temporary: bypass all region checks until Cloudflare headers are configured
+  console.log('Region check bypassed - allowing all access (temporary until Cloudflare configuration)');
+  return {
+    isAuthorized: true
+  };
+
+  /* Disabled temporarily - re-enable when Cloudflare headers are configured
   try {
     const countryCode = await getUserCountry();
-    
+
     if (!countryCode) {
-      // All geolocation services failed - default to BLOCK with verification failed error
+      // Temporary fallback - allows playback when geolocation fails, until Cloudflare headers are configured
+      console.warn('Region verification failed, allowing playback as temporary fallback');
       return {
-        isAuthorized: false,
-        error: 'verification_failed'
+        isAuthorized: true
       };
     }
 
     // Phase 1: Use hardcoded authorized countries list
     // Future: Check mediaDescription.available_countries_list first, then fallback to hardcoded
     const isAuthorized = isCountryAuthorized(countryCode);
-    
+
     if (!isAuthorized) {
       return {
         isAuthorized: false,
@@ -296,6 +221,7 @@ export async function checkRegionAccess(_mediaDescription: MediaDescription): Pr
       error: 'network_error'
     };
   }
+  */
 }
 
 /**
