@@ -57,6 +57,17 @@ export async function batchUpdateExcel(options) {
     console.log(`  Field: ${options.field}`);
     console.log(`  Value: ${options.value}`);
     console.log(`  Mode: ${dryRun ? chalk.yellow('DRY RUN') : chalk.green('LIVE UPDATE')}`);
+
+    // Show information about folder placeholders if used
+    if (options.value.includes('{{current_folder}}') ||
+        options.value.includes('{{folder_name}}') ||
+        options.value.includes('{{folder_path}}') ||
+        options.value.includes('%CURRENT_FOLDER%')) {
+      console.log(chalk.magenta('  📁 Folder placeholders detected - values will be resolved per file:'));
+      console.log(chalk.gray('    {{current_folder}} or {{folder_name}} → folder name'));
+      console.log(chalk.gray('    {{folder_path}} → full folder path'));
+      console.log(chalk.gray('    %CURRENT_FOLDER% → folder name (legacy)'));
+    }
     console.log('');
 
     // Find Excel files
@@ -228,6 +239,6 @@ async function main() {
 }
 
 // Run CLI if this file is executed directly
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }

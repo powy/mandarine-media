@@ -261,6 +261,43 @@ class UploaderToolCLI {
         }
       });
 
+    // Propagate Season Data Command
+    this.program
+      .command('propagate-season-data')
+      .alias('propagate')
+      .description('Propagate missing data from season to all episodes')
+      .requiredOption('--season-id <id>', 'Season media description ID')
+      .requiredOption('-c, --config <path>', 'Configuration JSON file path')
+      .option('--dry-run', 'Preview changes without updating')
+      .option('-v, --verbose', 'Verbose output')
+      .action(async (options) => {
+        try {
+          console.log(chalk.blue.bold('🔄 Season Data Propagation\n'));
+          const result = await this.wrappers.propagateSeasonData(options);
+
+          if (result.dryRun) {
+            console.log(chalk.yellow('✓ Dry run completed successfully'));
+          } else if (result.success) {
+            console.log(chalk.green('✅ Propagation completed successfully'));
+            console.log(chalk.cyan(`   Updated: ${result.updated} episodes`));
+            console.log(chalk.gray(`   Skipped: ${result.skipped} episodes`));
+          } else {
+            console.log(chalk.yellow('⚠️  Propagation completed with errors'));
+            console.log(chalk.cyan(`   Updated: ${result.updated} episodes`));
+            console.log(chalk.gray(`   Skipped: ${result.skipped} episodes`));
+            console.log(chalk.red(`   Errors: ${result.errors.length} episodes`));
+          }
+
+          process.exit(result.success ? 0 : 1);
+        } catch (error) {
+          console.error(chalk.red(`❌ Propagation failed: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
+      });
+
     // Global help enhancement
     this.program.on('--help', () => {
       console.log('');
@@ -271,6 +308,7 @@ class UploaderToolCLI {
       console.log('  $ media-uploader upload-picture --config picture-config.json --verbose');
       console.log('  $ media-uploader complete-upload --config config.json --folder /path/to/media');
       console.log('  $ media-uploader excel-batch-update --folder /path/to/main --field policy --value "public"');
+      console.log('  $ media-uploader propagate-season-data --season-id abc123 --config config.json');
       console.log('  $ media-uploader gui --config config.ini');
       console.log('  $ media-uploader gui --create-config');
       console.log('');
@@ -281,6 +319,7 @@ class UploaderToolCLI {
       console.log('  $ media-uploader upload-picture --help');
       console.log('  $ media-uploader complete-upload --help');
       console.log('  $ media-uploader excel-batch-update --help');
+      console.log('  $ media-uploader propagate-season-data --help');
       console.log('  $ media-uploader gui --help');
       console.log('');
     });
@@ -313,6 +352,7 @@ async function main() {
     const { uploadPicture } = await import('./subtools/picture-upload/wrapper.js');
     const { oneMediaCompleteUpload } = await import('./subtools/one-media-complete-upload/wrapper.js');
     const { batchUpdateExcel } = await import('./subtools/excel-batch-editor/wrapper.js');
+    const { propagateSeasonData } = await import('./subtools/propagate-data/wrapper.js');
 
     const wrappers = {
       analyzeMedia: mediaAnalyzerPkg.default.analyzeMedia,
@@ -320,7 +360,8 @@ async function main() {
       uploadSubtitlesToMux,
       uploadPicture,
       oneMediaCompleteUpload,
-      batchUpdateExcel
+      batchUpdateExcel,
+      propagateSeasonData
     };
 
     // Create and run CLI
@@ -336,7 +377,7 @@ async function main() {
 export { UploaderToolCLI };
 
 // Main execution - handle Windows path separators
-const isMainModule = import.meta.url === pathToFileURL(process.argv[1]).href;
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMainModule) {
   main();
 }

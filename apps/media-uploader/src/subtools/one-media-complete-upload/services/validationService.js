@@ -125,22 +125,19 @@ export class ValidationService {
       case 'season':
         required = [
           { field: 'season_name', name: 'Season Name' },
-          { field: 'media_type', name: 'Media Type' },
-          { field: 'slug', name: 'Slug' }
+          { field: 'media_type', name: 'Media Type' }
         ];
         break;
       case 'program':
         required = [
           { field: 'program_name', name: 'Program Name' },
-          { field: 'media_type', name: 'Media Type' },
-          { field: 'slug', name: 'Slug' }
+          { field: 'media_type', name: 'Media Type' }
         ];
         break;
       default: // video, excerpt, trailer, webtoon
         required = [
           { field: 'episode_title', name: 'Episode Title' },
-          { field: 'media_type', name: 'Media Type' },
-          { field: 'slug', name: 'Slug' }
+          { field: 'media_type', name: 'Media Type' }
         ];
         break;
     }
@@ -251,6 +248,19 @@ export class ValidationService {
           const ext = path.extname(file[subField]).toLowerCase();
           if (!['.srt', '.vtt', '.ass', '.ssa', '.sub', '.sbv'].includes(ext)) {
             errors.push(`Row ${rowNum}: Invalid subtitle file extension "${ext}" for ${subField} "${file[subField]}"`);
+          }
+
+          // Check if subtitle filename follows patterns that might not be supported
+          const subtitleFileName = file[subField];
+          const hasSquareBrackets = /\[(fr|en|eng|ko|kr)\]/i.test(subtitleFileName);
+          const hasTraditionalPattern = /[-_](fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)\.(srt|vtt)$/i.test(subtitleFileName);
+
+          if (hasSquareBrackets && !hasTraditionalPattern) {
+            // This is a square bracket pattern that might need forced upload
+            this.logger.info(`Row ${rowNum}: Subtitle "${subtitleFileName}" uses square bracket notation - will force upload based on Excel column position`);
+          } else if (!hasTraditionalPattern && !hasSquareBrackets) {
+            // No recognizable pattern at all
+            this.logger.info(`Row ${rowNum}: Subtitle "${subtitleFileName}" has no standard language pattern - will force upload based on Excel column position`);
           }
         }
       });

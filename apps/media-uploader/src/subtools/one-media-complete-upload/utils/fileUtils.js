@@ -56,10 +56,18 @@ export async function scanFolder(folderPath) {
 
 export async function loadJsonFile(filePath) {
   try {
+    // Check if it's an INI file - support direct INI loading
+    if (filePath.endsWith('.ini')) {
+      // Import ConfigReader dynamically to avoid circular dependencies
+      const { ConfigReader } = await import('../../upload-gui/config/configReader.js');
+      return ConfigReader.readConfig(filePath);
+    }
+
+    // Load JSON file
     const content = await fs.readFile(filePath, 'utf8');
     return JSON.parse(content);
   } catch (error) {
-    throw new Error(`Failed to load JSON file ${filePath}: ${error.message}`);
+    throw new Error(`Failed to load config file ${filePath}: ${error.message}`);
   }
 }
 

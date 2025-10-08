@@ -539,6 +539,240 @@ body {
     box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
 }
 
+/* Specific File Treatment Section */
+.specific-file-section {
+    margin-bottom: 24px;
+}
+
+.specific-file-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.input-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+.input-row .input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 4px;
+}
+
+.file-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.file-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #ffffff;
+    color: #4a5568;
+    transition: all 0.2s ease;
+}
+
+.file-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.language-detection-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.detected-language {
+    flex: 1;
+    padding: 10px 14px;
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #4a5568;
+    font-weight: 500;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+.detected-language.detected {
+    background: #f0fff4;
+    border-color: #68d391;
+    color: #22543d;
+}
+
+.detect-button {
+    padding: 8px 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.detect-button:hover:not(:disabled) {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.detect-button:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+}
+
+.language-select {
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #ffffff;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.media-id-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.media-id-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #f7fafc;
+    color: #4a5568;
+    cursor: not-allowed;
+}
+
+.media-id-input:not(:read-only) {
+    background: #ffffff;
+    cursor: text;
+}
+
+.lookup-button {
+    padding: 8px 12px;
+    background: #38b2ac;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.lookup-button:hover:not(:disabled) {
+    background: #319795;
+    transform: translateY(-1px);
+}
+
+.lookup-button:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+}
+
+.action-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.process-subtitle-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 16px 24px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.process-subtitle-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.process-subtitle-button:disabled {
+    background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.process-subtitle-button .button-icon {
+    font-size: 16px;
+}
+
+.process-subtitle-button .button-text {
+    font-size: 14px;
+}
+
+.process-subtitle-button .button-subtitle {
+    font-size: 11px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+/* Responsive adjustments for specific file section */
+@media (max-width: 768px) {
+    .input-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .file-input-wrapper,
+    .language-detection-wrapper,
+    .media-id-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .detect-button,
+    .lookup-button {
+        width: 100%;
+    }
+}
+
 .browse-button {
     padding: 12px 24px;
     background: #667eea;

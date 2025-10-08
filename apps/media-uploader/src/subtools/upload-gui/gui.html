@@ -35,6 +35,77 @@
                 </div>
             </section>
 
+            <!-- Specific File Treatment Section -->
+            <section class="section specific-file-section">
+                <h2>📎 Specific File Treatment</h2>
+                <div class="specific-file-content">
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="subtitle-file-path" class="input-label">Subtitle File Path:</label>
+                            <div class="file-input-wrapper">
+                                <input
+                                    type="text"
+                                    id="subtitle-file-path"
+                                    class="file-input"
+                                    placeholder="Select subtitle file (.srt, .vtt, .sbv)..."
+                                >
+                                <button id="browse-subtitle-file" class="browse-button">
+                                    Browse...
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="detected-language" class="input-label">Detected Language:</label>
+                            <div class="language-detection-wrapper">
+                                <span id="detected-language" class="detected-language">Not detected</span>
+                                <button id="detect-language" class="detect-button" disabled>
+                                    🔍 Detect
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="language-override" class="input-label">Language Override:</label>
+                            <select id="language-override" class="language-select">
+                                <option value="">Auto (use detected)</option>
+                                <option value="fr">Français (fr)</option>
+                                <option value="en">English (en)</option>
+                                <option value="ko">한국어 (ko)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="media-description-id" class="input-label">Media Description ID:</label>
+                            <div class="media-id-wrapper">
+                                <input
+                                    type="text"
+                                    id="media-description-id"
+                                    class="media-id-input"
+                                    placeholder="ID from Excel Description sheet..."
+                                    readonly
+                                >
+                                <button id="lookup-media-id" class="lookup-button" disabled>
+                                    📋 Lookup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-row">
+                        <button id="process-subtitle" class="action-button process-subtitle-button" disabled>
+                            <span class="button-icon">🎯</span>
+                            <span class="button-text">Process Subtitle</span>
+                            <span class="button-subtitle">Upload subtitle with server integration</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
             <!-- Action Buttons Section -->
             <section class="section actions-section">
                 <h2>🎬 Single Folder Actions</h2>

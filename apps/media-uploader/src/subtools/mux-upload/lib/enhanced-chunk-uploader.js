@@ -43,15 +43,32 @@ export class EnhancedChunkUploader {
    * Main upload method with smart method selection
    */
   async upload(uploadUrl, filepath) {
+    let method;
     try {
+      this.logger.info('EnhancedChunkUploader.upload() called', {
+        uploadUrl: uploadUrl?.substring(0, 60) + '...',
+        filePath: filepath
+      });
+
       // Get file stats for decision making
       const stats = await fs.stat(filepath);
+
+      this.logger.info('File stats retrieved for upload', {
+        filePath: filepath,
+        fileExists: true,
+        fileSize: this.logger.formatBytes(stats.size),
+        fileSizeBytes: stats.size
+      });
+
       this.logger.logUploadStart(filepath, stats.size);
 
       // Smart method selection
-      let method = this.uploadMethod;
+      method = this.uploadMethod;
       if (method === 'auto') {
-        method = stats.size > this.memoryThreshold ? 'custom' : 'upchunk';
+        // FIXED: Always use custom chunked uploader
+        // UpChunk library (v3.5.0) is broken in Node.js 24 - hangs on first chunk
+        // Custom method works perfectly for all file sizes
+        method = 'custom';
       }
 
       this.logger.info('Upload method selected', {
@@ -74,7 +91,7 @@ export class EnhancedChunkUploader {
       this.logger.error('Upload failed', error);
 
       // Use method-specific error handling if it's a method selection issue
-      if (error.message.includes('Unknown upload method')) {
+      if (error.message.includes('Unknown upload method') && method) {
         handleUploadMethodError(method, error, 'Upload method selection');
       }
 
@@ -137,9 +154,10 @@ export class EnhancedChunkUploader {
         });
 
         upload.on('chunkSuccess', (details) => {
-          this.logger.info('Chunk uploaded successfully', {
+          this.logger.debug('Chunk uploaded successfully', {
             chunkNumber: details.chunkNumber,
-            responseStatus: details.response?.status
+            responseStatus: details.response?.status,
+            chunkSize: details.chunkSize ? `${details.chunkSize}KB` : 'unknown'
           });
         });
 
@@ -172,7 +190,7 @@ export class EnhancedChunkUploader {
         });
 
         // Set timeout
-        const timeoutMs = this.config.options?.timeout || 3600000;
+        const timeoutMs = this.config.options?.timeout || 43200000;
         const timeout = setTimeout(() => {
           this.logger.error('Upload timeout', { timeoutMs });
           upload.abort();
@@ -227,10 +245,11 @@ export class EnhancedChunkUploader {
           const end = Math.min(start + this.chunkSize - 1, fileSize - 1);
           const length = end - start + 1;
 
-          this.logger.info(`Processing chunk ${chunkNumber}`, {
-            start,
-            end,
-            length: this.logger.formatBytes(length),
+          this.logger.debug('Starting chunk upload', {
+            chunkNumber,
+            chunkSize: this.logger.formatBytes(length),
+            offset: start,
+            totalChunks: Math.ceil(fileSize / this.chunkSize),
             range: `bytes ${start}-${end}/${fileSize}`
           });
 
@@ -242,50 +261,75 @@ export class EnhancedChunkUploader {
             throw new Error(`Failed to read complete chunk: expected ${length}, got ${bytesRead}`);
           }
 
-          // Upload chunk with enhanced retry logic
-          const response = await this.retryHandler.executeWithRetry(
-            () => this.uploadChunk(uploadUrl, buffer, start, end, fileSize),
-            {
-              maxAttempts: this.config.options?.max_chunk_retries || 5,
-              baseDelayMs: this.config.options?.retry_delay_base || 1000,
-              context: `chunk ${chunkNumber}`
-            }
-          );
-
-          // Handle response and update progress
-          if (response.status === 308) {
-            // Parse Range header to get actual uploaded bytes
-            const range = response.headers.range || response.headers.Range;
-            if (range) {
-              const match = range.match(/bytes=0-(\d+)/);
-              uploadedBytes = match ? parseInt(match[1]) + 1 : end + 1;
-            } else {
-              uploadedBytes = end + 1;
-            }
-
-            this.logger.logProgress(uploadedBytes, fileSize, chunkNumber);
-
-            // Save resume state (if enabled)
-            if (this.enableResume) {
-              await this.saveResumeState(filepath, fileSize, uploadedBytes, chunkNumber);
-            }
-
-          } else if (response.status === 200 || response.status === 201) {
-            this.logger.info('Upload complete!', {
-              finalStatus: response.status,
-              totalChunks: chunkNumber
+          // Add hang detection timeout for this chunk
+          const chunkTimeout = setTimeout(() => {
+            this.logger.error('CHUNK UPLOAD HUNG - No response for 60 seconds', {
+              chunkNumber,
+              uploadUrl: uploadUrl?.substring(0, 60) + '...',
+              start,
+              end
             });
-            const duration = Date.now() - this.logger.startTime;
-            this.logger.logUploadComplete(duration);
+          }, 60000); // 60 second timeout per chunk
 
-            // Clean up resume state on success
-            if (this.enableResume) {
-              await this.cleanupResumeState(filepath, fileSize);
+          try {
+            // Upload chunk with enhanced retry logic
+            const response = await this.retryHandler.executeWithRetry(
+              () => this.uploadChunk(uploadUrl, buffer, start, end, fileSize),
+              {
+                maxAttempts: this.config.options?.max_chunk_retries || 5,
+                baseDelayMs: this.config.options?.retry_delay_base || 1000,
+                context: `chunk ${chunkNumber}`
+              }
+            );
+
+            // Clear timeout after successful upload
+            clearTimeout(chunkTimeout);
+
+            this.logger.debug('Chunk uploaded successfully', {
+              chunkNumber,
+              uploadedBytes: uploadedBytes + length,
+              progress: `${((uploadedBytes + length)/fileSize*100).toFixed(1)}%`
+            });
+
+            // Handle response and update progress
+            if (response.status === 308) {
+              // Parse Range header to get actual uploaded bytes
+              const range = response.headers.range || response.headers.Range;
+              if (range) {
+                const match = range.match(/bytes=0-(\d+)/);
+                uploadedBytes = match ? parseInt(match[1]) + 1 : end + 1;
+              } else {
+                uploadedBytes = end + 1;
+              }
+
+              this.logger.logProgress(uploadedBytes, fileSize, chunkNumber);
+
+              // Save resume state (if enabled)
+              if (this.enableResume) {
+                await this.saveResumeState(filepath, fileSize, uploadedBytes, chunkNumber);
+              }
+
+            } else if (response.status === 200 || response.status === 201) {
+              this.logger.info('Upload complete!', {
+                finalStatus: response.status,
+                totalChunks: chunkNumber
+              });
+              const duration = Date.now() - this.logger.startTime;
+              this.logger.logUploadComplete(duration);
+
+              // Clean up resume state on success
+              if (this.enableResume) {
+                await this.cleanupResumeState(filepath, fileSize);
+              }
+              break;
+
+            } else {
+              throw new Error(`Unexpected response status: ${response.status}`);
             }
-            break;
-
-          } else {
-            throw new Error(`Unexpected response status: ${response.status}`);
+          } catch (chunkError) {
+            // Clear timeout on error
+            clearTimeout(chunkTimeout);
+            throw chunkError;
           }
         }
 
@@ -414,12 +458,22 @@ export class EnhancedChunkUploader {
   }
 
   getResumeStateFile(filepath, fileSize) {
+    // Use cached state file path if already generated for this upload session
+    if (this._resumeStateFile) {
+      return this._resumeStateFile;
+    }
+
     const hash = require('crypto')
       .createHash('md5')
       .update(filepath + fileSize)
       .digest('hex');
 
-    return `/tmp/mux-upload-${hash}.json`;
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 8);
+
+    // Cache the state file path for this upload session
+    this._resumeStateFile = `/tmp/mux-upload-${timestamp}-${hash}-${randomId}.json`;
+    return this._resumeStateFile;
   }
 }
 

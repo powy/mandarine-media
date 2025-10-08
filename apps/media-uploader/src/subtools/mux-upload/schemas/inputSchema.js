@@ -111,7 +111,7 @@ const webhookSchema = Joi.object({
 
 const optionsSchema = Joi.object({
   // Legacy options (maintained for backward compatibility)
-  timeout: Joi.number().integer().min(60000).default(3600000), // 1 min minimum, no maximum
+  timeout: Joi.number().integer().min(60000).default(43200000), // 1 min minimum, no maximum
   retry_attempts: Joi.number().integer().min(1).max(10).default(3),
   retry_delay: Joi.number().integer().min(1000).max(30000).default(5000), // 1-30 seconds
   chunk_size: Joi.number().integer().min(1048576).max(104857600).default(31457280), // 1MB to 100MB (legacy)

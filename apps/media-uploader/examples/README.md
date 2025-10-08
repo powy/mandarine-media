@@ -47,11 +47,13 @@ cp examples/.env.example .env
 
 **Basic upload:**
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js --config my-config.json
 ```
 
 **With enhanced options:**
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \\
   --config my-config.json \\
   --upload-method auto \\
@@ -136,6 +138,7 @@ Settings are applied in this order (later overrides earlier):
 
 ### Upload a large file with resume capability:
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \\
   --config enhanced-config.json \\
   --upload-method custom \\
@@ -146,6 +149,7 @@ node src/subtools/mux-upload/index.js \\
 
 ### Test configuration without uploading:
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \\
   --config my-config.json \\
   --dry-run \\
@@ -154,6 +158,7 @@ node src/subtools/mux-upload/index.js \\
 
 ### Production upload with all features:
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \\
   --config production-config.json \\
   --upload-method auto \\

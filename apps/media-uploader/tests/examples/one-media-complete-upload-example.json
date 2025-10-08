@@ -36,7 +36,7 @@
     "console": true
   },
   "options": {
-    "timeout": 3600000,
+    "timeout": 43200000,
     "retryAttempts": 3,
     "retryDelay": 5000,
     "chunkSize": 31457280,

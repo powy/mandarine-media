@@ -222,35 +222,51 @@ class FileAssociator {
     
     calculateMatchScore(video, subtitle) {
         let score = 0;
-        
+
+        // Special handling for trailers and clips - strict filename matching required
+        if (video.isTrailer || video.videoType === 'trailer' || video.isClip || video.videoType === 'clip') {
+            const videoBaseName = this.getBaseName(video.filename);
+            const subtitleFileName = subtitle.filename.toLowerCase();
+
+            // For trailers/clips, the complete video base name must be contained in the subtitle filename
+            // Example: MyTrailerVideo.mp4 should only match MyTrailerVideo_en.srt or MyTrailerVideo_blablabla_en.srt
+            if (!subtitleFileName.includes(videoBaseName.toLowerCase())) {
+                logger.debug(`Rejecting subtitle ${subtitle.filename} for ${video.videoType} ${video.filename} - base name not found in subtitle`);
+                return 0; // No match for trailers/clips without exact filename matching
+            }
+
+            // If base name is found, continue with normal scoring but with higher requirements
+            logger.debug(`Accepting subtitle ${subtitle.filename} for ${video.videoType} ${video.filename} - base name found`);
+        }
+
         // Même dossier
         if (video.parentDir === subtitle.parentDir) {
             score += 10;
         }
-        
+
         // Même numéro d'épisode
         if (video.episodeNumber !== null && video.episodeNumber === subtitle.episodeNumber) {
             score += 30;
         }
-        
+
         // Même numéro de saison
         if (video.seasonNumber !== null && video.seasonNumber === subtitle.seasonNumber) {
             score += 20;
         }
-        
+
         // Similarité du nom
         const videoBase = this.getBaseName(video.filename);
         let subBase = this.getBaseName(subtitle.filename);
-        
+
         // Retirer la langue du nom du sous-titre
         for (const code of Object.keys(this.config.LANGUAGE_CODES)) {
             subBase = subBase.replace(new RegExp(`\\.${code}$`, 'i'), '');
             subBase = subBase.replace(new RegExp(`_${code}$`, 'i'), '');
         }
-        
+
         const similarity = this.calculateNameSimilarity(videoBase, subBase);
         score += Math.floor(similarity * 50);
-        
+
         return score;
     }
     

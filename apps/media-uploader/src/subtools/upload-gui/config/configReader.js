@@ -238,18 +238,18 @@ export class ConfigReader {
 
 [general]
 verbose=true
-maxConcurrentUploads=10
+maxConcurrentUploads=1000
 retryAttempts=3
 retryDelay=5000
 
 [parallel]
 enabled=true
-maxConcurrentUploads=10
+maxConcurrentUploads=1000
 retryAttempts=3
 retryDelay=5000
 
 [process]
-workerTimeout=3600000
+workerTimeout=43200000
 heartbeatInterval=5000
 cleanupAge=86400000
 

@@ -63,6 +63,28 @@ class UploadGUI {
     const uploadBatchButton = document.getElementById('execute-upload-batch');
     uploadBatchButton.addEventListener('click', () => this.executeUploadBatch());
 
+    // Subtitle-specific processing controls
+    const browseSubtitleButton = document.getElementById('browse-subtitle-file');
+    browseSubtitleButton.addEventListener('click', () => this.selectSubtitleFile());
+
+    const detectLanguageButton = document.getElementById('detect-language');
+    detectLanguageButton.addEventListener('click', () => this.detectLanguageFromFile());
+
+    const lookupMediaIdButton = document.getElementById('lookup-media-id');
+    lookupMediaIdButton.addEventListener('click', () => this.lookupMediaIdFromExcel());
+
+    const processSubtitleButton = document.getElementById('process-subtitle');
+    processSubtitleButton.addEventListener('click', () => this.processSubtitleFile());
+
+    // Subtitle file path input validation
+    const subtitlePathInput = document.getElementById('subtitle-file-path');
+    subtitlePathInput.addEventListener('blur', () => this.validateSubtitlePath());
+    subtitlePathInput.addEventListener('input', () => this.updateSubtitleProcessingState());
+
+    // Language override change handler
+    const languageOverrideSelect = document.getElementById('language-override');
+    languageOverrideSelect.addEventListener('change', () => this.updateSubtitleProcessingState());
+
     // Excel bulk edit controls
     const bulkEditButton = document.getElementById('excel-bulk-edit');
     bulkEditButton.addEventListener('click', () => this.executeBulkEdit());
@@ -684,6 +706,9 @@ class UploadGUI {
       prepareBatchButton.classList.remove('enabled');
       uploadBatchButton.classList.remove('enabled');
     }
+
+    // Update subtitle processing state
+    this.updateSubtitleProcessingState();
   }
 
   setProcessingState(processing, message = '') {
@@ -1116,6 +1141,417 @@ class UploadGUI {
         level: 'error',
         message: `❌ Failed to cancel processes: ${error.message}`
       });
+    }
+  }
+
+  // ============================================================================
+  // SUBTITLE PROCESSING METHODS
+  // ============================================================================
+
+  /**
+   * Select subtitle file using file dialog
+   */
+  async selectSubtitleFile() {
+    try {
+      const result = await window.electronAPI.selectFile({
+        title: 'Select Subtitle File',
+        filters: [
+          { name: 'Subtitle Files', extensions: ['srt', 'vtt', 'sbv'] },
+          { name: 'All Files', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+      });
+
+      if (result && result.filePaths && result.filePaths.length > 0) {
+        const subtitlePath = result.filePaths[0];
+        document.getElementById('subtitle-file-path').value = subtitlePath;
+
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'info',
+          message: `📁 Selected subtitle file: ${subtitlePath}`
+        });
+
+        // Auto-detect language and validate
+        await this.validateSubtitlePath();
+        await this.detectLanguageFromFile();
+        this.updateSubtitleProcessingState();
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `❌ Error selecting subtitle file: ${error.message}`
+      });
+    }
+  }
+
+  /**
+   * Validate selected subtitle file path
+   */
+  async validateSubtitlePath() {
+    const subtitlePathInput = document.getElementById('subtitle-file-path');
+    const subtitlePath = subtitlePathInput.value.trim();
+
+    if (!subtitlePath) {
+      this.updateSubtitleProcessingState();
+      return false;
+    }
+
+    try {
+      const exists = await window.electronAPI.pathExists(subtitlePath);
+      const isFile = await window.electronAPI.isFile(subtitlePath);
+
+      if (!exists) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `❌ Subtitle file does not exist: ${subtitlePath}`
+        });
+        return false;
+      }
+
+      if (!isFile) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `❌ Path is not a file: ${subtitlePath}`
+        });
+        return false;
+      }
+
+      // Check file extension
+      const validExtensions = ['.srt', '.vtt', '.sbv'];
+      const extension = subtitlePath.toLowerCase().substring(subtitlePath.lastIndexOf('.'));
+
+      if (!validExtensions.includes(extension)) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'warn',
+          message: `⚠️ File extension '${extension}' may not be supported. Expected: ${validExtensions.join(', ')}`
+        });
+      }
+
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'success',
+        message: `✅ Subtitle file validated: ${subtitlePath}`
+      });
+
+      this.updateSubtitleProcessingState();
+      return true;
+
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `❌ Error validating subtitle file: ${error.message}`
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Detect language from subtitle filename
+   */
+  async detectLanguageFromFile() {
+    const subtitlePathInput = document.getElementById('subtitle-file-path');
+    const detectedLanguageSpan = document.getElementById('detected-language');
+    const detectButton = document.getElementById('detect-language');
+
+    const subtitlePath = subtitlePathInput.value.trim();
+
+    if (!subtitlePath) {
+      detectedLanguageSpan.textContent = 'Not detected';
+      detectedLanguageSpan.className = 'detected-language';
+      detectButton.disabled = true;
+      return;
+    }
+
+    try {
+      // Enable detect button
+      detectButton.disabled = false;
+
+      // Extract filename
+      const fileName = subtitlePath.substring(subtitlePath.lastIndexOf('/') + 1);
+
+      // Language detection patterns (simplified version of shared utils)
+      const languagePatterns = {
+        fr: ['_fr', '-fr', '.fr', ' fr ', '[fr]', '(fr)', ' fr.srt', ' fr.vtt'],
+        en: ['_en', '-en', '.en', ' en ', '[en]', '(en)', ' en.srt', ' en.vtt'],
+        ko: ['_ko', '-ko', '.ko', ' ko ', '[ko]', '(ko)', ' ko.srt', ' ko.vtt',
+             '_kr', '-kr', '.kr', ' kr ', '[kr]', '(kr)', ' kr.srt', ' kr.vtt']
+      };
+
+      const lowerFileName = fileName.toLowerCase();
+      let detectedLanguage = null;
+
+      // Check each language pattern
+      for (const [lang, patterns] of Object.entries(languagePatterns)) {
+        for (const pattern of patterns) {
+          if (lowerFileName.includes(pattern)) {
+            detectedLanguage = lang;
+            break;
+          }
+        }
+        if (detectedLanguage) break;
+      }
+
+      if (detectedLanguage) {
+        const languageNames = { fr: 'Français', en: 'English', ko: '한국어' };
+        const displayName = languageNames[detectedLanguage] || detectedLanguage;
+
+        detectedLanguageSpan.textContent = `${displayName} (${detectedLanguage})`;
+        detectedLanguageSpan.className = 'detected-language detected';
+
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `🔍 Language detected: ${displayName} (${detectedLanguage})`
+        });
+      } else {
+        detectedLanguageSpan.textContent = 'Not detected';
+        detectedLanguageSpan.className = 'detected-language';
+
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'warn',
+          message: `⚠️ Could not detect language from filename: ${fileName}`
+        });
+      }
+
+      this.updateSubtitleProcessingState();
+
+    } catch (error) {
+      detectedLanguageSpan.textContent = 'Error detecting';
+      detectedLanguageSpan.className = 'detected-language';
+
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `❌ Error detecting language: ${error.message}`
+      });
+    }
+  }
+
+  /**
+   * Lookup media description ID from Excel file
+   */
+  async lookupMediaIdFromExcel() {
+    const mediaIdInput = document.getElementById('media-description-id');
+    const lookupButton = document.getElementById('lookup-media-id');
+
+    if (!this.currentFolder) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: '❌ No folder selected for Excel lookup'
+      });
+      return;
+    }
+
+    try {
+      lookupButton.disabled = true;
+      lookupButton.textContent = '🔄 Looking up...';
+
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'info',
+        message: `🔍 Looking up media description ID from Excel in: ${this.currentFolder}`
+      });
+
+      // Call server API to get media description info
+      const response = await fetch('http://localhost:3039/api/v1/excel/media-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folderPath: this.currentFolder
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data.mediaId) {
+        mediaIdInput.value = result.data.mediaId;
+        mediaIdInput.readOnly = false;
+
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `✅ Found media description ID: ${result.data.mediaId}`
+        });
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'warn',
+          message: '⚠️ No media description ID found in Excel file'
+        });
+      }
+
+      this.updateSubtitleProcessingState();
+
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `❌ Error looking up media description ID: ${error.message}`
+      });
+    } finally {
+      lookupButton.disabled = false;
+      lookupButton.textContent = '📋 Lookup';
+    }
+  }
+
+  /**
+   * Process subtitle file with server integration
+   */
+  async processSubtitleFile() {
+    if (this.isProcessing) return;
+
+    const subtitlePath = document.getElementById('subtitle-file-path').value.trim();
+    const mediaDescriptionId = document.getElementById('media-description-id').value.trim();
+    const detectedLanguageSpan = document.getElementById('detected-language');
+    const languageOverrideSelect = document.getElementById('language-override');
+
+    // Validation
+    if (!subtitlePath) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: '❌ Please select a subtitle file'
+      });
+      return;
+    }
+
+    if (!mediaDescriptionId) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: '❌ Media description ID is required. Use the Lookup button or enter manually.'
+      });
+      return;
+    }
+
+    // Extract detected language
+    let detectedLanguage = null;
+    const detectedText = detectedLanguageSpan.textContent;
+    if (detectedText && detectedText !== 'Not detected' && detectedText !== 'Error detecting') {
+      const match = detectedText.match(/\((\w{2})\)$/);
+      if (match) detectedLanguage = match[1];
+    }
+
+    const languageOverride = languageOverrideSelect.value || null;
+
+    try {
+      this.setProcessing(true);
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'info',
+        message: `🚀 Starting subtitle-specific upload...`
+      });
+
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'info',
+        message: `📄 File: ${subtitlePath}`
+      });
+
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'info',
+        message: `🆔 Media ID: ${mediaDescriptionId}`
+      });
+
+      if (languageOverride) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'info',
+          message: `🌐 Language: ${languageOverride} (manual override)`
+        });
+      } else if (detectedLanguage) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'info',
+          message: `🌐 Language: ${detectedLanguage} (auto-detected)`
+        });
+      }
+
+      // Call subtitle-specific upload API
+      const response = await fetch('http://localhost:3039/api/v1/uploads/subtitle-specific', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subtitlePath,
+          mediaDescriptionId,
+          folderPath: this.currentFolder,
+          config: { configPath: 'config.ini' },
+          options: {
+            detectedLanguage,
+            languageOverride,
+            autoDetectLanguage: true,
+            autoLookupMediaId: false // We already looked it up
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `✅ Subtitle-specific upload task started: ${result.data.task.id}`
+        });
+
+        // Monitor the task
+        this.monitorTask(result.data.task.id, 'Subtitle-specific upload');
+      } else {
+        throw new Error(result.message || 'Failed to start subtitle-specific upload');
+      }
+
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `❌ Failed to process subtitle: ${error.message}`
+      });
+      this.setProcessing(false);
+    }
+  }
+
+  /**
+   * Update the state of subtitle processing controls
+   */
+  updateSubtitleProcessingState() {
+    const subtitlePath = document.getElementById('subtitle-file-path').value.trim();
+    const mediaDescriptionId = document.getElementById('media-description-id').value.trim();
+    const detectButton = document.getElementById('detect-language');
+    const lookupButton = document.getElementById('lookup-media-id');
+    const processButton = document.getElementById('process-subtitle');
+
+    // Enable/disable detect language button
+    detectButton.disabled = !subtitlePath;
+
+    // Enable/disable lookup button
+    lookupButton.disabled = !this.currentFolder;
+
+    // Enable/disable process button
+    const canProcess = subtitlePath && mediaDescriptionId && !this.isProcessing;
+    processButton.disabled = !canProcess;
+
+    // Update button text if processing
+    if (this.isProcessing) {
+      processButton.innerHTML = `
+        <span class="button-icon">⏳</span>
+        <span class="button-text">Processing...</span>
+        <span class="button-subtitle">Please wait</span>
+      `;
+    } else {
+      processButton.innerHTML = `
+        <span class="button-icon">🎯</span>
+        <span class="button-text">Process Subtitle</span>
+        <span class="button-subtitle">Upload subtitle with server integration</span>
+      `;
     }
   }
 }

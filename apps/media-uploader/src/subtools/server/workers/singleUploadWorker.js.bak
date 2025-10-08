@@ -1,0 +1,131 @@
+/**
+ * Single Upload Worker
+ * Worker process for single folder upload tasks (corresponds to execute_upload in GUI)
+ */
+
+import BaseWorker from './baseWorker.js';
+import { execFilePromise } from '../utils/processUtils.js';
+import { join } from 'path';
+
+class SingleUploadWorker extends BaseWorker {
+  constructor() {
+    super();
+    this.logInfo('Single Upload Worker initialized');
+  }
+
+  async execute(taskData) {
+    this.validateTaskData(taskData, ['folderPath']);
+
+    const { folderPath, config, options = {} } = taskData;
+
+    this.logInfo('Starting single folder upload', { folderPath, options });
+    this.updateProgress(5, 'Initializing single upload...');
+
+    // Validate folder path
+    if (!(await this.isDirectory(folderPath))) {
+      throw new Error(`Folder path does not exist or is not a directory: ${folderPath}`);
+    }
+
+    this.updateProgress(10, 'Folder validated, starting upload...');
+
+    try {
+      // Use the one-media-complete-upload wrapper script
+      const scriptPath = this.getToolPath('subtools/one-media-complete-upload/wrapper.js');
+
+      if (!(await this.fileExists(scriptPath))) {
+        throw new Error(`Upload script not found: ${scriptPath}`);
+      }
+
+      const args = [
+        '--folder', folderPath
+      ];
+
+      // Add config if provided
+      if (config && config.configPath) {
+        args.push('--config', config.configPath);
+      }
+
+      // Add additional options
+      if (options.skipValidation) {
+        args.push('--skip-validation');
+      }
+
+      this.updateProgress(20, 'Starting upload process...');
+      this.logInfo('Executing upload command', { scriptPath, args });
+
+      // Execute the upload script
+      const result = await execFilePromise('node', [scriptPath, ...args], {
+        timeout: options.timeout || 600000, // 10 minutes default
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+        env: { ...process.env }
+      });
+
+      this.updateProgress(80, 'Upload process completed, processing results...');
+
+      // Parse the output
+      let uploadResult;
+      try {
+        // Try to parse JSON from stdout
+        const jsonMatch = result.stdout.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          uploadResult = JSON.parse(jsonMatch[0]);
+        } else {
+          // Fallback to basic parsing
+          uploadResult = {
+            success: result.exitCode === 0,
+            message: result.stdout,
+            error: result.stderr
+          };
+        }
+      } catch (parseError) {
+        this.logWarn('Failed to parse upload result as JSON', { parseError: parseError.message });
+        uploadResult = {
+          success: result.exitCode === 0,
+          message: result.stdout,
+          error: result.stderr,
+          parseError: parseError.message
+        };
+      }
+
+      if (!uploadResult.success && result.exitCode !== 0) {
+        throw new Error(`Upload failed with exit code ${result.exitCode}: ${result.stderr || result.stdout}`);
+      }
+
+      this.updateProgress(100, 'Single upload completed successfully');
+
+      return {
+        success: true,
+        folderPath,
+        uploadResult,
+        metadata: {
+          folderPath,
+          exitCode: result.exitCode,
+          uploadTime: Date.now() - this.startTime,
+          mediaDescriptionId: uploadResult.media_description_id || null,
+          excelPath: uploadResult.excel_path || null
+        }
+      };
+
+    } catch (error) {
+      this.logError('Single upload failed', {
+        folderPath,
+        error: error.message,
+        stack: error.stack
+      });
+
+      throw new Error(`Single upload failed: ${error.message}`);
+    }
+  }
+
+  async cleanup() {
+    this.logInfo('Cleaning up single upload worker');
+    // Add any specific cleanup logic here
+  }
+}
+
+// Start the worker if this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  new SingleUploadWorker();
+}
+
+export default SingleUploadWorker;

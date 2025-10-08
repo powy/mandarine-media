@@ -547,8 +547,6 @@ async function main() {
 
 // Execute if this is the main module
 // Fix path comparison issue for Windows
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
 if (__filename === process.argv[1] ||
     __filename === process.argv[1].replace(/\\/g, '/') ||
     process.argv[1].endsWith('uploadWorker.js')) {

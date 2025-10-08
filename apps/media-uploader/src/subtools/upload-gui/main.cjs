@@ -646,7 +646,7 @@ console=true
             maxConcurrentUploads: 10,
             retryAttempts: 3,
             retryDelay: 5000,
-            workerTimeout: 3600000,
+            workerTimeout: 43200000,
             heartbeatInterval: 5000
           };
         }
@@ -658,7 +658,7 @@ console=true
           maxConcurrentUploads: 10,
           retryAttempts: 3,
           retryDelay: 5000,
-          workerTimeout: 3600000,
+          workerTimeout: 43200000,
           heartbeatInterval: 5000
         };
       }

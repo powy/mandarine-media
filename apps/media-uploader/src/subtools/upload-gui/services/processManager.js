@@ -13,10 +13,10 @@ const __dirname = path.dirname(__filename);
  */
 export class ProcessManager {
   constructor(config = {}) {
-    this.maxConcurrent = config.maxConcurrentUploads || 10;
+    this.maxConcurrent = config.maxConcurrentUploads || 1000;
     this.retryAttempts = config.retryAttempts || 3;
     this.retryDelay = config.retryDelay || 5000;
-    this.workerTimeout = config.workerTimeout || 3600000; // 1 hour
+    this.workerTimeout = config.workerTimeout || 43200000; // 12 hours
     this.heartbeatInterval = config.heartbeatInterval || 5000; // 5 seconds
 
     // Process tracking

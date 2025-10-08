@@ -1,0 +1,155 @@
+/**
+ * Parallel Upload Worker
+ * Worker process for parallel batch upload tasks (corresponds to execute_upload_batch_parallel in GUI)
+ */
+
+import BaseWorker from './baseWorker.js';
+import { execFilePromise } from '../utils/processUtils.js';
+
+class ParallelUploadWorker extends BaseWorker {
+  constructor() {
+    super();
+    this.logInfo('Parallel Upload Worker initialized');
+  }
+
+  async execute(taskData) {
+    this.validateTaskData(taskData, ['batchFolderPath']);
+
+    const { batchFolderPath, config, options = {} } = taskData;
+    const maxConcurrent = options.maxConcurrent || 5;
+
+    this.logInfo('Starting parallel batch upload', { batchFolderPath, maxConcurrent, options });
+    this.updateProgress(5, 'Initializing parallel upload...');
+
+    if (!(await this.isDirectory(batchFolderPath))) {
+      throw new Error(`Batch folder path does not exist or is not a directory: ${batchFolderPath}`);
+    }
+
+    this.updateProgress(10, 'Batch folder validated, starting parallel upload...');
+
+    try {
+      const scriptPath = this.getToolPath('subtools/one-media-complete-upload/wrapper.js');
+
+      if (!(await this.fileExists(scriptPath))) {
+        throw new Error(`Upload script not found: ${scriptPath}`);
+      }
+
+      const args = [
+        '--batch-folder', batchFolderPath,
+        '--parallel',
+        '--max-concurrent', maxConcurrent.toString()
+      ];
+
+      if (config && config.configPath) {
+        args.push('--config', config.configPath);
+      }
+
+      if (options.skipValidation) {
+        args.push('--skip-validation');
+      }
+
+      if (options.continueOnError !== false) {
+        args.push('--continue-on-error');
+      }
+
+      this.updateProgress(20, `Starting parallel upload with ${maxConcurrent} concurrent workers...`);
+      this.logInfo('Executing parallel upload command', { scriptPath, args });
+
+      const result = await execFilePromise('node', [scriptPath, ...args], {
+        timeout: options.timeout || 3600000, // 60 minutes default for parallel
+        maxBuffer: 1024 * 1024 * 20, // 20MB buffer for parallel output
+        env: { ...process.env }
+      });
+
+      this.updateProgress(80, 'Parallel upload process completed, processing results...');
+
+      let uploadResult;
+      try {
+        // Find the last JSON line in output (parallel uploads produce multiple status lines)
+        const jsonLines = result.stdout.split('\n')
+          .filter(line => line.trim().startsWith('{') && line.trim().endsWith('}'))
+          .reverse();
+        
+        if (jsonLines.length > 0) {
+          uploadResult = JSON.parse(jsonLines[0]);
+        } else {
+          uploadResult = this.parseParallelOutput(result.stdout, result.stderr);
+        }
+      } catch (parseError) {
+        this.logWarn('Failed to parse parallel upload result as JSON', { parseError: parseError.message });
+        uploadResult = this.parseParallelOutput(result.stdout, result.stderr);
+      }
+
+      if (!uploadResult.success && result.exitCode !== 0) {
+        throw new Error(`Parallel upload failed with exit code ${result.exitCode}: ${result.stderr || result.stdout}`);
+      }
+
+      this.updateProgress(100, 'Parallel upload completed');
+
+      return {
+        success: true,
+        batchFolderPath,
+        uploadResult,
+        metadata: {
+          batchFolderPath,
+          maxConcurrent,
+          exitCode: result.exitCode,
+          uploadTime: Date.now() - this.startTime,
+          processedCount: uploadResult.processedCount || 0,
+          totalSubfolders: uploadResult.totalSubfolders || 0,
+          failedFolders: uploadResult.failedFolders || [],
+          successRate: uploadResult.successRate || 0
+        }
+      };
+
+    } catch (error) {
+      this.logError('Parallel upload failed', {
+        batchFolderPath,
+        maxConcurrent,
+        error: error.message,
+        stack: error.stack
+      });
+
+      throw new Error(`Parallel upload failed: ${error.message}`);
+    }
+  }
+
+  parseParallelOutput(stdout, stderr) {
+    const result = {
+      success: false,
+      processedCount: 0,
+      totalSubfolders: 0,
+      failedFolders: [],
+      successRate: 0,
+      message: stdout,
+      error: stderr
+    };
+
+    // Parse parallel completion patterns
+    const completionMatch = stdout.match(/Worker pool parallel.*completed:\s*(\d+)\/(\d+)\s+successful/);
+    if (completionMatch) {
+      result.processedCount = parseInt(completionMatch[1]);
+      result.totalSubfolders = parseInt(completionMatch[2]);
+      result.successRate = result.totalSubfolders > 0 ? (result.processedCount / result.totalSubfolders) * 100 : 0;
+      result.success = true;
+    }
+
+    // Parse failed uploads
+    const failedMatch = stdout.match(/Failed uploads:\s*(.+)/);
+    if (failedMatch) {
+      result.failedFolders = failedMatch[1].split(',').map(f => f.trim()).filter(f => f.length > 0);
+    }
+
+    return result;
+  }
+
+  async cleanup() {
+    this.logInfo('Cleaning up parallel upload worker');
+  }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  new ParallelUploadWorker();
+}
+
+export default ParallelUploadWorker;

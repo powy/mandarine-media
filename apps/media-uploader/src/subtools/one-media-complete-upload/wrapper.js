@@ -60,8 +60,8 @@ async function importDependencies() {
     const configReaderModule = await import(moduleURL2);
 
     return {
-      OneMediaCompleteUpload: indexModule.OneMediaCompleteUpload,
-      ConfigReader: configReaderModule.ConfigReader
+      OneMediaCompleteUpload: indexModule.default || indexModule.OneMediaCompleteUpload,
+      ConfigReader: configReaderModule.default || configReaderModule.ConfigReader
     };
   } catch (error) {
     console.error(`❌ Failed to import wrapper dependencies:`, error.message);
@@ -75,54 +75,8 @@ const dependenciesPromise = importDependencies().then(deps => {
   ConfigReader = deps.ConfigReader;
 });
 
-/**
- * Convert INI config to temporary JSON file for one-media-complete-upload
- * @param {string} configPath - Path to INI or JSON config file
- * @returns {Promise<string|null>} Path to JSON config file (temp or original)
- */
-async function prepareConfig(configPath) {
-  if (!configPath) return null;
-
-  try {
-    // Ensure dependencies are loaded
-    await dependenciesPromise;
-
-    // Check if config is INI file
-    if (configPath.endsWith('.ini')) {
-      // Convert INI to JSON using ConfigReader
-      const jsonConfig = ConfigReader.readConfig(configPath);
-
-      // Create temporary JSON file path
-      const tempPath = configPath.replace('.ini', '.tmp.json');
-
-      // Write JSON config to temporary file
-      await fs.writeJson(tempPath, jsonConfig, { spaces: 2 });
-
-      return tempPath;
-    }
-
-    // Already JSON or other format, use as-is
-    return configPath;
-  } catch (error) {
-    console.error(`Failed to prepare config from ${configPath}:`, error.message);
-    throw new Error(`Config conversion failed: ${error.message}`);
-  }
-}
-
-/**
- * Clean up temporary config file
- * @param {string} configPath - Path to temp config file to remove
- */
-async function cleanupConfig(configPath) {
-  if (configPath && configPath.includes('.tmp.json')) {
-    try {
-      await fs.remove(configPath);
-    } catch (error) {
-      // Ignore cleanup errors
-      console.warn(`Failed to cleanup temp config ${configPath}:`, error.message);
-    }
-  }
-}
+// Removed prepareConfig() and cleanupConfig() functions
+// INI files are now handled directly by loadJsonFile() in fileUtils.js
 
 /**
  * Prepare Excel file with template and auto-fill Files sheet
@@ -134,25 +88,25 @@ async function cleanupConfig(configPath) {
  */
 export async function prepareExcel(options) {
   console.error(`🔍 DEBUG: prepareExcel called with folder: ${options.folder}`);
-  let configPath = null;
   try {
     // Ensure dependencies are loaded
     await dependenciesPromise;
     console.error(`🔍 DEBUG: Dependencies loaded successfully`);
 
-    // Convert config if needed
-    configPath = await prepareConfig(options.config);
-    console.error(`🔍 DEBUG: prepareExcel config prepared: ${configPath}`);
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: prepareExcel config: ${options.config}`);
+    }
 
     const uploader = new OneMediaCompleteUpload({
       ...options,
-      config: configPath,
       mode: 'prepare'
     });
     console.error(`🔍 DEBUG: prepareExcel OneMediaCompleteUpload instance created`);
 
     const result = await uploader.prepareExcel();
-    console.error(`🔍 DEBUG: prepareExcel result:`, safeStringify(result));
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: prepareExcel result: success=${result.success}, phase=${result.phase || 'completed'}`);
+    }
 
     return result;
 
@@ -175,8 +129,6 @@ export async function prepareExcel(options) {
         }
       }
     };
-  } finally {
-    // Config cleanup is handled by the parent processBatchFolder function
   }
 }
 
@@ -189,18 +141,13 @@ export async function prepareExcel(options) {
  * @returns {Promise<Object>} Upload results
  */
 export async function executeUpload(options) {
-  let configPath = null;
   try {
     // Ensure dependencies are loaded
     await dependenciesPromise;
     console.error(`🔍 DEBUG: Dependencies loaded successfully`);
 
-    // Convert config if needed
-    configPath = await prepareConfig(options.config);
-
     const uploader = new OneMediaCompleteUpload({
       ...options,
-      config: configPath,
       mode: 'upload'
     });
     const result = await uploader.executeUpload();
@@ -226,9 +173,6 @@ export async function executeUpload(options) {
         }
       }
     };
-  } finally {
-    // Clean up temporary config file
-    await cleanupConfig(configPath);
   }
 }
 
@@ -243,14 +187,12 @@ export async function executeUpload(options) {
  * @returns {Promise<Object>} Upload results with detailed context
  */
 export async function oneMediaCompleteUpload(options) {
-  let configPath = null;
   try {
-    // Convert config if needed
-    configPath = await prepareConfig(options.config);
+    // Ensure dependencies are loaded
+    await dependenciesPromise;
 
     const uploader = new OneMediaCompleteUpload({
-      ...options,
-      config: configPath
+      ...options
     });
     const result = await uploader.run();
 
@@ -281,9 +223,6 @@ export async function oneMediaCompleteUpload(options) {
         }
       }
     };
-  } finally {
-    // Clean up temporary config file
-    await cleanupConfig(configPath);
   }
 }
 
@@ -343,7 +282,7 @@ async function main() {
   // Parse command line arguments
   const options = {
     config: configPath,
-    verbose: true
+    verbose: false  // Only enable with --verbose flag
   };
 
   let folderPath = null;
@@ -464,11 +403,8 @@ async function hasExcelFiles(folderPath) {
 async function processBatchFolderParallel(parentFolderPath, options, maxConcurrent = 3) {
   const { readdirSync, statSync } = await import('fs');
   const path = await import('path');
-  let configPath = null;
 
   try {
-    // Convert config once for all subfolders
-    configPath = await prepareConfig(options.config);
 
     const items = readdirSync(parentFolderPath);
     const subfolders = items.filter(item => {
@@ -547,7 +483,6 @@ async function processBatchFolderParallel(parentFolderPath, options, maxConcurre
 
       const subfolderOptions = {
         ...options,
-        config: configPath,
         folder: subfolderPath,
         mode: 'auto'
       };
@@ -669,9 +604,6 @@ async function processBatchFolderParallel(parentFolderPath, options, maxConcurre
       failedFolders: null,
       parallel: true
     };
-  } finally {
-    // Clean up temporary config file
-    await cleanupConfig(configPath);
   }
 }
 
@@ -681,88 +613,163 @@ async function processBatchFolderParallel(parentFolderPath, options, maxConcurre
 async function processBatchFolder(parentFolderPath, prepareOnly, options) {
   const { readdirSync, statSync } = await import('fs');
   const path = await import('path');
-  let configPath = null;
 
   try {
-    console.error(`🔍 DEBUG: processBatchFolder called with: ${parentFolderPath}, prepareOnly: ${prepareOnly}`);
-
-    // Convert config once for all subfolders
-    configPath = await prepareConfig(options.config);
-    console.error(`🔍 DEBUG: Config prepared: ${configPath}`);
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: processBatchFolder called with: ${parentFolderPath}, prepareOnly: ${prepareOnly}`);
+      console.error(`🔍 DEBUG: Config: ${options.config}`);
+    }
 
     const items = readdirSync(parentFolderPath);
-    console.error(`🔍 DEBUG: Found ${items.length} items in parent folder: ${items.join(', ')}`);
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: Found ${items.length} items in parent folder: ${items.join(', ')}`);
+    }
+
+    // Check if main folder has Excel files (season level)
+    const mainFolderFiles = items.filter(item => {
+      const itemPath = path.join(parentFolderPath, item);
+      const isFile = !statSync(itemPath).isDirectory();
+      const isExcel = item.startsWith('0_desc') && item.endsWith('.xlsx');
+      return isFile && isExcel;
+    });
+
+    const hasSeasonExcel = mainFolderFiles.length > 0;
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: Found ${mainFolderFiles.length} Excel files in main folder (season level): ${mainFolderFiles.join(', ')}`);
+    }
 
     const subfolders = items.filter(item => {
       const itemPath = path.join(parentFolderPath, item);
       const isDir = statSync(itemPath).isDirectory();
-      console.error(`🔍 DEBUG: Item ${item} -> ${itemPath} -> isDirectory: ${isDir}`);
+      if (options.verbose) {
+        console.error(`🔍 DEBUG: Item ${item} -> ${itemPath} -> isDirectory: ${isDir}`);
+      }
       return isDir;
     });
 
-    console.error(`🔍 DEBUG: Found ${subfolders.length} subfolders: ${subfolders.join(', ')}`);
-    console.error(`🚀 Starting batch ${prepareOnly ? 'preparation' : 'upload'} for ${subfolders.length} folders`);
+    // Build processing queue: main folder first (always try as season), then subfolders
+    const foldersToProcess = [];
+
+    // Always try to process main folder as season-level first
+    foldersToProcess.push({
+      path: parentFolderPath,
+      name: path.basename(parentFolderPath),
+      isSeasonLevel: true
+    });
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: Added main folder as season-level: ${path.basename(parentFolderPath)} ${hasSeasonExcel ? '(with Excel)' : '(without Excel)'}`);
+    }
+    console.error(`🎯 Season folder will be processed first, even if it fails`);
+
+    for (const subfolder of subfolders) {
+      foldersToProcess.push({
+        path: path.join(parentFolderPath, subfolder),
+        name: subfolder,
+        isSeasonLevel: false
+      });
+    }
+
+    if (options.verbose) {
+      console.error(`🔍 DEBUG: Found ${subfolders.length} subfolders: ${subfolders.join(', ')}`);
+    }
+    console.error(`🚀 Starting batch ${prepareOnly ? 'preparation' : 'upload'} for ${foldersToProcess.length} folders (1 season + ${subfolders.length} episodes)`);
 
     const results = [];
     const failedFolders = [];
     let processedCount = 0;
+    let seasonExcelPath = null;
 
-    for (let i = 0; i < subfolders.length; i++) {
-      const subfolder = subfolders[i];
-      const subfolderPath = path.join(parentFolderPath, subfolder);
-      const progress = Math.round(((i + 1) / subfolders.length) * 100);
+    for (let i = 0; i < foldersToProcess.length; i++) {
+      const folderInfo = foldersToProcess[i];
+      const progress = Math.round(((i + 1) / foldersToProcess.length) * 100);
 
-      console.error(`📋 Processing folder ${i + 1}/${subfolders.length} (${progress}%): ${subfolder}`);
-      console.error(`🔍 DEBUG: subfolderPath: ${subfolderPath}`);
+      const folderType = folderInfo.isSeasonLevel ? 'SEASON' : 'EPISODE';
+      console.error(`📋 Processing ${folderType} folder ${i + 1}/${foldersToProcess.length} (${progress}%): ${folderInfo.name}`);
+      if (options.verbose) {
+        console.error(`🔍 DEBUG: folderPath: ${folderInfo.path}`);
+      }
 
-      const subfolderOptions = {
+      const folderOptions = {
         ...options,
-        config: configPath,
-        folder: subfolderPath,
-        mode: prepareOnly ? 'prepare' : 'auto'
+        folder: folderInfo.path,
+        mode: prepareOnly ? 'prepare' : 'auto',
+        isSeasonLevel: folderInfo.isSeasonLevel,  // Pass season level info
+        seasonExcelPath: seasonExcelPath  // Pass season Excel path to episodes
       };
 
-      console.error(`🔍 DEBUG: subfolderOptions:`, safeStringify(subfolderOptions));
+      if (options.verbose) {
+        console.error(`🔍 DEBUG: folderOptions:`, safeStringify(folderOptions));
+      }
 
       try {
-        console.error(`🔍 DEBUG: About to call ${prepareOnly ? 'prepareExcel' : 'oneMediaCompleteUpload'} for ${subfolder}`);
+        if (options.verbose) {
+          console.error(`🔍 DEBUG: About to call ${prepareOnly ? 'prepareExcel' : 'oneMediaCompleteUpload'} for ${folderType} ${folderInfo.name}`);
+        }
 
         let result;
         if (prepareOnly) {
-          result = await prepareExcel(subfolderOptions);
+          result = await prepareExcel(folderOptions);
         } else {
-          result = await oneMediaCompleteUpload(subfolderOptions);
+          result = await oneMediaCompleteUpload(folderOptions);
         }
 
-        console.error(`🔍 DEBUG: Result for ${subfolder}:`, safeStringify(result));
+        // After processing season, save the Excel path for episodes to use as template
+        if (folderInfo.isSeasonLevel && result.success && result.excelPath) {
+          seasonExcelPath = result.excelPath;
+          if (options.verbose) {
+            console.error(`🔍 DEBUG: Season Excel path saved: ${seasonExcelPath}`);
+          }
+        }
+
+        if (options.verbose) {
+          console.error(`🔍 DEBUG: Result for ${folderType} ${folderInfo.name}: success=${result.success}, phase=${result.phase || 'completed'}`);
+        }
 
         if (result.success) {
           processedCount++;
-          console.error(`✅ Successfully processed: ${subfolder}`);
+          console.error(`✅ Successfully processed ${folderType}: ${folderInfo.name}`);
         } else {
-          failedFolders.push(subfolder);
-          console.error(`❌ Failed to process: ${subfolder} - ${result.error || 'Unknown error'}`);
+          failedFolders.push(folderInfo.name);
+          const errorMsg = result.error || 'Unknown error';
+          console.error(`❌ Failed to process ${folderType}: ${folderInfo.name} - ${errorMsg}`);
+          if (folderInfo.isSeasonLevel) {
+            console.error(`⚠️  Season upload failed but continuing with episode uploads...`);
+          }
         }
-        results.push({ folder: subfolder, result });
+        results.push({
+          folder: folderInfo.name,
+          result,
+          isSeasonLevel: folderInfo.isSeasonLevel
+        });
 
       } catch (error) {
-        console.error(`🔍 DEBUG: Exception caught for ${subfolder}:`, error);
-        failedFolders.push(subfolder);
-        console.error(`❌ Error processing: ${subfolder} - ${error.message}`);
+        if (options.verbose) {
+          console.error(`🔍 DEBUG: Exception caught for ${folderType} ${folderInfo.name}:`, error);
+        }
+        failedFolders.push(folderInfo.name);
+        console.error(`❌ Error processing ${folderType}: ${folderInfo.name} - ${error.message}`);
+        if (folderInfo.isSeasonLevel) {
+          console.error(`⚠️  Season upload failed but continuing with episode uploads...`);
+        }
         results.push({
-          folder: subfolder,
+          folder: folderInfo.name,
           result: {
             success: false,
             error: error.message
-          }
+          },
+          isSeasonLevel: folderInfo.isSeasonLevel
         });
       }
 
-      console.error(`🔍 DEBUG: Completed iteration ${i + 1}, processedCount: ${processedCount}, failedFolders: ${failedFolders.length}`);
+      if (options.verbose) {
+        console.error(`🔍 DEBUG: Completed iteration ${i + 1}, processedCount: ${processedCount}, failedFolders: ${failedFolders.length}`);
+      }
     }
 
     // Final summary
-    console.error(`🎉 Batch processing completed: ${processedCount}/${subfolders.length} successful, ${failedFolders.length} failed`);
+    const seasonCount = 1; // Always process 1 season (main folder)
+    const episodeCount = subfolders.length;
+    console.error(`🎉 Batch processing completed: ${processedCount}/${foldersToProcess.length} successful, ${failedFolders.length} failed (${seasonCount} season + ${episodeCount} episodes)`);
     if (failedFolders.length > 0) {
       console.error(`❌ Failed folders: ${failedFolders.join(', ')}`);
     }
@@ -771,7 +778,10 @@ async function processBatchFolder(parentFolderPath, prepareOnly, options) {
       success: processedCount > 0 && failedFolders.length === 0,
       message: `Batch processing completed`,
       processedCount: processedCount,
-      totalSubfolders: subfolders.length,
+      totalFolders: foldersToProcess.length,
+      seasonCount: seasonCount,
+      episodeCount: episodeCount,
+      totalSubfolders: subfolders.length,  // Keep for backward compatibility
       failedFolders: failedFolders.length > 0 ? failedFolders : null,
       results
     };
@@ -785,13 +795,10 @@ async function processBatchFolder(parentFolderPath, prepareOnly, options) {
       totalSubfolders: 0,
       failedFolders: null
     };
-  } finally {
-    // Clean up temporary config file
-    await cleanupConfig(configPath);
   }
 }
 
 // Run CLI if this file is executed directly
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }

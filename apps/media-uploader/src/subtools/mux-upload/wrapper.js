@@ -20,27 +20,45 @@ dotenv.config();
  * @param {boolean} options.progress - Show upload progress bar (default: true)
  * @param {boolean} options.verbose - Verbose output
  * @param {boolean} options.quiet - Quiet mode (errors only)
+ * @param {Object} context - Execution context (taskId, executionMode, etc.)
  * @returns {Promise<Object>} Upload results
  */
-export async function uploadToMux(options) {
+export async function uploadToMux(options, context = {}) {
   let logger = null;
-  
+
   try {
+    // Read context from environment variables if not provided (for batch worker scenarios)
+    if (!context.taskId && process.env.UPLOAD_TASK_ID) {
+      context = {
+        taskId: process.env.UPLOAD_TASK_ID,
+        executionMode: process.env.UPLOAD_EXECUTION_MODE || 'direct',
+        ...context
+      };
+    }
+
     // Load and validate configuration
     const { config, configPath } = await loadConfigFile(options.config);
-    
+
     // Override config with environment variables
     mergeEnvironmentVariables(config);
-    
+
     // Override config with options
     mergeCLIOptions(config, options);
-    
+
     // Validate configuration
     const validatedConfig = validateConfig(config);
-    
-    // Initialize logger
-    logger = createLogger(validatedConfig);
-    logger.info('Upload process started', { configPath });
+
+    // Initialize logger with context
+    logger = createLogger(validatedConfig, context);
+    logger.info('Upload process started', { configPath, executionContext: context.executionMode || 'direct' });
+
+    // Log credential source for debugging
+    logger.info('Mux credentials loaded from config file', {
+      configPath,
+      hasTokenId: !!validatedConfig.auth?.mux_token_id,
+      hasTokenSecret: !!validatedConfig.auth?.mux_token_secret,
+      source: 'config file (NOT environment variables)'
+    });
     
     // Display startup information
     if (!validatedConfig._cli?.quiet) {
@@ -57,9 +75,18 @@ export async function uploadToMux(options) {
       return { dryRun: true, success: true };
     }
     
+    // Log initialization details
+    logger.info('Initializing UploadService', {
+      videoPath: validatedConfig.video.filepath,
+      configPath,
+      timeout: validatedConfig._cli.timeout,
+      retry: validatedConfig._cli.retry,
+      executionContext: context.executionMode || 'direct'
+    });
+
     // Initialize upload service
     const uploadService = new UploadService(validatedConfig, logger);
-    
+
     // Perform upload
     const result = await performUpload(uploadService, validatedConfig);
     

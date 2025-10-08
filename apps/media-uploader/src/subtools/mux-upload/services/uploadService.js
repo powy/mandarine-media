@@ -96,10 +96,21 @@ export class UploadService {
       
       // Step 6: Create Mux direct upload
       this.logger.info('Step 6: Creating Mux direct upload');
+      this.logger.debug('About to call muxService.createDirectUpload()', {
+        muxConfigured: !!this.muxService,
+        authConfigPresent: !!this.config.auth,
+        tokenIdPresent: !!this.config.auth?.mux_token_id,
+        tokenSecretPresent: !!this.config.auth?.mux_token_secret
+      });
+
       const upload = await this.muxService.createDirectUpload();
       uploadId = upload.id;
-      
-      this.logger.info('Mux upload created', { uploadId });
+
+      this.logger.info('Mux direct upload created successfully', {
+        uploadId,
+        uploadUrl: upload.url?.substring(0, 60) + '...',
+        assetId: upload.asset_id || 'will be created on completion'
+      });
       
       // Step 7: Create video file record (asset ID will be added later)
       this.logger.info('Step 7: Creating video file record in backend');
@@ -107,11 +118,37 @@ export class UploadService {
       this.logger.info('Video record created with UUID', { uuid: this.videoRecord.id });
       
       this.logger.logUploadStart(fileInfo.filepath, fileInfo.size, uploadId);
-      
+
       // Step 8: Upload file to Mux (Enhanced)
       this.logger.info('Step 8: Uploading file to Mux with enhanced chunked uploader');
+      this.logger.debug('Starting chunkUploader.upload()', {
+        uploadUrl: upload.url?.substring(0, 60) + '...',
+        filePath: fileInfo.filepath,
+        fileSize: fileInfo.sizeFormatted,
+        chunkUploaderInitialized: !!this.chunkUploader
+      });
+
       uploadStartTime = Date.now(); // Track upload start
-      await this.chunkUploader.upload(upload.url, fileInfo.filepath);
+
+      // Wrap upload with timeout to detect hangs
+      // Use configured timeout or default to 12 hours for large files
+      const UPLOAD_TIMEOUT = this.config.options?.timeout || (12 * 60 * 60 * 1000);
+      const uploadPromise = this.chunkUploader.upload(upload.url, fileInfo.filepath);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Mux upload hung - no response after ${UPLOAD_TIMEOUT/1000}s`)), UPLOAD_TIMEOUT)
+      );
+
+      try {
+        await Promise.race([uploadPromise, timeoutPromise]);
+      } catch (error) {
+        this.logger.error('Mux upload failed or timed out', {
+          error: error.message,
+          duration: Date.now() - uploadStartTime,
+          filePath: fileInfo.filepath
+        });
+        throw error;
+      }
+
       const uploadDuration = Date.now() - uploadStartTime;
 
       this.logger.info('Mux upload completed', {
@@ -322,7 +359,7 @@ export class UploadService {
     this.logger.info('Starting stream upload', {
       filename: fileInfo.filename,
       size: fileInfo.sizeFormatted,
-      timeout: this.config.options?.timeout || 3600000
+      timeout: this.config.options?.timeout || 43200000
     });
 
     try {
@@ -353,7 +390,7 @@ export class UploadService {
           'Content-Type': 'application/octet-stream',
           'Content-Length': fileInfo.size
         },
-        timeout: this.config.options?.timeout || 3600000,
+        timeout: this.config.options?.timeout || 43200000,
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
         onUploadProgress: (progressEvent) => {

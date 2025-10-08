@@ -285,7 +285,8 @@ export class OneMediaCompleteUpload {
         excelData,
         mediaFiles,
         this.options.folder,
-        excelPath
+        excelPath,
+        this.options  // Pass options to access isSeasonLevel
       );
 
       if (uploadResults.success) {
@@ -577,10 +578,11 @@ export class OneMediaCompleteUpload {
       // Begin upload process
       console.log(chalk.blue('\n🚀 Starting upload process...'));
       const uploadResults = await this.orchestrationService.processUploads(
-        excelData, 
-        mediaFiles, 
+        excelData,
+        mediaFiles,
         this.options.folder,
-        excelPath
+        excelPath,
+        this.options  // Pass options to access isSeasonLevel
       );
       
       if (uploadResults.success) {
@@ -774,32 +776,53 @@ export class OneMediaCompleteUpload {
   async handleExcelFile() {
     try {
       console.log(chalk.gray('Checking for Excel file...'));
-      
+
       // Look for existing Excel file
       const existingExcel = await this.excelService.findExistingExcelFile();
-      
+
       if (existingExcel) {
         console.log(chalk.green(`✅ Found existing Excel file: ${path.basename(existingExcel)}`));
         return existingExcel;
       }
-      
+
+      // Check if we should use season Excel as template (for episodes)
+      const useSeasonTemplate = this.options.seasonExcelPath && !this.options.isSeasonLevel;
+
+      if (useSeasonTemplate) {
+        console.log(chalk.cyan(`📋 Creating episode Excel from season template...`));
+        const folderName = path.basename(this.options.folder);
+        const newExcelPath = await this.excelService.createExcelFromSeasonTemplate(
+          this.options.seasonExcelPath,
+          folderName,
+          this.options.folder
+        );
+
+        // Populate with initial file list and auto-fill Files sheet
+        const mediaFiles = await scanFolder(this.options.folder);
+        await this.excelService.populateInitialFileList(newExcelPath, mediaFiles, this.mediaAnalysisService);
+
+        console.log(chalk.green(`✅ Episode Excel created from season template with Files sheet auto-filled: ${path.basename(newExcelPath)}`));
+
+        return { path: newExcelPath, newlyCreated: true };
+      }
+
       // Create new Excel file from template
       console.log(chalk.yellow('📄 No Excel file found. Creating from template...'));
-      
+
       const folderName = path.basename(this.options.folder);
       const newExcelPath = await this.excelService.createExcelFromTemplate(folderName);
-      
+
       // Populate with initial file list and auto-fill Files sheet
       const mediaFiles = await scanFolder(this.options.folder);
       await this.excelService.populateInitialFileList(newExcelPath, mediaFiles, this.mediaAnalysisService);
-      
+
       console.log(chalk.green(`✅ Excel template created with Files sheet auto-filled: ${path.basename(newExcelPath)}`));
       console.log(chalk.yellow(`\n⏸️  Please fill the Description sheet and run the command again:`));
       console.log(chalk.white(`   ${path.basename(newExcelPath)}`));
       console.log(chalk.gray(`\n   Excel file location: ${newExcelPath}`));
       console.log(chalk.gray(`   Fill the "Description" sheet with metadata`));
       console.log(chalk.gray(`   Review the "Files" sheet for accuracy`));
-      
+
       return { path: newExcelPath, newlyCreated: true }; // Return object indicating new file
     } catch (error) {
       throw new Error(`Excel handling failed: ${error.message}`);
@@ -975,7 +998,7 @@ async function main() {
 
 // Only run main if this file is executed directly (not imported)
 // Check if this is the main module by comparing with the executed file
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }
 

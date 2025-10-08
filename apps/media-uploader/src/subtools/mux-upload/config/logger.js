@@ -2,9 +2,9 @@ import winston from 'winston';
 import fs from 'fs-extra';
 import path from 'path';
 
-export function createLogger(config = {}) {
+export function createLogger(config = {}, context = {}) {
   const transports = [];
-  
+
   // Console transport
   if (config.logging?.console !== false) {
     transports.push(new winston.transports.Console({
@@ -22,7 +22,7 @@ export function createLogger(config = {}) {
       level: config.logging?.level || 'info'
     }));
   }
-  
+
   // Auto-generate timestamped log file if video filepath is provided
   let logFilePath = config.logging?.file;
   if (config.video?.filepath && !logFilePath) {
@@ -31,8 +31,14 @@ export function createLogger(config = {}) {
 
     // Use a logs directory outside src-tauri to avoid triggering Tauri rebuilds
     // When running in Tauri context, process.cwd() points to src-tauri directory
-    const logsDir = path.join(process.cwd(), '..', 'logs');
-    logFilePath = path.join(logsDir, `upload_log_${timestamp}_${videoBasename}.log`);
+    const logsDir = path.join(process.cwd(), '..', 'logs', 'mux-logs');
+
+    // Create unique log filename based on context (taskId for batch uploads, or timestamp for direct uploads)
+    if (context.taskId) {
+      logFilePath = path.join(logsDir, `mux_upload_${context.taskId}_${timestamp}_${videoBasename}.log`);
+    } else {
+      logFilePath = path.join(logsDir, `upload_log_${timestamp}_${videoBasename}.log`);
+    }
   }
   
   // File transport

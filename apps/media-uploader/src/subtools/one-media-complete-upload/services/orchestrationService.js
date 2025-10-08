@@ -12,6 +12,22 @@ export class OrchestrationService {
     this.logger = logger;
     this.excelService = excelService;
     this.tempConfigDir = path.join(process.cwd(), '.temp-configs');
+
+    // Ensure temp directory exists
+    this.ensureTempDirectory();
+  }
+
+  /**
+   * Ensure temp directory exists for config files
+   */
+  async ensureTempDirectory() {
+    try {
+      await fs.ensureDir(this.tempConfigDir);
+      this.logger.info(`Ensured temp directory exists: ${this.tempConfigDir}`);
+    } catch (error) {
+      this.logger.error(`Failed to create temp directory ${this.tempConfigDir}:`, error);
+      throw new Error(`Cannot create temp directory: ${error.message}`);
+    }
   }
 
   /**
@@ -74,7 +90,7 @@ export class OrchestrationService {
       },
       // yyyy/mm/dd or yyyy-mm-dd (ISO format)
       {
-        pattern: /^(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+        pattern: /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
         format: 'YYYY/MM/DD',
         dayIndex: 3,
         monthIndex: 2,
@@ -172,7 +188,7 @@ export class OrchestrationService {
     return normalized || language; // Return original if no mapping found
   }
 
-  async processUploads(excelData, mediaFiles, folderPath, excelPath = null) {
+  async processUploads(excelData, mediaFiles, folderPath, excelPath = null, options = {}) {
     const startTime = Date.now();
     const results = {
       success: false,
@@ -197,7 +213,20 @@ export class OrchestrationService {
       this.logger.info('Starting orchestrated upload process');
 
       // Determine media type and requirements
-      const mediaType = excelData.description.media_type?.toLowerCase() || 'video';
+      let mediaType = excelData.description.media_type?.toLowerCase() || 'video';
+
+      // Override media type based on season level flag
+      if (options.isSeasonLevel === true) {
+        mediaType = 'season';
+        console.log(chalk.yellow('🔄 Overriding media type to "season" based on folder structure'));
+      } else if (options.isSeasonLevel === false) {
+        // Ensure episode-level folders are treated as video/episode content
+        if (mediaType === 'season' || mediaType === 'program') {
+          mediaType = 'video';
+          console.log(chalk.yellow('🔄 Overriding media type to "video" for episode-level folder'));
+        }
+      }
+
       const requiresVideo = mediaType === 'video' || mediaType === 'excerpt' || mediaType === 'trailer';
 
       console.log(chalk.blue.bold(`\n📦 Processing ${mediaType.toUpperCase()} Upload\n`));
@@ -265,6 +294,16 @@ export class OrchestrationService {
       results.uploads.images = imageResults.successes;
       if (imageResults.errors.length > 0) {
         results.errors.push(...imageResults.errors);
+      }
+
+      // Safety check: Ensure images are uploaded even if normal flow was bypassed
+      if ((!results.uploads.images || results.uploads.images.length === 0) && mediaFiles.images.length > 0) {
+        console.log(chalk.cyan('🖼️  Uploading missing images to S3...'));
+        const imageResults = await this.uploadImagesToS3(excelData.files, mediaFiles, folderPath);
+        results.uploads.images = imageResults.successes;
+        if (imageResults.errors.length > 0) {
+          results.errors.push(...imageResults.errors);
+        }
       }
 
       // Step 4: Create media description via API (two-step process)
@@ -453,11 +492,15 @@ export class OrchestrationService {
         }
         
         console.log(chalk.gray(`  Uploading ${videoFile.name}...`));
-        
+
         const result = await uploadToMux({
           config: configPath,
           verbose: false,
           quiet: true
+        }, {
+          taskId: this.taskId || `video-${Date.now()}`,
+          executionMode: 'orchestration',
+          videoFileName: videoFile.name
         });
         
         const isMainVideo = entry.type.toLowerCase() === 'video';
@@ -654,8 +697,9 @@ export class OrchestrationService {
     
     subtitleFiles.forEach(subtitleFile => {
       // Find the corresponding video asset by matching filename patterns
-      const matchingAsset = this.findMatchingVideoAssetForSubtitle(subtitleFile.fileName, videoAssets);
-      
+      // For Excel-provided subtitles, we trust the language from column position
+      const matchingAsset = this.findMatchingVideoAssetForSubtitle(subtitleFile.fileName, videoAssets, subtitleFile.language);
+
       if (matchingAsset) {
         if (!subtitlesByAsset.has(matchingAsset.assetId)) {
           subtitlesByAsset.set(matchingAsset.assetId, {
@@ -664,12 +708,18 @@ export class OrchestrationService {
           });
         }
         subtitlesByAsset.get(matchingAsset.assetId).subtitles.push(subtitleFile);
-        
-        this.logger.info(`Matched subtitle "${subtitleFile.fileName}" to video asset: ${matchingAsset.assetId} (${matchingAsset.type})`);
+
+        // Enhanced logging to show Excel-forced vs traditional matching
+        const matchType = subtitleFile.language ? '[Excel-forced]' : '[Pattern-based]';
+        this.logger.info(`Matched subtitle "${subtitleFile.fileName}" (${subtitleFile.language}) to video asset: ${matchingAsset.assetId} (${matchingAsset.type}) ${matchType}`);
+
+        // Log specific matching details for Excel-forced uploads
+        console.log(chalk.cyan(`📎 Subtitle Match: "${subtitleFile.fileName}" -> "${matchingAsset.fileName}" ${matchType}`));
       } else {
         const errorMsg = `No matching video asset found for subtitle: ${subtitleFile.fileName}`;
         errors.push(errorMsg);
         this.logger.error(errorMsg);
+        console.log(chalk.red(`❌ Subtitle Match Failed: "${subtitleFile.fileName}" - no compatible video asset found`));
       }
     });
     
@@ -677,12 +727,27 @@ export class OrchestrationService {
     for (const [assetId, assetData] of subtitlesByAsset.entries()) {
       try {
         this.logger.info(`Processing ${assetData.subtitles.length} subtitles for asset: ${assetId} (${assetData.asset.type})`);
-        
+
+        // Log each subtitle being uploaded with enhanced Excel-forced indicator
+        assetData.subtitles.forEach(subtitle => {
+          const hasTraditionalPattern = /[-_](fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)\.(srt|vtt)$/i.test(subtitle.fileName);
+          const hasSquareBrackets = /\[(fr|en|eng|ko|kr)\]/i.test(subtitle.fileName);
+          const isExcelForced = !hasTraditionalPattern || hasSquareBrackets;
+
+          if (isExcelForced) {
+            this.logger.info(`  🔍 EXCEL-FORCED: "${subtitle.fileName}" -> ${subtitle.language} (column-based language assignment)`);
+            console.log(chalk.yellow(`    📋 Language from Excel column, not filename pattern`));
+          } else {
+            this.logger.debug(`  📝 Pattern-based: "${subtitle.fileName}" -> ${subtitle.language} (traditional filename matching)`);
+            console.log(chalk.gray(`    🔤 Language detected from filename pattern`));
+          }
+        });
+
         // Generate config for this specific asset's subtitles
         const configPath = await this.generateSubtitleUploadConfig(assetData.subtitles, mediaFiles, assetId);
-        
+
         console.log(chalk.gray(`  Uploading ${assetData.subtitles.length} subtitle files for ${assetData.asset.type}...`));
-        
+
         const result = await uploadSubtitlesToMux({
           config: configPath,
           verbose: false,
@@ -722,47 +787,122 @@ export class OrchestrationService {
 
   /**
    * Find the matching video asset for a subtitle file based on filename patterns
+   * Enhanced to support Excel-forced uploads with language from column position
    */
-  findMatchingVideoAssetForSubtitle(subtitleFileName, videoAssets) {
-    // Extract the base name from subtitle filename (remove language suffix)
-    // Examples:
-    // "pompom bag - fr.srt" -> "pompom bag"
-    // "trailer 01 - pompom bag - fr.srt" -> "trailer 01 - pompom bag"
-    // "EX 01 - pompom bag - en.srt" -> "EX 01 - pompom bag"
-    // "BecomingTheMonarch_EP01_FR.srt" -> "BecomingTheMonarch_EP01"
+  findMatchingVideoAssetForSubtitle(subtitleFileName, videoAssets, excelProvidedLanguage = null) {
+    // When Excel provides the language, we trust it completely and use flexible matching
+    if (excelProvidedLanguage) {
+      this.logger.info(`Excel-forced subtitle upload: "${subtitleFileName}" -> language: ${excelProvidedLanguage}`);
 
-    const baseNameMatch = subtitleFileName.match(/^(.+?)(?:\s*[-_]\s*)(fr|en|ko|kr|FR|EN|KO|KR)\.(srt|vtt)$/i);
-    if (!baseNameMatch) {
-      this.logger.warn(`Could not parse subtitle filename pattern: ${subtitleFileName}`);
-      return null;
-    }
-    
-    const baseName = baseNameMatch[1].trim();
-    this.logger.debug(`Looking for video asset matching subtitle base name: "${baseName}"`);
-    
-    // Try to find matching video asset by comparing base names
-    const matchingAsset = videoAssets.find(asset => {
-      // Remove extension and language suffix from video filename
-      let videoBaseName = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '');
+      // Extract base name by removing language patterns and extensions
+      let baseName = subtitleFileName;
 
-      // Handle both underscore and space-dash patterns for language suffix
-      videoBaseName = videoBaseName.replace(/[-_](en|fr|ko|kr)$/i, ''); // _en, _fr, _ko, _kr
-      videoBaseName = videoBaseName.replace(/\s*-\s*(en|fr|ko|kr)$/i, ''); // - en, - fr, - ko, - kr
+      // Remove file extension first
+      baseName = baseName.replace(/\.(srt|vtt|ass|ssa|sub|sbv)$/i, '').trim();
 
-      const matches = videoBaseName === baseName;
+      // Remove common language patterns from subtitle filename
+      baseName = baseName.replace(/[-_\s]+(fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)$/i, ''); // Language suffix
+      baseName = baseName.replace(/\s*[-_]\s*(fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)$/i, ''); // Space-dash-language
+      baseName = baseName.replace(/\s*\[(fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)\]/i, ''); // [language] brackets
+      baseName = baseName.replace(/\s*-\s*\[(fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)\]/i, ''); // - [language] brackets
+      baseName = baseName.trim();
 
-      if (matches) {
-        this.logger.debug(`Found match: "${baseName}" -> "${videoBaseName}" (${asset.type})`);
+      this.logger.info(`Extracted base name for Excel-forced subtitle: "${baseName}"`);
+
+      // Try exact match first
+      let matchingAsset = videoAssets.find(asset => {
+        let videoBaseName = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '');
+        // Remove language suffixes from video name
+        videoBaseName = videoBaseName.replace(/[-_](en|fr|ko|kr)$/i, '');
+        videoBaseName = videoBaseName.replace(/\s*-\s*(en|fr|ko|kr)$/i, '');
+
+        const exactMatch = videoBaseName === baseName;
+        if (exactMatch) {
+          this.logger.info(`Excel-forced exact match: "${baseName}" -> "${videoBaseName}" (${asset.type})`);
+        }
+        return exactMatch;
+      });
+
+      // If no exact match, try flexible matching for Excel-provided subtitles
+      if (!matchingAsset) {
+        this.logger.info(`No exact match found, trying flexible matching for Excel subtitle: ${subtitleFileName}`);
+
+        matchingAsset = videoAssets.find(asset => {
+          const videoBase = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '').replace(/[-_](en|fr|ko|kr)$/i, '');
+
+          // Try partial matching - either direction
+          const subtitleContainsVideo = baseName.toLowerCase().includes(videoBase.toLowerCase());
+          const videoContainsSubtitle = videoBase.toLowerCase().includes(baseName.toLowerCase());
+
+          // Also try number extraction for episode matching
+          const subtitleNumbers = baseName.match(/\d+/g);
+          const videoNumbers = videoBase.match(/\d+/g);
+          const numberMatch = subtitleNumbers && videoNumbers &&
+                             subtitleNumbers.some(sNum => videoNumbers.includes(sNum));
+
+          const isMatch = subtitleContainsVideo || videoContainsSubtitle || numberMatch;
+
+          if (isMatch) {
+            this.logger.info(`Excel-forced flexible match: "${baseName}" <-> "${videoBase}" (${asset.type})`);
+            this.logger.info(`  Match type: ${subtitleContainsVideo ? 'subtitle-contains-video' :
+                                        videoContainsSubtitle ? 'video-contains-subtitle' : 'number-match'}`);
+          }
+
+          return isMatch;
+        });
       }
 
+      // If still no match, return the first video asset as fallback for Excel-forced uploads
+      if (!matchingAsset && videoAssets.length > 0) {
+        matchingAsset = videoAssets[0];
+        this.logger.warn(`Excel-forced fallback: No match found for "${subtitleFileName}", using first available video: "${matchingAsset.fileName}" (${matchingAsset.type})`);
+      }
+
+      return matchingAsset;
+    }
+
+    // Traditional pattern matching for non-Excel uploads (legacy behavior)
+    const baseNameMatch = subtitleFileName.match(/^(.+?)(?:\s*[-_]\s*)(fr|en|eng|ko|kr|FR|EN|ENG|KO|KR)\.(srt|vtt)$/i);
+    let baseName = null;
+
+    if (baseNameMatch) {
+      baseName = baseNameMatch[1].trim();
+      this.logger.debug(`Using traditional pattern for subtitle: "${subtitleFileName}" -> base: "${baseName}"`);
+    } else {
+      // Handle square bracket notation: "767 - [en] Running Man Episode 767.vtt"
+      const squareBracketMatch = subtitleFileName.match(/^(.+?)\s*\[(fr|en|eng|ko|kr)\]/i);
+      if (squareBracketMatch) {
+        baseName = squareBracketMatch[1].trim();
+        this.logger.debug(`Using square bracket pattern for subtitle: "${subtitleFileName}" -> base: "${baseName}"`);
+      } else {
+        baseName = subtitleFileName.replace(/\.(srt|vtt|ass|ssa|sub|sbv)$/i, '').trim();
+        this.logger.debug(`Using full base name for subtitle: "${subtitleFileName}" -> base: "${baseName}"`);
+      }
+    }
+
+    if (!baseName) {
+      this.logger.warn(`Could not extract base name from subtitle: ${subtitleFileName}`);
+      return null;
+    }
+
+    // Traditional exact matching
+    const matchingAsset = videoAssets.find(asset => {
+      let videoBaseName = asset.fileName.replace(/\.(mp4|mov|avi)$/i, '');
+      videoBaseName = videoBaseName.replace(/[-_](en|fr|ko|kr)$/i, '');
+      videoBaseName = videoBaseName.replace(/\s*-\s*(en|fr|ko|kr)$/i, '');
+
+      const matches = videoBaseName === baseName;
+      if (matches) {
+        this.logger.debug(`Found traditional match: "${baseName}" -> "${videoBaseName}" (${asset.type})`);
+      }
       return matches;
     });
-    
+
     if (!matchingAsset) {
       this.logger.warn(`No video asset found for subtitle base name: "${baseName}"`);
       this.logger.debug(`Available video assets: ${videoAssets.map(a => `"${a.fileName}" (${a.type})`).join(', ')}`);
     }
-    
+
     return matchingAsset;
   }
 
@@ -869,8 +1009,8 @@ export class OrchestrationService {
         }
 
         if (descriptionData.episode_title && existingItems.length > 0) {
-          duplicates.byTitle = existingItems.find(item => 
-            item.episode_title && item.episode_title.toLowerCase() === descriptionData.episode_title.toLowerCase()
+          duplicates.byTitle = existingItems.find(item =>
+            item.episode_title && String(item.episode_title || '').toLowerCase() === String(descriptionData.episode_title || '').toLowerCase()
           );
         }
 
@@ -923,6 +1063,21 @@ export class OrchestrationService {
         };
       }
 
+      // Validate that images were actually uploaded (not fake IDs)
+      if (uploadedImages && uploadedImages.length > 0) {
+        for (const image of uploadedImages) {
+          if (!image.s3Url || !image.pictureId || !image.s3Key) {
+            this.logger.warn(`Image ${image.fileName || 'unknown'} has incomplete upload data`, {
+              hasS3Url: !!image.s3Url,
+              hasPictureId: !!image.pictureId,
+              hasS3Key: !!image.s3Key
+            });
+            throw new Error(`Image ${image.fileName || 'unknown'} was not properly uploaded to S3. Missing required upload data.`);
+          }
+        }
+        this.logger.info(`Validated ${uploadedImages.length} uploaded images - all have proper S3 data`);
+      }
+
       // Handle season and program types differently
       const mediaType = descriptionData.media_type?.toLowerCase() || 'video';
       let seasonId = null;
@@ -939,9 +1094,13 @@ export class OrchestrationService {
         const season = await this.getOrCreateSeason(descriptionData.season_name);
         seasonId = season.id;
 
-        // For season type, use season name as episode title (required field)
+        // For season type, use temporary episode title (required field) - will be cleaned up after upload
         if (!descriptionData.episode_title) {
-          descriptionData.episode_title = descriptionData.season_name;
+          descriptionData.episode_title = `${descriptionData.season_name} all episodes`;
+          // Mark this upload as needing cleanup
+          descriptionData._needsSeasonCleanup = true;
+          descriptionData._seasonName = descriptionData.season_name;
+          console.log(chalk.yellow(`🔄 Using temporary episode title for season: ${descriptionData.episode_title}`));
         }
       }
 
@@ -1038,6 +1197,11 @@ export class OrchestrationService {
       
       const mediaDescriptionId = createResponse.data.id;
       this.logger.info(`✅ Step 1 completed: Media description created with ID: ${mediaDescriptionId}`);
+
+      // SEASON CLEANUP: If this was a season upload with temporary episode name, clean it up
+      if (descriptionData._needsSeasonCleanup) {
+        await this.cleanupSeasonUpload(mediaDescriptionId, seasonId, descriptionData._seasonName, authResult.token);
+      }
 
       // Log backend response to see which fields were actually saved
       if (createResponse.data) {
@@ -1846,6 +2010,78 @@ export class OrchestrationService {
   }
 
   /**
+   * Clean up season upload by removing temporary episode name and fixing relationships
+   */
+  async cleanupSeasonUpload(mediaDescriptionId, seasonId, seasonName, authToken) {
+    try {
+      console.log(chalk.cyan(`🧹 Cleaning up season upload for: ${seasonName}`));
+
+      // Step 1: Update media description to remove season_id (keep the episode_title set earlier)
+      const mediaDescriptionUpdateUrl = this.forceIPv4Url(
+        `${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`
+      );
+
+      const mediaDescriptionUpdate = {
+        season_id: null      // Remove episode-season relationship
+      };
+
+      console.log(chalk.gray(`  • Removing episode-season link from media description ${mediaDescriptionId}`));
+
+      const mediaDescriptionResponse = await axios.patch(mediaDescriptionUpdateUrl, mediaDescriptionUpdate, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        timeout: 30000
+      });
+
+      if (mediaDescriptionResponse.status === 200 || mediaDescriptionResponse.status === 204) {
+        console.log(chalk.green(`  ✅ Media description cleaned up successfully`));
+      } else {
+        console.log(chalk.red(`  ❌ Failed to clean up media description (status: ${mediaDescriptionResponse.status})`));
+      }
+
+      // Step 2: Update season to link this media description as the season description
+      const seasonUpdateUrl = this.forceIPv4Url(
+        `${this.config.backend.baseUrl}/api/v1/seasons/${seasonId}`
+      );
+
+      const seasonUpdate = {
+        general_media_description_id: mediaDescriptionId
+      };
+
+      console.log(chalk.gray(`  • Linking media description ${mediaDescriptionId} as season description for season ${seasonId}`));
+
+      const seasonResponse = await axios.put(seasonUpdateUrl, seasonUpdate, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        timeout: 30000
+      });
+
+      if (seasonResponse.status === 200 || seasonResponse.status === 204) {
+        console.log(chalk.green(`  ✅ Season description relationship established successfully`));
+        console.log(chalk.cyan(`🎯 Season cleanup completed: "${seasonName}" now has proper description relationship`));
+      } else {
+        console.log(chalk.red(`  ❌ Failed to establish season description relationship (status: ${seasonResponse.status})`));
+      }
+
+    } catch (error) {
+      console.log(chalk.red(`❌ Season cleanup failed: ${error.message}`));
+      this.logger.error(`Season cleanup failed for ${seasonName}: ${error.message}`);
+
+      if (error.response) {
+        this.logger.error(`API Response Status: ${error.response.status}`);
+        this.logger.error(`API Response Data: ${JSON.stringify(error.response.data)}`);
+      }
+
+      // Don't throw - cleanup failure shouldn't break the main upload flow
+      console.log(chalk.yellow(`⚠️  Season upload completed but cleanup failed - manual cleanup may be needed`));
+    }
+  }
+
+  /**
    * Get or create a program by name
    */
   async getOrCreateProgram(programName) {
@@ -1995,6 +2231,9 @@ export class OrchestrationService {
 
     this.logger.info(`Generated Mux config for ${videoFile.name}: policy=${policy.join(',')}, passthrough="${passthrough}", drm=${!!drmConfig}`);
 
+    // Ensure temp directory exists before writing config
+    await this.ensureTempDirectory();
+
     const configPath = path.join(this.tempConfigDir, `mux-upload-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.json`);
     await fs.writeJson(configPath, config, { spaces: 2 });
     return configPath;
@@ -2021,6 +2260,9 @@ export class OrchestrationService {
         fileName: imageFile.name
       }
     };
+
+    // Ensure temp directory exists before writing config
+    await this.ensureTempDirectory();
 
     const configPath = path.join(this.tempConfigDir, `picture-upload-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.json`);
     await fs.writeJson(configPath, config, { spaces: 2 });
@@ -2066,6 +2308,9 @@ export class OrchestrationService {
         console: false
       }
     };
+
+    // Ensure temp directory exists before writing config
+    await this.ensureTempDirectory();
 
     const configPath = path.join(this.tempConfigDir, `subtitle-upload-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.json`);
     await fs.writeJson(configPath, config, { spaces: 2 });

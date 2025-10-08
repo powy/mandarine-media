@@ -37,7 +37,7 @@ class MuxStorageBackend(BaseStorageBackend):
             
             # Create a direct upload URL from Mux
             create_upload_request = mux_python.CreateUploadRequest(
-                timeout=3600,  # 1 hour timeout
+                timeout=43200,  # 12 hour timeout
                 new_asset_settings=mux_python.CreateAssetRequest(
                     playback_policy=[mux_python.PlaybackPolicy.SIGNED],
                     encoding_tier=self.config.get('encoding_tier', 'baseline'),

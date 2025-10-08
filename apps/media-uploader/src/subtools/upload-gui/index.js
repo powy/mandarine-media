@@ -88,7 +88,7 @@ async function main() {
 }
 
 // Only run main if this file is executed directly (not imported)
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch(error => {
     console.error('💥 Unexpected error:', error.message);
     process.exit(1);

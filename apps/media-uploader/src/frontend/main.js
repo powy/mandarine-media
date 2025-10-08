@@ -11,7 +11,7 @@ class MediaUploaderGUI {
 
     // Parallel processing state
     this.isParallelMode = true;
-    this.maxConcurrent = 10;
+    this.maxConcurrent = 1000;
     this.activeProcesses = new Map(); // taskId -> process info
     this.processListVisible = false;
 
@@ -111,13 +111,11 @@ class MediaUploaderGUI {
     configPath.style.cursor = 'pointer';
 
     // Parallel processing controls
-    const maxConcurrentSlider = document.getElementById('max-concurrent');
-    const concurrentValue = document.getElementById('concurrent-value');
+    const maxConcurrentInput = document.getElementById('max-concurrent');
     const parallelModeCheckbox = document.getElementById('parallel-mode');
 
-    maxConcurrentSlider.addEventListener('input', (e) => {
-      this.maxConcurrent = parseInt(e.target.value);
-      concurrentValue.textContent = this.maxConcurrent;
+    maxConcurrentInput.addEventListener('input', (e) => {
+      this.maxConcurrent = parseInt(e.target.value) || 1000;
     });
 
     parallelModeCheckbox.addEventListener('change', (e) => {

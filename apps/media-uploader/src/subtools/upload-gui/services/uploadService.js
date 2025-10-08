@@ -77,10 +77,10 @@ export class UploadService {
 
     // Initialize parallel processing services
     this.processManager = new ProcessManager({
-      maxConcurrentUploads: config.general?.maxConcurrentUploads || 10,
+      maxConcurrentUploads: config.general?.maxConcurrentUploads || 1000,
       retryAttempts: config.general?.retryAttempts || 3,
       retryDelay: config.general?.retryDelay || 5000,
-      workerTimeout: config.process?.workerTimeout || 3600000,
+      workerTimeout: config.process?.workerTimeout || 43200000,
       heartbeatInterval: config.process?.heartbeatInterval || 5000
     });
 
@@ -102,8 +102,14 @@ export class UploadService {
   }
 
   ensureTempDirectory() {
-    if (!fs.existsSync(this.tempConfigDir)) {
-      fs.mkdirSync(this.tempConfigDir, { recursive: true });
+    try {
+      if (!fs.existsSync(this.tempConfigDir)) {
+        fs.mkdirSync(this.tempConfigDir, { recursive: true });
+        this.logger.info(`Created temp directory: ${this.tempConfigDir}`);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to create temp directory ${this.tempConfigDir}:`, error);
+      throw new Error(`Cannot create temp directory: ${error.message}`);
     }
   }
 
@@ -253,8 +259,13 @@ export class UploadService {
    * @returns {Promise<string>} Path to the temporary config file
    */
   async createTempConfig() {
+    // Ensure temp directory exists before creating config file
+    this.ensureTempDirectory();
+
     const timestamp = Date.now();
-    const configPath = path.join(this.tempConfigDir, `gui-config-${timestamp}.json`);
+    const pid = process.pid;
+    const randomId = Math.random().toString(36).substring(2, 8);
+    const configPath = path.join(this.tempConfigDir, `gui-config-${pid}-${timestamp}-${randomId}.json`);
 
     // Convert INI config to JSON format expected by one-complete-upload
     const jsonConfig = {

@@ -1,4 +1,5 @@
 import Mux from '@mux/mux-node';
+import { getLanguageDisplayName, generateUniqueTrackName } from '../../../shared/utils/languageUtils.js';
 
 export default class MuxManager {
   constructor(config, logger) {
@@ -198,44 +199,20 @@ export default class MuxManager {
 
   /**
    * Get language display name from ISO 639-1 code
+   * @deprecated Use shared getLanguageDisplayName from languageUtils instead
    */
   getLanguageName(code) {
-    const languages = {
-      'en': 'English',
-      'es': 'Español',
-      'fr': 'Français',
-      'de': 'Deutsch',
-      'it': 'Italiano',
-      'pt': 'Português',
-      'ja': '日本語',
-      'ko': '한국어',
-      'zh': '中文',
-      'ru': 'Русский',
-      'ar': 'العربية',
-      'hi': 'हिन्दी',
-      'nl': 'Nederlands',
-      'sv': 'Svenska',
-      'da': 'Dansk',
-      'no': 'Norsk',
-      'fi': 'Suomi',
-      'pl': 'Polski',
-      'tr': 'Türkçe',
-      'el': 'Ελληνικά',
-      'he': 'עברית',
-      'th': 'ไทย',
-      'vi': 'Tiếng Việt'
-    };
-    return languages[code] || code.toUpperCase();
+    // Delegate to shared utility function
+    return getLanguageDisplayName(code);
   }
 
   /**
    * Generate unique track name to avoid conflicts
+   * @deprecated Use shared generateUniqueTrackName from languageUtils instead
    */
   generateUniqueTrackName(languageCode) {
-    const baseName = this.getLanguageName(languageCode);
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substr(2, 5);
-    return `${baseName}_${timestamp}_${randomSuffix}`;
+    // Delegate to shared utility function
+    return generateUniqueTrackName(languageCode);
   }
 
   /**

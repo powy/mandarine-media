@@ -20,22 +20,44 @@ export class MuxService {
   
   async createDirectUpload() {
     const uploadConfig = this.buildUploadConfig();
-    
+
     try {
-      this.logger.debug('Creating direct upload', { uploadConfig });
-      
+      this.logger.info('Creating Mux direct upload - calling Mux API', {
+        uploadConfig: JSON.stringify(uploadConfig, null, 2),
+        muxClientInitialized: !!this.muxClient,
+        authTokenId: this.config.auth?.mux_token_id?.substring(0, 10) + '...'
+      });
+
+      this.logger.debug('Calling this.muxClient.uploads.create()...');
+      const startTime = Date.now();
+
       const upload = await retryableOperation(
         () => this.muxClient.uploads.create(uploadConfig),
         this.logger,
         this.config.options?.retry_attempts || 3,
         this.config.options?.retry_delay || 5000,
-        'Direct upload creation'
+        'Mux direct upload creation'
       );
-      
+
+      const duration = Date.now() - startTime;
+      this.logger.info('Mux API createDirectUpload completed', {
+        duration: `${duration}ms`,
+        uploadId: upload.id,
+        uploadUrl: upload.url?.substring(0, 60) + '...'
+      });
+
       this.logger.logDirectUploadCreated(upload);
       return upload;
-      
+
     } catch (error) {
+      this.logger.error('Mux direct upload creation FAILED', {
+        error: error.message,
+        errorCode: error.code,
+        httpStatus: error.response?.status,
+        responseData: error.response?.data,
+        authTokenIdUsed: this.config.auth?.mux_token_id?.substring(0, 10) + '...',
+        stack: error.stack
+      });
       this.logger.logUploadError('unknown', error, 0);
       handleMuxError(error, 'Direct upload creation');
     }
@@ -130,7 +152,7 @@ export class MuxService {
   }
   
   async monitorUploadStatus(uploadId) {
-    const maxWaitTime = this.config.options?.timeout || 3600000; // 1 hour default
+    const maxWaitTime = this.config.options?.timeout || 43200000; // 12 hours default
     const pollInterval = 5000; // 5 seconds
     const startTime = Date.now();
     
@@ -216,7 +238,7 @@ export class MuxService {
       );
     }
     
-    const maxWaitTime = this.config.options?.timeout || 3600000; // 1 hour default
+    const maxWaitTime = this.config.options?.timeout || 43200000; // 12 hours default
     const pollInterval = 10000; // 10 seconds (longer than upload polling)
     const startTime = Date.now();
     

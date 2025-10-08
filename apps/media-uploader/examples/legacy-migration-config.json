@@ -19,7 +19,7 @@
     "max_resolution_tier": "1080p"
   },
   "options": {
-    "timeout": 3600000,
+    "timeout": 43200000,
     "retry_attempts": 3,
     "retry_delay": 5000,
     "chunk_size": 31457280,

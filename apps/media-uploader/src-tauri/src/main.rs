@@ -676,7 +676,7 @@ async fn get_parallel_config() -> Result<ParallelConfig, String> {
         max_concurrent_uploads: 10,
         retry_attempts: 3,
         retry_delay: 5000,
-        worker_timeout: 3600000,
+        worker_timeout: 43200000,
         heartbeat_interval: 5000,
     })
 }

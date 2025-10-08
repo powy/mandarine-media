@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
-const fs = require('fs').promises;
-const { program } = require('commander');
+import fs from 'fs/promises';
+import { program } from 'commander';
+import { mediaAnalyzerCoreWithSave } from './core.js';
 
+// For backward compatibility, also import old classes
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const MediaAnalyzer = require('./index');
 const Config = require('./config');
 
@@ -71,16 +75,20 @@ async function main() {
     const analyzer = new MediaAnalyzer(config);
     
     try {
-        // Options d'analyse
-        const analyzeOptions = {
-            readMetadata: options.metadata !== false
+        // Build configuration for core function
+        const coreConfig = {
+            paths: analyzePaths,
+            readMetadata: options.metadata !== false,
+            minScore: options.minScore,
+            verbose: options.verbose || false,
+            debug: false,
+            outputFile: options.output,
+            exportForUpload: options.exportForUpload || false,
         };
-        
-        // Lancer l'analyse
-        const outputFile = await analyzer.analyzeAndSave(analyzePaths, options.output, analyzeOptions);
-        
-        // Afficher le résumé
-        const result = JSON.parse(await fs.readFile(outputFile, 'utf8'));
+
+        // Use new core function
+        const analysisResult = await mediaAnalyzerCoreWithSave(coreConfig);
+        const { result, outputFile, uploadFile } = analysisResult;
         
         console.log('\n✅ Analyse terminée avec succès!');
         console.log(`📄 Résultats sauvegardés dans: ${outputFile}`);
@@ -125,37 +133,8 @@ async function main() {
             console.log(`\n✅ No validation issues found - all content appears complete!`);
         }
         
-        // Format pour upload si demandé
-        if (options.exportForUpload) {
-            const uploadFormat = {
-                uploads: []
-            };
-            
-            for (const item of result.media_items) {
-                // Ajouter la vidéo
-                uploadFormat.uploads.push({
-                    type: 'video',
-                    path: item.video.filepath,
-                    metadata: {
-                        episode: item.episode_number,
-                        season: item.season_number,
-                        title: item.title
-                    }
-                });
-                
-                // Ajouter les sous-titres
-                for (const sub of item.subtitles) {
-                    uploadFormat.uploads.push({
-                        type: 'subtitle',
-                        path: sub.filepath,
-                        language: sub.language_code,
-                        video_ref: item.video.filepath
-                    });
-                }
-            }
-            
-            const uploadFile = outputFile.replace('.json', '_upload.json');
-            await fs.writeFile(uploadFile, JSON.stringify(uploadFormat, null, 2), 'utf8');
+        // Display upload format info if created
+        if (uploadFile) {
             console.log(`\n📤 Format upload sauvegardé dans: ${uploadFile}`);
         }
         

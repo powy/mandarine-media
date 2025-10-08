@@ -47,7 +47,7 @@ export const configSchema = Joi.object({
   }).default(),
   
   options: Joi.object({
-    timeout: Joi.number().integer().positive().default(3600000),
+    timeout: Joi.number().integer().positive().default(43200000),
     retryAttempts: Joi.number().integer().min(0).max(5).default(3),
     retryDelay: Joi.number().integer().positive().default(5000),
     chunkSize: Joi.number().integer().positive().default(31457280),

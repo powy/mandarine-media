@@ -17,6 +17,26 @@ export class ExcelService {
   }
 
   /**
+   * Extract plain text from Excel cell value, handling rich text objects
+   * @param {any} cellValue - The cell value from ExcelJS
+   * @returns {string|number} Plain text string or original number
+   */
+  extractCellText(cellValue) {
+    if (!cellValue) return '';
+
+    // Handle rich text objects
+    if (cellValue.richText && Array.isArray(cellValue.richText)) {
+      return cellValue.richText.map(part => part.text || '').join('');
+    }
+
+    // Keep numbers as-is to avoid breaking numeric fields
+    if (typeof cellValue === 'number') return cellValue;
+
+    // Convert everything else to string and trim
+    return String(cellValue).trim();
+  }
+
+  /**
    * Save workbook with retry mechanism for file lock handling
    * @param {ExcelJS.Workbook} workbook - The workbook to save
    * @param {string} filePath - Path to save the workbook
@@ -132,7 +152,7 @@ export class ExcelService {
       const sanitizedFolderName = folderName.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
       const excelFileName = `0_desc_${sanitizedFolderName}_auto.xlsx`;
       const targetPath = path.join(this.folderPath, excelFileName);
-      
+
       // Check if template exists, fall back to legacy template if needed
       let templateExists = await fs.pathExists(this.templatePath);
       let finalTemplatePath = this.templatePath;
@@ -148,22 +168,130 @@ export class ExcelService {
           throw new Error(`Template file not found at: ${this.templatePath} or ${this.fallbackTemplatePath}`);
         }
       }
-      
+
       // Load template workbook with ExcelJS to preserve all formatting
       const templateWorkbook = new ExcelJS.Workbook();
       await templateWorkbook.xlsx.readFile(finalTemplatePath);
-      
+
       // Save to target location - this preserves all formatting
       await templateWorkbook.xlsx.writeFile(targetPath);
-      
+
       this.logger.info(`Created Excel file with preserved formatting: ${excelFileName}`);
       console.log(chalk.green(`✅ Created Excel file: ${excelFileName}`));
-      
+
       return targetPath;
     } catch (error) {
       this.logger.error(`Error creating Excel from template: ${error.message}`);
       throw error;
     }
+  }
+
+  async createExcelFromSeasonTemplate(seasonExcelPath, folderName, targetFolder) {
+    try {
+      this.logger.info(`Creating episode Excel from season template: ${seasonExcelPath}`);
+
+      // Generate the Excel filename for episode
+      const sanitizedFolderName = folderName.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+      const excelFileName = `0_desc_${sanitizedFolderName}_auto.xlsx`;
+      const targetPath = path.join(targetFolder, excelFileName);
+
+      // Load season Excel as template
+      const seasonWorkbook = new ExcelJS.Workbook();
+      await seasonWorkbook.xlsx.readFile(seasonExcelPath);
+
+      const descriptionSheet = seasonWorkbook.getWorksheet('Description');
+      if (!descriptionSheet) {
+        throw new Error('Description sheet not found in season Excel');
+      }
+
+      // Extract episode number from folder name if numeric
+      const episodeNumber = this.extractEpisodeNumber(folderName);
+
+      // Get season name from the template
+      let seasonName = null;
+      descriptionSheet.eachRow((row) => {
+        const keyCell = row.getCell(2);
+        const valueCell = row.getCell(3);
+        if (keyCell.value && keyCell.value.toString() === 'season_name') {
+          seasonName = valueCell.value ? valueCell.value.toString() : null;
+        }
+      });
+
+      // Update episode-specific fields in Description sheet
+      descriptionSheet.eachRow((row) => {
+        const keyCell = row.getCell(2);
+        const valueCell = row.getCell(3);
+
+        if (keyCell.value) {
+          const key = keyCell.value.toString();
+          switch (key) {
+            case 'episode_title':
+              if (episodeNumber !== null && seasonName) {
+                valueCell.value = `${seasonName} episode ${episodeNumber}`;
+              }
+              break;
+            case 'slug':
+              if (episodeNumber !== null && seasonName) {
+                const baseSlug = seasonName
+                  .toLowerCase()
+                  .replace(/[^a-z0-9\s-]/g, '')
+                  .replace(/\s+/g, '-')
+                  .replace(/-+/g, '-')
+                  .trim('-');
+                valueCell.value = `${baseSlug}-episode-${episodeNumber}`;
+              }
+              break;
+            case 'episode_number':
+              if (episodeNumber !== null) {
+                valueCell.value = episodeNumber;
+              }
+              break;
+            case 'media_type':
+              valueCell.value = 'video'; // Episodes are videos, not seasons
+              break;
+          }
+        }
+      });
+
+      // Clear the Files sheet data (columns B-F) while keeping structure
+      const filesSheet = seasonWorkbook.getWorksheet('Files');
+      if (filesSheet) {
+        // Clear data cells (columns 2-6) while keeping row type labels in column 1
+        filesSheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+          if (rowNumber > 1) { // Skip header row
+            // Clear columns: File name (2), Poster (3), Fr subtitle (4), En subtitle (5), Ko Subtitle (6)
+            row.getCell(2).value = null; // File name
+            row.getCell(3).value = null; // Poster
+            row.getCell(4).value = null; // Fr subtitle
+            row.getCell(5).value = null; // En subtitle
+            row.getCell(6).value = null; // Ko Subtitle
+            // Keep column 1 (row type label) unchanged
+          }
+        });
+
+        this.logger.info('Cleared Files sheet data from season template - keeping row structure for auto-fill');
+      }
+
+      // Save the episode Excel file
+      await seasonWorkbook.xlsx.writeFile(targetPath);
+
+      this.logger.info(`Created episode Excel from season template: ${excelFileName}`);
+      console.log(chalk.green(`✅ Created episode Excel from season: ${excelFileName}`));
+
+      return targetPath;
+    } catch (error) {
+      this.logger.error(`Error creating Excel from season template: ${error.message}`);
+      throw error;
+    }
+  }
+
+  extractEpisodeNumber(folderName) {
+    // Check if folder name is numeric (possibly with leading zeros)
+    const trimmed = folderName.replace(/^0+/, '') || '0';
+    if (/^\d+$/.test(trimmed)) {
+      return parseInt(trimmed);
+    }
+    return null;
   }
 
   async readExcelFile(excelPath) {
@@ -184,7 +312,7 @@ export class ExcelService {
       filesSheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
         const rowData = [];
         row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          rowData[colNumber - 1] = cell.value;
+          rowData[colNumber - 1] = this.extractCellText(cell.value);
         });
         filesData.push(rowData);
       });
@@ -194,7 +322,7 @@ export class ExcelService {
       descriptionSheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
         const rowData = [];
         row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          rowData[colNumber - 1] = cell.value;
+          rowData[colNumber - 1] = this.extractCellText(cell.value);
         });
         descriptionData.push(rowData);
       });
@@ -607,6 +735,87 @@ export class ExcelService {
 
       this.logger.error(`Error renaming Excel file: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Find media description ID from Excel Description sheet
+   * Used for subtitle-specific uploads to get the media ID for server integration
+   * @returns {string|null} - Media description ID or null if not found
+   */
+  async findMediaDescriptionId() {
+    try {
+      // Find existing Excel file
+      const excelPath = await this.findExistingExcelFile();
+      if (!excelPath) {
+        this.logger.warn('No Excel file found in folder for media ID lookup');
+        return null;
+      }
+
+      // Read Excel file
+      const excelData = await this.readExcelFile(excelPath);
+
+      // Look for 'id' field in description data (primary field)
+      if (excelData.description && excelData.description.id) {
+        this.logger.info(`Found media description ID: ${excelData.description.id}`);
+        return excelData.description.id;
+      }
+
+      // Alternative: look for other possible ID fields
+      const possibleIdFields = ['media_description_id', 'media_id', 'description_id', 'uuid', 'guid'];
+      for (const field of possibleIdFields) {
+        if (excelData.description && excelData.description[field]) {
+          this.logger.info(`Found media ID in field '${field}': ${excelData.description[field]}`);
+          return excelData.description[field];
+        }
+      }
+
+      this.logger.warn('No media description ID found in Excel Description sheet');
+      this.logger.info('Available description fields:', Object.keys(excelData.description || {}));
+      return null;
+
+    } catch (error) {
+      this.logger.error(`Error looking up media description ID from Excel: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if Excel file contains media description ID
+   * @returns {boolean} - True if media ID is available
+   */
+  async hasMediaDescriptionId() {
+    try {
+      const mediaId = await this.findMediaDescriptionId();
+      return !!mediaId;
+    } catch (error) {
+      this.logger.warn(`Could not check for media description ID: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Get media description info for subtitle uploads
+   * @returns {Object} - Object with media ID and related info
+   */
+  async getMediaDescriptionInfo() {
+    try {
+      const excelPath = await this.findExistingExcelFile();
+      if (!excelPath) {
+        return { hasExcel: false, mediaId: null, excelPath: null };
+      }
+
+      const mediaId = await this.findMediaDescriptionId();
+
+      return {
+        hasExcel: true,
+        mediaId,
+        excelPath,
+        hasMediaId: !!mediaId
+      };
+    } catch (error) {
+      this.logger.error(`Error getting media description info: ${error.message}`);
+      return { hasExcel: false, mediaId: null, excelPath: null, error: error.message };
     }
   }
 }

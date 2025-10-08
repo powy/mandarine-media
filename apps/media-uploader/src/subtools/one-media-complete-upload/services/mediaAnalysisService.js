@@ -1,5 +1,6 @@
 import path from 'path';
 import stringSimilarity from 'string-similarity';
+import { detectLanguageFromFilename, getLanguageDisplayName } from '../../../shared/utils/languageUtils.js';
 
 export class MediaAnalysisService {
   constructor(logger) {
@@ -177,24 +178,12 @@ export class MediaAnalysisService {
       ko: new Map()
     };
 
-    // Extract language from subtitle filenames
+    // Extract language from subtitle filenames using shared utilities
     for (const subtitle of subtitles) {
-      const fileName = subtitle.name.toLowerCase();
-      let detectedLanguage = null;
-      
-      // Detect language from filename - expanded patterns
-      if (fileName.includes('_fr') || fileName.includes('-fr') || fileName.includes('.fr') || 
-          fileName.includes(' fr ') || fileName.endsWith(' fr.srt') || fileName.endsWith(' fr.vtt')) {
-        detectedLanguage = 'fr';
-      } else if (fileName.includes('_en') || fileName.includes('-en') || fileName.includes('.en') || 
-                 fileName.includes(' en ') || fileName.endsWith(' en.srt') || fileName.endsWith(' en.vtt')) {
-        detectedLanguage = 'en';
-      } else if (fileName.includes('_ko') || fileName.includes('-ko') || fileName.includes('.ko') ||
-                 fileName.includes(' ko ') || fileName.endsWith(' ko.srt') || fileName.endsWith(' ko.vtt') ||
-                 fileName.includes('_kr') || fileName.includes('-kr') || fileName.includes('.kr') ||
-                 fileName.includes(' kr ') || fileName.endsWith(' kr.srt') || fileName.endsWith(' kr.vtt')) {
-        detectedLanguage = 'ko';  // Map both ko and kr to 'ko'
-      }
+      const fileName = subtitle.name;
+
+      // Use shared language detection function
+      const detectedLanguage = detectLanguageFromFilename(fileName);
       
       if (!detectedLanguage) {
         this.logger.warn(`Could not detect language for subtitle: ${subtitle.name}`);
@@ -204,17 +193,31 @@ export class MediaAnalysisService {
       // Find best matching video for this subtitle
       let bestMatch = null;
       let bestScore = 0;
-      
+
       for (const video of allVideos) {
+        // Special handling for trailers - strict basename containment required
+        if (this.isTrailerVideo(video, videoAnalysis)) {
+          const videoBaseName = path.parse(video.name).name;
+          const subtitleBaseName = path.parse(subtitle.name).name;
+
+          // For trailers, the complete video base name MUST be contained in subtitle filename
+          if (!subtitleBaseName.toLowerCase().includes(videoBaseName.toLowerCase())) {
+            this.logger.debug(`Rejecting subtitle ${subtitle.name} for trailer ${video.name} - base name "${videoBaseName}" not found in subtitle`);
+            continue; // Skip this trailer, don't consider it as a match
+          }
+
+          this.logger.debug(`Accepting subtitle ${subtitle.name} for trailer ${video.name} - base name "${videoBaseName}" found in subtitle`);
+        }
+
         const similarity = stringSimilarity.compareTwoStrings(
           path.parse(subtitle.name).name,
           path.parse(video.name).name
         );
-        
+
         // Size correlation factor (closer sizes get bonus)
         const sizeFactor = this.calculateSizeCorrelation(subtitle.size, video.size);
         const totalScore = similarity + (sizeFactor * 0.1); // Weight similarity more than size
-        
+
         if (totalScore > bestScore) {
           bestScore = totalScore;
           bestMatch = video;
@@ -247,6 +250,20 @@ export class MediaAnalysisService {
             this.logger.info(`Main video priority: assigned ${detectedLanguage} subtitle ${subtitle.name} to ${bestMatch.name}`);
           }
         }
+      } else {
+        // No match found - default to main video if available
+        if (videoAnalysis.mainVideo) {
+          const currentSubtitle = subtitleMappings[detectedLanguage].get(videoAnalysis.mainVideo);
+
+          if (!currentSubtitle) {
+            subtitleMappings[detectedLanguage].set(videoAnalysis.mainVideo, subtitle);
+            this.logger.info(`No specific match found for ${detectedLanguage} subtitle ${subtitle.name}, defaulting to main video: ${videoAnalysis.mainVideo.name}`);
+          } else {
+            this.logger.warn(`No match found for ${detectedLanguage} subtitle ${subtitle.name}, and main video already has a subtitle assigned`);
+          }
+        } else {
+          this.logger.warn(`No match found for ${detectedLanguage} subtitle ${subtitle.name}, and no main video available`);
+        }
       }
     }
 
@@ -258,13 +275,20 @@ export class MediaAnalysisService {
    */
   calculateSizeCorrelation(subtitleSize, videoSize) {
     if (videoSize === 0) return 0;
-    
+
     // Longer videos typically have larger subtitle files
     // This is a rough heuristic
     const ratio = subtitleSize / videoSize;
     const expectedRatio = 0.001; // Rough estimate: 1KB subtitle per 1MB video
-    
+
     return Math.max(0, 1 - Math.abs(ratio - expectedRatio) / expectedRatio);
+  }
+
+  /**
+   * Check if a video is a trailer based on the video analysis results
+   */
+  isTrailerVideo(video, videoAnalysis) {
+    return videoAnalysis.trailers.some(trailer => trailer.name === video.name);
   }
 
   /**

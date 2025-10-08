@@ -1,7 +1,14 @@
 # Enhanced Mux Upload CLI Usage Examples
 
 ## Basic Upload
+
+**Note:** All commands should be run from the main media-uploader directory after running `npm install`.
+
 ```bash
+# Navigate to media-uploader root first
+cd kyool-media/apps/media-uploader
+
+# Run the upload tool
 node src/subtools/mux-upload/index.js --config minimal-config.json
 ```
 
@@ -9,6 +16,7 @@ node src/subtools/mux-upload/index.js --config minimal-config.json
 
 ### Large File Upload with Custom Method
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \
   --config enhanced-config.json \
   --upload-method custom \
@@ -21,6 +29,7 @@ node src/subtools/mux-upload/index.js \
 
 ### Resume-Disabled Upload for Testing
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \
   --config production-config.json \
   --no-resume \
@@ -31,6 +40,7 @@ node src/subtools/mux-upload/index.js \
 
 ### Quick Small File Upload
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \
   --config minimal-config.json \
   --upload-method upchunk \
@@ -42,6 +52,7 @@ node src/subtools/mux-upload/index.js \
 
 ### Production Upload with All Features
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \
   --config production-config.json \
   --upload-method auto \
@@ -57,6 +68,7 @@ node src/subtools/mux-upload/index.js \
 
 ### Dry Run Validation
 ```bash
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js \
   --config any-config.json \
   --dry-run \
@@ -104,6 +116,7 @@ export LOG_LEVEL="debug"
 export UPLOAD_TIMEOUT="7200000"
 export CHUNK_SIZE="10485760"
 
+# From media-uploader root directory
 node src/subtools/mux-upload/index.js --config minimal-config.json
 ```
 

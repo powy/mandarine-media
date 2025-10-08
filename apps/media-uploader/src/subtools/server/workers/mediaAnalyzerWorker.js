@@ -1,0 +1,123 @@
+/**
+ * Media Analyzer Worker
+ * Worker process for media analysis tasks
+ */
+
+import BaseWorker from './baseWorker.js';
+import { MediaAnalyzerInterface } from '../../../interfaces/index.js';
+
+class MediaAnalyzerWorker extends BaseWorker {
+  constructor() {
+    super();
+    this.logInfo('Media Analyzer Worker initialized');
+  }
+
+  async execute(taskData) {
+    this.validateTaskData(taskData, ['folderPath']);
+
+    const { folderPath, config, options = {} } = taskData;
+
+    this.logInfo('Starting media analysis', { folderPath, options });
+    this.updateProgress(5, 'Initializing media analysis...');
+
+    // Validate folder path
+    if (!(await this.isDirectory(folderPath))) {
+      throw new Error(`Folder path does not exist or is not a directory: ${folderPath}`);
+    }
+
+    this.updateProgress(10, 'Folder validated, starting analysis...');
+
+    try {
+      let result;
+
+      // Choose the appropriate interface method based on options
+      if (config) {
+        // Use INI interface if config is provided
+        this.updateProgress(20, 'Using configuration-based analysis...');
+
+        // Create a temporary config for this analysis
+        const analysisConfig = {
+          folderPath,
+          ...config,
+          ...options
+        };
+
+        result = await this.runTool(MediaAnalyzerInterface, 'core', analysisConfig);
+      } else {
+        // Use core interface directly
+        this.updateProgress(20, 'Using direct core analysis...');
+
+        const coreOptions = {
+          folderPath,
+          outputFormat: options.outputFormat || 'json',
+          includeMetadata: options.includeMetadata !== false,
+          associateImages: options.associateImages !== false,
+          validateContent: options.validateContent !== false,
+          ...options
+        };
+
+        result = await this.runTool(MediaAnalyzerInterface, 'core', coreOptions);
+      }
+
+      this.updateProgress(90, 'Analysis completed, processing results...');
+
+      // Process and validate results
+      if (!result) {
+        throw new Error('Media analysis returned no results');
+      }
+
+      this.updateProgress(100, 'Media analysis completed successfully');
+
+      return {
+        success: true,
+        folderPath,
+        analysisResult: result,
+        metadata: {
+          folderPath,
+          outputFormat: options.outputFormat || 'json',
+          totalFiles: result.totalFiles || 0,
+          videoFiles: result.videoFiles?.length || 0,
+          imageFiles: result.imageFiles?.length || 0,
+          subtitleFiles: result.subtitleFiles?.length || 0,
+          associations: result.associations?.length || 0,
+          analysisTime: Date.now() - this.startTime
+        }
+      };
+
+    } catch (error) {
+      this.logError('Media analysis failed', {
+        folderPath,
+        error: error.message,
+        stack: error.stack
+      });
+
+      throw new Error(`Media analysis failed: ${error.message}`);
+    }
+  }
+
+  async cleanup() {
+    this.logInfo('Cleaning up media analyzer worker');
+    // Add any specific cleanup logic here
+  }
+}
+
+// Check if this module is being run directly (as main module in child process)
+import { fileURLToPath } from 'url';
+import { resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const isMainModule = resolve(process.argv[1]) === __filename;
+
+if (isMainModule) {
+  // Small delay to ensure IPC is fully established in forked process
+  setTimeout(() => {
+    try {
+      new MediaAnalyzerWorker();
+    } catch (error) {
+      console.error('Failed to initialize MediaAnalyzerWorker:', error.message);
+      process.exit(1);
+    }
+  }, 10);
+}
+
+export default MediaAnalyzerWorker;

@@ -242,9 +242,9 @@ export default class SubtitleService {
 
     // Check file extension
     const extension = path.extname(subtitle.file_path).toLowerCase();
-    const supportedFormats = ['.srt', '.vtt'];
+    const supportedFormats = ['.srt', '.vtt', '.sbv'];
     if (!supportedFormats.includes(extension)) {
-      throw new Error(`Unsupported subtitle format: ${extension}. Mux only supports SRT and VTT formats. (file: ${subtitle.file_path}, index: ${index})`);
+      throw new Error(`Unsupported subtitle format: ${extension}. Supported formats: ${supportedFormats.join(', ')}. (file: ${subtitle.file_path}, index: ${index})`);
     }
 
     // Basic content validation
@@ -264,6 +264,13 @@ export default class SubtitleService {
 
       if (extension === '.vtt' && !content.startsWith('WEBVTT')) {
         this.logger.warn('VTT file may not be properly formatted (missing WEBVTT header)', {
+          filePath: subtitle.file_path,
+          index: index
+        });
+      }
+
+      if (extension === '.sbv' && !content.includes(',')) {
+        this.logger.warn('SBV file may not be properly formatted (missing comma-separated timecodes)', {
           filePath: subtitle.file_path,
           index: index
         });
