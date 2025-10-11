@@ -70,6 +70,7 @@ class CRUDMediaDescription(
         self,
         db: Session,
         *,
+        q: Optional[str] = None,
         media_type: Optional[str] = None,
         status: Optional[str] = None,
         is_featured: Optional[bool] = None,
@@ -78,6 +79,9 @@ class CRUDMediaDescription(
         language_ids: Optional[List[str]] = None,
     ):
         query = db.query(self.model)
+
+        if q:
+            query = query.filter(MediaDescription.episode_title.ilike(f'%{q}%'))
 
         if media_type:
             query = query.filter(MediaDescription.media_type == media_type)

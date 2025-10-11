@@ -372,6 +372,7 @@ const MediaDescriptionManager = ({ source, ...props }) => {
   const [searchOptions, setSearchOptions] = React.useState([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchText, setSearchText] = React.useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = React.useState('');
   const [mediaItems, setMediaItems] = React.useState<MediaItemData[]>([]);
   const [loadingItems, setLoadingItems] = React.useState<Set<string>>(new Set());
 
@@ -383,6 +384,43 @@ const MediaDescriptionManager = ({ source, ...props }) => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Debounce search text - update debouncedSearchText 300ms after user stops typing
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  // Perform search when debounced search text changes
+  React.useEffect(() => {
+    const performSearch = async () => {
+      if (!debouncedSearchText || debouncedSearchText.length < 2) {
+        setSearchOptions([]);
+        setSearchLoading(false);
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const { data } = await dataProvider.getList('media-descriptions', {
+          pagination: { page: 1, perPage: 20 },
+          filter: { q: debouncedSearchText },
+          sort: { field: 'episode_title', order: 'ASC' }
+        });
+        setSearchOptions(data || []);
+      } catch (error) {
+        notify('Error searching media descriptions', { type: 'error' });
+        setSearchOptions([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    performSearch();
+  }, [debouncedSearchText, dataProvider, notify]);
 
   // Fetch MediaDescription data with images when selectedIds changes
   React.useEffect(() => {
@@ -471,29 +509,6 @@ const MediaDescriptionManager = ({ source, ...props }) => {
     }
   };
 
-  const handleSearchChange = async (value: string) => {
-    setSearchText(value);
-    if (!value || value.length < 2) {
-      setSearchOptions([]);
-      return;
-    }
-
-    setSearchLoading(true);
-    try {
-      const { data } = await dataProvider.getList('media-descriptions', {
-        pagination: { page: 1, perPage: 20 },
-        filter: { episode_title: value },
-        sort: { field: 'episode_title', order: 'ASC' }
-      });
-      setSearchOptions(data || []);
-    } catch (error) {
-      notify('Error searching media descriptions', { type: 'error' });
-      setSearchOptions([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
   const handleManualAdd = async () => {
     const trimmedId = manualId.trim();
 
@@ -540,7 +555,7 @@ const MediaDescriptionManager = ({ source, ...props }) => {
           options={searchOptions}
           getOptionLabel={(option) => option.episode_title || ''}
           loading={searchLoading}
-          onInputChange={(event, value) => handleSearchChange(value)}
+          onInputChange={(event, value) => setSearchText(value)}
           onChange={(event, newValue) => {
             if (newValue?.id) {
               handleAdd([newValue.id]);
@@ -557,10 +572,10 @@ const MediaDescriptionManager = ({ source, ...props }) => {
             <MuiTextField
               {...params}
               label="Search and Add Media Items"
-              helperText="Type to search media descriptions by title"
+              helperText="Type to search media descriptions by title (updates as you type)"
             />
           )}
-          noOptionsText="Type to search..."
+          noOptionsText={searchText.length < 2 ? "Type at least 2 characters..." : "No results found"}
           filterOptions={(x) => x}
         />
       </Box>

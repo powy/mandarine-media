@@ -27,6 +27,7 @@ export const mediaShowcasesApi = {
     const params = new URLSearchParams();
     if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
     if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
+    if (filters?.q) params.append('q', filters.q);
     if (filters?.list_type) params.append('list_type', filters.list_type);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.thumbnail_format) params.append('thumbnail_format', filters.thumbnail_format);

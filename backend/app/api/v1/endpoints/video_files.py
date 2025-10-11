@@ -24,6 +24,7 @@ def read_video_files(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by file name"),
     encoding_status: Optional[str] = Query(None, description="Filter by encoding status"),
     order_by: Optional[str] = Query(None, description="Field to sort by"),
     order_dir: Optional[str] = Query('asc', description="Sort direction (asc|desc)"),
@@ -33,6 +34,9 @@ def read_video_files(
     Retrieve video files.
     """
     query = db.query(VideoFile)
+
+    if q:
+        query = query.filter(VideoFile.file_name.ilike(f'%{q}%'))
 
     if encoding_status:
         query = query.filter(VideoFile.encoding_status == encoding_status)

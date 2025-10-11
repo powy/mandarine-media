@@ -1094,14 +1094,16 @@ export class OrchestrationService {
         const season = await this.getOrCreateSeason(descriptionData.season_name);
         seasonId = season.id;
 
-        // For season type, use temporary episode title (required field) - will be cleaned up after upload
+        // For season type, use temporary episode title (required field) if not provided
         if (!descriptionData.episode_title) {
           descriptionData.episode_title = `${descriptionData.season_name} all episodes`;
-          // Mark this upload as needing cleanup
-          descriptionData._needsSeasonCleanup = true;
-          descriptionData._seasonName = descriptionData.season_name;
           console.log(chalk.yellow(`🔄 Using temporary episode title for season: ${descriptionData.episode_title}`));
         }
+
+        // ALWAYS mark season uploads for cleanup (to remove season_id and link to season.general_media_description_id)
+        descriptionData._needsSeasonCleanup = true;
+        descriptionData._seasonName = descriptionData.season_name;
+        console.log(chalk.cyan(`🧹 Season upload marked for post-treatment cleanup`));
       }
 
       // For PROGRAM type: get or create program first

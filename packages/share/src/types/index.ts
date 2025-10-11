@@ -487,6 +487,7 @@ export interface VideoFileListResponse extends PaginatedResponse<VideoFile> {}
 export interface MediaFilters {
   skip?: number;
   limit?: number;
+  q?: string;
   media_type?: string;
   category_id?: string;
   status?: string;
@@ -501,6 +502,7 @@ export interface MediaFilters {
 export interface VideoFileFilters {
   skip?: number;
   limit?: number;
+  q?: string;
   media_description_id?: string;
   encoding_status?: 'pending' | 'processing' | 'completed' | 'failed';
   order_by?: string;
@@ -1296,6 +1298,7 @@ export interface MediaShowcaseUpdate {
 export interface MediaShowcaseFilters {
   skip?: number;
   limit?: number;
+  q?: string;
   list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   is_active?: boolean;
   thumbnail_format?: ThumbnailFormatEnum;

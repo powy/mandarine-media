@@ -103,7 +103,7 @@ class TestMediaDescriptionsList:
     def test_list_media_descriptions_with_filters(self, client, user_token):
         """Test media descriptions list with filtering."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         response = client.get(
             "/api/v1/media-descriptions",
             headers=headers,
@@ -113,11 +113,72 @@ class TestMediaDescriptionsList:
                 "is_featured": True
             }
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "data" in data
         assert "pagination" in data
+
+    def test_list_media_descriptions_with_search(self, client, user_token, admin_token):
+        """Test media descriptions list with search parameter."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+
+        # Create test media descriptions with specific titles
+        test_media_1 = {
+            "file_number": 60001,
+            "episode_title": "Amazing Adventure Episode",
+            "media_type": "video",
+            "content_status": "published"
+        }
+        test_media_2 = {
+            "file_number": 60002,
+            "episode_title": "Different Content Here",
+            "media_type": "video",
+            "content_status": "published"
+        }
+
+        client.post("/api/v1/media-descriptions", headers=admin_headers, json=test_media_1)
+        client.post("/api/v1/media-descriptions", headers=admin_headers, json=test_media_2)
+
+        # Search for "Adventure" - should find test_media_1
+        response = client.get(
+            "/api/v1/media-descriptions",
+            headers=user_headers,
+            params={"q": "Adventure"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        matching_titles = [item["episode_title"] for item in data["data"]]
+        assert any("Adventure" in title for title in matching_titles)
+
+        # Search for "Different" - should find test_media_2
+        response = client.get(
+            "/api/v1/media-descriptions",
+            headers=user_headers,
+            params={"q": "Different"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        matching_titles = [item["episode_title"] for item in data["data"]]
+        assert any("Different" in title for title in matching_titles)
+
+        # Case-insensitive search
+        response = client.get(
+            "/api/v1/media-descriptions",
+            headers=user_headers,
+            params={"q": "amazing"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        matching_titles = [item["episode_title"] for item in data["data"]]
+        assert any("Amazing" in title for title in matching_titles)
     
     def test_list_media_descriptions_invalid_pagination(self, client, user_token):
         """Test media descriptions list with invalid pagination parameters."""

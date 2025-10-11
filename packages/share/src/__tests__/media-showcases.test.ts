@@ -120,6 +120,58 @@ describe('Media Showcases API', () => {
 
       expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?skip=20&limit=10&list_type=carousel&is_active=true&thumbnail_format=1080x1920');
     });
+
+    test('should search media showcases by title', async () => {
+      const mockResponse = {
+        data: {
+          data: [
+            {
+              id: 'showcase-1',
+              title: 'Featured Action Content',
+              list_type: 'classic',
+              is_active: true
+            }
+          ],
+          pagination: { skip: 0, limit: 20, total: 1, page: 1, total_pages: 1, has_next: false, has_prev: false }
+        }
+      };
+
+      mockApiClient.get.mockResolvedValue(mockResponse);
+
+      await mediaShowcasesApi.getMediaShowcases({ q: 'Action' });
+
+      expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?q=Action');
+    });
+
+    test('should search with other filters combined', async () => {
+      const mockResponse = {
+        data: { data: [], pagination: { skip: 10, limit: 5, total: 0, page: 3, total_pages: 0, has_next: false, has_prev: false } }
+      };
+
+      mockApiClient.get.mockResolvedValue(mockResponse);
+
+      await mediaShowcasesApi.getMediaShowcases({
+        skip: 10,
+        limit: 5,
+        q: 'Featured',
+        is_active: true,
+        list_type: 'carousel'
+      });
+
+      expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?skip=10&limit=5&q=Featured&list_type=carousel&is_active=true');
+    });
+
+    test('should handle search with spaces', async () => {
+      const mockResponse = {
+        data: { data: [], pagination: { skip: 0, limit: 20, total: 0, page: 1, total_pages: 0, has_next: false, has_prev: false } }
+      };
+
+      mockApiClient.get.mockResolvedValue(mockResponse);
+
+      await mediaShowcasesApi.getMediaShowcases({ q: 'Featured Content' });
+
+      expect(mockApiClient.get).toHaveBeenCalledWith('/media-showcases?q=Featured+Content');
+    });
   });
 
   describe('getMediaShowcase', () => {

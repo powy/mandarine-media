@@ -16,6 +16,7 @@ def get_media_showcases(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    q: Optional[str] = Query(None, description="Search by title"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     list_type: Optional[schemas.ListTypeEnum] = Query(None, description="Filter by list type"),
     thumbnail_format: Optional[schemas.ThumbnailFormatEnum] = Query(None, description="Filter by thumbnail format"),
@@ -23,10 +24,18 @@ def get_media_showcases(
 ) -> Any:
     """
     Retrieve media showcases.
-    
+
     **Access:** All authenticated users can read media showcases.
     """
-    if list_type:
+    if q:
+        # Use search functionality when q parameter is provided
+        showcases = crud.media_showcase.search_by_title(
+            db=db, search_term=q, skip=skip, limit=limit, active_only=is_active if is_active is not None else True
+        )
+        total = crud.media_showcase.count_by_title_search(
+            db=db, search_term=q, active_only=is_active if is_active is not None else True
+        )
+    elif list_type:
         showcases = crud.media_showcase.get_by_list_type(
             db=db, list_type=list_type, skip=skip, limit=limit
         )

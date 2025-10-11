@@ -26,6 +26,7 @@ def read_media_descriptions(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by episode title"),
     media_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     is_featured: Optional[bool] = Query(None),
@@ -39,6 +40,7 @@ def read_media_descriptions(
     """
     query = crud.media_description.build_filter_query(
         db,
+        q=q,
         media_type=media_type,
         status=status,
         is_featured=is_featured,

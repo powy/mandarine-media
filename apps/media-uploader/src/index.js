@@ -298,6 +298,48 @@ class UploaderToolCLI {
         }
       });
 
+    // CLI Multi-Upload Command
+    this.program
+      .command('cli-multi-upload')
+      .alias('multi-upload')
+      .description('Upload multiple folders with subprocess-based parallel execution and staggered starts')
+      .requiredOption('-c, --config <path>', 'Path to INI configuration file')
+      .option('-f, --folders <list>', 'Comma-separated list of folder paths')
+      .option('--folders-file <path>', 'Text file containing folder paths (one per line)')
+      .option('-p, --parent-folder <path>', 'Parent folder to scan for subfolders')
+      .option('-d, --delay <seconds>', 'Delay in seconds between starting each upload', '10')
+      .option('--max-concurrent <number>', 'Maximum concurrent uploads', parseInt)
+      .option('-v, --verbose', 'Verbose logging', false)
+      .option('--report', 'Generate detailed summary report', false)
+      .action(async (options) => {
+        try {
+          console.log(chalk.blue.bold('📦 CLI Multi-Upload\n'));
+          const result = await this.wrappers.cliMultiUpload(options);
+
+          if (result.success && result.failedCount === 0) {
+            console.log(chalk.green.bold('\n✅ All uploads completed successfully!'));
+          } else if (result.success) {
+            console.log(chalk.yellow.bold('\n⚠️  Uploads completed with some failures'));
+          } else {
+            console.log(chalk.red.bold('\n❌ Multi-upload failed'));
+          }
+
+          console.log(chalk.cyan(`   Successful: ${result.successCount}/${result.totalFolders}`));
+          console.log(chalk.red(`   Failed: ${result.failedCount}/${result.totalFolders}`));
+          if (result.skippedCount > 0) {
+            console.log(chalk.yellow(`   Skipped: ${result.skippedCount}`));
+          }
+
+          process.exit(result.success && result.failedCount === 0 ? 0 : 1);
+        } catch (error) {
+          console.error(chalk.red(`❌ Multi-upload failed: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
+      });
+
     // Global help enhancement
     this.program.on('--help', () => {
       console.log('');
@@ -309,6 +351,7 @@ class UploaderToolCLI {
       console.log('  $ media-uploader complete-upload --config config.json --folder /path/to/media');
       console.log('  $ media-uploader excel-batch-update --folder /path/to/main --field policy --value "public"');
       console.log('  $ media-uploader propagate-season-data --season-id abc123 --config config.json');
+      console.log('  $ media-uploader cli-multi-upload --config config.ini --parent-folder /path/to/season');
       console.log('  $ media-uploader gui --config config.ini');
       console.log('  $ media-uploader gui --create-config');
       console.log('');
@@ -320,6 +363,7 @@ class UploaderToolCLI {
       console.log('  $ media-uploader complete-upload --help');
       console.log('  $ media-uploader excel-batch-update --help');
       console.log('  $ media-uploader propagate-season-data --help');
+      console.log('  $ media-uploader cli-multi-upload --help');
       console.log('  $ media-uploader gui --help');
       console.log('');
     });
@@ -346,13 +390,14 @@ class UploaderToolCLI {
 async function main() {
   try {
     // Import subtool wrappers
-    const mediaAnalyzerPkg = await import('./subtools/media-analyzer/wrapper.js');
+    const mediaAnalyzerPkg = await import('./subtools/media-analyzer/wrapper.mjs');
     const { uploadToMux } = await import('./subtools/mux-upload/wrapper.js');
     const { uploadSubtitlesToMux } = await import('./subtools/mux-subtitle-upload/wrapper.js');
     const { uploadPicture } = await import('./subtools/picture-upload/wrapper.js');
     const { oneMediaCompleteUpload } = await import('./subtools/one-media-complete-upload/wrapper.js');
     const { batchUpdateExcel } = await import('./subtools/excel-batch-editor/wrapper.js');
     const { propagateSeasonData } = await import('./subtools/propagate-data/wrapper.js');
+    const cliMultiUploadPkg = await import('./subtools/cli-multi-upload/wrapper.js');
 
     const wrappers = {
       analyzeMedia: mediaAnalyzerPkg.default.analyzeMedia,
@@ -361,7 +406,28 @@ async function main() {
       uploadPicture,
       oneMediaCompleteUpload,
       batchUpdateExcel,
-      propagateSeasonData
+      propagateSeasonData,
+      cliMultiUpload: async (options) => {
+        // Handle different input methods
+        if (options.parentFolder) {
+          return await cliMultiUploadPkg.cliMultiUploadFromParent(options);
+        } else if (options.foldersFile) {
+          return await cliMultiUploadPkg.cliMultiUploadFromFile(options);
+        } else if (options.folders) {
+          // Parse if it's a string (comma-separated)
+          if (typeof options.folders === 'string') {
+            return await cliMultiUploadPkg.cliMultiUploadFromString({
+              ...options,
+              foldersString: options.folders
+            });
+          } else {
+            // Array of folders
+            return await cliMultiUploadPkg.cliMultiUpload(options);
+          }
+        } else {
+          throw new Error('No folders specified. Use --folders, --folders-file, or --parent-folder');
+        }
+      }
     };
 
     // Create and run CLI

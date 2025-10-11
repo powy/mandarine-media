@@ -134,6 +134,49 @@ describe('Media API', () => {
         );
         expect(result).toEqual(mockResponse);
       });
+
+      it('should fetch media descriptions with search query', async () => {
+        const mockResponse: MediaDescriptionListResponse = {
+          data: [mockMediaDescription],
+          pagination: { skip: 0, limit: 20, total: 1, has_next: false, has_prev: false },
+        };
+
+        mockApiClient.get.mockResolvedValue({ data: mockResponse });
+
+        const filters: MediaFilters = {
+          q: 'Running Man',
+        };
+
+        const result = await mediaApi.getMediaDescriptions(filters);
+
+        expect(mockApiClient.get).toHaveBeenCalledWith(
+          '/media-descriptions?q=Running+Man'
+        );
+        expect(result).toEqual(mockResponse);
+      });
+
+      it('should fetch media descriptions with search and other filters', async () => {
+        const mockResponse: MediaDescriptionListResponse = {
+          data: [mockMediaDescription],
+          pagination: { skip: 10, limit: 5, total: 1, has_next: false, has_prev: false },
+        };
+
+        mockApiClient.get.mockResolvedValue({ data: mockResponse });
+
+        const filters: MediaFilters = {
+          skip: 10,
+          limit: 5,
+          q: 'Adventure',
+          media_type: 'video',
+        };
+
+        const result = await mediaApi.getMediaDescriptions(filters);
+
+        expect(mockApiClient.get).toHaveBeenCalledWith(
+          '/media-descriptions?skip=10&limit=5&q=Adventure&media_type=video'
+        );
+        expect(result).toEqual(mockResponse);
+      });
     });
 
     describe('getMediaDescription', () => {
@@ -295,6 +338,44 @@ describe('Media API', () => {
         const result = await mediaApi.getVideoFiles(filters);
 
         expect(mockApiClient.get).toHaveBeenCalledWith('/video-files?skip=10&limit=5');
+        expect(result).toEqual(mockResponse);
+      });
+
+      it('should fetch video files with search query', async () => {
+        const mockResponse: VideoFileListResponse = {
+          data: [mockVideoFile],
+          pagination: { skip: 0, limit: 20, total: 1, has_next: false, has_prev: false },
+        };
+
+        mockApiClient.get.mockResolvedValue({ data: mockResponse });
+
+        const filters: VideoFileFilters = {
+          q: 'running_man',
+        };
+
+        const result = await mediaApi.getVideoFiles(filters);
+
+        expect(mockApiClient.get).toHaveBeenCalledWith('/video-files?q=running_man');
+        expect(result).toEqual(mockResponse);
+      });
+
+      it('should fetch video files with search and pagination', async () => {
+        const mockResponse: VideoFileListResponse = {
+          data: [mockVideoFile],
+          pagination: { skip: 5, limit: 10, total: 1, has_next: false, has_prev: false },
+        };
+
+        mockApiClient.get.mockResolvedValue({ data: mockResponse });
+
+        const filters: VideoFileFilters = {
+          skip: 5,
+          limit: 10,
+          q: 'video.mp4',
+        };
+
+        const result = await mediaApi.getVideoFiles(filters);
+
+        expect(mockApiClient.get).toHaveBeenCalledWith('/video-files?skip=5&limit=10&q=video.mp4');
         expect(result).toEqual(mockResponse);
       });
     });

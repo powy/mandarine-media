@@ -253,6 +253,21 @@ export class ExcelService {
         }
       });
 
+      // Remove the ID line from Description sheet (episodes get their own ID when uploaded)
+      const rowsToDelete = [];
+      descriptionSheet.eachRow((row, rowNumber) => {
+        const keyCell = row.getCell(2);
+        if (keyCell.value && keyCell.value.toString().toLowerCase() === 'id') {
+          rowsToDelete.push(rowNumber);
+        }
+      });
+
+      // Delete rows in reverse order to maintain correct row numbers
+      rowsToDelete.reverse().forEach(rowNumber => {
+        descriptionSheet.spliceRows(rowNumber, 1);
+        this.logger.info(`Removed ID line (row ${rowNumber}) from episode Description sheet`);
+      });
+
       // Clear the Files sheet data (columns B-F) while keeping structure
       const filesSheet = seasonWorkbook.getWorksheet('Files');
       if (filesSheet) {
@@ -287,9 +302,9 @@ export class ExcelService {
 
   extractEpisodeNumber(folderName) {
     // Check if folder name is numeric (possibly with leading zeros)
-    const trimmed = folderName.replace(/^0+/, '') || '0';
-    if (/^\d+$/.test(trimmed)) {
-      return parseInt(trimmed);
+    // Return as string to preserve leading zeros (e.g., "09" stays "09", not 9)
+    if (/^\d+$/.test(folderName)) {
+      return folderName;
     }
     return null;
   }

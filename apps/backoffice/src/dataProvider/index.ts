@@ -187,7 +187,13 @@ export const dataProvider: DataProvider = {
 
 
         case 'media-showcases':
-          const mediaShowcases = await getMediaShowcases({ skip, limit: perPage });
+          const mediaShowcases = await getMediaShowcases({
+            skip,
+            limit: perPage,
+            order_by,
+            order_dir,
+            ...filters
+          });
           // Handle both direct array and paginated response formats
           const showcasesData = Array.isArray(mediaShowcases) ? mediaShowcases : mediaShowcases.data || [];
           const showcasesTotal = Array.isArray(mediaShowcases) ? showcasesData.length : mediaShowcases.pagination?.total || showcasesData.length;

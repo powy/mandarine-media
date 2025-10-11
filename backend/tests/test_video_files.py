@@ -101,7 +101,7 @@ class TestVideoFilesList:
     def test_list_video_files_invalid_pagination(self, client, user_token):
         """Test video files list with invalid pagination parameters."""
         headers = {"Authorization": f"Bearer {user_token}"}
-        
+
         # Test negative skip
         response = client.get(
             "/api/v1/video-files",
@@ -109,7 +109,7 @@ class TestVideoFilesList:
             params={"skip": -1}
         )
         assert response.status_code == 422
-        
+
         # Test limit too high
         response = client.get(
             "/api/v1/video-files",
@@ -117,6 +117,67 @@ class TestVideoFilesList:
             params={"limit": 101}
         )
         assert response.status_code == 422
+
+    def test_list_video_files_with_search(self, client, user_token, admin_token):
+        """Test video files list with search parameter."""
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        user_headers = {"Authorization": f"Bearer {user_token}"}
+
+        # Create test video files with specific names
+        test_video_1 = {
+            "file_url": "https://example.com/amazing_video.mp4",
+            "file_name": "Amazing Documentary Video.mp4",
+            "file_size_bytes": 1024000,
+            "encoding_status": "completed"
+        }
+        test_video_2 = {
+            "file_url": "https://example.com/different_content.mp4",
+            "file_name": "Different Content Here.mp4",
+            "file_size_bytes": 2048000,
+            "encoding_status": "completed"
+        }
+
+        client.post("/api/v1/video-files", headers=admin_headers, json=test_video_1)
+        client.post("/api/v1/video-files", headers=admin_headers, json=test_video_2)
+
+        # Search for "Documentary" - should find test_video_1
+        response = client.get(
+            "/api/v1/video-files",
+            headers=user_headers,
+            params={"q": "Documentary"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        matching_names = [item["file_name"] for item in data["data"]]
+        assert any("Documentary" in name for name in matching_names)
+
+        # Search for "Different" - should find test_video_2
+        response = client.get(
+            "/api/v1/video-files",
+            headers=user_headers,
+            params={"q": "Different"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        matching_names = [item["file_name"] for item in data["data"]]
+        assert any("Different" in name for name in matching_names)
+
+        # Case-insensitive search
+        response = client.get(
+            "/api/v1/video-files",
+            headers=user_headers,
+            params={"q": "amazing"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        matching_names = [item["file_name"] for item in data["data"]]
+        assert any("Amazing" in name for name in matching_names)
     
     def test_list_video_files_unauthenticated(self, client):
         """Test video files list without authentication (now allowed)."""

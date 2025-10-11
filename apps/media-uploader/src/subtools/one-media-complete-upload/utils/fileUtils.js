@@ -17,7 +17,7 @@ export async function scanFolder(folderPath) {
       other: []
     };
     
-    const allFiles = await glob('**/*', {
+    const allFiles = await glob('*', {
       cwd: folderPath,
       nodir: true,
       absolute: false

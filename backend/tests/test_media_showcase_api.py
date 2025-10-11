@@ -94,7 +94,7 @@ class TestMediaShowcaseAPI:
         response = client.get("/api/v1/media-showcases/?is_active=true")
         assert response.status_code == 200
         data = response.json()
-        
+
         # All returned showcases should be active
         for showcase in data["data"]:
             assert showcase["is_active"] is True
@@ -103,10 +103,68 @@ class TestMediaShowcaseAPI:
         response = client.get(f"/api/v1/media-showcases/?thumbnail_format={ThumbnailFormatEnum.format_1920x1080.value}")
         assert response.status_code == 200
         data = response.json()
-        
+
         # All returned showcases should have the specified format
         for showcase in data["data"]:
             assert showcase["thumbnail_format"] == ThumbnailFormatEnum.format_1920x1080.value
+
+    def test_get_media_showcases_with_search_parameter(self, client, admin_token, created_showcase):
+        """Test getting showcases with q search parameter in main list endpoint."""
+        headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # Create showcases with distinct titles
+        showcase_data_1 = {
+            "title": "Searchable Amazing Content",
+            "description": "First test showcase",
+            "thumbnail_format": ThumbnailFormatEnum.format_1920x1080.value,
+            "list_type": ListTypeEnum.carousel.value,
+            "percentage_width": 100,
+            "percentage_height": 75,
+            "is_active": True,
+            "priority_in_screen": 10,
+            "slug": "searchable-amazing-content",
+            "media_description_ids": []
+        }
+        showcase_data_2 = {
+            "title": "Different Showcase Title",
+            "description": "Second test showcase",
+            "thumbnail_format": ThumbnailFormatEnum.format_1920x1080.value,
+            "list_type": ListTypeEnum.carousel.value,
+            "percentage_width": 100,
+            "percentage_height": 75,
+            "is_active": True,
+            "priority_in_screen": 11,
+            "slug": "different-showcase-title",
+            "media_description_ids": []
+        }
+
+        client.post("/api/v1/media-showcases/", json=showcase_data_1, headers=headers)
+        client.post("/api/v1/media-showcases/", json=showcase_data_2, headers=headers)
+
+        # Search for "Amazing"
+        response = client.get("/api/v1/media-showcases/?q=Amazing")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should find showcase with "Amazing" in title
+        found_titles = [item["title"] for item in data["data"]]
+        assert any("Amazing" in title for title in found_titles)
+
+        # Search for "Different"
+        response = client.get("/api/v1/media-showcases/?q=Different")
+        assert response.status_code == 200
+        data = response.json()
+
+        found_titles = [item["title"] for item in data["data"]]
+        assert any("Different" in title for title in found_titles)
+
+        # Case-insensitive search
+        response = client.get("/api/v1/media-showcases/?q=amazing")
+        assert response.status_code == 200
+        data = response.json()
+
+        found_titles = [item["title"] for item in data["data"]]
+        assert any("Amazing" in title for title in found_titles)
 
     def test_create_media_showcase(self, client, admin_token, sample_showcase_data):
         """Test creating a new media showcase."""

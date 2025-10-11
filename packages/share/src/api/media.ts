@@ -25,6 +25,7 @@ export const mediaApi = {
     const params = new URLSearchParams();
     if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
     if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
+    if (filters?.q) params.append('q', filters.q);
     if (filters?.media_type) params.append('media_type', filters.media_type);
     if (filters?.category_id) params.append('category_id', filters.category_id);
     if (filters?.status) params.append('status', filters.status);
@@ -85,6 +86,7 @@ export const mediaApi = {
     const params = new URLSearchParams();
     if (filters?.skip !== undefined) params.append('skip', filters.skip.toString());
     if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
+    if (filters?.q) params.append('q', filters.q);
     if (filters?.order_by) params.append('order_by', filters.order_by);
     if (filters?.order_dir) params.append('order_dir', filters.order_dir.toLowerCase());
 
