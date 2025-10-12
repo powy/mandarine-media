@@ -16,6 +16,11 @@ interface ContentListProps {
   [key: string]: any;
 }
 
+/**
+ * @deprecated ContentList has been replaced by MediaShowcase. Use useMediaShowcase instead.
+ * This hook is maintained only for backward compatibility with the alpha app.
+ * For new code, use useMediaShowcase from 'share' package.
+ */
 export const useContentList = (contentList: ContentListProps | null) => {
   // Carousel state management
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);

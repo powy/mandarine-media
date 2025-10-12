@@ -32,6 +32,7 @@ export interface MediaDescription {
   production_year?: number;
   original_broadcast_date_utc?: string;
   last_updated_utc?: string;
+  duration_seconds?: number;
 
   // SEO & Marketing - API 1.13
   seo_title?: string;
@@ -1083,7 +1084,9 @@ export interface ScreenDescriptionJSON {
   description?: string;
   screen_type?: string;
   last_updated: string;
-  content_lists: ContentListJSON[];
+  media_showcases: MediaShowcaseJSON[];
+  /** @deprecated Use media_showcases instead */
+  content_lists?: ContentListJSON[];
 }
 
 // Keep ScreenContentJSON as alias for backward compatibility

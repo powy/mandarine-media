@@ -10,7 +10,7 @@ interface MediaShowcaseProps {
   height_percentage: number;
   is_active: boolean;
   priority_in_screen: number;
-  list_type: 'classic' | 'carousel';
+  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   last_updated: string;
   items: MediaShowcaseItem[];
 }

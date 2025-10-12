@@ -24,6 +24,8 @@ export const getMediaShowcaseItemRoute = (item: MediaShowcaseItem): string => {
 
 /**
  * Get the route path for a content list item based on its content type
+ * @deprecated ContentList has been replaced by MediaShowcase. Use getMediaShowcaseItemRoute instead.
+ * This function is maintained only for backward compatibility with the alpha app.
  */
 export const getContentListItemRoute = (item: ContentListItem): string => {
   switch (item.content_type) {
@@ -80,6 +82,8 @@ export const createMediaShowcaseNavigationAction = (item: MediaShowcaseItem): Na
 
 /**
  * Create a navigation action for a content list item
+ * @deprecated ContentList has been replaced by MediaShowcase. Use createMediaShowcaseNavigationAction instead.
+ * This function is maintained only for backward compatibility with the alpha app.
  */
 export const createContentListNavigationAction = (item: ContentListItem): NavigationAction => {
   return {

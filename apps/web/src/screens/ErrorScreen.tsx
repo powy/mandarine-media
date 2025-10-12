@@ -7,7 +7,12 @@ interface ErrorState {
   timestamp?: string;
 }
 
-const ErrorScreen: React.FC = () => {
+interface ErrorScreenProps {
+  title?: string;
+  message?: string;
+}
+
+const ErrorScreen: React.FC<ErrorScreenProps> = ({ title, message }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const errorState = location.state as ErrorState | null;
@@ -40,13 +45,13 @@ const ErrorScreen: React.FC = () => {
       <div className="text-center max-w-lg">
         <h1 className="text-6xl font-bold text-red-500 mb-4">Erreur</h1>
         <h2 className="text-2xl font-semibold text-kyool-blue mb-4">
-          {errorState?.videoId ? 'Vidéo non trouvée' : 'Page non trouvée'}
+          {title || (errorState?.videoId ? 'Vidéo non trouvée' : 'Page non trouvée')}
         </h2>
         <p className="text-gray-300 mb-8">
-          {errorState?.videoId 
+          {message || (errorState?.videoId
             ? `Impossible de charger la vidéo ${errorState.videoId}. Elle pourrait ne pas exister ou ne pas être disponible.`
             : 'Désolé, la page que vous recherchez n\'existe pas ou a été déplacée.'
-          }
+          )}
         </p>
         
         {/* Debug information in development */}

@@ -75,8 +75,8 @@ const TopScreen: React.FC<TopScreenProps> = ({ screenDescriptionId, screenType }
     );
   }
 
-  // Handle both new media_showcases format and legacy content_lists format
-  const showcases = screenData.media_showcases || screenData.content_lists || [];
+  // Use media_showcases from screen data
+  const showcases = screenData.media_showcases || [];
 
   return (
     <div className="min-h-screen bg-black text-kyool-blue">

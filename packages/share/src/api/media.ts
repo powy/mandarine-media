@@ -337,7 +337,7 @@ export const mediaApi = {
 };
 
 // Video screen detailed data function
-export const getVideoScreenData = async (mediaDescriptionId: string) => {
+export const getVideoScreenData = async (mediaDescriptionId: string, fetchPictures: boolean = false) => {
   try {
     console.log('🔍 getVideoScreenData: Starting data fetch for media ID:', mediaDescriptionId);
     
@@ -429,54 +429,58 @@ export const getVideoScreenData = async (mediaDescriptionId: string) => {
         }))
       });
 
-      // Fetch pictures for related episodes
-      console.log('🔍 getVideoScreenData: Related episodes image check:', {
-        totalRelatedEpisodes: relatedEpisodes.length,
-        episodesWithImageId: relatedEpisodes.filter(ep => ep.image_1920_1080_id).length,
-        episodeDetails: relatedEpisodes.map(ep => ({
-          id: ep.id,
-          episodeNumber: ep.episode_number,
-          title: ep.episode_title,
-          hasImageId: !!ep.image_1920_1080_id,
-          imageId: ep.image_1920_1080_id
-        }))
-      });
+      // Fetch pictures for related episodes (only if requested)
+      if (fetchPictures) {
+        console.log('🔍 getVideoScreenData: Related episodes image check:', {
+          totalRelatedEpisodes: relatedEpisodes.length,
+          episodesWithImageId: relatedEpisodes.filter(ep => ep.image_1920_1080_id).length,
+          episodeDetails: relatedEpisodes.map(ep => ({
+            id: ep.id,
+            episodeNumber: ep.episode_number,
+            title: ep.episode_title,
+            hasImageId: !!ep.image_1920_1080_id,
+            imageId: ep.image_1920_1080_id
+          }))
+        });
 
-      for (const episode of relatedEpisodes) {
-        if (episode.image_1920_1080_id) {
-          try {
-            console.log(`🔍 getVideoScreenData: Fetching picture for related episode ${episode.episode_number}:`, episode.image_1920_1080_id);
-            const picture = await picturesApi.getById(episode.image_1920_1080_id);
-            console.log(`✅ getVideoScreenData: Picture fetched for related episode ${episode.episode_number}:`, {
-              pictureId: picture.id,
-              hasImageUrl: !!picture.image_url,
-              imageUrl: picture.image_url
-            });
-            (episode as any).image_1920_1080_url = picture.image_url;
-          } catch (error) {
-            console.error('❌ getVideoScreenData: Failed to fetch picture for related episode:', {
-              episodeId: episode.id,
-              episodeNumber: episode.episode_number,
-              episodeTitle: episode.episode_title,
-              pictureId: episode.image_1920_1080_id,
-              error: error instanceof Error ? error.message : error,
-              errorDetails: error
-            });
+        for (const episode of relatedEpisodes) {
+          if (episode.image_1920_1080_id) {
+            try {
+              console.log(`🔍 getVideoScreenData: Fetching picture for related episode ${episode.episode_number}:`, episode.image_1920_1080_id);
+              const picture = await picturesApi.getById(episode.image_1920_1080_id);
+              console.log(`✅ getVideoScreenData: Picture fetched for related episode ${episode.episode_number}:`, {
+                pictureId: picture.id,
+                hasImageUrl: !!picture.image_url,
+                imageUrl: picture.image_url
+              });
+              (episode as any).image_1920_1080_url = picture.image_url;
+            } catch (error) {
+              console.error('❌ getVideoScreenData: Failed to fetch picture for related episode:', {
+                episodeId: episode.id,
+                episodeNumber: episode.episode_number,
+                episodeTitle: episode.episode_title,
+                pictureId: episode.image_1920_1080_id,
+                error: error instanceof Error ? error.message : error,
+                errorDetails: error
+              });
+            }
           }
         }
-      }
 
-      console.log('✅ getVideoScreenData: Related episodes after picture fetch:', {
-        totalRelatedEpisodes: relatedEpisodes.length,
-        episodesWithUrls: relatedEpisodes.filter(ep => (ep as any).image_1920_1080_url).length,
-        episodeUrlDetails: relatedEpisodes.map(ep => ({
-          id: ep.id,
-          episodeNumber: ep.episode_number,
-          title: ep.episode_title,
-          hasUrl: !!(ep as any).image_1920_1080_url,
-          url: (ep as any).image_1920_1080_url
-        }))
-      });
+        console.log('✅ getVideoScreenData: Related episodes after picture fetch:', {
+          totalRelatedEpisodes: relatedEpisodes.length,
+          episodesWithUrls: relatedEpisodes.filter(ep => (ep as any).image_1920_1080_url).length,
+          episodeUrlDetails: relatedEpisodes.map(ep => ({
+            id: ep.id,
+            episodeNumber: ep.episode_number,
+            title: ep.episode_title,
+            hasUrl: !!(ep as any).image_1920_1080_url,
+            url: (ep as any).image_1920_1080_url
+          }))
+        });
+      } else {
+        console.log('⏩ getVideoScreenData: Skipping picture fetch for related episodes (fetchPictures=false)');
+      }
 
       // If season has a program, get program info
       if (season.program_id) {

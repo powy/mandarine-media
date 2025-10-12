@@ -9,5 +9,8 @@ export * from './useTrailersAndExcerpts';
 export * from './useMediaShowcases';
 export * from './useProgramScreen';
 export { useMediaShowcase as useMediaShowcaseLogic } from './useMediaShowcase';
-export * from './useContentList';
 export * from './usePicture';
+
+// Legacy exports - deprecated (maintained for backward compatibility with alpha app)
+/** @deprecated Use MediaShowcase-related hooks instead. ContentList has been replaced by MediaShowcase. */
+export * from './useContentList';
