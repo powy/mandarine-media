@@ -22,7 +22,7 @@ export interface MediaDescription {
   episode_number?: number;
 
   // Content categorization - API 1.13
-  media_categories_list?: ('movie' | 'drama' | 'short-drama' | 'musical' | 'animation' | 'documentary' | 'tvshow' | 'other')[];
+  media_categories_list?: ('movie' | 'drama' | 'short-drama' | 'short-film' | 'musical' | 'animation' | 'documentary' | 'tvshow' | 'other')[];
   content_status?: 'draft' | 'published' | 'archived' | 'scheduled';
   is_featured?: boolean;
 

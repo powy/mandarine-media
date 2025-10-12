@@ -158,13 +158,14 @@ export const ExcerptInput = ({ source = "excerpt_ids", label = "Excerpts", ...pr
 
 // Media Categories input (enum-based) - v1.12 field name
 export const MediaCategoriesInput = ({ source = "media_categories_list", label = "Media Categories", ...props }) => (
-  <SelectArrayInput 
+  <SelectArrayInput
     source={source}
     label={label}
     choices={[
       { id: 'movie', name: 'Movie' },
       { id: 'drama', name: 'Drama' },
       { id: 'short-drama', name: 'Short Drama' },
+      { id: 'short-film', name: 'Short Film' },
       { id: 'musical', name: 'Musical' },
       { id: 'animation', name: 'Animation' },
       { id: 'documentary', name: 'Documentary' },

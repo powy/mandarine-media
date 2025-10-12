@@ -100,7 +100,7 @@ class TestMediaDescriptionV110C:
         """Test MediaCategory enum accepts only valid values."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
-        valid_categories = ["movie", "drama", "short-drama", "musical", "documentary", "animation"]
+        valid_categories = ["movie", "drama", "short-drama", "short-film", "musical", "documentary", "animation"]
         
         data = {
             "file_number": 4000,

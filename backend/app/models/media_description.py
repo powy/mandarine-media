@@ -35,6 +35,7 @@ class MediaCategoryEnum(enum.Enum):
     movie = "movie"
     drama = "drama"
     short_drama = "short-drama"
+    short_film = "short-film"
     musical = "musical"
     animation = "animation"
     documentary = "documentary"
