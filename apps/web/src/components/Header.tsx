@@ -73,8 +73,9 @@ const Header: React.FC = () => {
 
         {/* Search and User */}
         <div className="flex items-center gap-4">
-          {/* Search button - not functional yet */}
+          {/* Search button */}
           <button
+            onClick={() => navigate('/search')}
             className="p-2 rounded-full hover:bg-gray-800 transition-colors"
             aria-label="Rechercher"
           >

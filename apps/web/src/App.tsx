@@ -8,6 +8,7 @@ import TopScreen from './screens/TopScreen';
 import VideoScreen from './screens/VideoScreen';
 import SeasonScreen from './screens/SeasonScreen';
 import ProgramScreen from './screens/ProgramScreen';
+import SearchScreen from './screens/SearchScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import WipScreen from './screens/WipScreen';
 
@@ -29,6 +30,7 @@ function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/login" element={<LoginScreen />} />
+              <Route path="/search" element={<SearchScreen />} />
               <Route path="/screen/:screenId" element={<TopScreen />} />
               <Route path="/video/:id" element={<VideoScreen />} />
               <Route path="/season/:id" element={<SeasonScreen />} />
