@@ -33,6 +33,7 @@ class MediaCategoryEnum(str, enum.Enum):
     animation = "animation"
     documentary = "documentary"
     tvshow = "tvshow"
+    web_drama = "web-drama"
     other = "other"
 
 

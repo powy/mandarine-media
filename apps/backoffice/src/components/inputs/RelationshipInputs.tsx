@@ -170,6 +170,7 @@ export const MediaCategoriesInput = ({ source = "media_categories_list", label =
       { id: 'animation', name: 'Animation' },
       { id: 'documentary', name: 'Documentary' },
       { id: 'tvshow', name: 'TV Show' },
+      { id: 'web-drama', name: 'Web Drama' },
       { id: 'other', name: 'Other' },
     ]}
     {...props}

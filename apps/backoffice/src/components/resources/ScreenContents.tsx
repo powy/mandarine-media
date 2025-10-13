@@ -41,7 +41,7 @@ import {
   useRefresh,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, Tooltip } from '@mui/material';
 import { getScreenDescriptionJSON, regenerateScreenDescriptionJSON, reorderScreenDescriptionLists, regenerateAllScreenDescriptionJSON } from 'share';
 
 
@@ -101,13 +101,25 @@ const BulkRegenerateJsonButton = () => {
   };
 
   return (
-    <Button
-      onClick={handleRegenerateAll}
-      disabled={isLoading}
-      label={isLoading ? "Regenerating..." : "Regenerate All JSONs"}
-      variant="outlined"
-      color="primary"
-    />
+    <Tooltip title="Mise à jour des écrans du site en production et des showcases à l'intérieur de ceux-ci.">
+      <Button
+        onClick={handleRegenerateAll}
+        disabled={isLoading}
+        label={isLoading ? "Updating..." : "Update the website display (json)"}
+        variant="contained"
+        sx={{
+          backgroundColor: '#ff9800',
+          color: '#fff',
+          '&:hover': {
+            backgroundColor: '#f57c00',
+          },
+          '&:disabled': {
+            backgroundColor: '#ffcc80',
+            color: '#fff',
+          },
+        }}
+      />
+    </Tooltip>
   );
 };
 

@@ -99,16 +99,16 @@ class TestMediaDescriptionV110C:
     def test_media_category_enum_values(self, client, admin_token):
         """Test MediaCategory enum accepts only valid values."""
         headers = {"Authorization": f"Bearer {admin_token}"}
-        
-        valid_categories = ["movie", "drama", "short-drama", "short-film", "musical", "documentary", "animation"]
-        
+
+        valid_categories = ["movie", "drama", "short-drama", "short-film", "musical", "documentary", "animation", "web-drama"]
+
         data = {
             "file_number": 4000,
             "episode_title": "Category Test",
             "media_type": "video",
             "media_categories_list": valid_categories
         }
-        
+
         response = client.post(
             "/api/v1/media-descriptions",
             json=data,

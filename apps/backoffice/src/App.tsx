@@ -1,5 +1,5 @@
-import React from 'react';
-import { Admin, Resource, Layout, AppBar, Menu, MenuItemLink, useSidebarState } from 'react-admin';
+import React, { useState } from 'react';
+import { Admin, Resource, Layout, AppBar, Menu, MenuItemLink, useSidebarState, Button, useNotify } from 'react-admin';
 import { dataProvider } from './dataProvider';
 import { authProvider } from './authProvider';
 import { CountryList, CountryCreate, CountryEdit, CountryShow } from './components/resources/Countries';
@@ -19,6 +19,8 @@ import { MediaThemeList, MediaThemeCreate, MediaThemeEdit, MediaThemeShow } from
 import { VideoFileReportList, VideoFileReportShow } from './components/resources/VideoFileReports';
 import { AudienceCategoryList, AudienceCategoryCreate, AudienceCategoryEdit, AudienceCategoryShow } from './components/resources/AudienceCategories';
 import { SubscriptionPlanList, SubscriptionPlanCreate, SubscriptionPlanEdit, SubscriptionPlanShow } from './components/resources/SubscriptionPlans';
+import { Tooltip } from '@mui/material';
+import { regenerateAllScreenDescriptionJSON } from 'share';
 
 
 // Custom Menu for better organization
@@ -159,22 +161,70 @@ const CustomLayout = (props: any) => (
 );
 
 // Dashboard component - placeholder for now
-const Dashboard = () => (
-  <div style={{ padding: '2rem' }}>
-    <h1>Welcome to KYOOL Media Backoffice</h1>
-    <p>Select a resource from the sidebar to start managing your content.</p>
-    
-    <div style={{ marginTop: '2rem' }}>
-      <h2>Quick Stats</h2>
-      <p>📊 Dashboard with metrics and charts will be implemented in the next phase.</p>
+const Dashboard = () => {
+  const notify = useNotify();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRegenerateAll = async () => {
+    setIsLoading(true);
+    try {
+      const result = await regenerateAllScreenDescriptionJSON();
+      notify(
+        `Successfully regenerated ${result.results.updated} screen description JSONs`,
+        { type: 'success' }
+      );
+      if (result.results.failed > 0) {
+        notify(
+          `${result.results.failed} screen descriptions failed to regenerate`,
+          { type: 'warning' }
+        );
+      }
+    } catch (error) {
+      notify(`Error regenerating all JSONs: ${error.message}`, { type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h1>Welcome to KYOOL Media Backoffice</h1>
+      <p>Select a resource from the sidebar to start managing your content.</p>
+
+      <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+        <Tooltip title="Mise à jour des écrans du site en production et des showcases à l'intérieur de ceux-ci.">
+          <Button
+            onClick={handleRegenerateAll}
+            disabled={isLoading}
+            label={isLoading ? "Updating..." : "Update the website display (json)"}
+            variant="contained"
+            sx={{
+              backgroundColor: '#ff9800',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: '#f57c00',
+              },
+              '&:disabled': {
+                backgroundColor: '#ffcc80',
+                color: '#fff',
+              },
+            }}
+          />
+        </Tooltip>
+      </div>
+
+      <div style={{ marginTop: '2rem' }}>
+        <h2>Quick Stats</h2>
+        <p>📊 Dashboard with metrics and charts will be implemented in the next phase.</p>
+      </div>
+
+      <div style={{ marginTop: '2rem' }}>
+        <h2>Recent Activity</h2>
+        <p>📈 Recent operations and system status will be displayed here.</p>
+      </div>
     </div>
-    
-    <div style={{ marginTop: '2rem' }}>
-      <h2>Recent Activity</h2>
-      <p>📈 Recent operations and system status will be displayed here.</p>
-    </div>
-  </div>
-);
+  );
+};
 
 export const App = () => (
   <Admin
