@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { useAuth, getScreenDescriptions } from 'share';
+import { useAuth } from 'share';
 import kyoolLogo from '../assets/kyool_black.svg';
+import { Button } from '@heroui/react';
+import { useAppContext } from '@src/AppContext';
 
 const Header: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
@@ -10,26 +11,15 @@ const Header: React.FC = () => {
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { isLoading, menu } = useAppContext();
 
-  // Fetch screen descriptions for dynamic navigation
-  const { data: screenDescriptions } = useQuery({
-    queryKey: ['screenDescriptions', 'active'],
-    queryFn: () =>
-      getScreenDescriptions({
-        is_active: true,
-        limit: 10,
-      }),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 1,
-  });
+  if (isLoading) {
+    return null;
+  }
 
-  // Build navigation items dynamically from screen descriptions
-  const navigationItems = (screenDescriptions?.data || [])
-    .sort((a, b) => a.display_order - b.display_order)
-    .map((screen) => ({
-      label: screen.title,
-      path: `/screen/${screen.id}`,
-    }));
+  // if (!isLoading && !isAuthenticated) {
+  //   navigate('/login');
+  // }
 
   const handleLogoClick = () => {
     navigate('/');
@@ -60,16 +50,33 @@ const Header: React.FC = () => {
   }
 
   return (
-    <header className="bg-black border-b border-gray-800">
+    <header className="bg-gradient-to-b from-black/70 to-100% fixed top-0 w-full z-1">
       {/* First line: Logo, Search, User */}
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo */}
         <button
           onClick={handleLogoClick}
-          className="flex items-center hover:opacity-80 transition-opacity"
+          className="flex items-center hover:opacity-80 transition-opacity hover:cursor-pointer"
         >
-          <img src={kyoolLogo} alt="KYOOL" className="h-8" />
+          <img src={kyoolLogo} alt="KYOOL" className="h-6" />
         </button>
+
+        {/* Second line: Navigation */}
+        <nav className="border-white border-1 rounded-sm">
+          <div className="flex items-center px-4 gap-6 overflow-x-auto">
+            {menu.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => navigate(item.path)}
+                className={`whitespace-nowrap hover:text-white transition-colors text-sm py-1 text-white text-shadow-sm hover:cursor-pointer ${
+                  location.pathname === item.path ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
 
         {/* Search and User */}
         <div className="flex items-center gap-4">
@@ -80,7 +87,7 @@ const Header: React.FC = () => {
             aria-label="Rechercher"
           >
             <svg
-              className="w-5 h-5 text-kyool-blue"
+              className="w-5 h-5 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -96,25 +103,35 @@ const Header: React.FC = () => {
 
           {/* User menu */}
           <div className="relative">
-            <button
-              onClick={handleUserClick}
-              className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-              aria-label="Compte utilisateur"
-            >
-              <svg
-                className="w-5 h-5 text-kyool-blue"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {isAuthenticated ? (
+              <button
+                onClick={handleUserClick}
+                className="p-2 rounded-full hover:bg-gray-800 transition-colors"
+                aria-label="Compte utilisateur"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </button>
+            ) : (
+              <Button
+                size="sm"
+                className="bg-kyool-blue text-white"
+                onPress={() => navigate('/login')}
+              >
+                Connexion
+              </Button>
+            )}
 
             {/* User dropdown menu */}
             {showUserMenu && isAuthenticated && (
@@ -134,25 +151,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Second line: Navigation */}
-      <nav className="border-t border-gray-800">
-        <div className="flex items-center px-4 py-2 gap-6 overflow-x-auto">
-          {navigationItems.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => navigate(item.path)}
-              className={`whitespace-nowrap hover:text-white transition-colors text-sm font-medium py-1 ${
-                location.pathname === item.path
-                  ? 'text-white'
-                  : 'text-kyool-blue'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </nav>
-
       {/* Logout confirmation modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -166,13 +164,13 @@ const Header: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={handleLogout}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-sm hover:bg-red-700 transition-colors"
               >
                 Déconnexion
               </button>
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 bg-gray-700 text-kyool-blue px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+                className="flex-1 bg-gray-700 text-kyool-blue px-4 py-2 rounded-sm hover:bg-gray-600 transition-colors"
               >
                 Annuler
               </button>

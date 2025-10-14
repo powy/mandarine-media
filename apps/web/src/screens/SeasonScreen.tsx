@@ -2,7 +2,14 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getSeasonScreenData, resolveMediaDescriptionId } from 'share';
-import type { MediaDescription, Season, Program, PublicPerson, Language, Country } from 'share';
+import type {
+  MediaDescription,
+  Season,
+  Program,
+  PublicPerson,
+  Language,
+  Country,
+} from 'share';
 
 interface SeasonScreenData {
   season: Season;
@@ -29,20 +36,34 @@ const SeasonScreen: React.FC = () => {
       if (!id) return;
 
       try {
-        console.log('🔍 SeasonScreen: Checking if ID is a MediaDescription:', id);
+        console.log(
+          '🔍 SeasonScreen: Checking if ID is a MediaDescription:',
+          id
+        );
         const resolution = await resolveMediaDescriptionId(id);
 
         if (resolution.isMediaDescription) {
-          console.log('✅ SeasonScreen: Detected MediaDescription, resolving:', resolution);
+          console.log(
+            '✅ SeasonScreen: Detected MediaDescription, resolving:',
+            resolution
+          );
 
-          if (resolution.redirectPath && resolution.redirectPath !== `/season/${id}`) {
-            console.log('🔄 SeasonScreen: Redirecting to correct path:', resolution.redirectPath);
+          if (
+            resolution.redirectPath &&
+            resolution.redirectPath !== `/season/${id}`
+          ) {
+            console.log(
+              '🔄 SeasonScreen: Redirecting to correct path:',
+              resolution.redirectPath
+            );
             navigate(resolution.redirectPath, { replace: true });
             return;
           }
         }
       } catch (error) {
-        console.log('🔍 SeasonScreen: ID resolution failed, continuing with original ID');
+        console.log(
+          '🔍 SeasonScreen: ID resolution failed, continuing with original ID'
+        );
       }
     };
 
@@ -71,9 +92,10 @@ const SeasonScreen: React.FC = () => {
           response: (error as any)?.response,
           status: (error as any)?.response?.status,
           data: (error as any)?.response?.data,
-          possibleCause: (error as any)?.response?.status === 404
-            ? 'Season not found - verify the season ID exists in the database or check if a MediaDescription ID was passed'
-            : 'Unknown API error'
+          possibleCause:
+            (error as any)?.response?.status === 404
+              ? 'Season not found - verify the season ID exists in the database or check if a MediaDescription ID was passed'
+              : 'Unknown API error',
         });
         throw error;
       }
@@ -83,7 +105,10 @@ const SeasonScreen: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      console.error('🚨 SeasonScreen: Error in useEffect, redirecting to error page:', error);
+      console.error(
+        '🚨 SeasonScreen: Error in useEffect, redirecting to error page:',
+        error
+      );
       // Redirect to error page for invalid IDs
       navigate('/error', { replace: true });
     }
@@ -123,12 +148,10 @@ const SeasonScreen: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-red-500 mb-4">Erreur</h1>
-          <p className="text-gray-300 mb-2">Impossible de charger cette saison.</p>
-          {id && (
-            <p className="text-gray-400 text-sm">
-              ID de saison: {id}
-            </p>
-          )}
+          <p className="text-gray-300 mb-2">
+            Impossible de charger cette saison.
+          </p>
+          {id && <p className="text-gray-400 text-sm">ID de saison: {id}</p>}
           {(error as any)?.response?.status === 404 && (
             <p className="text-yellow-400 text-sm mt-2">
               Cette saison n'existe pas ou a été supprimée.
@@ -139,17 +162,17 @@ const SeasonScreen: React.FC = () => {
     );
   }
 
-  const { 
-    season, 
-    program, 
-    episodes, 
-    nextSeason, 
-    previousSeason, 
+  const {
+    season,
+    program,
+    episodes,
+    nextSeason,
+    previousSeason,
     seasonImageUrl,
-    actors, 
-    directors, 
-    producers, 
-    originCountries 
+    actors,
+    directors,
+    producers,
+    originCountries,
   } = seasonData;
 
   return (
@@ -184,7 +207,7 @@ const SeasonScreen: React.FC = () => {
                   {program.program_name}
                 </button>
               </div>
-              
+
               {/* Season Navigation Buttons */}
               <div className="flex justify-between items-center mt-4">
                 {previousSeason ? (
@@ -194,22 +217,30 @@ const SeasonScreen: React.FC = () => {
                   >
                     <span className="mr-2">←</span>
                     <div className="text-left">
-                      <div className="text-xs text-gray-400">Saison précédente</div>
-                      <div className="text-sm">Saison {previousSeason.season_number}</div>
+                      <div className="text-xs text-gray-400">
+                        Saison précédente
+                      </div>
+                      <div className="text-sm">
+                        Saison {previousSeason.season_number}
+                      </div>
                     </div>
                   </button>
                 ) : (
                   <div></div>
                 )}
-                
+
                 {nextSeason && (
                   <button
                     onClick={() => handleSeasonNavigation(nextSeason.id)}
                     className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-white"
                   >
                     <div className="text-right">
-                      <div className="text-xs text-gray-400">Saison suivante</div>
-                      <div className="text-sm">Saison {nextSeason.season_number}</div>
+                      <div className="text-xs text-gray-400">
+                        Saison suivante
+                      </div>
+                      <div className="text-sm">
+                        Saison {nextSeason.season_number}
+                      </div>
                     </div>
                     <span className="ml-2">→</span>
                   </button>
@@ -222,7 +253,9 @@ const SeasonScreen: React.FC = () => {
         {/* Synopsis Section */}
         {episodes.length > 0 && episodes[0].synopsis_text && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-kyool-blue mb-3">Synopsis</h3>
+            <h3 className="text-lg font-semibold text-kyool-blue mb-3">
+              Synopsis
+            </h3>
             <p className="text-gray-300 leading-relaxed">
               {episodes[0].synopsis_text}
             </p>
@@ -231,27 +264,32 @@ const SeasonScreen: React.FC = () => {
 
         {/* Details Section */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-kyool-blue mb-3">Détails</h3>
+          <h3 className="text-lg font-semibold text-kyool-blue mb-3">
+            Détails
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {episodes.length > 0 && episodes[0].media_themes_id_list?.length && (
-              <div>
-                <span className="text-gray-400">Genres: </span>
-                <span className="text-white">
-                  {episodes[0].media_themes_id_list.join(', ')}
-                </span>
-              </div>
-            )}
+            {episodes.length > 0 &&
+              episodes[0].media_themes_id_list?.length && (
+                <div>
+                  <span className="text-gray-400">Genres: </span>
+                  <span className="text-white">
+                    {episodes[0].media_themes_id_list.join(', ')}
+                  </span>
+                </div>
+              )}
             {episodes.length > 0 && episodes[0].production_year && (
               <div>
                 <span className="text-gray-400">Année: </span>
-                <span className="text-white">{episodes[0].production_year}</span>
+                <span className="text-white">
+                  {episodes[0].production_year}
+                </span>
               </div>
             )}
             {originCountries.length > 0 && (
               <div>
                 <span className="text-gray-400">Pays d'origine: </span>
                 <span className="text-white">
-                  {originCountries.map(country => country.name).join(', ')}
+                  {originCountries.map((country) => country.name).join(', ')}
                 </span>
               </div>
             )}
@@ -263,23 +301,43 @@ const SeasonScreen: React.FC = () => {
         </div>
 
         {/* Cast and Crew Section */}
-        {(actors.length > 0 || directors.length > 0 || producers.length > 0) && (
+        {(actors.length > 0 ||
+          directors.length > 0 ||
+          producers.length > 0) && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-kyool-blue mb-3">Distribution et équipe</h3>
+            <h3 className="text-lg font-semibold text-kyool-blue mb-3">
+              Distribution et équipe
+            </h3>
             <div className="text-gray-300 leading-relaxed">
               {producers.length > 0 && (
                 <div className="mb-2">
-                  <span className="text-gray-400">Producteur{producers.length > 1 ? 's' : ''}: </span>
+                  <span className="text-gray-400">
+                    Producteur{producers.length > 1 ? 's' : ''}:{' '}
+                  </span>
                   <span className="text-white">
-                    {producers.map(p => p.stage_name_roman || `${p.first_name_roman || ''} ${p.last_name_roman || ''}`).join(', ')}
+                    {producers
+                      .map(
+                        (p) =>
+                          p.stage_name_roman ||
+                          `${p.first_name_roman || ''} ${p.last_name_roman || ''}`
+                      )
+                      .join(', ')}
                   </span>
                 </div>
               )}
               {directors.length > 0 && (
                 <div className="mb-2">
-                  <span className="text-gray-400">Réalisateur{directors.length > 1 ? 's' : ''}: </span>
+                  <span className="text-gray-400">
+                    Réalisateur{directors.length > 1 ? 's' : ''}:{' '}
+                  </span>
                   <span className="text-white">
-                    {directors.map(d => d.stage_name_roman || `${d.first_name_roman || ''} ${d.last_name_roman || ''}`).join(', ')}
+                    {directors
+                      .map(
+                        (d) =>
+                          d.stage_name_roman ||
+                          `${d.first_name_roman || ''} ${d.last_name_roman || ''}`
+                      )
+                      .join(', ')}
                   </span>
                 </div>
               )}
@@ -287,9 +345,18 @@ const SeasonScreen: React.FC = () => {
                 <div>
                   <span className="text-gray-400">avec </span>
                   <span className="text-white">
-                    {actors.map(a => a.stage_name_roman || `${a.first_name_roman || ''} ${a.last_name_roman || ''}`).join(', ')}
+                    {actors
+                      .map(
+                        (a) =>
+                          a.stage_name_roman ||
+                          `${a.first_name_roman || ''} ${a.last_name_roman || ''}`
+                      )
+                      .join(', ')}
                   </span>
-                  <span className="text-gray-400"> (acteur{actors.length > 1 ? 's' : ''})</span>
+                  <span className="text-gray-400">
+                    {' '}
+                    (acteur{actors.length > 1 ? 's' : ''})
+                  </span>
                 </div>
               )}
             </div>
@@ -299,7 +366,9 @@ const SeasonScreen: React.FC = () => {
         {/* Description Section */}
         {episodes.length > 0 && episodes[0].descriptive_summary_text && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-kyool-blue mb-3">Description</h3>
+            <h3 className="text-lg font-semibold text-kyool-blue mb-3">
+              Description
+            </h3>
             <p className="text-gray-300 leading-relaxed">
               {episodes[0].descriptive_summary_text}
             </p>
@@ -320,7 +389,7 @@ const SeasonScreen: React.FC = () => {
                   className="flex items-center p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
                 >
                   {/* Episode Number */}
-                  <div className="flex-shrink-0 w-12 text-center">
+                  <div className="shrink-0 w-12 text-center">
                     <span className="text-kyool-blue font-bold">
                       {episode.episode_number || '?'}
                     </span>
@@ -332,11 +401,13 @@ const SeasonScreen: React.FC = () => {
                       <img
                         src={episode.image_1920_1080_url}
                         alt={episode.episode_title}
-                        className="w-full h-full object-cover rounded"
+                        className="w-full h-full object-cover rounded-sm"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-600 flex items-center justify-center rounded">
-                        <span className="text-gray-400 text-xs">Pas d'image</span>
+                      <div className="w-full h-full bg-gray-600 flex items-center justify-center rounded-sm">
+                        <span className="text-gray-400 text-xs">
+                          Pas d'image
+                        </span>
                       </div>
                     )}
                   </div>
@@ -354,7 +425,7 @@ const SeasonScreen: React.FC = () => {
                   </div>
 
                   {/* Arrow indicator */}
-                  <div className="flex-shrink-0 ml-4">
+                  <div className="shrink-0 ml-4">
                     <span className="text-gray-400">→</span>
                   </div>
                 </div>

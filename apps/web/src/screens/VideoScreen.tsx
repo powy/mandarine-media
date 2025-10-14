@@ -565,7 +565,7 @@ const VideoScreen: React.FC = () => {
                 
                 {/* Debug info in development only */}
                 {process.env.NODE_ENV === 'development' && (
-                  <div className="text-xs text-gray-500 mt-4 p-3 bg-gray-900 rounded text-left">
+                  <div className="text-xs text-gray-500 mt-4 p-3 bg-gray-900 rounded-sm text-left">
                     <h4 className="text-gray-400 font-semibold mb-2">Debug Info (dev only):</h4>
                     <p>Media ID: {mediaDescription.id}</p>
                     <p>Title: {mediaDescription.episode_title}</p>

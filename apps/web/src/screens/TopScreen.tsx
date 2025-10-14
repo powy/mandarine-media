@@ -1,40 +1,18 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getScreenDescriptionJSON, getScreenDescriptionByType } from 'share';
 import MediaShowcase from '../components/MediaShowcase';
 import ErrorScreen from './ErrorScreen';
+import BigCarousel from '@src/components/ContentList/Displays/TopHero';
+import useGetListPage from '@src/hooks/useGetListPage';
 
 interface TopScreenProps {
   screenDescriptionId?: string;
   screenType?: string;
 }
 
-const TopScreen: React.FC<TopScreenProps> = ({ screenDescriptionId, screenType }) => {
-  // Get screen ID from route params if not provided as prop
-  const { screenId } = useParams<{ screenId: string }>();
-  const finalScreenId = screenDescriptionId || screenId;
+const TopScreen: React.FC<TopScreenProps> = ({ screenType }) => {
+  const { isLoading, error, screenData } = useGetListPage();
 
-  const { data: screenData, isLoading, error } = useQuery({
-    queryKey: screenType ? ['screenDescriptionByType', screenType] : ['screenDescription', finalScreenId],
-    queryFn: () => {
-      if (screenType) {
-        // Fetch by screen type and get JSON directly
-        return getScreenDescriptionByType(screenType).then(screen =>
-          getScreenDescriptionJSON(screen.id)
-        );
-      }
-      if (!finalScreenId) {
-        throw new Error('No screen ID provided');
-      }
-      return getScreenDescriptionJSON(finalScreenId);
-    },
-    enabled: !!(screenType || finalScreenId),
-    retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  if (!screenType && !finalScreenId) {
+  if (!isLoading && !screenData) {
     return (
       <ErrorScreen
         title="Screen not found"
@@ -77,44 +55,38 @@ const TopScreen: React.FC<TopScreenProps> = ({ screenDescriptionId, screenType }
 
   // Use media_showcases from screen data
   const showcases = screenData.media_showcases || [];
+  const hero = showcases.length > 0 ? showcases[0] : null;
 
   return (
     <div className="min-h-screen bg-black text-kyool-blue">
-      <div className="py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Screen Title */}
-          <div className="px-4 mb-6">
-            <h1 className="text-2xl font-bold text-kyool-blue mb-2">
-              {screenData.title}
-            </h1>
-            {screenData.description && (
-              <p className="text-gray-400 text-sm">
-                {screenData.description}
-              </p>
-            )}
+      {/* Hero Top Section */}
+      {hero && <BigCarousel showcase={hero} />}
+
+      {/* Media Showcases */}
+      <div className="max-w-6xl mx-auto mt-8">
+        {showcases.length > 0 ? (
+          showcases.map((showcase: any, index: number) => {
+            // Ensure the showcase has the required structure
+            if (!showcase.is_active) {
+              return null;
+            }
+
+            // Removing the one used as Hero
+            if (index == 0) {
+              return null;
+            }
+
+            return (
+              <MediaShowcase key={showcase.id || index} showcase={showcase} />
+            );
+          })
+        ) : (
+          <div className="text-center py-16">
+            <p className="text-gray-500 text-lg">
+              No content available for this screen.
+            </p>
           </div>
-
-          {/* Media Showcases */}
-          {showcases.length > 0 ? (
-            showcases.map((showcase: any, index: number) => {
-              // Ensure the showcase has the required structure
-              if (!showcase.is_active) {
-                return null;
-              }
-
-              return (
-                <MediaShowcase
-                  key={showcase.id || index}
-                  showcase={showcase}
-                />
-              );
-            })
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-gray-500 text-lg">No content available for this screen.</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

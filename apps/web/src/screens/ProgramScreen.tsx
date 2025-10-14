@@ -245,22 +245,22 @@ const ProgramScreen: React.FC = () => {
                   className="flex items-center p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
                 >
                   {/* Season Number */}
-                  <div className="flex-shrink-0 w-16 text-center">
+                  <div className="shrink-0 w-16 text-center">
                     <span className="text-kyool-blue font-bold text-lg">
                       {season.season_number}
                     </span>
                   </div>
 
                   {/* Season Thumbnail */}
-                  <div className="flex-shrink-0 w-40 h-24 ml-4 mr-6">
+                  <div className="shrink-0 w-40 h-24 ml-4 mr-6">
                     {season.thumbnailUrl ? (
                       <img
                         src={season.thumbnailUrl}
                         alt={`Saison ${season.season_number}`}
-                        className="w-full h-full object-cover rounded"
+                        className="w-full h-full object-cover rounded-sm"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-600 flex items-center justify-center rounded">
+                      <div className="w-full h-full bg-gray-600 flex items-center justify-center rounded-sm">
                         <span className="text-gray-400 text-xs">Pas d'image</span>
                       </div>
                     )}
@@ -277,7 +277,7 @@ const ProgramScreen: React.FC = () => {
                   </div>
 
                   {/* Arrow indicator */}
-                  <div className="flex-shrink-0 ml-4">
+                  <div className="shrink-0 ml-4">
                     <span className="text-gray-400 text-xl">→</span>
                   </div>
                 </div>

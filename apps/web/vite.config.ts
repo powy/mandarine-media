@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'share': resolve(__dirname, '../../packages/share/src/index.ts'),
+      '@src': '/src'
     },
   },
   server: {

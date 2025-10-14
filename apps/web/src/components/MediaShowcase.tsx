@@ -3,24 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   useMediaShowcaseLogic,
   getMediaShowcaseItemRoute,
-  resolveMediaDescriptionId
+  resolveMediaDescriptionId,
 } from 'share';
-import type { MediaShowcaseItem } from 'share';
+import type { MediaShowcaseItem, MediaShowcaseJSON } from 'share';
 
 interface MediaShowcaseProps {
-  showcase: {
-    id: string;
-    title: string;
-    description?: string;
-    thumbnail_format: string;
-    width_percentage: number;
-    height_percentage: number;
-    is_active: boolean;
-    priority_in_screen: number;
-    list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
-    last_updated: string;
-    items: MediaShowcaseItem[];
-  };
+  showcase: MediaShowcaseJSON;
 }
 
 const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
@@ -37,7 +25,7 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
     goToNextCarouselItem,
     goToPrevCarouselItem,
     goToCarouselItem,
-    getThumbnailDimensions
+    getThumbnailDimensions,
   } = useMediaShowcaseLogic(showcase);
 
   if (!isValidShowcase) {
@@ -48,11 +36,17 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
     console.log('MediaShowcase: Item clicked:', item);
 
     try {
-      console.log('🔍 MediaShowcase: Resolving MediaDescription for navigation:', item.id);
+      console.log(
+        '🔍 MediaShowcase: Resolving MediaDescription for navigation:',
+        item.id
+      );
       const resolution = await resolveMediaDescriptionId(item.id);
 
       if (resolution.isMediaDescription && resolution.redirectPath) {
-        console.log('✅ MediaShowcase: Navigating to resolved path:', resolution.redirectPath);
+        console.log(
+          '✅ MediaShowcase: Navigating to resolved path:',
+          resolution.redirectPath
+        );
         navigate(resolution.redirectPath);
       } else {
         console.log('🔄 MediaShowcase: Using fallback navigation logic');
@@ -60,7 +54,10 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
         navigate(getMediaShowcaseItemRoute(item));
       }
     } catch (error) {
-      console.error('❌ MediaShowcase: Failed to resolve MediaDescription for navigation:', error);
+      console.error(
+        '❌ MediaShowcase: Failed to resolve MediaDescription for navigation:',
+        error
+      );
       // Fallback to video route if resolution fails
       console.log('🔄 MediaShowcase: Falling back to video route');
       navigate(`/video/${item.id}`);
@@ -69,7 +66,8 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
 
   const checkScrollButtons = () => {
     if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
       setShowLeftArrow(scrollLeft > 0);
       setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
     }
@@ -78,17 +76,22 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
       const scrollAmount = scrollContainerRef.current.clientWidth * 0.8;
-      scrollContainerRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({
+        left: -scrollAmount,
+        behavior: 'smooth',
+      });
     }
   };
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
       const scrollAmount = scrollContainerRef.current.clientWidth * 0.8;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth',
+      });
     }
   };
-
 
   useEffect(() => {
     checkScrollButtons();
@@ -111,7 +114,12 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [showcase?.list_type, sortedItems, goToPrevCarouselItem, goToNextCarouselItem]);
+  }, [
+    showcase?.list_type,
+    sortedItems,
+    goToPrevCarouselItem,
+    goToNextCarouselItem,
+  ]);
 
   const renderShowcaseItem = (item: MediaShowcaseItem) => {
     // Use shared utility for thumbnail dimensions
@@ -120,7 +128,7 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
     return (
       <div
         key={item.id}
-        className="cursor-pointer flex-shrink-0 mr-3"
+        className="cursor-pointer shrink-0 mr-3"
         style={{ width: `${width}px` }}
         onClick={() => handleItemClick(item)}
       >
@@ -178,9 +186,7 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
             </div>
           )}
         </div>
-        <h3
-          className="text-kyool-blue text-lg font-medium text-center leading-tight max-w-sm"
-        >
+        <h3 className="text-kyool-blue text-lg font-medium text-center leading-tight max-w-sm">
           {item.title}
         </h3>
         {item.descriptive_summary_text && (
@@ -216,8 +222,20 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full p-3 transition-all duration-200"
                   aria-label="Previous item"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15 18L9 12L15 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
 
@@ -230,8 +248,20 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full p-3 transition-all duration-200"
                   aria-label="Next item"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 18L15 12L9 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
               </div>
@@ -262,8 +292,20 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
                   className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full p-2 transition-all duration-200"
                   aria-label="Scroll left"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15 18L9 12L15 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
               )}
@@ -288,8 +330,20 @@ const MediaShowcase: React.FC<MediaShowcaseProps> = ({ showcase }) => {
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full p-2 transition-all duration-200"
                   aria-label="Scroll right"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 18L15 12L9 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
               )}

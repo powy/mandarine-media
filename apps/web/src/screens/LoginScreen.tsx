@@ -35,28 +35,6 @@ const LoginScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-6 flex items-center text-kyool-blue hover:text-white transition-colors"
-          aria-label="Retour"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Retour
-        </button>
-
         {/* Logo */}
         <div className="text-center mb-8">
           <img src={kyoolLogo} alt="KYOOL" className="h-12 mx-auto mb-4" />
@@ -67,7 +45,10 @@ const LoginScreen: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-kyool-blue mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-kyool-blue mb-2"
+            >
               Email
             </label>
             <input
@@ -76,14 +57,17 @@ const LoginScreen: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-kyool-blue focus:border-transparent"
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-kyool-blue focus:border-transparent"
               placeholder="votre.email@exemple.com"
             />
           </div>
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-kyool-blue mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-kyool-blue mb-2"
+            >
               Mot de passe
             </label>
             <input
@@ -92,7 +76,7 @@ const LoginScreen: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-kyool-blue focus:border-transparent"
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-kyool-blue focus:border-transparent"
               placeholder="••••••••"
             />
           </div>

@@ -18,7 +18,8 @@
     "baseUrl": ".",
     "paths": {
       "share": ["../../packages/share/src/index.ts"],
-      "share/*": ["../../packages/share/src/*"]
+      "share/*": ["../../packages/share/src/*"],
+      "@src/*": ["src/*"]
     }
   },
   "include": ["src/**/*", "src/vite-env.d.ts"],

@@ -1,21 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { MediaShowcaseItem } from '../types';
+import type { MediaShowcaseJSON } from '../types';
 
-interface MediaShowcaseProps {
-  id: string;
-  title: string;
-  description?: string;
-  thumbnail_format: string;
-  width_percentage: number;
-  height_percentage: number;
-  is_active: boolean;
-  priority_in_screen: number;
-  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
-  last_updated: string;
-  items: MediaShowcaseItem[];
-}
-
-export const useMediaShowcase = (showcase: MediaShowcaseProps | null) => {
+export const useMediaShowcase = (showcase: MediaShowcaseJSON | null) => {
   // Carousel state management
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
 

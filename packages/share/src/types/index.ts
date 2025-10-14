@@ -1333,7 +1333,7 @@ export interface MediaShowcaseJSON {
   height_percentage: number;
   is_active: boolean;
   priority_in_screen: number;
-  list_type: string;
+  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
   last_updated?: string;
   items: MediaShowcaseItemJSON[];
 }
