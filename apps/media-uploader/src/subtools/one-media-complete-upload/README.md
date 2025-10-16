@@ -106,7 +106,7 @@ The Description sheet contains metadata with inverted structure (description in 
 - **season_name**: Season title
 - **episode_title**: Episode/video title
 - **episode_number**: Episode number
-- **media_categories**: Categories (movie, drama, short-drama, musical, animation, documentary, tvshow, other)
+- **media_categories**: Categories (movie, drama, short-drama, short-film, web-drama, musical, animation, documentary, tvshow, other)
 - **media_themes**: Themes
 - **descriptive_summary_text**: Short description
 - **synopsis_text**: Full synopsis

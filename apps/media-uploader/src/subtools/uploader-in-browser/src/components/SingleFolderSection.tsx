@@ -86,7 +86,9 @@ export const SingleFolderSection: React.FC<SingleFolderSectionProps> = ({
   };
 
   const handleSingleUpload = () => {
-    singleUpload.mutate(baseRequest);
+    singleUpload.execute(baseRequest).catch((error) => {
+      alert(`Single upload failed: ${error.message}`);
+    });
   };
 
   const handleSinglePictureUpload = () => {

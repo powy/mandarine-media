@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import sharp from 'sharp';
+import Jimp from 'jimp';
 
 /**
  * Check if a file exists and is accessible
@@ -18,21 +18,30 @@ export async function checkFileExists(filePath) {
 }
 
 /**
- * Get image metadata using Sharp
+ * Get image metadata using Jimp
  * @param {string} filePath - Path to the image file
  * @returns {Promise<Object>} - Image metadata including dimensions and size
  */
 export async function getImageMetadata(filePath) {
   try {
     const stats = await fs.stat(filePath);
-    const metadata = await sharp(filePath).metadata();
-    
+    const image = await Jimp.read(filePath);
+
+    // Map Jimp MIME type to format name
+    const formatMap = {
+      'image/png': 'png',
+      'image/jpeg': 'jpeg',
+      'image/bmp': 'bmp',
+      'image/tiff': 'tiff',
+      'image/gif': 'gif'
+    };
+
     return {
       fileName: path.basename(filePath),
       fileSizeBytes: stats.size,
-      width: metadata.width,
-      height: metadata.height,
-      format: metadata.format
+      width: image.getWidth(),
+      height: image.getHeight(),
+      format: formatMap[image.getMIME()] || 'unknown'
     };
   } catch (error) {
     throw new Error(`Failed to read image metadata: ${error.message}`);

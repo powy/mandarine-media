@@ -1,0 +1,12 @@
+{
+  "name": "media-uploader-ui",
+  "version": "1.0.0",
+  "bin": "serve.js",
+  "pkg": {
+    "targets": ["node18-win-x64"],
+    "assets": [
+      "dist/**/*"
+    ],
+    "outputPath": "dist"
+  }
+}

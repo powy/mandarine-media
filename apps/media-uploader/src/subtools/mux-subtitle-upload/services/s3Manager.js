@@ -80,7 +80,6 @@ export default class S3Manager {
         Body: fileContent,
         ContentType: contentType,
         Metadata: {
-          'original-filename': path.basename(filePath),
           'upload-timestamp': new Date().toISOString(),
           'mux-asset-id': assetId,
           'language-code': metadata.language || 'unknown',

@@ -1,5 +1,6 @@
 import { ExcelBatchService } from './services/excelBatchService.js';
 import { createLogger } from './utils/logger.js';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs-extra';
@@ -17,10 +18,22 @@ const __dirname = path.dirname(__filename);
  * @param {string} options.pattern - File pattern to match (default: "0_desc")
  * @param {boolean} options.dryRun - Preview changes without modifying files
  * @param {boolean} options.verbose - Verbose output
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Update results
  */
 export async function batchUpdateExcel(options) {
-  try {
+  let restoreConsole = null;
+
+  if (options.logFile) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
+  try{
     console.log(chalk.blue.bold('📊 Excel Batch Editor v1.0.0'));
     console.log('=====================================\n');
 
@@ -137,6 +150,10 @@ export async function batchUpdateExcel(options) {
       console.error(error.stack);
     }
     throw error;
+  } finally {
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 

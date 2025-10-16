@@ -172,3 +172,5 @@ apps/media-uploader/dist/
 apps/media-uploader/src-tauri/*.exe
 apps/media-uploader/src-tauri/*.msi
 apps/media-uploader/src-tauri/*.pdb
+apps/media-uploader/src/subtools/service-server/data/tasks.json
+apps/media-uploader/src/subtools/service-server/data/*.json

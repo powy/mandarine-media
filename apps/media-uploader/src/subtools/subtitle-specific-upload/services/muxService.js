@@ -63,6 +63,88 @@ export class MuxService {
   }
 
   /**
+   * Get Mux asset ID from video file via media description ID
+   * This method follows the proper data hierarchy:
+   * 1. Fetch media description
+   * 2. Extract video file ID from media description
+   * 3. Fetch video file record
+   * 4. Extract mux asset ID from video file
+   *
+   * @param {string} mediaDescriptionId - Media description ID
+   * @returns {Promise<string>} Mux asset ID from video file
+   */
+  async getMuxAssetIdFromVideoFile(mediaDescriptionId) {
+    try {
+      // Authenticate with backend
+      const authResponse = await axios.post(
+        `${this.config.backend.baseUrl}/api/auth/login`,
+        {
+          username: this.config.backend.username,
+          password: this.config.backend.password
+        }
+      );
+
+      const token = authResponse.data.access_token || authResponse.data.token;
+
+      // Step 1: Get media description from backend
+      this.logger.info && this.logger.info(`Fetching media description: ${mediaDescriptionId}`);
+
+      const mediaResponse = await axios.get(
+        `${this.config.backend.baseUrl}/api/media-descriptions/${mediaDescriptionId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Step 2: Extract video file ID from media description
+      const videoFileId = mediaResponse.data.video_file_id || mediaResponse.data.file_id;
+
+      if (!videoFileId) {
+        throw new Error(
+          `No video file ID found in media description ${mediaDescriptionId}. ` +
+          `Available fields: ${Object.keys(mediaResponse.data).join(', ')}`
+        );
+      }
+
+      this.logger.info && this.logger.info(`Video file ID: ${videoFileId}`);
+
+      // Step 3: Get video file from backend
+      const videoFileResponse = await axios.get(
+        `${this.config.backend.baseUrl}/api/video-files/${videoFileId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Step 4: Extract mux asset ID from video file
+      const assetId = videoFileResponse.data.mux_asset_id || videoFileResponse.data.asset_id;
+
+      if (!assetId) {
+        throw new Error(
+          `No Mux asset ID found in video file ${videoFileId}. ` +
+          `Available fields: ${Object.keys(videoFileResponse.data).join(', ')}`
+        );
+      }
+
+      this.logger.info && this.logger.info(`Mux asset ID: ${assetId}`);
+
+      return assetId;
+    } catch (error) {
+      // Provide detailed error messages for debugging
+      if (error.response?.status === 404) {
+        const url = error.response?.config?.url || 'unknown';
+        throw new Error(`Failed to get Mux asset ID: Resource not found at ${url}`);
+      }
+
+      throw new Error(`Failed to get Mux asset ID from video file: ${error.response?.data?.detail || error.message}`);
+    }
+  }
+
+  /**
    * Add subtitle track to Mux asset
    * @param {string} assetId - Mux asset ID
    * @param {string} subtitleUrl - Subtitle file URL (S3)

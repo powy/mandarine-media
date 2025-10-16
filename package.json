@@ -50,7 +50,7 @@
     "eslint": "^8.0.0",
     "nx": "^21.2.4",
     "prettier": "^3.0.0",
-    "puppeteer": "^24.16.0",
+    "puppeteer": "^22.15.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {

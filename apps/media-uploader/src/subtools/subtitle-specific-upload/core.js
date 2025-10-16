@@ -130,11 +130,11 @@ export async function subtitleSpecificUploadCore(config) {
     };
   }
 
-  // Step 4: Get Mux asset ID from backend
-  logger.info('\n📹 Step 4: Getting Mux asset ID...');
+  // Step 4: Get Mux asset ID from backend via video file
+  logger.info('\n📹 Step 4: Getting Mux asset ID from video file...');
 
   const muxService = new MuxService(validatedConfig, logger);
-  const assetId = await muxService.getMuxAssetId(mediaDescriptionId);
+  const assetId = await muxService.getMuxAssetIdFromVideoFile(mediaDescriptionId);
 
   logger.info(`✓ Mux asset ID: ${assetId}`);
 

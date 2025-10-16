@@ -3,6 +3,14 @@ const fs = require('fs').promises;
 const MediaAnalyzer = require('./index.js');
 const Config = require('./config.js');
 
+// Dynamic import for file logger (ESM module)
+let createFileLogger, redirectConsoleToLogger;
+(async () => {
+  const fileLoggerModule = await import('../../shared/utils/fileLogger.js');
+  createFileLogger = fileLoggerModule.createFileLogger;
+  redirectConsoleToLogger = fileLoggerModule.redirectConsoleToLogger;
+})();
+
 /**
  * Media Analyzer Function Wrapper
  * @param {Object} options - Analysis options
@@ -14,9 +22,22 @@ const Config = require('./config.js');
  * @param {number} options.minScore - Minimum association score
  * @param {boolean} options.noMetadata - Skip metadata reading
  * @param {boolean} options.exportForUpload - Export format optimized for upload
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Analysis results
  */
 async function analyzeMedia(options) {
+  let restoreConsole = null;
+
+  // Initialize file logger if logFile is provided
+  if (options.logFile && createFileLogger) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   try {
     // Determine if using new multi-path mode or legacy single path
     let analyzePaths;
@@ -66,6 +87,11 @@ async function analyzeMedia(options) {
       console.error(error.stack);
     }
     throw error;
+  } finally {
+    // Restore console if redirected
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 

@@ -318,9 +318,9 @@ export class ValidationService {
    */
   validateMediaCategories(categories) {
     const errors = [];
-    
+
     if (categories) {
-      const validCategories = ['movie', 'drama', 'short-drama', 'musical', 'animation', 'documentary', 'tvshow', 'other'];
+      const validCategories = ['movie', 'drama', 'short-drama', 'short-film', 'web-drama', 'musical', 'animation', 'documentary', 'tvshow', 'other'];
       
       // Handle semicolon-separated categories
       let categoryList;

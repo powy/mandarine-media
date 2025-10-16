@@ -129,6 +129,54 @@ class MediaUploaderGUI {
 
     // Start parallel status monitoring
     this.startParallelStatusMonitoring();
+
+    // NEW: Single File Operations event listeners
+    const browsePictureConfigBtn = document.getElementById('browse-picture-config');
+    const uploadPictureBtn = document.getElementById('upload-picture');
+    browsePictureConfigBtn?.addEventListener('click', () => this.selectFile('picture-config-path'));
+    uploadPictureBtn?.addEventListener('click', () => this.uploadPicture());
+
+    const browseSubtitleMuxConfigBtn = document.getElementById('browse-subtitle-mux-config');
+    const uploadSubtitleMuxBtn = document.getElementById('upload-subtitle-mux');
+    browseSubtitleMuxConfigBtn?.addEventListener('click', () => this.selectFile('subtitle-mux-config-path'));
+    uploadSubtitleMuxBtn?.addEventListener('click', () => this.uploadSubtitleToMux());
+
+    const browseSubtitleSpecificConfigBtn = document.getElementById('browse-subtitle-specific-config');
+    const uploadSubtitleSpecificBtn = document.getElementById('upload-subtitle-specific');
+    browseSubtitleSpecificConfigBtn?.addEventListener('click', () => this.selectFile('subtitle-specific-config-path'));
+    uploadSubtitleSpecificBtn?.addEventListener('click', () => this.uploadSubtitleSpecific());
+
+    // NEW: Advanced Batch Operations event listeners
+    const browseBatchPictureConfigBtn = document.getElementById('browse-batch-picture-config');
+    const batchPictureUploadBtn = document.getElementById('batch-picture-upload');
+    browseBatchPictureConfigBtn?.addEventListener('click', () => this.selectFile('batch-picture-config-path'));
+    batchPictureUploadBtn?.addEventListener('click', () => this.batchPictureUpload());
+
+    const browsePropagateConfigBtn = document.getElementById('browse-propagate-config');
+    const propagateSeasonDataBtn = document.getElementById('propagate-season-data');
+    browsePropagateConfigBtn?.addEventListener('click', () => this.selectFile('propagate-config-path'));
+    propagateSeasonDataBtn?.addEventListener('click', () => this.propagateSeasonData());
+
+    // NEW: Multi-Upload Manager event listeners
+    const multiModeRadios = document.querySelectorAll('input[name="multi-mode"]');
+    multiModeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => this.switchMultiUploadMode(e.target.value));
+    });
+
+    const browseMultiParentBtn = document.getElementById('browse-multi-parent');
+    const browseMultiFileBtn = document.getElementById('browse-multi-file');
+    browseMultiParentBtn?.addEventListener('click', () => this.selectFolder('multi-parent-folder'));
+    browseMultiFileBtn?.addEventListener('click', () => this.selectFile('multi-folders-file'));
+
+    const multiUploadParentBtn = document.getElementById('multi-upload-parent');
+    const multiUploadFileBtn = document.getElementById('multi-upload-file');
+    const multiUploadStringBtn = document.getElementById('multi-upload-string');
+    multiUploadParentBtn?.addEventListener('click', () => this.multiUploadFromParent());
+    multiUploadFileBtn?.addEventListener('click', () => this.multiUploadFromFile());
+    multiUploadStringBtn?.addEventListener('click', () => this.multiUploadFromString());
+
+    // Enable/disable buttons based on input validation
+    this.setupInputValidation();
   }
 
   async setupLogListener() {
@@ -763,6 +811,486 @@ class MediaUploaderGUI {
         message: `Error cancelling task ${taskId}: ${error.message}`
       });
     }
+  }
+
+  // ============================================================================
+  // NEW METHODS - Single File Operations
+  // ============================================================================
+
+  async selectFile(inputId) {
+    try {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'info',
+        message: 'Opening file selection dialog...'
+      });
+
+      const result = await invoke('select_folder');  // Note: Tauri doesn't have separate file picker, using folder picker
+
+      if (result.success && result.path) {
+        const input = document.getElementById(inputId);
+        if (input) {
+          input.value = result.path;
+          this.validateNewInputs();
+        }
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error selecting file: ${error.message}`
+      });
+    }
+  }
+
+  async uploadPicture() {
+    const configPath = document.getElementById('picture-config-path').value.trim();
+    const dryRun = document.getElementById('picture-dry-run').checked;
+
+    if (!configPath) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a config file'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Uploading picture...', false);
+
+    try {
+      const result = await invoke('upload_picture', { configPath, dryRun });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Picture upload completed: ${result.message || 'Success'}`
+        });
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Picture upload failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error uploading picture: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  async uploadSubtitleToMux() {
+    const configPath = document.getElementById('subtitle-mux-config-path').value.trim();
+    const dryRun = document.getElementById('subtitle-mux-dry-run').checked;
+
+    if (!configPath) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a config file'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Uploading subtitle to Mux...', false);
+
+    try {
+      const result = await invoke('upload_subtitle_to_mux', { configPath, dryRun });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Subtitle upload to Mux completed: ${result.message || 'Success'}`
+        });
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Subtitle upload to Mux failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error uploading subtitle to Mux: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  async uploadSubtitleSpecific() {
+    const configPath = document.getElementById('subtitle-specific-config-path').value.trim();
+    const dryRun = document.getElementById('subtitle-specific-dry-run').checked;
+
+    if (!configPath) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a config file'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Uploading subtitle specific...', false);
+
+    try {
+      const result = await invoke('upload_subtitle_specific', { configPath, dryRun });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Subtitle specific upload completed: ${result.message || 'Success'}`
+        });
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Subtitle specific upload failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error uploading subtitle specific: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  // ============================================================================
+  // NEW METHODS - Advanced Batch Operations
+  // ============================================================================
+
+  async batchPictureUpload() {
+    const configPath = document.getElementById('batch-picture-config-path').value.trim();
+    const dryRun = document.getElementById('batch-picture-dry-run').checked;
+
+    if (!configPath) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a config file'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Batch picture upload...', false);
+
+    try {
+      const result = await invoke('batch_picture_upload', { configPath, dryRun });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Batch picture upload completed: ${result.message || 'Success'}`
+        });
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Batch picture upload failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error in batch picture upload: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  async propagateSeasonData() {
+    const seasonId = document.getElementById('season-id').value.trim();
+    const configPath = document.getElementById('propagate-config-path').value.trim();
+    const dryRun = document.getElementById('propagate-dry-run').checked;
+
+    if (!seasonId) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please enter a season ID'
+      });
+      return;
+    }
+
+    if (!configPath) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a config file'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Propagating season data...', false);
+
+    try {
+      const result = await invoke('propagate_season_data', { seasonId, configPath, dryRun });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Season data propagation completed: ${result.message || 'Success'}`
+        });
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Season data propagation failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error propagating season data: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  // ============================================================================
+  // NEW METHODS - Multi-Upload Manager
+  // ============================================================================
+
+  switchMultiUploadMode(mode) {
+    // Hide all mode contents
+    document.getElementById('multi-parent-mode').classList.add('hidden');
+    document.getElementById('multi-file-mode').classList.add('hidden');
+    document.getElementById('multi-string-mode').classList.add('hidden');
+
+    // Show selected mode
+    document.getElementById(`multi-${mode}-mode`).classList.remove('hidden');
+  }
+
+  async multiUploadFromParent() {
+    const parentFolder = document.getElementById('multi-parent-folder').value.trim();
+    const delay = parseInt(document.getElementById('multi-delay').value) || 10;
+    const maxConcurrent = parseInt(document.getElementById('multi-concurrent').value) || 3;
+
+    if (!parentFolder) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a parent folder'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Multi-upload from parent folder...', false);
+
+    try {
+      const result = await invoke('multi_upload_from_parent', {
+        parentFolder,
+        delay,
+        maxConcurrent
+      });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Multi-upload from parent completed: ${result.processed_count}/${result.total_subfolders} successful`
+        });
+
+        if (result.failed_folders && result.failed_folders.length > 0) {
+          this.addLogMessage({
+            timestamp: new Date().toLocaleTimeString(),
+            level: 'warning',
+            message: `Failed folders: ${result.failed_folders.join(', ')}`
+          });
+        }
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Multi-upload from parent failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error in multi-upload from parent: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  async multiUploadFromFile() {
+    const foldersFile = document.getElementById('multi-folders-file').value.trim();
+    const delay = parseInt(document.getElementById('multi-delay').value) || 10;
+    const maxConcurrent = parseInt(document.getElementById('multi-concurrent').value) || 3;
+
+    if (!foldersFile) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please select a folders file'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Multi-upload from file...', false);
+
+    try {
+      const result = await invoke('multi_upload_from_file', {
+        foldersFile,
+        delay,
+        maxConcurrent
+      });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Multi-upload from file completed: ${result.processed_count}/${result.total_subfolders} successful`
+        });
+
+        if (result.failed_folders && result.failed_folders.length > 0) {
+          this.addLogMessage({
+            timestamp: new Date().toLocaleTimeString(),
+            level: 'warning',
+            message: `Failed folders: ${result.failed_folders.join(', ')}`
+          });
+        }
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Multi-upload from file failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error in multi-upload from file: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  async multiUploadFromString() {
+    const foldersString = document.getElementById('multi-folders-string').value.trim();
+    const delay = parseInt(document.getElementById('multi-delay').value) || 10;
+    const maxConcurrent = parseInt(document.getElementById('multi-concurrent').value) || 3;
+
+    if (!foldersString) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'Please enter comma-separated folder paths'
+      });
+      return;
+    }
+
+    this.setProcessing(true, 'Multi-upload from string...', false);
+
+    try {
+      const result = await invoke('multi_upload_from_string', {
+        foldersString,
+        delay,
+        maxConcurrent
+      });
+
+      if (result.success) {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'success',
+          message: `Multi-upload from string completed: ${result.processed_count}/${result.total_subfolders} successful`
+        });
+
+        if (result.failed_folders && result.failed_folders.length > 0) {
+          this.addLogMessage({
+            timestamp: new Date().toLocaleTimeString(),
+            level: 'warning',
+            message: `Failed folders: ${result.failed_folders.join(', ')}`
+          });
+        }
+      } else {
+        this.addLogMessage({
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'error',
+          message: `Multi-upload from string failed: ${result.error}`
+        });
+      }
+    } catch (error) {
+      this.addLogMessage({
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'error',
+        message: `Error in multi-upload from string: ${error.message}`
+      });
+    }
+
+    this.setProcessing(false);
+  }
+
+  // ============================================================================
+  // NEW HELPER METHODS
+  // ============================================================================
+
+  setupInputValidation() {
+    // Validate config inputs for enabling/disabling buttons
+    const validateInput = (inputId, buttonId) => {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      if (input && button) {
+        input.addEventListener('input', () => {
+          button.disabled = !input.value.trim();
+        });
+      }
+    };
+
+    // Single file operations
+    validateInput('picture-config-path', 'upload-picture');
+    validateInput('subtitle-mux-config-path', 'upload-subtitle-mux');
+    validateInput('subtitle-specific-config-path', 'upload-subtitle-specific');
+
+    // Advanced batch operations
+    validateInput('batch-picture-config-path', 'batch-picture-upload');
+
+    // Propagate requires both season ID and config
+    const seasonIdInput = document.getElementById('season-id');
+    const propagateConfigInput = document.getElementById('propagate-config-path');
+    const propagateButton = document.getElementById('propagate-season-data');
+    const validatePropagate = () => {
+      if (seasonIdInput && propagateConfigInput && propagateButton) {
+        propagateButton.disabled = !seasonIdInput.value.trim() || !propagateConfigInput.value.trim();
+      }
+    };
+    seasonIdInput?.addEventListener('input', validatePropagate);
+    propagateConfigInput?.addEventListener('input', validatePropagate);
+
+    // Multi-upload
+    validateInput('multi-parent-folder', 'multi-upload-parent');
+    validateInput('multi-folders-file', 'multi-upload-file');
+    validateInput('multi-folders-string', 'multi-upload-string');
+  }
+
+  validateNewInputs() {
+    // Re-run validation after file selection
+    this.setupInputValidation();
   }
 }
 

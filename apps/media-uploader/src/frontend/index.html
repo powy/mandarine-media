@@ -140,6 +140,194 @@
                 </div>
             </section>
 
+            <!-- Single File Operations Section -->
+            <section class="section file-operations-section">
+                <h2>📎 Single File Operations</h2>
+
+                <!-- Picture Upload -->
+                <div class="file-op-group">
+                    <h3>🖼️ Picture Upload</h3>
+                    <div class="input-group">
+                        <label>Config File (JSON):</label>
+                        <input type="text" id="picture-config-path" class="file-input" placeholder="Select config.json...">
+                        <button id="browse-picture-config" class="browse-button">Browse...</button>
+                    </div>
+                    <div class="options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="picture-dry-run">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Dry Run</span>
+                        </label>
+                        <button id="upload-picture" class="action-button" disabled>
+                            <span class="button-icon">🖼️</span>
+                            <span class="button-text">Upload Picture</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subtitle Upload to Mux -->
+                <div class="file-op-group">
+                    <h3>📝 Subtitle Upload to Mux</h3>
+                    <div class="input-group">
+                        <label>Config File (JSON):</label>
+                        <input type="text" id="subtitle-mux-config-path" class="file-input" placeholder="Select config.json...">
+                        <button id="browse-subtitle-mux-config" class="browse-button">Browse...</button>
+                    </div>
+                    <div class="options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="subtitle-mux-dry-run">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Dry Run</span>
+                        </label>
+                        <button id="upload-subtitle-mux" class="action-button" disabled>
+                            <span class="button-icon">📝</span>
+                            <span class="button-text">Upload to Mux</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subtitle Specific Upload -->
+                <div class="file-op-group">
+                    <h3>🎯 Subtitle Specific Upload</h3>
+                    <div class="input-group">
+                        <label>Config File (JSON):</label>
+                        <input type="text" id="subtitle-specific-config-path" class="file-input" placeholder="Select config.json...">
+                        <button id="browse-subtitle-specific-config" class="browse-button">Browse...</button>
+                    </div>
+                    <div class="options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="subtitle-specific-dry-run">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Dry Run</span>
+                        </label>
+                        <button id="upload-subtitle-specific" class="action-button" disabled>
+                            <span class="button-icon">🎯</span>
+                            <span class="button-text">Upload Specific</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Advanced Batch Operations Section -->
+            <section class="section advanced-batch-section">
+                <h2>🔧 Advanced Batch Operations</h2>
+
+                <!-- Batch Picture Upload -->
+                <div class="advanced-op-group">
+                    <h3>🖼️ Batch Picture Upload</h3>
+                    <div class="input-group">
+                        <label>Config File (JSON):</label>
+                        <input type="text" id="batch-picture-config-path" class="file-input" placeholder="Config with picture + parent folder...">
+                        <button id="browse-batch-picture-config" class="browse-button">Browse...</button>
+                    </div>
+                    <div class="options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="batch-picture-dry-run">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Dry Run</span>
+                        </label>
+                        <button id="batch-picture-upload" class="action-button" disabled>
+                            <span class="button-icon">🖼️</span>
+                            <span class="button-text">Batch Picture Upload</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Propagate Season Data -->
+                <div class="advanced-op-group">
+                    <h3>🔄 Propagate Season Data</h3>
+                    <div class="input-group">
+                        <label>Season ID:</label>
+                        <input type="text" id="season-id" class="text-input" placeholder="Enter season media description ID...">
+                    </div>
+                    <div class="input-group">
+                        <label>Config File (JSON):</label>
+                        <input type="text" id="propagate-config-path" class="file-input" placeholder="Select config.json...">
+                        <button id="browse-propagate-config" class="browse-button">Browse...</button>
+                    </div>
+                    <div class="options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="propagate-dry-run">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Dry Run</span>
+                        </label>
+                        <button id="propagate-season-data" class="action-button" disabled>
+                            <span class="button-icon">🔄</span>
+                            <span class="button-text">Propagate Data</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Multi-Upload Manager Section -->
+            <section class="section multi-upload-section">
+                <h2>🚀 Multi-Upload Manager</h2>
+
+                <div class="multi-upload-controls">
+                    <div class="control-row">
+                        <label for="multi-delay" class="control-label">Delay (seconds):</label>
+                        <input type="number" id="multi-delay" class="number-input" min="0" max="300" value="10">
+
+                        <label for="multi-concurrent" class="control-label">Max Concurrent:</label>
+                        <input type="number" id="multi-concurrent" class="number-input" min="1" max="20" value="3">
+                    </div>
+                </div>
+
+                <!-- Mode selector -->
+                <div class="multi-mode-selector">
+                    <label>
+                        <input type="radio" name="multi-mode" value="parent" checked>
+                        <span>From Parent Folder</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="multi-mode" value="file">
+                        <span>From File</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="multi-mode" value="string">
+                        <span>From String</span>
+                    </label>
+                </div>
+
+                <!-- Parent folder mode -->
+                <div id="multi-parent-mode" class="multi-mode-content">
+                    <div class="input-group">
+                        <label>Parent Folder:</label>
+                        <input type="text" id="multi-parent-folder" class="folder-input" placeholder="Select parent folder...">
+                        <button id="browse-multi-parent" class="browse-button">Browse...</button>
+                    </div>
+                    <button id="multi-upload-parent" class="action-button" disabled>
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Multi-Upload (Parent)</span>
+                    </button>
+                </div>
+
+                <!-- File mode -->
+                <div id="multi-file-mode" class="multi-mode-content hidden">
+                    <div class="input-group">
+                        <label>Folders File (TXT):</label>
+                        <input type="text" id="multi-folders-file" class="file-input" placeholder="Select folders.txt...">
+                        <button id="browse-multi-file" class="browse-button">Browse...</button>
+                    </div>
+                    <button id="multi-upload-file" class="action-button" disabled>
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Multi-Upload (File)</span>
+                    </button>
+                </div>
+
+                <!-- String mode -->
+                <div id="multi-string-mode" class="multi-mode-content hidden">
+                    <div class="input-group">
+                        <label>Folders (comma-separated):</label>
+                        <textarea id="multi-folders-string" class="text-area" rows="3" placeholder="C:\path1,C:\path2,C:\path3"></textarea>
+                    </div>
+                    <button id="multi-upload-string" class="action-button" disabled>
+                        <span class="button-icon">🚀</span>
+                        <span class="button-text">Multi-Upload (String)</span>
+                    </button>
+                </div>
+            </section>
+
             <!-- Status Section -->
             <section class="section status-section">
                 <div class="status-bar">

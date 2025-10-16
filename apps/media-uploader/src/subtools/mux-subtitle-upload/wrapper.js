@@ -4,6 +4,7 @@ import { validateConfig, validateEnvironment } from './schemas/inputSchema.js';
 import { createLogger } from './config/logger.js';
 import { loadConfigFile } from './utils/fileUtils.js';
 import { SubtitleUploadError, ErrorCodes, handleError, getErrorMessage, getErrorSuggestions } from './utils/errorHandler.js';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 import SubtitleService from './services/subtitleService.js';
 
 // Load environment variables
@@ -20,11 +21,23 @@ dotenv.config();
  * @param {boolean} options.quiet - Quiet mode (errors only)
  * @param {boolean} options.cleanup - Skip S3 file cleanup after upload (default: true)
  * @param {number} options.cleanupDelay - S3 cleanup delay in minutes (default: 120)
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Upload results
  */
 export async function uploadSubtitlesToMux(options) {
   let logger = null;
-  
+  let restoreConsole = null;
+
+  // Initialize file logger if logFile is provided
+  if (options.logFile) {
+    const fileLogger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose || options.debug,
+      quiet: options.quiet
+    });
+    restoreConsole = redirectConsoleToLogger(fileLogger);
+  }
+
   try {
     // Load and validate configuration
     const { config, configPath } = await loadConfigFile(options.config);
@@ -76,9 +89,15 @@ export async function uploadSubtitlesToMux(options) {
     if (logger) {
       logger.logError('wrapper-session', error);
     }
-    
+
+
     handleError(error, logger);
     throw error;
+  } finally {
+    // Restore console if redirected
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 

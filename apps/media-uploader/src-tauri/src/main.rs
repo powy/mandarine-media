@@ -854,6 +854,835 @@ async fn cancel_parallel_upload(window: Window, task_id: String) -> Result<bool,
     Ok(true)
 }
 
+// ============================================================================
+// NEW COMMANDS - Additional Upload Operations
+// ============================================================================
+
+#[command]
+async fn execute_upload_only(
+    app: tauri::AppHandle,
+    window: Window,
+    folder_path: String,
+    state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting execute upload only (skipping Excel preparation)...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "one-media-complete-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Get config from state
+    let config_path = state.config_path.lock().unwrap().clone();
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "execute_upload_only");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--folder").arg(&folder_path)
+        .arg("--mode").arg("upload")
+        .arg("--log-file").arg(&log_file);
+
+    // Add config path if available
+    if let Some(config) = config_path {
+        command.arg("--config").arg(&config);
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Execute upload only completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Execute upload only failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Execute upload only completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Execute upload only completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: extract_media_id(&stdout),
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Execute upload only failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn upload_picture(
+    app: tauri::AppHandle,
+    window: Window,
+    config_path: String,
+    dry_run: bool,
+    _state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting picture upload...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "picture-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "upload_picture");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--config").arg(&config_path)
+        .arg("--log-file").arg(&log_file);
+
+    if dry_run {
+        command.arg("--dry-run");
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Picture upload completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Picture upload failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Picture upload completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Picture upload completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Picture upload failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn upload_subtitle_to_mux(
+    app: tauri::AppHandle,
+    window: Window,
+    config_path: String,
+    dry_run: bool,
+    _state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting subtitle upload to Mux...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "mux-subtitle-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "upload_subtitle_to_mux");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--config").arg(&config_path)
+        .arg("--log-file").arg(&log_file);
+
+    if dry_run {
+        command.arg("--dry-run");
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Subtitle upload to Mux completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Subtitle upload to Mux failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Subtitle upload to Mux completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Subtitle upload to Mux completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Subtitle upload to Mux failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn upload_subtitle_specific(
+    app: tauri::AppHandle,
+    window: Window,
+    config_path: String,
+    dry_run: bool,
+    _state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting subtitle specific upload...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "subtitle-specific-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "upload_subtitle_specific");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--config").arg(&config_path)
+        .arg("--log-file").arg(&log_file);
+
+    if dry_run {
+        command.arg("--dry-run");
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Subtitle specific upload completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Subtitle specific upload failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Subtitle specific upload completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Subtitle specific upload completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Subtitle specific upload failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn resend_subtitles(
+    app: tauri::AppHandle,
+    window: Window,
+    folder_path: String,
+    state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting subtitle resend...").await;
+
+    // Get script path for resend subtitles
+    let script_path = get_script_path(&app, "subtitle-specific-upload/resendSubtitlesWrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Get config from state
+    let config_path = state.config_path.lock().unwrap().clone();
+
+    if config_path.is_none() {
+        return Err("No config file selected. Please select a config file first.".to_string());
+    }
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "resend_subtitles");
+
+    // Build command - using INI interface
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--config").arg(config_path.unwrap())
+        .arg("--folder").arg(&folder_path)
+        .arg("--log-file").arg(&log_file);
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Subtitle resend completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Subtitle resend failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Subtitle resend completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Subtitle resend completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Subtitle resend failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("resend-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn batch_resend_subtitles(
+    app: tauri::AppHandle,
+    window: Window,
+    parent_folder_path: String,
+    state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting batch subtitle resend...").await;
+
+    // Get script path for batch resend subtitles
+    let script_path = get_script_path(&app, "subtitle-specific-upload/batchResendSubtitlesWrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Get config from state
+    let config_path = state.config_path.lock().unwrap().clone();
+
+    if config_path.is_none() {
+        return Err("No config file selected. Please select a config file first.".to_string());
+    }
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "batch_resend_subtitles");
+
+    // Build command - using INI interface
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--config").arg(config_path.unwrap())
+        .arg("--parent-folder").arg(&parent_folder_path)
+        .arg("--log-file").arg(&log_file);
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Batch subtitle resend completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Batch subtitle resend failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Batch subtitle resend completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Batch subtitle resend completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: extract_processed_count(&stdout),
+            total_subfolders: extract_total_subfolders(&stdout),
+            failed_folders: extract_failed_folders(&stdout),
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Batch subtitle resend failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("resend-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn batch_picture_upload(
+    app: tauri::AppHandle,
+    window: Window,
+    config_path: String,
+    dry_run: bool,
+    _state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting batch picture upload...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "batch-picture-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "batch_picture_upload");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--config").arg(&config_path)
+        .arg("--log-file").arg(&log_file);
+
+    if dry_run {
+        command.arg("--dry-run");
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Batch picture upload completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Batch picture upload failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Batch picture upload completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Batch picture upload completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Batch picture upload failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn propagate_season_data(
+    app: tauri::AppHandle,
+    window: Window,
+    season_id: String,
+    config_path: String,
+    dry_run: bool,
+    _state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting season data propagation...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "propagate-data/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "propagate_season_data");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--season-id").arg(&season_id)
+        .arg("--config").arg(&config_path)
+        .arg("--log-file").arg(&log_file);
+
+    if dry_run {
+        command.arg("--dry-run");
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Season data propagation completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Season data propagation failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Season data propagation completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Season data propagation completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Season data propagation failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("propagation-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn multi_upload_from_parent(
+    app: tauri::AppHandle,
+    window: Window,
+    parent_folder: String,
+    delay: i32,
+    max_concurrent: i32,
+    state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting multi-upload from parent folder...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "cli-multi-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Get config from state
+    let config_path = state.config_path.lock().unwrap().clone();
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "multi_upload_from_parent");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--parent-folder").arg(&parent_folder)
+        .arg("--delay").arg(&delay.to_string())
+        .arg("--max-concurrent").arg(&max_concurrent.to_string())
+        .arg("--log-file").arg(&log_file);
+
+    // Add config path if available
+    if let Some(config) = config_path {
+        command.arg("--config").arg(&config);
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Multi-upload from parent completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Multi-upload from parent failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Multi-upload from parent completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Multi-upload from parent completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: extract_processed_count(&stdout),
+            total_subfolders: extract_total_subfolders(&stdout),
+            failed_folders: extract_failed_folders(&stdout),
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Multi-upload from parent failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn multi_upload_from_file(
+    app: tauri::AppHandle,
+    window: Window,
+    folders_file: String,
+    delay: i32,
+    max_concurrent: i32,
+    state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting multi-upload from file...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "cli-multi-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Get config from state
+    let config_path = state.config_path.lock().unwrap().clone();
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "multi_upload_from_file");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--folders-file").arg(&folders_file)
+        .arg("--delay").arg(&delay.to_string())
+        .arg("--max-concurrent").arg(&max_concurrent.to_string())
+        .arg("--log-file").arg(&log_file);
+
+    // Add config path if available
+    if let Some(config) = config_path {
+        command.arg("--config").arg(&config);
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Multi-upload from file completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Multi-upload from file failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Multi-upload from file completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Multi-upload from file completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: extract_processed_count(&stdout),
+            total_subfolders: extract_total_subfolders(&stdout),
+            failed_folders: extract_failed_folders(&stdout),
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Multi-upload from file failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
+#[command]
+async fn multi_upload_from_string(
+    app: tauri::AppHandle,
+    window: Window,
+    folders_string: String,
+    delay: i32,
+    max_concurrent: i32,
+    state: State<'_, AppState>
+) -> Result<ProcessResult, String> {
+    emit_log_message(&window, "info", "Starting multi-upload from string...").await;
+
+    // Get script path
+    let script_path = get_script_path(&app, "cli-multi-upload/wrapper.js")
+        .map_err(|e| format!("Failed to get script path: {}", e))?;
+
+    // Get config from state
+    let config_path = state.config_path.lock().unwrap().clone();
+
+    // Generate log file path
+    ensure_logs_directory()?;
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let log_file = format!("logs/{}_{}.log", timestamp, "multi_upload_from_string");
+
+    // Build command
+    let mut command = Command::new("node");
+    command
+        .arg(&script_path)
+        .arg("--folders-string").arg(&folders_string)
+        .arg("--delay").arg(&delay.to_string())
+        .arg("--max-concurrent").arg(&max_concurrent.to_string())
+        .arg("--log-file").arg(&log_file);
+
+    // Add config path if available
+    if let Some(config) = config_path {
+        command.arg("--config").arg(&config);
+    }
+
+    // Execute with streaming
+    let (stdout, stderr, success) = run_command_with_streaming(command, &window).await?;
+
+    // Parse and return result
+    if let Ok(result) = serde_json::from_str::<ProcessResult>(&stdout) {
+        if result.success {
+            emit_log_message(&window, "success", "Multi-upload from string completed").await;
+        } else {
+            emit_log_message(&window, "error", &format!("Multi-upload from string failed: {}", result.error.as_deref().unwrap_or("Unknown error"))).await;
+        }
+        Ok(result)
+    } else if success {
+        emit_log_message(&window, "success", "Multi-upload from string completed").await;
+        Ok(ProcessResult {
+            success: true,
+            message: Some("Multi-upload from string completed successfully".to_string()),
+            error: None,
+            phase: Some("completed".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: extract_processed_count(&stdout),
+            total_subfolders: extract_total_subfolders(&stdout),
+            failed_folders: extract_failed_folders(&stdout),
+            task_ids: None,
+        })
+    } else {
+        emit_log_message(&window, "error", &format!("Multi-upload from string failed: {}", stderr)).await;
+        Ok(ProcessResult {
+            success: false,
+            message: None,
+            error: Some(if stderr.trim().is_empty() { stdout.to_string() } else { stderr.to_string() }),
+            phase: Some("upload-error".to_string()),
+            excel_path: None,
+            media_description_id: None,
+            processed_count: None,
+            total_subfolders: None,
+            failed_folders: None,
+            task_ids: None,
+        })
+    }
+}
+
 // Helper functions
 async fn emit_log_message(window: &Window, level: &str, message: &str) {
     let log_message = LogMessage {
@@ -1042,6 +1871,16 @@ fn extract_failed_folders(output: &str) -> Option<Vec<String>> {
     }
 }
 
+// Helper function to ensure logs directory exists
+fn ensure_logs_directory() -> Result<PathBuf, String> {
+    let logs_dir = PathBuf::from("logs");
+    if !logs_dir.exists() {
+        std::fs::create_dir_all(&logs_dir)
+            .map_err(|e| format!("Failed to create logs directory: {}", e))?;
+    }
+    Ok(logs_dir)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -1064,7 +1903,20 @@ fn main() {
             get_parallel_upload_status,
             execute_upload_batch_parallel,
             cancel_all_parallel_uploads,
-            cancel_parallel_upload
+            cancel_parallel_upload,
+            // New commands for additional upload operations
+            execute_upload_only,
+            upload_picture,
+            upload_subtitle_to_mux,
+            upload_subtitle_specific,
+            batch_picture_upload,
+            propagate_season_data,
+            multi_upload_from_parent,
+            multi_upload_from_file,
+            multi_upload_from_string,
+            // Subtitle resend commands
+            resend_subtitles,
+            batch_resend_subtitles
         ])
         .setup(|app| {
             // Try to load config.ini on startup

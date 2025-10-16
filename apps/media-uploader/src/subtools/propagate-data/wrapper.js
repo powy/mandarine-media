@@ -1,6 +1,7 @@
 // Function wrapper for propagate-data tool
 import { PropagationService } from './services/propagationService.js';
 import { loadJsonFile } from '../one-media-complete-upload/utils/fileUtils.js';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 import chalk from 'chalk';
 import fs from 'fs/promises';
 import path from 'path';
@@ -12,9 +13,21 @@ import path from 'path';
  * @param {string} options.config - Configuration file path
  * @param {boolean} options.verbose - Verbose output
  * @param {boolean} options.dryRun - Preview changes without updating
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Propagation results
  */
 export async function propagateSeasonData(options) {
+  let restoreConsole = null;
+
+  if (options.logFile) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   try {
     console.log(chalk.blue.bold('🔄 Season Data Propagation Tool\n'));
 
@@ -100,6 +113,10 @@ export async function propagateSeasonData(options) {
       console.error(chalk.gray(error.stack));
     }
     throw error;
+  } finally {
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 

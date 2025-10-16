@@ -19,7 +19,8 @@ export function detectLanguageFromFilename(fileName) {
 
   // Detect language from filename - expanded patterns
   // French patterns
-  if (lowerFileName.includes('_fr') || lowerFileName.includes('-fr') ||
+  if (lowerFileName.startsWith('fr ') || lowerFileName.startsWith('fr_') || lowerFileName.startsWith('fr-') ||
+      lowerFileName.includes('_fr') || lowerFileName.includes('-fr') ||
       lowerFileName.includes('.fr') || lowerFileName.includes(' fr ') ||
       lowerFileName.endsWith(' fr.srt') || lowerFileName.endsWith(' fr.vtt') ||
       lowerFileName.includes('[fr]') || lowerFileName.includes('(fr)')) {
@@ -27,7 +28,9 @@ export function detectLanguageFromFilename(fileName) {
   }
 
   // English patterns (supporting both 'en' and 'eng')
-  if (lowerFileName.includes('_en') || lowerFileName.includes('-en') ||
+  if (lowerFileName.startsWith('en ') || lowerFileName.startsWith('en_') || lowerFileName.startsWith('en-') ||
+      lowerFileName.startsWith('eng ') || lowerFileName.startsWith('eng_') || lowerFileName.startsWith('eng-') ||
+      lowerFileName.includes('_en') || lowerFileName.includes('-en') ||
       lowerFileName.includes('.en') || lowerFileName.includes(' en ') ||
       lowerFileName.endsWith(' en.srt') || lowerFileName.endsWith(' en.vtt') ||
       lowerFileName.includes('[en]') || lowerFileName.includes('(en)') ||
@@ -39,7 +42,9 @@ export function detectLanguageFromFilename(fileName) {
   }
 
   // Korean patterns (supporting both ko and kr variants)
-  if (lowerFileName.includes('_ko') || lowerFileName.includes('-ko') ||
+  if (lowerFileName.startsWith('ko ') || lowerFileName.startsWith('ko_') || lowerFileName.startsWith('ko-') ||
+      lowerFileName.startsWith('kr ') || lowerFileName.startsWith('kr_') || lowerFileName.startsWith('kr-') ||
+      lowerFileName.includes('_ko') || lowerFileName.includes('-ko') ||
       lowerFileName.includes('.ko') || lowerFileName.includes(' ko ') ||
       lowerFileName.endsWith(' ko.srt') || lowerFileName.endsWith(' ko.vtt') ||
       lowerFileName.includes('_kr') || lowerFileName.includes('-kr') ||
@@ -207,10 +212,10 @@ export function isLanguageSupported(languageCode) {
  */
 export function getLanguagePatterns() {
   return {
-    fr: ['_fr', '-fr', '.fr', ' fr ', '[fr]', '(fr)', ' fr.srt', ' fr.vtt'],
-    en: ['_en', '-en', '.en', ' en ', '[en]', '(en)', ' en.srt', ' en.vtt',
+    fr: ['fr ', 'fr_', 'fr-', '_fr', '-fr', '.fr', ' fr ', '[fr]', '(fr)', ' fr.srt', ' fr.vtt'],
+    en: ['en ', 'en_', 'en-', 'eng ', 'eng_', 'eng-', '_en', '-en', '.en', ' en ', '[en]', '(en)', ' en.srt', ' en.vtt',
          '_eng', '-eng', '.eng', ' eng ', '[eng]', '(eng)', ' eng.srt', ' eng.vtt'],
-    ko: ['_ko', '-ko', '.ko', ' ko ', '[ko]', '(ko)', ' ko.srt', ' ko.vtt',
+    ko: ['ko ', 'ko_', 'ko-', 'kr ', 'kr_', 'kr-', '_ko', '-ko', '.ko', ' ko ', '[ko]', '(ko)', ' ko.srt', ' ko.vtt',
          '_kr', '-kr', '.kr', ' kr ', '[kr]', '(kr)', ' kr.srt', ' kr.vtt']
   };
 }

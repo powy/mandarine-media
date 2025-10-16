@@ -1,6 +1,7 @@
 import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import fs from 'fs-extra';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,9 +85,22 @@ const dependenciesPromise = importDependencies().then(deps => {
  * @param {string} options.config - Configuration file path
  * @param {string} options.folder - Folder path containing media files
  * @param {boolean} options.verbose - Verbose output
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Excel preparation results
  */
 export async function prepareExcel(options) {
+  let restoreConsole = null;
+
+  // Initialize file logger if logFile is provided
+  if (options.logFile) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   console.error(`🔍 DEBUG: prepareExcel called with folder: ${options.folder}`);
   try {
     // Ensure dependencies are loaded
@@ -129,6 +143,11 @@ export async function prepareExcel(options) {
         }
       }
     };
+  } finally {
+    // Restore console if redirected
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 
@@ -138,9 +157,22 @@ export async function prepareExcel(options) {
  * @param {string} options.config - Configuration file path
  * @param {string} options.folder - Folder path containing media files
  * @param {boolean} options.verbose - Verbose output
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Upload results
  */
 export async function executeUpload(options) {
+  let restoreConsole = null;
+
+  // Initialize file logger if logFile is provided
+  if (options.logFile) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   try {
     // Ensure dependencies are loaded
     await dependenciesPromise;
@@ -173,6 +205,11 @@ export async function executeUpload(options) {
         }
       }
     };
+  } finally {
+    // Restore console if redirected
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 
@@ -184,9 +221,22 @@ export async function executeUpload(options) {
  * @param {boolean} options.verbose - Verbose output
  * @param {boolean} options.dryRun - Validate configuration without uploading
  * @param {string} options.mode - Operation mode: 'auto', 'prepare', or 'upload'
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Upload results with detailed context
  */
 export async function oneMediaCompleteUpload(options) {
+  let restoreConsole = null;
+
+  // Initialize file logger if logFile is provided
+  if (options.logFile) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   try {
     // Ensure dependencies are loaded
     await dependenciesPromise;
@@ -223,6 +273,11 @@ export async function oneMediaCompleteUpload(options) {
         }
       }
     };
+  } finally {
+    // Restore console if redirected
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 

@@ -65,8 +65,7 @@ export class S3Service {
         ContentType: contentType,
         Metadata: {
           'media-description-id': mediaDescriptionId,
-          'language': language,
-          'original-filename': path.basename(subtitlePath)
+          'language': language
         }
       });
 

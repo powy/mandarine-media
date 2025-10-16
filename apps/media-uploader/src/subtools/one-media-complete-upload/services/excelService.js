@@ -344,8 +344,9 @@ export class ExcelService {
       
       return {
         files: this.parseFilesData(filesData),
-        description: this.parseDescriptionData(descriptionData),
-        workbook // Keep reference for later use
+        description: this.parseDescriptionData(descriptionData)
+        // Note: workbook object removed - it has circular references and cannot be JSON stringified
+        // The workbook is only needed internally during Excel operations, not in return values
       };
     } catch (error) {
       this.logger.error(`Error reading Excel file: ${error.message}`);

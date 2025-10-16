@@ -4,6 +4,7 @@ import { checkFileExists, getImageMetadata, loadConfigFile } from './utils/fileU
 import { uploadToS3 } from './services/s3Service.js';
 import { createPictureRecord, updatePictureRecord } from './services/apiService.js';
 import { PictureUploadError, ErrorCodes, handleError } from './utils/errorHandler.js';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 import axios from 'axios';
 
 /**
@@ -12,9 +13,23 @@ import axios from 'axios';
  * @param {string} options.config - Configuration file path
  * @param {boolean} options.verbose - Verbose output
  * @param {boolean} options.dryRun - Validate configuration and check file without uploading
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Upload results
  */
 export async function uploadPicture(options) {
+  // Initialize file logger if logFile is provided
+  let logger = null;
+  let restoreConsole = null;
+
+  if (options.logFile) {
+    logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   try {
     console.log('🖼️  Picture Upload Tool v1.0.0');
     console.log('=====================================\n');
@@ -126,13 +141,18 @@ export async function uploadPicture(options) {
     }
     
     return result;
-    
+
   } catch (error) {
     console.error('❌ Picture upload failed:', error.message);
     if (options.verbose) {
       console.error(error.stack);
     }
     throw error;
+  } finally {
+    // Restore console if redirected
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 

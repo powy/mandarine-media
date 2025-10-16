@@ -5,6 +5,7 @@
 
 import { subtitleSpecificUploadCore } from './core.js';
 import { loadConfigFile } from '../picture-upload/utils/fileUtils.js';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 import chalk from 'chalk';
 
 /**
@@ -13,9 +14,21 @@ import chalk from 'chalk';
  * @param {string} options.config - JSON configuration file path
  * @param {boolean} [options.verbose] - Verbose output
  * @param {boolean} [options.dryRun] - Dry run mode
+ * @param {string} [options.logFile] - Optional log file path for capturing all output
  * @returns {Promise<Object>} Upload results
  */
 export async function uploadSubtitleSpecific(options) {
+  let restoreConsole = null;
+
+  if (options.logFile) {
+    const logger = createFileLogger({
+      logFile: options.logFile,
+      verbose: options.verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
   try {
     console.log(chalk.blue.bold('📝 Subtitle-Specific Upload Tool v1.0.0'));
     console.log(chalk.blue.bold('==========================================\n'));
@@ -66,6 +79,10 @@ export async function uploadSubtitleSpecific(options) {
       console.error(chalk.gray(error.stack));
     }
     throw error;
+  } finally {
+    if (restoreConsole) {
+      restoreConsole();
+    }
   }
 }
 
