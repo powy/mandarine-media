@@ -317,3 +317,86 @@ class TestShowcaseScreenJSONIntegration:
             expected_url = pictures[format_name].image_url
             assert item["thumbnail_url"] == expected_url, \
                 f"Format {format_name}: expected {expected_url}, got {item['thumbnail_url']}"
+
+    def test_showcase_filters_non_published_media(self, db: Session):
+        """Test that only published media descriptions appear in showcase JSON."""
+        program = Program(program_name="Content Status Test")
+        db.add(program)
+        db.flush()
+
+        # Create media descriptions with different statuses
+        published_media = MediaDescription(
+            file_number=88100,
+            episode_title="Published Episode",
+            media_type="video",
+            program_id=program.id,
+            content_status="published",
+        )
+
+        draft_media = MediaDescription(
+            file_number=88101,
+            episode_title="Draft Episode",
+            media_type="video",
+            program_id=program.id,
+            content_status="draft",
+        )
+
+        archived_media = MediaDescription(
+            file_number=88102,
+            episode_title="Archived Episode",
+            media_type="video",
+            program_id=program.id,
+            content_status="archived",
+        )
+
+        scheduled_media = MediaDescription(
+            file_number=88103,
+            episode_title="Scheduled Episode",
+            media_type="video",
+            program_id=program.id,
+            content_status="scheduled",
+        )
+
+        db.add(published_media)
+        db.add(draft_media)
+        db.add(archived_media)
+        db.add(scheduled_media)
+        db.commit()
+
+        # Create showcase with all media descriptions
+        from app.schemas.media_showcase import MediaShowcaseCreate
+
+        showcase_data = MediaShowcaseCreate(
+            title="Status Filter Test Showcase",
+            thumbnail_format=ThumbnailFormatEnum.format_1920x1080,
+            list_type=ListTypeEnum.classic,
+            percentage_width=100,
+            percentage_height=80,
+            slug="status-filter-test",
+            media_description_ids=[
+                published_media.id,
+                draft_media.id,
+                archived_media.id,
+                scheduled_media.id
+            ]
+        )
+        showcase = crud_media_showcase.create(db, obj_in=showcase_data)
+
+        # Generate JSON
+        json_data = showcase.update_json(db)
+
+        # Verify only published media appears
+        assert json_data is not None, "JSON generation failed"
+        assert "items" in json_data
+        assert len(json_data["items"]) == 1, f"Expected only 1 published item, got {len(json_data['items'])}"
+
+        # Verify it's the published one
+        item = json_data["items"][0]
+        assert item["title"] == "Published Episode"
+        assert item["id"] == str(published_media.id)
+
+        # Verify draft, archived, and scheduled are excluded
+        titles = [item["title"] for item in json_data["items"]]
+        assert "Draft Episode" not in titles
+        assert "Archived Episode" not in titles
+        assert "Scheduled Episode" not in titles

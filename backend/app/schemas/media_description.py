@@ -116,7 +116,7 @@ class MediaDescriptionBase(BaseModel):
     production_year: Optional[int] = None
     original_broadcast_date_utc: Optional[datetime] = None
     is_featured: Optional[bool] = False
-    content_status: Optional[ContentStatusEnum] = ContentStatusEnum.draft
+    content_status: Optional[ContentStatusEnum] = ContentStatusEnum.published
     seo_title: Optional[str] = None
     seo_description: Optional[str] = None
     seo_keywords_text_list: Optional[List[str]] = None
@@ -443,7 +443,7 @@ class MediaDescriptionCreateFromText(BaseModel):
     production_year: Optional[int] = None
     original_broadcast_date_utc: Optional[datetime] = None
     is_featured: Optional[bool] = False
-    content_status: Optional[ContentStatusEnum] = ContentStatusEnum.draft
+    content_status: Optional[ContentStatusEnum] = ContentStatusEnum.published
     seo_title: Optional[str] = None
     seo_description: Optional[str] = None
     seo_keywords_text_list: Optional[List[str]] = None

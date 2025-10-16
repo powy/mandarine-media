@@ -69,7 +69,8 @@ class MediaShowcase(Base):
         }
 
         # Get ordered media descriptions with their details
-        for media_desc in self.media_descriptions:
+        # Filter: only include published media descriptions
+        for media_desc in [md for md in self.media_descriptions if md.content_status == "published"]:
             # Determine program_id and season_id based on media_type
             # Special handling for season and program media types
             if media_desc.media_type == "season":
@@ -117,6 +118,9 @@ class MediaShowcase(Base):
                 program_id_val = str(media_desc.program_id) if media_desc.program_id else None
                 season_id_val = str(media_desc.season_id) if media_desc.season_id else None
 
+            # Get all format URLs
+            format_urls = self._get_all_format_urls(media_desc)
+
             item_data = {
                 "id": str(media_desc.id),
                 "title": media_desc.episode_title,
@@ -130,7 +134,13 @@ class MediaShowcase(Base):
                 "program_id": program_id_val,
                 "season_id": season_id_val,
                 "episode_number": media_desc.episode_number,
-                "display_order": self._get_item_priority_in_showcase(media_desc.id, db_session)
+                "display_order": self._get_item_priority_in_showcase(media_desc.id, db_session),
+                # Add all 5 format URLs
+                "image_1920_1080_url": format_urls["image_1920_1080_url"],
+                "image_1920_720_url": format_urls["image_1920_720_url"],
+                "image_1080_1080_url": format_urls["image_1080_1080_url"],
+                "image_810_1080_url": format_urls["image_810_1080_url"],
+                "image_1080_1920_url": format_urls["image_1080_1920_url"]
             }
             json_data["items"].append(item_data)
 
@@ -157,6 +167,26 @@ class MediaShowcase(Base):
         if picture and hasattr(picture, 'image_url') and picture.image_url:
             return picture.image_url
         return None
+
+    def _get_all_format_urls(self, media_desc) -> Dict[str, Optional[str]]:
+        """Helper to get all thumbnail format URLs for a media description"""
+        format_fields = {
+            "image_1920_1080_url": 'image_1920_1080',
+            "image_1920_720_url": 'image_1920_720',
+            "image_1080_1080_url": 'image_1080_1080',
+            "image_810_1080_url": 'image_810_1080',
+            "image_1080_1920_url": 'image_1080_1920'
+        }
+
+        result = {}
+        for url_field, picture_attr in format_fields.items():
+            picture = getattr(media_desc, picture_attr, None)
+            if picture and hasattr(picture, 'image_url') and picture.image_url:
+                result[url_field] = picture.image_url
+            else:
+                result[url_field] = None
+
+        return result
 
     def _get_item_priority_in_showcase(self, media_desc_id, db_session=None) -> int:
         """Get priority_in_showcase for a specific item within this showcase"""

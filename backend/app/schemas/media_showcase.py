@@ -104,6 +104,12 @@ class MediaShowcaseItemJSON(BaseModel):
     season_id: Optional[str]
     episode_number: Optional[int]
     display_order: int
+    # Picture format URLs for all 5 supported formats
+    image_1920_1080_url: Optional[str] = None
+    image_1920_720_url: Optional[str] = None
+    image_1080_1080_url: Optional[str] = None
+    image_810_1080_url: Optional[str] = None
+    image_1080_1920_url: Optional[str] = None
 
 
 class MediaShowcaseJSON(BaseModel):

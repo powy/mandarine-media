@@ -259,3 +259,159 @@ class TestShowcaseThumbnailUrls:
         # Test all formats return None when no images are set
         for format_name in formats:
             assert showcase._get_thumbnail_url(media_desc, format_name) is None
+
+    def test_all_format_urls_in_json(self, db: Session):
+        """Test that all 5 format URLs are included in the JSON output."""
+        # Create pictures for different formats
+        picture_1920_1080 = Picture(
+            image_url="https://cdn.example.com/img-1920x1080.jpg",
+            file_name="img-1920x1080.jpg",
+            width=1920,
+            height=1080
+        )
+        picture_1920_720 = Picture(
+            image_url="https://cdn.example.com/img-1920x720.jpg",
+            file_name="img-1920x720.jpg",
+            width=1920,
+            height=720
+        )
+        picture_1080_1080 = Picture(
+            image_url="https://cdn.example.com/img-1080x1080.jpg",
+            file_name="img-1080x1080.jpg",
+            width=1080,
+            height=1080
+        )
+        db.add_all([picture_1920_1080, picture_1920_720, picture_1080_1080])
+        db.commit()
+        db.refresh(picture_1920_1080)
+        db.refresh(picture_1920_720)
+        db.refresh(picture_1080_1080)
+
+        # Create media description with some formats populated, others not
+        media_desc = MediaDescription(
+            file_number=1006,
+            episode_title="Test All Format URLs",
+            media_type="video",
+            friendly_url="/watch/test-all-formats",
+            slug="test-all-formats",
+            media_categories_list=["movie"],
+            descriptive_summary_text="Test media with multiple format URLs",
+            is_featured=True,
+            production_year=2024,
+            content_status="published",
+            image_1920_1080_id=picture_1920_1080.id,
+            image_1920_720_id=picture_1920_720.id,
+            image_1080_1080_id=picture_1080_1080.id,
+            # image_810_1080_id and image_1080_1920_id are intentionally left None
+        )
+        db.add(media_desc)
+        db.commit()
+        db.refresh(media_desc)
+
+        # Create showcase
+        showcase = MediaShowcase(
+            title="Test All Format URLs Showcase",
+            thumbnail_format=ThumbnailFormatEnum.format_1920x1080.value,
+            list_type=ListTypeEnum.classic.value,
+            percentage_width=100,
+            percentage_height=80,
+            is_active=True,
+            priority_in_screen=1
+        )
+        db.add(showcase)
+        db.commit()
+        db.refresh(showcase)
+
+        # Add media description to showcase
+        showcase.media_descriptions.append(media_desc)
+        db.commit()
+        db.refresh(showcase)
+
+        # Generate JSON
+        json_data = showcase.update_json(db)
+
+        # Verify the JSON contains all 5 format URL fields
+        assert len(json_data["items"]) == 1
+        item = json_data["items"][0]
+
+        # Check that thumbnail_url still works (based on showcase format)
+        assert item["thumbnail_url"] == picture_1920_1080.image_url
+
+        # Check that all 5 format URL fields are present
+        assert "image_1920_1080_url" in item
+        assert "image_1920_720_url" in item
+        assert "image_1080_1080_url" in item
+        assert "image_810_1080_url" in item
+        assert "image_1080_1920_url" in item
+
+        # Verify values for populated formats
+        assert item["image_1920_1080_url"] == "https://cdn.example.com/img-1920x1080.jpg"
+        assert item["image_1920_720_url"] == "https://cdn.example.com/img-1920x720.jpg"
+        assert item["image_1080_1080_url"] == "https://cdn.example.com/img-1080x1080.jpg"
+
+        # Verify None for unpopulated formats
+        assert item["image_810_1080_url"] is None
+        assert item["image_1080_1920_url"] is None
+
+    def test_get_all_format_urls_helper(self, db: Session):
+        """Test the _get_all_format_urls helper method directly."""
+        # Create pictures for all 5 formats
+        pictures = {}
+        formats = {
+            "1920x1080": (1920, 1080),
+            "1920x720": (1920, 720),
+            "1080x1080": (1080, 1080),
+            "810x1080": (810, 1080),
+            "1080x1920": (1080, 1920)
+        }
+
+        for format_name, (width, height) in formats.items():
+            picture = Picture(
+                image_url=f"https://cdn.example.com/img-{format_name}.jpg",
+                file_name=f"img-{format_name}.jpg",
+                width=width,
+                height=height
+            )
+            db.add(picture)
+            pictures[format_name] = picture
+
+        db.commit()
+        for pic in pictures.values():
+            db.refresh(pic)
+
+        # Create media description with all formats
+        media_desc = MediaDescription(
+            file_number=1007,
+            episode_title="Test All Formats Helper",
+            media_type="video",
+            content_status="published",
+            image_1920_1080_id=pictures["1920x1080"].id,
+            image_1920_720_id=pictures["1920x720"].id,
+            image_1080_1080_id=pictures["1080x1080"].id,
+            image_810_1080_id=pictures["810x1080"].id,
+            image_1080_1920_id=pictures["1080x1920"].id
+        )
+        db.add(media_desc)
+        db.commit()
+        db.refresh(media_desc)
+
+        # Create showcase and test helper method
+        showcase = MediaShowcase(
+            title="Test Helper Method",
+            thumbnail_format=ThumbnailFormatEnum.format_1920x1080.value,
+            list_type=ListTypeEnum.classic.value,
+            percentage_width=100,
+            percentage_height=80,
+            is_active=True,
+            priority_in_screen=1
+        )
+
+        # Test the helper method
+        format_urls = showcase._get_all_format_urls(media_desc)
+
+        # Verify all URLs are present
+        assert format_urls["image_1920_1080_url"] == "https://cdn.example.com/img-1920x1080.jpg"
+        assert format_urls["image_1920_720_url"] == "https://cdn.example.com/img-1920x720.jpg"
+        assert format_urls["image_1080_1080_url"] == "https://cdn.example.com/img-1080x1080.jpg"
+        assert format_urls["image_810_1080_url"] == "https://cdn.example.com/img-810x1080.jpg"
+        assert format_urls["image_1080_1920_url"] == "https://cdn.example.com/img-1080x1920.jpg"

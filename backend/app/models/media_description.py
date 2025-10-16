@@ -69,7 +69,7 @@ class MediaDescription(Base):
     original_broadcast_date_utc = Column(DateTime(timezone=True), nullable=True)
     is_featured = Column(Boolean, default=False, nullable=True)
     last_updated_utc = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
-    content_status = Column(String, default="draft", nullable=True)  # Will use enum validation in schemas
+    content_status = Column(String, default="published", nullable=True)  # Will use enum validation in schemas
     seo_title = Column(String, nullable=True)
     seo_description = Column(Text, nullable=True)
     seo_keywords_text_list = Column(JSONArray(), nullable=True)
