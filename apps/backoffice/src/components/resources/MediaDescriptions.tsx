@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   List,
   Datagrid,
@@ -52,6 +53,7 @@ import {
   MediaThemeInput,
   AdditionalImageInput,
 } from '../inputs/RelationshipInputs';
+import { CopyMediaDescriptionButton } from './CopyMediaDescriptionButton';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -169,9 +171,13 @@ export const MediaDescriptionList = () => (
   </List>
 );
 
-export const MediaDescriptionCreate = () => (
-  <Create redirect="list" transform={transformFormData}>
-    <SimpleForm>
+export const MediaDescriptionCreate = () => {
+  const location = useLocation();
+  const defaultValues = (location.state as any)?.record || {};
+
+  return (
+    <Create redirect="list" transform={transformFormData}>
+      <SimpleForm defaultValues={defaultValues}>
       {/* Basic Information */}
       <TextInput source="episode_title" label="Title" validate={[required()]} fullWidth />
       <SelectInput 
@@ -339,10 +345,18 @@ export const MediaDescriptionCreate = () => (
       <NumberInput source="paid_token_cost" label="Paid Token Cost" />
     </SimpleForm>
   </Create>
+  );
+};
+
+const MediaDescriptionEditActions = () => (
+  <TopToolbar>
+    <ShowButton />
+    <CopyMediaDescriptionButton />
+  </TopToolbar>
 );
 
 export const MediaDescriptionEdit = () => (
-  <Edit transform={transformFormData}>
+  <Edit transform={transformFormData} actions={<MediaDescriptionEditActions />}>
     <SimpleForm>
       {/* Basic Information */}
       <NumberInput source="file_number" disabled helperText="Auto-generated, cannot be modified" />
@@ -510,8 +524,15 @@ export const MediaDescriptionEdit = () => (
   </Edit>
 );
 
+const MediaDescriptionShowActions = () => (
+  <TopToolbar>
+    <EditButton />
+    <CopyMediaDescriptionButton />
+  </TopToolbar>
+);
+
 export const MediaDescriptionShow = () => (
-  <Show>
+  <Show actions={<MediaDescriptionShowActions />}>
     <SimpleShowLayout>
       <TextField source="id" />
       <TextField source="episode_title" label="Title" />
