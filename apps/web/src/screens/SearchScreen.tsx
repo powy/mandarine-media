@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { mediaApi, picturesApi, useDebounce, resolveMediaDescriptionId } from 'share';
+import {
+  mediaApi,
+  picturesApi,
+  useDebounce,
+  resolveMediaDescriptionId,
+} from 'share';
 import type { MediaDescription } from 'share';
 
 const RESULTS_PER_PAGE = 20;
@@ -15,7 +20,11 @@ const SearchScreen: React.FC = () => {
   const debouncedSearch = useDebounce(searchInput, 500);
 
   // Fetch search results
-  const { data: searchResults, isLoading, error } = useQuery({
+  const {
+    data: searchResults,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['mediaSearch', debouncedSearch, currentPage],
     queryFn: async () => {
       if (!debouncedSearch.trim()) {
@@ -35,7 +44,9 @@ const SearchScreen: React.FC = () => {
           let thumbnailUrl = '';
           if (item.image_1920_1080_id) {
             try {
-              const picture = await picturesApi.getById(item.image_1920_1080_id);
+              const picture = await picturesApi.getById(
+                item.image_1920_1080_id
+              );
               thumbnailUrl = picture.image_url;
             } catch (err) {
               console.error('Failed to fetch thumbnail:', err);
@@ -122,12 +133,14 @@ const SearchScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-kyool-blue">
+    <div className="min-h-screen bg-black text-kyool-blue pt-16">
       <div className="py-8">
         <div className="max-w-6xl mx-auto px-4">
           {/* Search Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-kyool-blue mb-4">Search Media</h1>
+            <h1 className="text-3xl font-bold text-kyool-blue mb-4">
+              Search Media
+            </h1>
 
             {/* Search Input */}
             <div className="relative">
@@ -148,8 +161,20 @@ const SearchScreen: React.FC = () => {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                   aria-label="Clear search"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M18 6L6 18M6 6L18 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
               )}
@@ -158,7 +183,8 @@ const SearchScreen: React.FC = () => {
             {/* Search Info */}
             {debouncedSearch && searchResults && (
               <p className="text-gray-400 text-sm mt-2">
-                Found {searchResults.total} result{searchResults.total !== 1 ? 's' : ''} for "{debouncedSearch}"
+                Found {searchResults.total} result
+                {searchResults.total !== 1 ? 's' : ''} for "{debouncedSearch}"
               </p>
             )}
           </div>
@@ -177,7 +203,9 @@ const SearchScreen: React.FC = () => {
           {error && (
             <div className="text-center py-16">
               <p className="text-red-500 text-lg">
-                {error instanceof Error ? error.message : 'An error occurred while searching'}
+                {error instanceof Error
+                  ? error.message
+                  : 'An error occurred while searching'}
               </p>
             </div>
           )}
@@ -185,23 +213,50 @@ const SearchScreen: React.FC = () => {
           {/* Empty State - No Search */}
           {!debouncedSearch && !isLoading && (
             <div className="text-center py-16">
-              <svg className="mx-auto h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="mx-auto h-16 w-16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
-              <p className="text-gray-500 text-lg">Start typing to search for media</p>
+              <p className="text-lg">Start typing to search for media</p>
             </div>
           )}
 
           {/* Empty State - No Results */}
-          {debouncedSearch && !isLoading && searchResults && searchResults.items.length === 0 && (
-            <div className="text-center py-16">
-              <svg className="mx-auto h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-gray-500 text-lg">No results found for "{debouncedSearch}"</p>
-              <p className="text-gray-600 text-sm mt-2">Try searching with different keywords</p>
-            </div>
-          )}
+          {debouncedSearch &&
+            !isLoading &&
+            searchResults &&
+            searchResults.items.length === 0 && (
+              <div className="text-center py-16 text-kyool-blue">
+                <svg
+                  className="mx-auto h-16 w-16 mb-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p className="text-lg">
+                  No results found for "{debouncedSearch}"
+                </p>
+                <p className="text-sm mt-2">
+                  Try searching with different keywords
+                </p>
+              </div>
+            )}
 
           {/* Search Results Grid */}
           {searchResults && searchResults.items.length > 0 && (
@@ -223,20 +278,32 @@ const SearchScreen: React.FC = () => {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                          <span className="text-gray-500 text-xs">No Image</span>
+                          <span className="text-gray-500 text-xs">
+                            No Image
+                          </span>
                         </div>
                       )}
 
                       {/* Hover Overlay */}
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
                         <svg
                           className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-12 h-12 text-white"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </div>
                     </div>
@@ -270,13 +337,25 @@ const SearchScreen: React.FC = () => {
                     }`}
                     aria-label="Previous page"
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M15 18L9 12L15 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </button>
 
                   {/* Page Numbers */}
-                  {getPageNumbers().map((page, index) => (
+                  {getPageNumbers().map((page, index) =>
                     typeof page === 'number' ? (
                       <button
                         key={index}
@@ -294,7 +373,7 @@ const SearchScreen: React.FC = () => {
                         {page}
                       </span>
                     )
-                  ))}
+                  )}
 
                   {/* Next Button */}
                   <button
@@ -307,8 +386,20 @@ const SearchScreen: React.FC = () => {
                     }`}
                     aria-label="Next page"
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M9 18L15 12L9 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </button>
                 </div>
