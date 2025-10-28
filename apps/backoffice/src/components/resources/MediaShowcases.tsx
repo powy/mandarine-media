@@ -373,6 +373,7 @@ const MediaDescriptionManager = ({ source, ...props }) => {
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchText, setSearchText] = React.useState('');
   const [debouncedSearchText, setDebouncedSearchText] = React.useState('');
+  const [selectedSearchOption, setSelectedSearchOption] = React.useState(null);
   const [mediaItems, setMediaItems] = React.useState<MediaItemData[]>([]);
   const [loadingItems, setLoadingItems] = React.useState<Set<string>>(new Set());
 
@@ -481,8 +482,16 @@ const MediaDescriptionManager = ({ source, ...props }) => {
     fetchMediaData();
   }, [selectedIds, dataProvider]);
 
-  const handleAdd = (newIds) => {
-    const uniqueIds = [...new Set([...selectedIds, ...newIds])];
+  const handleAdd = (newIds: string[], position: 'head' | 'queue' = 'queue') => {
+    let uniqueIds: string[];
+    if (position === 'head') {
+      // Add to the beginning, avoiding duplicates
+      const newUniqueIds = newIds.filter(id => !selectedIds.includes(id));
+      uniqueIds = [...newUniqueIds, ...selectedIds];
+    } else {
+      // Add to the end (existing behavior)
+      uniqueIds = [...new Set([...selectedIds, ...newIds])];
+    }
     field.onChange(uniqueIds);
   };
 
@@ -509,7 +518,7 @@ const MediaDescriptionManager = ({ source, ...props }) => {
     }
   };
 
-  const handleManualAdd = async () => {
+  const handleManualAdd = async (position: 'head' | 'queue') => {
     const trimmedId = manualId.trim();
 
     if (!trimmedId) {
@@ -527,11 +536,12 @@ const MediaDescriptionManager = ({ source, ...props }) => {
 
     try {
       const result = await dataProvider.getOne('media-descriptions', { id: trimmedId });
-      handleAdd([trimmedId]);
+      handleAdd([trimmedId], position);
+      const positionText = position === 'head' ? 'to beginning' : 'to end';
       notify(
         result?.data?.episode_title
-          ? `Added ${result.data.episode_title}`
-          : 'Media description added',
+          ? `Added ${result.data.episode_title} ${positionText}`
+          : `Media description added ${positionText}`,
         { type: 'info' }
       );
       setManualId('');
@@ -551,56 +561,100 @@ const MediaDescriptionManager = ({ source, ...props }) => {
 
       {/* Add new items */}
       <Box mb={2}>
+        <Typography variant="subtitle1" gutterBottom>
+          Search and Add Media Items
+        </Typography>
         <Autocomplete
           options={searchOptions}
           getOptionLabel={(option) => option.episode_title || ''}
           loading={searchLoading}
+          value={selectedSearchOption}
           onInputChange={(event, value) => setSearchText(value)}
           onChange={(event, newValue) => {
-            if (newValue?.id) {
-              handleAdd([newValue.id]);
-              notify(
-                `Added ${newValue.episode_title || 'media description'}`,
-                { type: 'info' }
-              );
-              setSearchText('');
-              setSearchOptions([]);
-            }
+            setSelectedSearchOption(newValue);
           }}
           inputValue={searchText}
           renderInput={(params) => (
             <MuiTextField
               {...params}
-              label="Search and Add Media Items"
+              label="Search by Title"
               helperText="Type to search media descriptions by title (updates as you type)"
             />
           )}
           noOptionsText={searchText.length < 2 ? "Type at least 2 characters..." : "No results found"}
           filterOptions={(x) => x}
         />
+        <Box display="flex" gap={2} mt={1}>
+          <MuiButton
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              if (selectedSearchOption?.id) {
+                handleAdd([selectedSearchOption.id], 'head');
+                notify(
+                  `Added ${selectedSearchOption.episode_title || 'media description'} to beginning`,
+                  { type: 'info' }
+                );
+                setSearchText('');
+                setSelectedSearchOption(null);
+                setSearchOptions([]);
+              }
+            }}
+            disabled={!selectedSearchOption}
+          >
+            Add in Head
+          </MuiButton>
+          <MuiButton
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              if (selectedSearchOption?.id) {
+                handleAdd([selectedSearchOption.id], 'queue');
+                notify(
+                  `Added ${selectedSearchOption.episode_title || 'media description'} to end`,
+                  { type: 'info' }
+                );
+                setSearchText('');
+                setSelectedSearchOption(null);
+                setSearchOptions([]);
+              }
+            }}
+            disabled={!selectedSearchOption}
+          >
+            Add in Queue
+          </MuiButton>
+        </Box>
       </Box>
 
       <Box mt={2}>
         <Typography variant="subtitle1" gutterBottom>
           Add by ID
         </Typography>
-        <Box display="flex" gap={2} alignItems="flex-start">
-          <MuiTextField
-            label="Media Description ID"
-            value={manualId}
-            onChange={event => setManualId(event.target.value)}
-            size="small"
-            fullWidth
-            error={Boolean(manualError)}
-            helperText={manualError || 'Paste a MediaDescription UUID to append it directly'}
-          />
+        <MuiTextField
+          label="Media Description ID"
+          value={manualId}
+          onChange={event => setManualId(event.target.value)}
+          size="small"
+          fullWidth
+          error={Boolean(manualError)}
+          helperText={manualError || 'Paste a MediaDescription UUID'}
+        />
+        <Box display="flex" gap={2} mt={1}>
           <MuiButton
             variant="contained"
             color="primary"
-            onClick={handleManualAdd}
+            onClick={() => handleManualAdd('head')}
             disabled={isAddingById}
           >
-            {isAddingById ? 'Adding…' : 'Add'}
+            {isAddingById ? 'Adding…' : 'Add in Head'}
+          </MuiButton>
+          <MuiButton
+            variant="contained"
+            color="primary"
+            onClick={() => handleManualAdd('queue')}
+            disabled={isAddingById}
+          >
+            {isAddingById ? 'Adding…' : 'Add in Queue'}
           </MuiButton>
         </Box>
       </Box>
