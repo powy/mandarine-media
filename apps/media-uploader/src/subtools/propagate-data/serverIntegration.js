@@ -45,8 +45,8 @@ export async function processExcelFileForPropagation(excelFilePath, configPath, 
     let mediaDescriptionId = null;
 
     descriptionSheet.eachRow((row, rowNumber) => {
-      const field = row.getCell(1).value;
-      const value = row.getCell(2).value;
+      const field = row.getCell(2).value;
+      const value = row.getCell(3).value;
 
       if (field === 'media_type') {
         mediaType = value;
@@ -64,7 +64,7 @@ export async function processExcelFileForPropagation(excelFilePath, configPath, 
     // Check if it's a season type
     if (mediaType !== 'season') {
       return {
-        success: true,
+        success: false,
         skipped: true,
         reason: `Media type is "${mediaType}", not "season"`
       };
@@ -84,7 +84,8 @@ export async function processExcelFileForPropagation(excelFilePath, configPath, 
       seasonId: mediaDescriptionId,
       config: configPath,
       verbose,
-      dryRun
+      dryRun,
+      logFile: options.logFile
     });
 
     return {

@@ -3,7 +3,7 @@
  * Model Uploader Interface
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTasks, useCreateTask, useStopTask, useHealth } from './hooks/useTasks';
 import InputSection from './components/InputSection';
 import ActionsSection from './components/ActionsSection';
@@ -11,16 +11,33 @@ import TasksSection from './components/TasksSection';
 import LogViewer from './components/LogViewer';
 
 function App() {
-  // State for inputs
-  const [inputs, setInputs] = useState({
-    configFile: '',
-    folder: '',
-    parentFolder: '',
-    picture: '',
-    resolution: '',
-    subtitle: '',
-    language: ''
+  // State for inputs (with localStorage persistence)
+  const [inputs, setInputs] = useState(() => {
+    // Try to load from localStorage
+    const saved = localStorage.getItem('mediaUploaderInputs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved inputs:', e);
+      }
+    }
+    // Default values if nothing saved
+    return {
+      configFile: '',
+      folder: '',
+      parentFolder: '',
+      picture: '',
+      resolution: '',
+      subtitle: '',
+      language: ''
+    };
   });
+
+  // Save inputs to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('mediaUploaderInputs', JSON.stringify(inputs));
+  }, [inputs]);
 
   // State for validation errors
   const [errors, setErrors] = useState({});

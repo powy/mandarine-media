@@ -1,0 +1,7 @@
+    // Initialize Mux client
+    this.mux = new Mux({
+      tokenId: config.mux.tokenId,
+      tokenSecret: config.mux.tokenSecret
+    });
+
+    this.video = this.mux.video;

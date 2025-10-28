@@ -1,11 +1,14 @@
 /**
  * Picture Upload INI Interface
- * Reads INI file and converts to JSON for core function
+ * Reads INI file and converts to JSON for wrapper function
  */
 
-import { pictureUploadCore } from './core.js';
+import { uploadPicture } from './wrapper.js';
+import { loadConfigFile } from './utils/fileUtils.js';
 import { readIniFile, iniToStandardConfig } from '../../shared/utils/iniParser.js';
 import fs from 'fs-extra';
+import path from 'path';
+import os from 'os';
 
 /**
  * Execute picture upload from INI configuration
@@ -43,12 +46,12 @@ export async function pictureUploadFromIni(iniFilePath, options = {}) {
       accessKeyId: standardConfig.s3?.accessKeyId,
       secretAccessKey: standardConfig.s3?.secretAccessKey,
       region: standardConfig.s3?.region || 'us-east-1',
-      bucketName: standardConfig.s3?.pictures?.bucket,
+      bucket: standardConfig.s3?.pictures?.bucket,
       keyPrefix: standardConfig.s3?.pictures?.keyPrefix || 'pictures/',
     };
 
     // Validate S3 configuration
-    if (!s3Config.accessKeyId || !s3Config.secretAccessKey || !s3Config.bucketName) {
+    if (!s3Config.accessKeyId || !s3Config.secretAccessKey || !s3Config.bucket) {
       throw new Error('S3 configuration is incomplete in INI file. Required: s3.accessKeyId, s3.secretAccessKey, s3.pictures.bucket');
     }
 
@@ -64,26 +67,49 @@ export async function pictureUploadFromIni(iniFilePath, options = {}) {
       throw new Error('Backend API configuration is incomplete in INI file. Required: backend.baseUrl, backend.username, backend.password');
     }
 
-    // Build final configuration for core function
-    const coreConfig = {
+    // Build CloudFront configuration from INI (with default)
+    const cloudfrontConfig = {
+      domain: standardConfig.cloudfront?.domain || 'www.kyool.eu'
+    };
+
+    // Build final configuration for wrapper function
+    const config = {
       picturePath: options.picturePath,
       s3: s3Config,
+      cloudfront: cloudfrontConfig,
       api: apiConfig,
 
       // Custom metadata if provided
-      ...(options.metadata && { metadata: options.metadata }),
-
-      // CLI flags
-      dryRun: options.dryRun || false,
-      verbose: options.verbose || false,
-      debug: options.debug || false,
-
-      // Preserve INI file path for reference
-      _iniFilePath: iniFilePath,
+      ...(options.metadata && { metadata: options.metadata })
     };
 
-    // Execute core function
-    return await pictureUploadCore(coreConfig);
+    // Create temp JSON config file
+    const tempDir = os.tmpdir();
+    const tempConfigPath = path.join(tempDir, `picture-upload-${Date.now()}.json`);
+
+    try {
+      await fs.writeJson(tempConfigPath, config, { spaces: 2 });
+
+      // Call wrapper function with temp config file
+      const result = await uploadPicture({
+        config: tempConfigPath,
+        verbose: options.verbose || false,
+        dryRun: options.dryRun || false,
+        logFile: options.logFile
+      });
+
+      return result;
+
+    } finally {
+      // Clean up temp config file
+      try {
+        if (await fs.pathExists(tempConfigPath)) {
+          await fs.remove(tempConfigPath);
+        }
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+    }
 
   } catch (error) {
     throw new Error(`Picture Upload INI execution failed: ${error.message}`);

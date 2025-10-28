@@ -12,26 +12,27 @@ const __dirname = path.dirname(__filename);
 /**
  * Get base directory for data storage
  * - If KYOOL_DATA_DIR env var is set, use that
- * - On Windows with installed service, use %APPDATA%\Kyool\MediaUploader
- * - Otherwise, use local directory (for development)
+ * - Default: use %APPDATA%\Kyool\MediaUploader (production behavior)
+ * - Set KYOOL_USE_LOCAL=true to use local directory (for development)
  */
 function getBaseDataDir() {
   if (process.env.KYOOL_DATA_DIR) {
     return process.env.KYOOL_DATA_DIR;
   }
 
-  // Check if running as Windows service (common indicator: no USER env var or running from Program Files)
-  const isWindowsService = process.platform === 'win32' &&
-    (process.env.PROGRAMFILES && __dirname.includes(process.env.PROGRAMFILES));
+  // Use local directory only if explicitly requested (development mode)
+  if (process.env.KYOOL_USE_LOCAL === 'true') {
+    return path.join(__dirname, '..');
+  }
 
-  if (isWindowsService || process.env.KYOOL_USE_APPDATA === 'true') {
-    // Use %APPDATA%\Kyool\MediaUploader on Windows
+  // Default: Use %APPDATA%\Kyool\MediaUploader on Windows
+  if (process.platform === 'win32') {
     const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
     return path.join(appData, 'Kyool', 'MediaUploader');
   }
 
-  // Development mode: use local directory
-  return path.join(__dirname, '..');
+  // For non-Windows platforms, use home directory
+  return path.join(os.homedir(), '.kyool', 'media-uploader');
 }
 
 const BASE_DATA_DIR = getBaseDataDir();
@@ -90,8 +91,8 @@ export const CONFIG = {
       requiredParams: ['config', 'folder', 'subtitle', 'language']
     },
     'reload-subtitles-single': {
-      function: 'uploadSubtitlesToMux',
-      description: 'Reload all subtitles for single media',
+      function: 'resendSubtitles2',
+      description: 'Reload all subtitles for single media (V2 - proper backend chain)',
       requiredParams: ['config', 'folder']
     },
 
@@ -112,8 +113,13 @@ export const CONFIG = {
       requiredParams: ['config', 'parentFolder', 'picture', 'resolution']
     },
     'reload-subtitles-batch': {
-      function: 'uploadSubtitlesToMuxBatch',
-      description: 'Reload subtitles for all media',
+      function: 'resendSubtitles2Batch',
+      description: 'Reload subtitles for all media (V2 - proper backend chain)',
+      requiredParams: ['config', 'parentFolder']
+    },
+    'propagate-season-data-batch': {
+      function: 'propagateSeasonDataBatch',
+      description: 'Propagate SEASON data to episodes from parent folder Excel file',
       requiredParams: ['config', 'parentFolder']
     }
   },

@@ -114,8 +114,8 @@ export function iniToStandardConfig(iniConfig) {
     // Backend API configuration
     backend: {
       baseUrl: iniConfig.backend?.baseUrl,
-      username: iniConfig.backend?.username,
-      password: iniConfig.backend?.password,
+      username: iniConfig.backend?.username != null ? String(iniConfig.backend.username) : undefined,
+      password: iniConfig.backend?.password != null ? String(iniConfig.backend.password) : undefined,
     },
 
     // Mux configuration
@@ -175,6 +175,8 @@ function removeUndefinedValues(obj) {
 
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) {
+      // Keep undefined values for validation - let schema validation catch them
+      cleaned[key] = undefined;
       continue;
     }
 

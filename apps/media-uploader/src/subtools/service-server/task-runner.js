@@ -121,37 +121,32 @@ async function executeTask() {
       },
 
       uploadPicture: async () => {
-        const { pictureUploadCore } = await import('../picture-upload/core.js');
-        // Load config from INI file
-        const { parseIniFile } = await import('../../shared/utils/iniParser.js');
-        const config = parseIniFile(PARAMS.config);
-
-        return await pictureUploadCore({
-          picturePath: PARAMS.picture,
-          s3: {
-            accessKeyId: config.s3.accessKeyId,
-            secretAccessKey: config.s3.secretAccessKey,
-            region: config.s3.region,
-            bucketName: config.s3.bucket,
-            keyPrefix: config.s3.keyPrefix
+        const { pictureUploadFromIniWithMetadata } = await import('../picture-upload/iniInterface.js');
+        return await pictureUploadFromIniWithMetadata(
+          PARAMS.config,      // INI config file path
+          PARAMS.picture,     // picture file path
+          {
+            format: PARAMS.resolution  // metadata
           },
-          api: config.api,
-          metadata: {
-            format: PARAMS.resolution
-          },
-          verbose: true
-        });
+          {
+            verbose: true,
+            logFile: LOG_FILE
+          }
+        );
       },
 
       uploadSubtitleSpecific: async () => {
-        const { uploadSubtitlesToMux } = await import('../mux-subtitle-upload/wrapper.js');
-        return await uploadSubtitlesToMux({
-          config: PARAMS.config,
-          folder: PARAMS.folder,
-          subtitle: PARAMS.subtitle,
-          language: PARAMS.language,
-          verbose: true
-        });
+        const { uploadSubtitleSpecificFromIni } = await import('../subtitle-specific-upload/iniInterface.js');
+        return await uploadSubtitleSpecificFromIni(
+          PARAMS.config,      // INI config file path
+          PARAMS.subtitle,    // subtitle file path
+          PARAMS.folder,      // folder path for media lookup
+          PARAMS.language,    // language code (optional, auto-detected if null)
+          {
+            verbose: true,
+            logFile: LOG_FILE
+          }
+        );
       },
 
       uploadSubtitlesToMux: async () => {
@@ -163,14 +158,26 @@ async function executeTask() {
         });
       },
 
+      resendSubtitles2: async () => {
+        const { resendSubtitles2FromIni } = await import('../subtitle-specific-upload/resendSubtitles2IniInterface.js');
+        return await resendSubtitles2FromIni(
+          PARAMS.config,      // INI config file path
+          PARAMS.folder,      // folder path containing Excel and subtitles
+          {
+            verbose: true,
+            dryRun: PARAMS.dryRun || false
+          }
+        );
+      },
+
       // Batch operations
       prepareExcelBatch: async () => {
-        const { prepareExcelForAllSubfolders } = await import('../excel-batch-editor/wrapper.js');
-        return await prepareExcelForAllSubfolders({
-          parentFolder: PARAMS.parentFolder,
-          config: PARAMS.config,
-          verbose: true
-        });
+        const { batchPrepareExcelFromIni } = await import('../one-media-complete-upload/iniInterface.js');
+        return await batchPrepareExcelFromIni(
+          PARAMS.config,
+          PARAMS.parentFolder,
+          { verbose: true }
+        );
       },
 
       cliMultiUpload: async () => {
@@ -216,6 +223,41 @@ async function executeTask() {
           parentFolder: PARAMS.parentFolder,
           verbose: true
         });
+      },
+
+      resendSubtitles2Batch: async () => {
+        const { batchResendSubtitles2FromIni } = await import('../subtitle-specific-upload/batchResendSubtitles2IniInterface.js');
+        return await batchResendSubtitles2FromIni(
+          PARAMS.config,         // INI config file path
+          PARAMS.parentFolder,   // parent folder containing subfolders
+          {
+            verbose: true,
+            dryRun: PARAMS.dryRun || false
+          }
+        );
+      },
+
+      propagateSeasonDataBatch: async () => {
+        const { processExcelFileForPropagation } = await import('../propagate-data/serverIntegration.js');
+        const fsModule = await import('fs/promises');
+        const pathModule = await import('path');
+
+        // Find Excel file in folder (pattern: 0_desc*.xlsx)
+        const files = await fsModule.default.readdir(PARAMS.parentFolder);
+        const excelFile = files.find(file => file.startsWith('0_desc') && file.endsWith('.xlsx'));
+
+        if (!excelFile) {
+          throw new Error('No Excel file found matching pattern 0_desc*.xlsx in folder');
+        }
+
+        const excelPath = pathModule.default.join(PARAMS.parentFolder, excelFile);
+        logWriter.info(`Found Excel file: ${excelFile}`);
+
+        return await processExcelFileForPropagation(
+          excelPath,
+          PARAMS.config,
+          { verbose: true, dryRun: false, logFile: LOG_FILE }
+        );
       }
     };
 
@@ -227,7 +269,11 @@ async function executeTask() {
     logWriter.info('Executing function...');
     const result = await executeFn();
 
-    logWriter.info('Task completed successfully');
+    if (result.success) {
+      logWriter.info('Task completed successfully');
+    } else {
+      logWriter.warn('Task completed with errors');
+    }
     logWriter.info(`Result: ${JSON.stringify(result, null, 2)}`);
 
     stopHeartbeat();

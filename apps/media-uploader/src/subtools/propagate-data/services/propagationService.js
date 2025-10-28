@@ -90,14 +90,20 @@ export class PropagationService {
           const seasonsResponse = await axios.get(
             `${this.config.backend.baseUrl}/api/v1/seasons`,
             {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { limit: 100 }
+              headers: { Authorization: `Bearer ${token}` }
             }
           );
 
           const allSeasons = Array.isArray(seasonsResponse.data)
             ? seasonsResponse.data
             : seasonsResponse.data.data || [];
+
+          console.log(chalk.gray(`Fetched ${allSeasons.length} seasons from API`));
+          if (allSeasons.length > 0) {
+            console.log(chalk.gray('First season structure:'));
+            console.log(chalk.gray(JSON.stringify(allSeasons[0], null, 2)));
+          }
+          console.log(chalk.gray(`Looking for season with general_media_description_id = ${seasonMediaDescriptionId}`));
 
           const matchingSeason = allSeasons.find(
             s => s.general_media_description_id === seasonMediaDescriptionId
@@ -107,30 +113,67 @@ export class PropagationService {
             actualSeasonId = matchingSeason.id;
             console.log(chalk.green(`✅ Resolved to Season entity: ${matchingSeason.season_name || actualSeasonId}`));
           } else {
-            console.log(chalk.yellow('⚠️  No matching Season entity found, using MediaDescription ID directly'));
+            if (allSeasons.length > 0) {
+              console.log(chalk.yellow('Available season IDs and their general_media_description_ids:'));
+              allSeasons.forEach(s => {
+                console.log(chalk.yellow(`  Season: ${s.season_name || s.id}`));
+                console.log(chalk.yellow(`    ID: ${s.id}`));
+                console.log(chalk.yellow(`    general_media_description_id: ${s.general_media_description_id || 'NOT SET'}`));
+              });
+            }
+            throw new Error(
+              `Season entity not found for MediaDescription ID: ${seasonMediaDescriptionId}. ` +
+              `Fetched ${allSeasons.length} seasons but none matched.`
+            );
           }
         } catch (error) {
-          console.log(chalk.yellow(`⚠️  Could not resolve Season entity: ${error.message}`));
+          // Log detailed error information for debugging
+          if (error.response) {
+            console.log(chalk.red(`API Error: ${error.response.status} ${error.response.statusText}`));
+            console.log(chalk.red(`Response: ${JSON.stringify(error.response.data, null, 2)}`));
+          }
+          throw new Error(`Failed to resolve Season entity: ${error.message}`);
         }
       }
 
       // 3. Fetch all episodes for this season
-      console.log(chalk.gray('Fetching all media descriptions to filter by season...'));
+      console.log(chalk.gray('Fetching all media descriptions to filter by season (with pagination)...'));
 
       // Note: Backend doesn't support season_id filter parameter yet
       // So we fetch all episodes and filter client-side
-      const episodesResponse = await axios.get(
-        `${this.config.backend.baseUrl}/api/v1/media-descriptions`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { limit: 100 }
-        }
-      );
+      // Use pagination to ensure we get ALL media descriptions
+      let allEpisodes = [];
+      let skip = 0;
+      const limit = 100;
+      let hasMore = true;
 
-      // Handle both direct array and paginated response
-      const allEpisodes = Array.isArray(episodesResponse.data)
-        ? episodesResponse.data
-        : episodesResponse.data.data || [];
+      while (hasMore) {
+        console.log(chalk.gray(`  Fetching batch: skip=${skip}, limit=${limit}`));
+
+        const episodesResponse = await axios.get(
+          `${this.config.backend.baseUrl}/api/v1/media-descriptions`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { skip, limit }
+          }
+        );
+
+        const batch = Array.isArray(episodesResponse.data)
+          ? episodesResponse.data
+          : episodesResponse.data.data || [];
+
+        allEpisodes = allEpisodes.concat(batch);
+        console.log(chalk.gray(`  Received ${batch.length} items (total: ${allEpisodes.length})`));
+
+        hasMore = batch.length === limit;
+        skip += limit;
+
+        // Safety limit to prevent infinite loops
+        if (skip > 10000) {
+          console.log(chalk.yellow('  ⚠️ Safety limit reached (10000 items)'));
+          break;
+        }
+      }
 
       // Filter episodes that belong to this season
       const episodesData = allEpisodes.filter(
@@ -141,7 +184,7 @@ export class PropagationService {
 
       if (episodesData.length === 0) {
         return {
-          success: true,
+          success: false,
           updated: 0,
           skipped: 0,
           errors: [],

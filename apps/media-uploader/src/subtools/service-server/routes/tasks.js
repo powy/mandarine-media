@@ -74,7 +74,7 @@ export function createTaskRoutes(taskManager) {
   /**
    * GET /api/task/list - List all tasks
    */
-  router.get('/list', (req, res) => {
+  router.get('/list', async (req, res) => {
     try {
       const { status, type, limit } = req.query;
 
@@ -90,7 +90,7 @@ export function createTaskRoutes(taskManager) {
         filters.limit = parseInt(limit);
       }
 
-      const tasks = taskManager.listTasks(filters);
+      const tasks = await taskManager.listTasks(filters);
 
       res.json({
         success: true,

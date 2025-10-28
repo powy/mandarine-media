@@ -37,7 +37,7 @@ export const configSchema = Joi.object({
 export const validateConfig = (config) => {
   const { error, value } = configSchema.validate(config, {
     abortEarly: false,
-    allowUnknown: false
+    allowUnknown: true
   });
 
   if (error) {

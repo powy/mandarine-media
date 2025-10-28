@@ -101,6 +101,10 @@ function TaskRow({ task, onSelect, onStop, isSelected, showStop = false }) {
 }
 
 export default function TasksSection({ runningTasks, finishedTasks, selectedTaskId, onSelectTask, onStopTask }) {
+  // Defensive: Ensure props are always arrays
+  const safeRunningTasks = Array.isArray(runningTasks) ? runningTasks : [];
+  const safeFinishedTasks = Array.isArray(finishedTasks) ? finishedTasks : [];
+
   return (
     <div className="card">
       <h2 className="text-xl font-bold mb-4">C. TÂCHES</h2>
@@ -109,10 +113,10 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
         {/* Running Tasks */}
         <div>
           <h3 className="text-lg font-semibold mb-2 text-blue-700">
-            Running Tasks ({runningTasks.length})
+            Running Tasks ({safeRunningTasks.length})
           </h3>
           <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-            {runningTasks.length === 0 ? (
+            {safeRunningTasks.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <p>No running tasks</p>
                 <p className="text-sm mt-2">Tasks will appear here when created</p>
@@ -131,7 +135,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
                     </tr>
                   </thead>
                   <tbody>
-                    {runningTasks.map(task => (
+                    {safeRunningTasks.map(task => (
                       <TaskRow
                         key={task.id}
                         task={task}
@@ -151,10 +155,10 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
         {/* Finished Tasks */}
         <div>
           <h3 className="text-lg font-semibold mb-2 text-green-700">
-            Finished Tasks ({finishedTasks.length})
+            Finished Tasks ({safeFinishedTasks.length})
           </h3>
           <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-            {finishedTasks.length === 0 ? (
+            {safeFinishedTasks.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <p>No finished tasks</p>
                 <p className="text-sm mt-2">Completed tasks will appear here</p>
@@ -172,7 +176,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
                     </tr>
                   </thead>
                   <tbody>
-                    {finishedTasks.slice(0, 50).map(task => (
+                    {safeFinishedTasks.slice(0, 50).map(task => (
                       <TaskRow
                         key={task.id}
                         task={task}
@@ -187,7 +191,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
               </div>
             )}
           </div>
-          {finishedTasks.length > 50 && (
+          {safeFinishedTasks.length > 50 && (
             <p className="text-xs text-gray-500 mt-2 flex items-center justify-center gap-1">
               <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
               Showing 50 most recent tasks (scroll to view all)

@@ -61,7 +61,15 @@ export async function pictureUploadCore(config) {
     }
 
     // Upload to S3
-    const s3Url = await uploadToS3(validatedConfig.picturePath, validatedConfig.s3);
+    const s3Url = await uploadToS3({
+      filePath: validatedConfig.picturePath,
+      accessKeyId: validatedConfig.s3.accessKeyId,
+      secretAccessKey: validatedConfig.s3.secretAccessKey,
+      region: validatedConfig.s3.region,
+      bucket: validatedConfig.s3.bucket,
+      keyPrefix: validatedConfig.s3.keyPrefix,
+      cloudfrontDomain: validatedConfig.cloudfront?.domain
+    });
 
     // Create API record
     const pictureRecord = await createPictureRecord(s3Url, metadata, validatedConfig.api);

@@ -24,6 +24,7 @@ interface ActionButtonProps {
   disabled: boolean;
   loading: boolean;
   variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'purple';
+  tooltip?: string;
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({
@@ -34,6 +35,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   disabled,
   loading,
   variant = 'primary',
+  tooltip,
 }) => {
   const variants = {
     primary: 'bg-blue-500 hover:bg-blue-600 text-white',
@@ -47,6 +49,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
     <button
       onClick={onClick}
       disabled={disabled || loading}
+      title={tooltip}
       className={`
         flex flex-col items-center p-4 rounded-lg shadow-md transition-all duration-200
         ${disabled || loading
@@ -210,15 +213,16 @@ export const BatchTreatmentSection: React.FC<BatchTreatmentSectionProps> = ({
           variant="success"
         />
 
-        {/* c) Batch Picture Upload (placeholder button) */}
+        {/* c) Batch Picture Upload (disabled - not working) */}
         <ActionButton
           title="Batch Picture Upload"
           subtitle="Apply picture to subfolders"
           icon="🎯"
           onClick={handleBatchPictureUpload}
-          disabled={isDisabled || !selectedBatchPictureFile || !parentFolderPath}
-          loading={batchPictureUpload.isPending}
+          disabled={true}
+          loading={false}
           variant="purple"
+          tooltip="Not working"
         />
       </div>
 

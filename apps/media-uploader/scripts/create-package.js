@@ -115,6 +115,15 @@ for (const file of requiredFiles) {
 archive.directory(srcDir, 'src');
 console.log('  ✓ Source code');
 
+// Service interface (built web UI)
+const interfaceDistDir = path.join(rootDir, 'src', 'subtools', 'service-interface', 'dist');
+if (fs.existsSync(interfaceDistDir)) {
+  archive.directory(interfaceDistDir, 'interface');
+  console.log('  ✓ Service interface (built UI)');
+} else {
+  console.warn('  ⚠ Service interface dist not found - run build first');
+}
+
 // Start/Stop batch files (PRIMARY METHOD)
 archive.file(path.join(rootDir, 'START.bat'), { name: 'START.bat' });
 archive.file(path.join(rootDir, 'STOP.bat'), { name: 'STOP.bat' });

@@ -15,11 +15,12 @@ export class MuxService {
     this.logger = logger;
 
     // Initialize Mux client
-    const { Video } = new Mux(
-      config.mux.tokenId,
-      config.mux.tokenSecret
-    );
-    this.video = Video;
+    this.mux = new Mux({
+      tokenId: config.mux.tokenId,
+      tokenSecret: config.mux.tokenSecret
+    });
+
+    this.video = this.mux.video;
   }
 
   /**
@@ -30,11 +31,18 @@ export class MuxService {
   async getMuxAssetId(mediaDescriptionId) {
     try {
       // Authenticate with backend
+      const loginData = new URLSearchParams();
+      loginData.append('username', this.config.backend.username);
+      loginData.append('password', this.config.backend.password);
+
       const authResponse = await axios.post(
-        `${this.config.backend.baseUrl}/api/auth/login`,
+        `${this.config.backend.baseUrl}/api/v1/auth/login`,
+        loginData,
         {
-          username: this.config.backend.username,
-          password: this.config.backend.password
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 10000
         }
       );
 
@@ -42,7 +50,7 @@ export class MuxService {
 
       // Get media description from backend
       const mediaResponse = await axios.get(
-        `${this.config.backend.baseUrl}/api/media-descriptions/${mediaDescriptionId}`,
+        `${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -76,11 +84,18 @@ export class MuxService {
   async getMuxAssetIdFromVideoFile(mediaDescriptionId) {
     try {
       // Authenticate with backend
+      const loginData = new URLSearchParams();
+      loginData.append('username', this.config.backend.username);
+      loginData.append('password', this.config.backend.password);
+
       const authResponse = await axios.post(
-        `${this.config.backend.baseUrl}/api/auth/login`,
+        `${this.config.backend.baseUrl}/api/v1/auth/login`,
+        loginData,
         {
-          username: this.config.backend.username,
-          password: this.config.backend.password
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 10000
         }
       );
 
@@ -90,7 +105,7 @@ export class MuxService {
       this.logger.info && this.logger.info(`Fetching media description: ${mediaDescriptionId}`);
 
       const mediaResponse = await axios.get(
-        `${this.config.backend.baseUrl}/api/media-descriptions/${mediaDescriptionId}`,
+        `${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -99,7 +114,7 @@ export class MuxService {
       );
 
       // Step 2: Extract video file ID from media description
-      const videoFileId = mediaResponse.data.video_file_id || mediaResponse.data.file_id;
+      const videoFileId = mediaResponse.data.main_video_file_id || mediaResponse.data.video_file_id || mediaResponse.data.file_id;
 
       if (!videoFileId) {
         throw new Error(
@@ -112,7 +127,7 @@ export class MuxService {
 
       // Step 3: Get video file from backend
       const videoFileResponse = await axios.get(
-        `${this.config.backend.baseUrl}/api/video-files/${videoFileId}`,
+        `${this.config.backend.baseUrl}/api/v1/video-files/${videoFileId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -172,7 +187,7 @@ export class MuxService {
       }
 
       // Create subtitle track
-      const track = await this.video.Assets.createTrack(assetId, trackData);
+      const track = await this.video.assets.createTrack(assetId, trackData);
 
       this.logger.info && this.logger.info(`Subtitle track created: ${track.id}`);
 
@@ -196,7 +211,7 @@ export class MuxService {
    */
   async deleteSubtitleTrack(assetId, trackId) {
     try {
-      await this.video.Assets.deleteTrack(assetId, trackId);
+      await this.video.assets.deleteTrack(assetId, trackId);
 
       this.logger.info && this.logger.info(`Subtitle track ${trackId} deleted from asset ${assetId}`);
 
@@ -217,7 +232,7 @@ export class MuxService {
    */
   async listSubtitleTracks(assetId) {
     try {
-      const asset = await this.video.Assets.get(assetId);
+      const asset = await this.video.assets.retrieve(assetId);
 
       const subtitleTracks = asset.tracks.filter(
         track => track.type === 'text'

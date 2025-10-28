@@ -101,7 +101,7 @@ export async function subtitleSpecificUploadCore(config) {
 
     logger.info(`  Looking up media ID from Excel in: ${validatedConfig.folderPath}`);
 
-    const excelService = new ExcelService(validatedConfig.folderPath);
+    const excelService = new ExcelService(validatedConfig.folderPath, logger);
     mediaDescriptionId = await excelService.findMediaDescriptionId();
 
     if (!mediaDescriptionId) {
@@ -204,13 +204,20 @@ export async function subtitleSpecificUploadCore(config) {
 async function updateSubtitleInBackend(mediaDescriptionId, subtitleInfo, backendConfig, logger) {
   try {
     // Authenticate with backend
-    const authResponse = await axios.post(
-      `${backendConfig.baseUrl}/api/auth/login`,
-      {
-        username: backendConfig.username,
-        password: backendConfig.password
-      }
-    );
+    const loginData = new URLSearchParams();
+      loginData.append('username', backendConfig.username);
+      loginData.append('password', backendConfig.password);
+
+      const authResponse = await axios.post(
+        `${backendConfig.baseUrl}/api/v1/auth/login`,
+        loginData,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 10000
+        }
+      );
 
     const token = authResponse.data.access_token || authResponse.data.token;
 
@@ -229,7 +236,7 @@ async function updateSubtitleInBackend(mediaDescriptionId, subtitleInfo, backend
     };
 
     const response = await axios.patch(
-      `${backendConfig.baseUrl}/api/media-descriptions/${mediaDescriptionId}/subtitles`,
+      `${backendConfig.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}/subtitles`,
       updateData,
       {
         headers: {
@@ -250,18 +257,25 @@ async function updateSubtitleInBackend(mediaDescriptionId, subtitleInfo, backend
       logger.warn('⚠ Subtitles endpoint not found, attempting general update...');
 
       try {
-        const authResponse = await axios.post(
-          `${backendConfig.baseUrl}/api/auth/login`,
-          {
-            username: backendConfig.username,
-            password: backendConfig.password
-          }
-        );
+        const loginData = new URLSearchParams();
+      loginData.append('username', backendConfig.username);
+      loginData.append('password', backendConfig.password);
+
+      const authResponse = await axios.post(
+        `${backendConfig.baseUrl}/api/v1/auth/login`,
+        loginData,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 10000
+        }
+      );
 
         const token = authResponse.data.access_token || authResponse.data.token;
 
         const response = await axios.patch(
-          `${backendConfig.baseUrl}/api/media-descriptions/${mediaDescriptionId}`,
+          `${backendConfig.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`,
           {
             subtitle_url: subtitleInfo.s3Url,
             subtitle_language: subtitleInfo.language

@@ -330,10 +330,17 @@ export class OrchestrationService {
             
             // Rename Excel file with _uploaded suffix
             const newExcelPath = await this.excelService.renameExcelFile(excelPath);
-            console.log(chalk.green(`✅ Renamed Excel file: ${path.basename(newExcelPath)}`));
-            
-            // Store the new Excel path in results for reference
+            const wasRenamed = (newExcelPath !== excelPath);
+
+            if (wasRenamed) {
+              console.log(chalk.green(`✅ Renamed Excel file: ${path.basename(newExcelPath)}`));
+            } else {
+              console.log(chalk.yellow(`⚠️  Excel file not renamed (may be open): ${path.basename(excelPath)}`));
+            }
+
+            // Store the new Excel path and rename status in results for reference
             results.updatedExcelPath = newExcelPath;
+            results.excelRenamed = wasRenamed;
             
           } catch (excelError) {
             // Don't fail the entire upload process if Excel update fails

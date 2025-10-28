@@ -1,0 +1,15 @@
+      // Authenticate with backend
+      const loginData = new URLSearchParams();
+      loginData.append('username', this.config.backend.username);
+      loginData.append('password', this.config.backend.password);
+
+      const authResponse = await axios.post(
+        \`\${this.config.backend.baseUrl}/api/v1/auth/login\`,
+        loginData,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 10000
+        }
+      );

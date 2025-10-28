@@ -411,15 +411,23 @@ export class ExcelService {
         const frenchDescription = row[0];  // e.g., 'Titre du programme' (for reference)
         const key = row[1];                // e.g., 'program_name' (technical key)
         const value = row[2];              // e.g., 'pompom bag program' (actual value)
-        
-        if (key && typeof key === 'string') {
-          // Store the actual value from column C using the key from column B
-          description[key] = value || '';
-          
-          // Enhanced logging for debugging, especially for date fields
-          if (value && value.toString().trim() !== '') {
-            this.logger?.info(`Parsed ${key}: "${value}" (from row with description: "${frenchDescription}")`);
 
+        if (key && typeof key === 'string') {
+          // IMPORTANT: Only set non-empty values to avoid overwriting populated fields
+          // This handles duplicate keys in Excel where an empty row might overwrite a good value
+          const valueStr = value?.toString().trim() || '';
+
+          if (valueStr !== '') {
+            // Store the actual value from column C using the key from column B
+            description[key] = value;
+
+            // Enhanced logging for debugging, especially for date fields
+            this.logger?.info(`Parsed ${key}: "${value}" (from row with description: "${frenchDescription}")`);
+          } else {
+            // Don't overwrite existing values with empty ones
+            if (!description[key]) {
+              description[key] = '';
+            }
           }
         }
       }

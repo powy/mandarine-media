@@ -119,6 +119,12 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
               requiredFields={['configFile', 'parentFolder']}
               description="Reload subtitles for all media in parent folder"
             />
+            <ActionButton
+              taskType="propagate-season-data-batch"
+              label="Propager Données de Saison"
+              requiredFields={['configFile', 'parentFolder']}
+              description="Propagate SEASON data to episodes from parent folder Excel file"
+            />
           </div>
         </div>
       </div>

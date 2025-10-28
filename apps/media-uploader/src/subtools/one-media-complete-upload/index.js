@@ -327,6 +327,7 @@ export class OneMediaCompleteUpload {
           message: `Upload completed successfully! Media Description ID: ${uploadResults.mediaDescriptionId}`,
           phase: 'completed',
           mediaDescriptionId: uploadResults.mediaDescriptionId,
+          excelPath: uploadResults.updatedExcelPath || excelPath, // Return renamed path or original
           data: uploadResults
         };
 
@@ -345,6 +346,7 @@ export class OneMediaCompleteUpload {
           success: false,
           error: `Upload failed with ${uploadResults.errors.length} error(s)`,
           phase: 'upload-failed',
+          excelPath: excelPath, // Include for consistency
           context: {
             ...uploadResults.context,
             uploadErrors: uploadResults.errors,
@@ -610,37 +612,39 @@ export class OneMediaCompleteUpload {
             console.log(chalk.gray(`  • ${image.fileName} → ${image.dimensions || 'unknown size'}`));
           });
         }
-        
+
         if (uploads.subtitles.length > 0) {
           console.log(chalk.cyan(`\n📝 Subtitles uploaded: ${uploads.subtitles.length}`));
           uploads.subtitles.forEach(subtitle => {
             console.log(chalk.gray(`  • ${subtitle.fileName} (${subtitle.language})`));
           });
         }
-        
+
         return {
           success: true,
           message: `Upload completed successfully! Media Description ID: ${uploadResults.mediaDescriptionId}`,
           phase: 'completed',
           mediaDescriptionId: uploadResults.mediaDescriptionId,
+          excelPath: uploadResults.updatedExcelPath || excelPath, // Return renamed path or original
           data: uploadResults
         };
         
       } else {
         // Upload failed - return detailed error context
         console.log(chalk.red.bold('\n❌ Upload failed'));
-        
+
         if (uploadResults.errors.length > 0) {
           console.log(chalk.red('\n📋 Errors encountered:'));
           uploadResults.errors.forEach(error => {
             console.log(chalk.red(`  • ${error}`));
           });
         }
-        
+
         return {
           success: false,
           error: `Upload failed with ${uploadResults.errors.length} error(s)`,
           phase: 'upload-failed',
+          excelPath: excelPath, // Include for consistency
           context: {
             ...uploadResults.context,
             uploadErrors: uploadResults.errors,

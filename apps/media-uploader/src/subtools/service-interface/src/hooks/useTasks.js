@@ -29,6 +29,9 @@ export function useTasks(interval = 2000) {
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
       setError(err.message);
+      // IMPORTANT: Ensure state is still arrays even on error
+      setRunningTasks([]);
+      setFinishedTasks([]);
     } finally {
       setLoading(false);
     }
