@@ -4,7 +4,7 @@
  */
 
 import BaseWorker from './baseWorker.js';
-import { execFilePromise } from '../utils/processUtils.js';
+import { uploadFromMediaDescriptionIdWithIni } from '../../mux-subtitle-upload/iniWrappers/uploadFromMediaDescriptionIdWithIni.js';
 import { detectLanguageFromFilename, getLanguageDisplayName, isValidBCP47 } from '../../../shared/utils/languageUtils.js';
 import { ExcelService } from '../../../one-media-complete-upload/services/excelService.js';
 import path from 'path';
@@ -98,60 +98,53 @@ class SubtitleSpecificWorker extends BaseWorker {
 
     this.updateProgress(45, 'Media description ID obtained, preparing subtitle upload...');
 
-    // Step 5: Call existing mux-subtitle-upload tool
+    // Step 5: Call existing mux-subtitle-upload tool directly
     try {
-      const scriptPath = this.getToolPath('subtools/mux-subtitle-upload/wrapper.js');
-
-      if (!(await this.fileExists(scriptPath))) {
-        throw new Error(`Subtitle upload script not found: ${scriptPath}`);
+      // Validate config path
+      if (!config || !config.configPath) {
+        throw new Error('Configuration path is required for subtitle upload');
       }
 
-      // Prepare arguments for the subtitle upload tool
-      const args = [
-        '--subtitle-path', subtitlePath,
-        '--video-id', finalMediaDescriptionId,
-        '--language', finalLanguage
-      ];
-
-      if (config && config.configPath) {
-        args.push('--config', config.configPath);
+      if (!(await this.fileExists(config.configPath))) {
+        throw new Error(`Configuration file not found: ${config.configPath}`);
       }
 
       this.updateProgress(50, 'Starting subtitle upload process...');
-      this.logInfo('Executing subtitle upload command', { scriptPath, args });
-
-      const result = await execFilePromise('node', [scriptPath, ...args], {
-        timeout: options.timeout || 300000, // 5 minutes default
-        maxBuffer: 1024 * 1024 * 5, // 5MB buffer
-        env: { ...process.env }
+      this.logInfo('Calling uploadFromMediaDescriptionIdWithIni', {
+        mediaDescriptionId: finalMediaDescriptionId,
+        subtitlePath,
+        language: finalLanguage,
+        configPath: config.configPath
       });
+
+      // Build options for the upload function
+      const uploadOptions = {
+        subtitleName: options.subtitleName,
+        isDefault: options.isDefault ?? false,
+        closedCaptions: options.closedCaptions ?? false,
+        textType: options.textType ?? 'subtitles',
+        passthrough: options.passthrough,
+        logger: {
+          info: (msg) => this.logInfo(msg),
+          warn: (msg) => this.logWarn(msg),
+          error: (msg) => this.logError(msg),
+          debug: (msg) => this.logInfo(msg)
+        }
+      };
+
+      // Call the core function directly
+      const uploadResult = await uploadFromMediaDescriptionIdWithIni(
+        finalMediaDescriptionId,
+        subtitlePath,
+        finalLanguage,
+        config.configPath,
+        uploadOptions
+      );
 
       this.updateProgress(85, 'Subtitle upload completed, processing results...');
 
-      // Parse result
-      let uploadResult;
-      try {
-        const jsonMatch = result.stdout.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          uploadResult = JSON.parse(jsonMatch[0]);
-        } else {
-          uploadResult = {
-            success: result.exitCode === 0,
-            message: result.stdout,
-            error: result.stderr
-          };
-        }
-      } catch (parseError) {
-        uploadResult = {
-          success: result.exitCode === 0,
-          message: result.stdout,
-          error: result.stderr,
-          parseError: parseError.message
-        };
-      }
-
-      if (!uploadResult.success && result.exitCode !== 0) {
-        throw new Error(`Subtitle upload failed with exit code ${result.exitCode}: ${result.stderr || result.stdout}`);
+      if (!uploadResult.success) {
+        throw new Error(`Subtitle upload failed: ${uploadResult.error || 'Unknown error'}`);
       }
 
       this.updateProgress(100, 'Subtitle-specific upload completed successfully');
@@ -173,8 +166,9 @@ class SubtitleSpecificWorker extends BaseWorker {
                               options.detectedLanguage ? 'frontend' :
                               detectedLanguage ? 'filename' : 'unknown',
           mediaIdSource: mediaDescriptionId ? 'provided' : 'excel_lookup',
-          exitCode: result.exitCode,
-          uploadTime: Date.now() - this.startTime
+          uploadTime: Date.now() - this.startTime,
+          muxAssetId: uploadResult.assetId,
+          muxTrackId: uploadResult.trackId || uploadResult.muxResult?.trackId
         }
       };
 

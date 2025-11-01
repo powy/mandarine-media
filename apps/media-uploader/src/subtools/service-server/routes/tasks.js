@@ -45,10 +45,20 @@ export function createTaskRoutes(taskManager) {
       // Validate parameters
       const validation = validateTaskParameters(type, parameters);
       if (!validation.valid) {
+        logger.error('Task validation failed', {
+          type,
+          parameters,
+          validationErrors: validation.errors
+        });
+
         return res.status(400).json({
           success: false,
           error: 'Validation failed',
-          errors: validation.errors
+          errors: validation.errors,
+          details: {
+            taskType: type,
+            failedValidations: validation.errors
+          }
         });
       }
 

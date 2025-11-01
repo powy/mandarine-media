@@ -1,31 +1,45 @@
-// Function wrapper for mux-subtitle-upload tool
-import dotenv from 'dotenv';
-import { validateConfig, validateEnvironment } from './schemas/inputSchema.js';
-import { createLogger } from './config/logger.js';
-import { loadConfigFile } from './utils/fileUtils.js';
-import { SubtitleUploadError, ErrorCodes, handleError, getErrorMessage, getErrorSuggestions } from './utils/errorHandler.js';
-import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
-import SubtitleService from './services/subtitleService.js';
+/**
+ * Function wrapper for mux-subtitle-upload tool
+ *
+ * REFACTORED: This is now a simple proxy to uploadFromJson
+ * All core logic has been moved to modular core functions
+ *
+ * This wrapper maintains backward compatibility with existing code
+ */
 
-// Load environment variables
-dotenv.config();
+import { uploadFromJson } from './uploadFromJson.js';
+import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 
 /**
  * Mux Subtitle Upload Function Wrapper
+ *
  * @param {Object} options - Upload options
- * @param {string} options.config - Configuration file path
- * @param {boolean} options.debug - Enable debug logging
- * @param {number} options.retry - Number of retry attempts (default: 3)
- * @param {boolean} options.dryRun - Validate configuration without uploading
- * @param {boolean} options.verbose - Verbose output
- * @param {boolean} options.quiet - Quiet mode (errors only)
- * @param {boolean} options.cleanup - Skip S3 file cleanup after upload (default: true)
- * @param {number} options.cleanupDelay - S3 cleanup delay in minutes (default: 120)
+ * @param {string} options.config - Configuration file path (JSON)
+ * @param {boolean} [options.debug] - Enable debug logging
+ * @param {number} [options.retry] - Number of retry attempts (default: 3)
+ * @param {boolean} [options.dryRun] - Validate configuration without uploading
+ * @param {boolean} [options.verbose] - Verbose output
+ * @param {boolean} [options.quiet] - Quiet mode (errors only)
+ * @param {boolean} [options.cleanup] - Skip S3 file cleanup after upload (default: true)
+ * @param {number} [options.cleanupDelay] - S3 cleanup delay in minutes (default: 120)
  * @param {string} [options.logFile] - Optional log file path for capturing all output
+ *
  * @returns {Promise<Object>} Upload results
+ * @returns {boolean} result.success - Whether all uploads succeeded
+ * @returns {number} result.totalSubtitles - Total number of subtitles processed
+ * @returns {number} result.successful - Number of successful uploads
+ * @returns {number} result.failed - Number of failed uploads
+ * @returns {Array} result.results - Individual upload results
+ *
+ * @throws {Error} If configuration file not found or invalid
+ *
+ * @example
+ * const result = await uploadSubtitlesToMux({
+ *   config: '/path/to/config.json',
+ *   verbose: true
+ * });
  */
 export async function uploadSubtitlesToMux(options) {
-  let logger = null;
   let restoreConsole = null;
 
   // Initialize file logger if logFile is provided
@@ -39,59 +53,39 @@ export async function uploadSubtitlesToMux(options) {
   }
 
   try {
-    // Load and validate configuration
-    const { config, configPath } = await loadConfigFile(options.config);
-    
-    // Override config with environment variables
-    mergeEnvironmentVariables(config);
-    
-    // Override config with options
-    mergeCLIOptions(config, options);
-    
-    // Validate configuration
-    const validatedConfig = validateConfig(config);
-    
-    // Initialize logger
-    logger = createLogger(validatedConfig);
-    logger.logStart('main-session', validatedConfig);
-    
-    // Display startup information
-    if (!validatedConfig._cli?.quiet) {
-      console.log('📝 Mux Subtitle Upload Tool v1.0.0\n');
-      console.log(`Configuration: ${configPath}`);
-      console.log(`Processing ${validatedConfig.subtitles.length} subtitle file(s)`);
-      console.log('');
+    // Validate required options
+    if (!options.config) {
+      throw new Error('Configuration file path is required (options.config)');
     }
-    
-    // Handle dry run
-    if (validatedConfig._cli?.dryRun) {
-      console.log('✓ Dry run - Configuration is valid, no upload performed\n');
-      logger.info('Dry run completed successfully');
-      return { dryRun: true, success: true };
+
+    // Display startup information if not quiet
+    if (!options.quiet) {
+      console.log('📝 Mux Subtitle Upload Tool v2.0.0 (Refactored)\n');
+      console.log(`Configuration: ${options.config}`);
     }
-    
-    // Initialize subtitle service
-    const subtitleService = new SubtitleService(validatedConfig, logger);
-    
-    // Process subtitles
-    const results = await processSubtitles(subtitleService, validatedConfig);
-    
-    // Display results
-    if (!validatedConfig._cli?.quiet) {
-      displayResults(results, validatedConfig);
+
+    // Call refactored uploadFromJson with all options
+    const result = await uploadFromJson(options.config, {
+      verbose: options.verbose || options.debug,
+      quiet: options.quiet,
+      dryRun: options.dryRun,
+      logFile: options.logFile,
+      logger: options.logger
+    });
+
+    // Display completion message if not quiet
+    if (!options.quiet && !options.dryRun) {
+      if (result.success) {
+        console.log(`\n✅ All ${result.successful} subtitle(s) uploaded successfully`);
+      } else {
+        console.log(`\n⚠️  Completed with ${result.failed} failure(s) out of ${result.totalSubtitles} subtitle(s)`);
+      }
     }
-    
-    logger.logSuccess('main-session', results.results);
-    
-    return results;
-    
+
+    return result;
+
   } catch (error) {
-    if (logger) {
-      logger.logError('wrapper-session', error);
-    }
-
-
-    handleError(error, logger);
+    console.error(`\n❌ Error: ${error.message}`);
     throw error;
   } finally {
     // Restore console if redirected
@@ -101,121 +95,5 @@ export async function uploadSubtitlesToMux(options) {
   }
 }
 
-function mergeEnvironmentVariables(config) {
-  const env = validateEnvironment(process.env);
-  
-  // Merge Mux auth from environment
-  if (env.MUX_TOKEN_ID) {
-    config.auth = config.auth || {};
-    config.auth.mux_token_id = env.MUX_TOKEN_ID;
-  }
-  
-  if (env.MUX_TOKEN_SECRET) {
-    config.auth = config.auth || {};
-    config.auth.mux_token_secret = env.MUX_TOKEN_SECRET;
-  }
-  
-  // Merge AWS auth from environment
-  if (env.AWS_ACCESS_KEY_ID) {
-    config.aws = config.aws || {};
-    config.aws.accessKeyId = env.AWS_ACCESS_KEY_ID;
-  }
-  
-  if (env.AWS_SECRET_ACCESS_KEY) {
-    config.aws = config.aws || {};
-    config.aws.secretAccessKey = env.AWS_SECRET_ACCESS_KEY;
-  }
-  
-  if (env.AWS_REGION) {
-    config.aws = config.aws || {};
-    config.aws.region = env.AWS_REGION;
-  }
-  
-  if (env.S3_BUCKET_NAME) {
-    config.s3 = config.s3 || {};
-    config.s3.bucket_name = env.S3_BUCKET_NAME;
-  }
-}
-
-function mergeCLIOptions(config, cliOptions) {
-  config._cli = {
-    dryRun: cliOptions.dryRun || false,
-    verbose: cliOptions.verbose || false,
-    quiet: cliOptions.quiet || false,
-    noCleanup: cliOptions.noCleanup || false
-  };
-  
-  // Store other CLI options in the options section
-  if (!config.options) {
-    config.options = {};
-  }
-  if (cliOptions.retry) {
-    config.options.max_retry_attempts = cliOptions.retry;
-  }
-  if (cliOptions.cleanupDelay) {
-    config.options.cleanup_delay_minutes = cliOptions.cleanupDelay;
-  }
-}
-
-async function processSubtitles(subtitleService, config) {
-  const results = [];
-  let successCount = 0;
-  let errorCount = 0;
-  
-  for (let index = 0; index < config.subtitles.length; index++) {
-    const subtitleConfig = config.subtitles[index];
-    try {
-      console.log(`Processing: ${subtitleConfig.language_code} - ${subtitleConfig.file_path}`);
-      
-      // Upload subtitle
-      const result = await subtitleService.uploadSingleSubtitle(subtitleConfig, index);
-      
-      results.push({
-        subtitle: subtitleConfig,
-        success: true,
-        result
-      });
-      
-      successCount++;
-      console.log(`✅ Success: ${subtitleConfig.language_code}`);
-      
-    } catch (error) {
-      results.push({
-        subtitle: subtitleConfig,
-        success: false,
-        error: error.message
-      });
-      
-      errorCount++;
-      console.error(`❌ Failed: ${subtitleConfig.language_code} - ${error.message}`);
-    }
-  }
-  
-  return {
-    success: errorCount === 0,
-    totalProcessed: results.length,
-    successCount,
-    errorCount,
-    results
-  };
-}
-
-function displayResults(results, config) {
-  console.log('📊 Upload Results:');
-  console.log(`  Total processed: ${results.totalProcessed}`);
-  console.log(`  Successful: ${results.successCount}`);
-  console.log(`  Failed: ${results.errorCount}`);
-  
-  if (results.errorCount > 0) {
-    console.log('\n❌ Failed uploads:');
-    results.results
-      .filter(r => !r.success)
-      .forEach(r => {
-        console.log(`  - ${r.subtitle.language_code}: ${r.error}`);
-      });
-  }
-  
-  console.log('');
-}
-
+// Export default for backward compatibility
 export default { uploadSubtitlesToMux };

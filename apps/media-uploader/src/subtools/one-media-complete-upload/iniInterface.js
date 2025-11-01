@@ -139,6 +139,9 @@ export async function batchPrepareExcelFromIni(iniFilePath, parentFolderPath, op
     results: []
   };
 
+  // Track season Excel path to use as template for episodes
+  let seasonExcelPath = null;
+
   // Process parent folder (season) first
   try {
     const parentResult = await prepareExcel({
@@ -146,8 +149,17 @@ export async function batchPrepareExcelFromIni(iniFilePath, parentFolderPath, op
       folder: parentFolderPath,
       mode: 'prepare',
       verbose: options.verbose ?? false,
-      isSeasonLevel: true
+      isSeasonLevel: true,
+      logFile: options.logFile
     });
+
+    // Save season Excel path for episode templates
+    if (parentResult.success && parentResult.excelPath) {
+      seasonExcelPath = parentResult.excelPath;
+      if (options.verbose) {
+        console.log(`📝 Season Excel path saved for episode templates: ${seasonExcelPath}`);
+      }
+    }
 
     results.processedCount++;
     results.results.push({
@@ -173,7 +185,9 @@ export async function batchPrepareExcelFromIni(iniFilePath, parentFolderPath, op
         folder: subfolderPath,
         mode: 'prepare',
         verbose: options.verbose ?? false,
-        isSeasonLevel: false
+        isSeasonLevel: false,
+        seasonExcelPath: seasonExcelPath,  // Pass season Excel path to use as template
+        logFile: options.logFile
       });
 
       results.processedCount++;
@@ -259,7 +273,8 @@ export async function batchUploadFromIni(iniFilePath, parentFolderPath, options 
         folder: parentFolderPath,
         mode: 'auto',
         verbose: options.verbose ?? false,
-        isSeasonLevel: true
+        isSeasonLevel: true,
+        logFile: options.logFile
       });
 
       results.processedCount++;
@@ -286,7 +301,8 @@ export async function batchUploadFromIni(iniFilePath, parentFolderPath, options 
           folder: subfolderPath,
           mode: 'auto',
           verbose: options.verbose ?? false,
-          isSeasonLevel: false
+          isSeasonLevel: false,
+          logFile: options.logFile
         });
 
         results.processedCount++;
@@ -314,7 +330,8 @@ export async function batchUploadFromIni(iniFilePath, parentFolderPath, options 
         folder: parentFolderPath,
         mode: 'auto',
         verbose: options.verbose ?? false,
-        isSeasonLevel: true
+        isSeasonLevel: true,
+        logFile: options.logFile
       });
 
       results.processedCount++;
@@ -345,7 +362,8 @@ export async function batchUploadFromIni(iniFilePath, parentFolderPath, options 
           folder: subfolderPath,
           mode: 'auto',
           verbose: options.verbose ?? false,
-          isSeasonLevel: false
+          isSeasonLevel: false,
+          logFile: options.logFile
         });
 
         results.processedCount++;

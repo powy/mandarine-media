@@ -82,6 +82,60 @@ archive.on('warning', function(err) {
 
 archive.pipe(output);
 
+/**
+ * Verify service interface dist folder exists and contains required files
+ */
+function verifyServiceInterfaceDist() {
+  const interfaceDistDir = path.join(rootDir, 'src', 'subtools', 'service-interface', 'dist');
+
+  // Check dist folder exists
+  if (!fs.existsSync(interfaceDistDir)) {
+    console.error('\n✗ ERROR: Service interface dist folder not found!');
+    console.error(`  Expected: ${interfaceDistDir}`);
+    console.error('\n  The service interface UI must be built before packaging.');
+    console.error('  This should have been done automatically, but the build may have failed.');
+    console.error('\n  To fix this, run: npm run build:ui:static');
+    console.error('  Then retry packaging.\n');
+    process.exit(1);
+  }
+
+  // Check index.html exists
+  const indexHtml = path.join(interfaceDistDir, 'index.html');
+  if (!fs.existsSync(indexHtml)) {
+    console.error('\n✗ ERROR: index.html missing in service interface dist!');
+    console.error(`  Expected: ${indexHtml}`);
+    console.error('\n  The build may have failed or been incomplete.');
+    console.error('  Run: npm run build:ui:static\n');
+    process.exit(1);
+  }
+
+  // Check for JS/CSS assets (build artifacts) - check recursively in assets folder
+  const assetsDir = path.join(interfaceDistDir, 'assets');
+  let hasJsAssets = false;
+  let hasCssAssets = false;
+
+  if (fs.existsSync(assetsDir)) {
+    const assetFiles = fs.readdirSync(assetsDir);
+    hasJsAssets = assetFiles.some(f => f.endsWith('.js'));
+    hasCssAssets = assetFiles.some(f => f.endsWith('.css'));
+  } else {
+    // Fallback: check directly in dist (older build tools)
+    const files = fs.readdirSync(interfaceDistDir);
+    hasJsAssets = files.some(f => f.endsWith('.js'));
+    hasCssAssets = files.some(f => f.endsWith('.css'));
+  }
+
+  if (!hasJsAssets || !hasCssAssets) {
+    console.error('\n✗ ERROR: Service interface dist is incomplete!');
+    console.error(`  Missing ${!hasJsAssets ? 'JavaScript' : 'CSS'} assets`);
+    console.error('\n  The build may have failed.');
+    console.error('  Run: npm run build:ui:static\n');
+    process.exit(1);
+  }
+
+  return interfaceDistDir;
+}
+
 // Add files to archive
 console.log('Adding files to package...');
 
@@ -115,14 +169,10 @@ for (const file of requiredFiles) {
 archive.directory(srcDir, 'src');
 console.log('  ✓ Source code');
 
-// Service interface (built web UI)
-const interfaceDistDir = path.join(rootDir, 'src', 'subtools', 'service-interface', 'dist');
-if (fs.existsSync(interfaceDistDir)) {
-  archive.directory(interfaceDistDir, 'interface');
-  console.log('  ✓ Service interface (built UI)');
-} else {
-  console.warn('  ⚠ Service interface dist not found - run build first');
-}
+// Service interface (built web UI) - MANDATORY verification
+const interfaceDistDir = verifyServiceInterfaceDist();
+archive.directory(interfaceDistDir, 'interface');
+console.log('  ✓ Service interface (built UI)');
 
 // Start/Stop batch files (PRIMARY METHOD)
 archive.file(path.join(rootDir, 'START.bat'), { name: 'START.bat' });

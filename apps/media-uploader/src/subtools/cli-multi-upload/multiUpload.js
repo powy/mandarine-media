@@ -8,9 +8,21 @@ import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 import { fileURLToPath } from 'url';
+import { createDualLogger } from '../excel-batch-editor/utils/syncFileLogger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Log to both console and file logger if available
+ */
+function log(message, logger) {
+  console.log(message);
+  if (logger) {
+    const stripped = typeof message === 'string' ? message.replace(/\u001b\[\d+m/g, '') : String(message);
+    logger.info(stripped);
+  }
+}
 
 /**
  * Upload multiple folders with staggered subprocess execution
@@ -26,6 +38,9 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
   const delay = (options.delay || 10) * 1000; // Convert to milliseconds
   const verbose = options.verbose || false;
   const maxConcurrent = options.maxConcurrent || null;
+
+  // Create logger if logFile is provided
+  const logger = options.logFile ? createDualLogger(options.logFile, verbose) : null;
 
   // Validate INI file
   if (!await fs.pathExists(iniFilePath)) {
@@ -54,18 +69,18 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
   }
 
   if (invalidFolders.length > 0 && verbose) {
-    console.log(chalk.yellow(`\n⚠️  Skipping ${invalidFolders.length} invalid paths:`));
+    log(chalk.yellow(`\n⚠️  Skipping ${invalidFolders.length} invalid paths:`), logger);
     invalidFolders.forEach(({ path, reason }) => {
-      console.log(chalk.gray(`  • ${path} - ${reason}`));
+      log(chalk.gray(`  • ${path} - ${reason}`), logger);
     });
   }
 
-  console.log(chalk.blue.bold(`\n🚀 Multi-Upload: ${validFolders.length} folders\n`));
-  console.log(chalk.gray(`Delay between starts: ${options.delay || 10} seconds`));
+  log(chalk.blue.bold(`\n🚀 Multi-Upload: ${validFolders.length} folders\n`), logger);
+  log(chalk.gray(`Delay between starts: ${options.delay || 10} seconds`), logger);
   if (maxConcurrent) {
-    console.log(chalk.gray(`Max concurrent: ${maxConcurrent} processes`));
+    log(chalk.gray(`Max concurrent: ${maxConcurrent} processes`), logger);
   }
-  console.log('');
+  log('', logger);
 
   // Track all processes
   const processes = new Map();
@@ -86,9 +101,9 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
       const folderName = path.basename(folderPath);
       const startTime = Date.now();
 
-      console.log(chalk.cyan(`📦 [${index + 1}/${validFolders.length}] Starting: ${folderName}`));
+      log(chalk.cyan(`📦 [${index + 1}/${validFolders.length}] Starting: ${folderName}`), logger);
       if (verbose) {
-        console.log(chalk.gray(`   Path: ${folderPath}`));
+        log(chalk.gray(`   Path: ${folderPath}`), logger);
       }
 
       runningCount++;
@@ -114,7 +129,7 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
         childProcess.stdout.on('data', (data) => {
           const lines = data.toString().split('\n').filter(line => line.trim());
           lines.forEach(line => {
-            console.log(chalk.gray(`   [${folderName}] ${line}`));
+            log(chalk.gray(`   [${folderName}] ${line}`), logger);
           });
         });
       }
@@ -124,7 +139,7 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
         childProcess.stderr.on('data', (data) => {
           const lines = data.toString().split('\n').filter(line => line.trim());
           lines.forEach(line => {
-            console.log(chalk.red(`   [${folderName}] ERR: ${line}`));
+            log(chalk.red(`   [${folderName}] ERR: ${line}`), logger);
           });
         });
       }
@@ -132,7 +147,7 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
       // Handle messages from worker
       childProcess.on('message', (message) => {
         if (message.type === 'progress' && verbose) {
-          console.log(chalk.gray(`   [${folderName}] ${message.message}`));
+          log(chalk.gray(`   [${folderName}] ${message.message}`), logger);
         } else if (message.type === 'result') {
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -141,14 +156,14 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
 
           if (message.success) {
             successCount++;
-            console.log(chalk.green(`✅ [${completedCount}/${validFolders.length}] Success: ${folderName} (${duration}s)`));
+            log(chalk.green(`✅ [${completedCount}/${validFolders.length}] Success: ${folderName} (${duration}s)`), logger);
             if (message.mediaDescriptionId) {
-              console.log(chalk.gray(`   Media ID: ${message.mediaDescriptionId}`));
+              log(chalk.gray(`   Media ID: ${message.mediaDescriptionId}`), logger);
             }
           } else {
             failedCount++;
-            console.log(chalk.red(`❌ [${completedCount}/${validFolders.length}] Failed: ${folderName} (${duration}s)`));
-            console.log(chalk.red(`   Error: ${message.error || 'Unknown error'}`));
+            log(chalk.red(`❌ [${completedCount}/${validFolders.length}] Failed: ${folderName} (${duration}s)`), logger);
+            log(chalk.red(`   Error: ${message.error || 'Unknown error'}`), logger);
           }
 
           results.push({
@@ -173,8 +188,8 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
         completedCount++;
         failedCount++;
 
-        console.log(chalk.red(`❌ [${completedCount}/${validFolders.length}] Process Error: ${folderName} (${duration}s)`));
-        console.log(chalk.red(`   Error: ${error.message}`));
+        log(chalk.red(`❌ [${completedCount}/${validFolders.length}] Process Error: ${folderName} (${duration}s)`), logger);
+        log(chalk.red(`   Error: ${error.message}`), logger);
 
         results.push({
           folder: folderPath,
@@ -200,8 +215,8 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
             completedCount++;
             failedCount++;
 
-            console.log(chalk.red(`❌ [${completedCount}/${validFolders.length}] Exit Error: ${folderName} (${duration}s)`));
-            console.log(chalk.red(`   Exit code: ${code}, Signal: ${signal || 'none'}`));
+            log(chalk.red(`❌ [${completedCount}/${validFolders.length}] Exit Error: ${folderName} (${duration}s)`), logger);
+            log(chalk.red(`   Exit code: ${code}, Signal: ${signal || 'none'}`), logger);
 
             results.push({
               folder: folderPath,
@@ -245,7 +260,7 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
 
       // Wait for delay before starting next (except for last one)
       if (i < validFolders.length - 1) {
-        console.log(chalk.gray(`⏱️  Waiting ${options.delay || 10}s before next start...\n`));
+        log(chalk.gray(`⏱️  Waiting ${options.delay || 10}s before next start...\n`), logger);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -259,20 +274,20 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
 
   // Print failed folders list if any
   if (failedCount > 0) {
-    console.log(chalk.red.bold('\n❌ Failed Folders:'));
+    log(chalk.red.bold('\n❌ Failed Folders:'), logger);
     results
       .filter(result => !result.success)
       .forEach(result => {
-        console.log(chalk.red(`  ${result.folderName}`));
+        log(chalk.red(`  ${result.folderName}`), logger);
       });
   }
 
   // Print summary
-  console.log(chalk.blue.bold('\n📊 Upload Summary:'));
-  console.log(chalk.green(`✅ Successful: ${successCount}/${validFolders.length}`));
-  console.log(chalk.red(`❌ Failed: ${failedCount}/${validFolders.length}`));
+  log(chalk.blue.bold('\n📊 Upload Summary:'), logger);
+  log(chalk.green(`✅ Successful: ${successCount}/${validFolders.length}`), logger);
+  log(chalk.red(`❌ Failed: ${failedCount}/${validFolders.length}`), logger);
   if (invalidFolders.length > 0) {
-    console.log(chalk.yellow(`⚠️  Skipped: ${invalidFolders.length}`));
+    log(chalk.yellow(`⚠️  Skipped: ${invalidFolders.length}`), logger);
   }
 
   return {
@@ -294,6 +309,11 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
  * @returns {Promise<Object>} Upload results
  */
 export async function multiUploadFromParent(iniFilePath, parentFolderPath, options = {}) {
+  const verbose = options.verbose || false;
+
+  // Create logger if logFile is provided
+  const logger = options.logFile ? createDualLogger(options.logFile, verbose) : null;
+
   // Validate parent folder
   if (!await fs.pathExists(parentFolderPath)) {
     throw new Error(`Parent folder not found: ${parentFolderPath}`);
@@ -318,7 +338,7 @@ export async function multiUploadFromParent(iniFilePath, parentFolderPath, optio
     } catch (error) {
       // Skip items that can't be accessed
       if (options.verbose) {
-        console.log(chalk.yellow(`⚠️  Skipping ${item}: ${error.message}`));
+        log(chalk.yellow(`⚠️  Skipping ${item}: ${error.message}`), logger);
       }
     }
   }
@@ -327,7 +347,7 @@ export async function multiUploadFromParent(iniFilePath, parentFolderPath, optio
     throw new Error(`No subfolders found in: ${parentFolderPath}`);
   }
 
-  console.log(chalk.blue(`🔍 Found ${subfolders.length} subfolders in: ${path.basename(parentFolderPath)}\n`));
+  log(chalk.blue(`🔍 Found ${subfolders.length} subfolders in: ${path.basename(parentFolderPath)}\n`), logger);
 
   // Use multiUploadFromList to process subfolders
   return await multiUploadFromList(iniFilePath, subfolders, options);

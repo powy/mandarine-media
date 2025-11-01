@@ -39,6 +39,9 @@ const logWriter = {
   },
   warn(message) {
     this.write(`[WARN] ${message}`);
+  },
+  debug(message) {
+    this.write(`[DEBUG] ${message}`);
   }
 };
 
@@ -104,7 +107,8 @@ async function executeTask() {
           folder: PARAMS.folder,
           config: PARAMS.config,
           verbose: true,
-          mode: 'prepare'
+          mode: 'prepare',
+          logFile: LOG_FILE
         });
         return await uploader.prepareExcel();
       },
@@ -115,36 +119,90 @@ async function executeTask() {
           folder: PARAMS.folder,
           config: PARAMS.config,
           verbose: true,
-          mode: 'upload'
+          mode: 'upload',
+          logFile: LOG_FILE
         });
         return await uploader.executeUpload();
       },
 
       uploadPicture: async () => {
-        const { pictureUploadFromIniWithMetadata } = await import('../picture-upload/iniInterface.js');
-        return await pictureUploadFromIniWithMetadata(
-          PARAMS.config,      // INI config file path
-          PARAMS.picture,     // picture file path
-          {
-            format: PARAMS.resolution  // metadata
-          },
-          {
-            verbose: true,
-            logFile: LOG_FILE
-          }
+        // UPDATED: Now uses refactored Function D (Excel-based)
+        const { uploadPictureAndLinkToMediaWithExcel } = await import('../picture-upload/refactored/index.js');
+        return await uploadPictureAndLinkToMediaWithExcel(
+          PARAMS.picture,      // picturePath
+          PARAMS.format,       // pictureFormat (e.g., '1920_1080')
+          PARAMS.excelPath,    // excelPath (folder containing 0_desc*.xlsx)
+          PARAMS.config        // iniPath
+        );
+      },
+
+      uploadPictureWithIni: async () => {
+        // NEW: Function C - Upload with INI (known format, known media ID)
+        const { uploadPictureAndLinkToMediaWithIni } = await import('../picture-upload/refactored/index.js');
+        return await uploadPictureAndLinkToMediaWithIni(
+          PARAMS.picture,           // picturePath
+          PARAMS.format,            // pictureFormat (e.g., '1920_1080')
+          PARAMS.mediaDescriptionId, // mediaDescriptionId (UUID)
+          PARAMS.config             // iniPath
+        );
+      },
+
+      uploadPictureWithFormatDetection: async () => {
+        // NEW: Function E - Upload with format detection (known media ID)
+        const { uploadPictureAndLinkToMediaWithFormatDetection } = await import('../picture-upload/refactored/index.js');
+        const { readIniFile, iniToStandardConfig } = await import('../../shared/utils/iniParser.js');
+
+        // Read INI to get config
+        const iniConfig = await readIniFile(PARAMS.config);
+        const config = iniToStandardConfig(iniConfig);
+
+        // Map backend → api for compatibility (INI uses 'backend', code uses 'api')
+        if (config.backend && !config.api) {
+          config.api = config.backend;
+        }
+
+        return await uploadPictureAndLinkToMediaWithFormatDetection(
+          PARAMS.picture,           // picturePath
+          PARAMS.mediaDescriptionId, // mediaDescriptionId (UUID)
+          config,                   // config object
+          { verbose: true }
+        );
+      },
+
+      uploadPicturesInFolderWithIni: async () => {
+        // NEW: Function H - Batch upload folder with format detection
+        const { uploadPicturesInFolderWithFormatDetectionWithIni } = await import('../picture-upload/refactored/index.js');
+        return await uploadPicturesInFolderWithFormatDetectionWithIni(
+          PARAMS.folderPath,        // folderPath
+          PARAMS.mediaDescriptionId, // mediaDescriptionId (UUID)
+          PARAMS.config             // iniPath
         );
       },
 
       uploadSubtitleSpecific: async () => {
-        const { uploadSubtitleSpecificFromIni } = await import('../subtitle-specific-upload/iniInterface.js');
-        return await uploadSubtitleSpecificFromIni(
-          PARAMS.config,      // INI config file path
+        // MIGRATED: Now uses unified mux-subtitle-upload system
+        const { uploadFromExcelWithIni } = await import('../mux-subtitle-upload/iniWrappers/uploadFromExcelWithIni.js');
+
+        // Find Excel file in folder (pattern: 0_desc*.xlsx)
+        const fsModule = await import('fs/promises');
+        const pathModule = await import('path');
+        const files = await fsModule.default.readdir(PARAMS.folder);
+        const excelFile = files.find(file => file.startsWith('0_desc') && file.endsWith('.xlsx'));
+
+        if (!excelFile) {
+          throw new Error(`No Excel file found matching pattern 0_desc*.xlsx in folder: ${PARAMS.folder}`);
+        }
+
+        const excelPath = pathModule.default.join(PARAMS.folder, excelFile);
+
+        return await uploadFromExcelWithIni(
+          excelPath,          // Excel file path
           PARAMS.subtitle,    // subtitle file path
-          PARAMS.folder,      // folder path for media lookup
-          PARAMS.language,    // language code (optional, auto-detected if null)
+          PARAMS.language,    // language code
+          PARAMS.config,      // INI config file path
           {
             verbose: true,
-            logFile: LOG_FILE
+            logger: logWriter
           }
         );
       },
@@ -159,15 +217,69 @@ async function executeTask() {
       },
 
       resendSubtitles2: async () => {
-        const { resendSubtitles2FromIni } = await import('../subtitle-specific-upload/resendSubtitles2IniInterface.js');
-        return await resendSubtitles2FromIni(
-          PARAMS.config,      // INI config file path
+        // MIGRATED: Now uses unified mux-subtitle-upload system
+        const { resendSubtitlesFromIni } = await import('../mux-subtitle-upload/iniWrappers/resendSubtitlesFromIni.js');
+        return await resendSubtitlesFromIni(
           PARAMS.folder,      // folder path containing Excel and subtitles
+          PARAMS.config,      // INI config file path
           {
             verbose: true,
-            dryRun: PARAMS.dryRun || false
+            dryRun: PARAMS.dryRun || false,
+            logger: logWriter
           }
         );
+      },
+
+      uploadSubtitleByMediaDescriptionId: async () => {
+        // Uses unified mux-subtitle-upload system (Phase 4 migration)
+        const { uploadFromMediaDescriptionIdWithIni } = await import('../mux-subtitle-upload/iniWrappers/uploadFromMediaDescriptionIdWithIni.js');
+
+        logWriter.info(`Uploading subtitle by media description ID: ${PARAMS.mediaDescriptionId}`);
+
+        return await uploadFromMediaDescriptionIdWithIni(
+          PARAMS.mediaDescriptionId,  // Media description UUID from backend
+          PARAMS.subtitle,             // Subtitle file path
+          PARAMS.language,             // Language code (fr, en, ko)
+          PARAMS.config,               // INI config file path
+          {
+            verbose: true,
+            logger: logWriter
+          }
+        );
+      },
+
+      uploadSubtitleByMuxAssetId: async () => {
+        // Uses unified mux-subtitle-upload system (Phase 4 migration)
+        const { uploadFromAssetIdWithIni } = await import('../mux-subtitle-upload/iniWrappers/uploadFromAssetIdWithIni.js');
+
+        logWriter.info(`Uploading subtitle by Mux asset ID: ${PARAMS.muxAssetId}`);
+
+        return await uploadFromAssetIdWithIni(
+          PARAMS.muxAssetId,           // Mux asset ID (direct from Mux platform)
+          PARAMS.subtitle,             // Subtitle file path
+          PARAMS.language,             // Language code (fr, en, ko)
+          PARAMS.config,               // INI config file path
+          {
+            verbose: true,
+            logger: logWriter
+          }
+        );
+      },
+
+      deleteSubtitleByMediaDescriptionId: async () => {
+        // Uses mux-subtitle-delete tool (Layer 4: INI config wrapper)
+        const { deleteWithIniConfig } = await import('../mux-subtitle-delete/core/deleteWithIniConfig.js');
+
+        logWriter.info(`Deleting subtitle by media description ID: ${PARAMS.mediaDescriptionId}`);
+        logWriter.info(`Language: ${PARAMS.language}`);
+
+        return await deleteWithIniConfig({
+          mediaDescriptionId: PARAMS.mediaDescriptionId,  // Media description UUID from backend
+          language: PARAMS.language,                       // Language code (fr, en, ko)
+          iniFilePath: PARAMS.config,                      // INI config file path
+          dryRun: false,
+          logger: logWriter
+        });
       },
 
       // Batch operations
@@ -176,7 +288,7 @@ async function executeTask() {
         return await batchPrepareExcelFromIni(
           PARAMS.config,
           PARAMS.parentFolder,
-          { verbose: true }
+          { verbose: true, logFile: LOG_FILE }
         );
       },
 
@@ -187,7 +299,8 @@ async function executeTask() {
           PARAMS.parentFolder,
           {
             verbose: true,
-            delay: 10
+            delay: 10,
+            logFile: LOG_FILE
           }
         );
       },
@@ -216,23 +329,16 @@ async function executeTask() {
         });
       },
 
-      uploadSubtitlesToMuxBatch: async () => {
-        const { batchSubtitleUpload } = await import('../mux-subtitle-upload/wrapper.js');
-        return await batchSubtitleUpload({
-          config: PARAMS.config,
-          parentFolder: PARAMS.parentFolder,
-          verbose: true
-        });
-      },
-
       resendSubtitles2Batch: async () => {
-        const { batchResendSubtitles2FromIni } = await import('../subtitle-specific-upload/batchResendSubtitles2IniInterface.js');
-        return await batchResendSubtitles2FromIni(
-          PARAMS.config,         // INI config file path
+        // MIGRATED: Now uses unified mux-subtitle-upload system
+        const { batchResendSubtitlesFromIni } = await import('../mux-subtitle-upload/iniWrappers/batchResendSubtitlesFromIni.js');
+        return await batchResendSubtitlesFromIni(
           PARAMS.parentFolder,   // parent folder containing subfolders
+          PARAMS.config,         // INI config file path
           {
             verbose: true,
-            dryRun: PARAMS.dryRun || false
+            dryRun: PARAMS.dryRun || false,
+            logger: logWriter
           }
         );
       },
@@ -258,6 +364,137 @@ async function executeTask() {
           PARAMS.config,
           { verbose: true, dryRun: false, logFile: LOG_FILE }
         );
+      },
+
+      propagateSeasonDataFromMediaDescriptionWithIni: async () => {
+        const { propagateSeasonDataFromMediaDescriptionWithIni } = await import('../propagate-data/wrapper.js');
+
+        logWriter.info(`Propagating season data by media description ID: ${PARAMS.mediaDescriptionId}`);
+        logWriter.info(`Using INI config: ${PARAMS.config}`);
+
+        return await propagateSeasonDataFromMediaDescriptionWithIni(
+          PARAMS.mediaDescriptionId,  // Media description ID
+          PARAMS.config,               // INI file path
+          {
+            verbose: true,
+            dryRun: false,
+            logFile: LOG_FILE
+          }
+        );
+      },
+
+      propagateSeasonDataFromSeasonIdWithIni: async () => {
+        const { propagateSeasonDataFromSeasonIdWithIni } = await import('../propagate-data/wrapper.js');
+
+        logWriter.info(`Propagating season data by season entity ID: ${PARAMS.seasonEntityId}`);
+        logWriter.info(`Using INI config: ${PARAMS.config}`);
+
+        return await propagateSeasonDataFromSeasonIdWithIni(
+          PARAMS.seasonEntityId,  // Season entity ID
+          PARAMS.config,          // INI file path
+          {
+            verbose: true,
+            dryRun: false,
+            logFile: LOG_FILE
+          }
+        );
+      },
+
+      // Excel edition by Column A description
+      editExcelSingleByDescription: async () => {
+        const { updateSingleExcelByDescriptionFromIni } = await import('../excel-batch-editor/iniInterface.js');
+
+        logWriter.info(`Editing single Excel file by description`);
+        logWriter.info(`Folder: ${PARAMS.folder}`);
+        logWriter.info(`Description: ${PARAMS.descriptionText}`);
+        logWriter.info(`New Value: ${PARAMS.newValue}`);
+
+        // Validate required parameters
+        if (!PARAMS.config) {
+          throw new Error('Missing config file path');
+        }
+        if (!PARAMS.folder) {
+          throw new Error('Missing folder path');
+        }
+        if (!PARAMS.descriptionText) {
+          throw new Error('Missing description text');
+        }
+        if (PARAMS.newValue === undefined || PARAMS.newValue === null) {
+          throw new Error('Missing new value');
+        }
+
+        return await updateSingleExcelByDescriptionFromIni(
+          PARAMS.config,           // INI config file
+          PARAMS.folder,           // Treated folder path
+          PARAMS.descriptionText,  // Column A description
+          PARAMS.newValue,         // New value for Column C
+          {
+            verbose: true,
+            logFile: LOG_FILE,
+            dryRun: PARAMS.dryRun || false
+          }
+        );
+      },
+
+      editExcelBatchByDescription: async () => {
+        const { updateAllExcelsByDescriptionRecursiveFromIni } = await import('../excel-batch-editor/iniInterface.js');
+
+        logWriter.info(`Editing batch Excel files by description`);
+        logWriter.info(`Parent Folder: ${PARAMS.parentFolder}`);
+        logWriter.info(`Description: ${PARAMS.descriptionText}`);
+        logWriter.info(`New Value: ${PARAMS.newValue}`);
+
+        // Validate required parameters
+        if (!PARAMS.config) {
+          throw new Error('Missing config file path');
+        }
+        if (!PARAMS.parentFolder) {
+          throw new Error('Missing parent folder path');
+        }
+        if (!PARAMS.descriptionText) {
+          throw new Error('Missing description text');
+        }
+        if (PARAMS.newValue === undefined || PARAMS.newValue === null) {
+          throw new Error('Missing new value');
+        }
+
+        return await updateAllExcelsByDescriptionRecursiveFromIni(
+          PARAMS.config,
+          PARAMS.parentFolder,     // Parent folder path
+          PARAMS.descriptionText,
+          PARAMS.newValue,
+          {
+            verbose: true,
+            logFile: LOG_FILE,
+            dryRun: PARAMS.dryRun || false
+          }
+        );
+      },
+
+      // Regenerate episode names from season name
+      regenerateEpisodeNames: async () => {
+        const { regenerateEpisodeNamesFromSeasonWithIni } = await import('../excel-batch-editor/iniInterface.js');
+
+        logWriter.info(`Regenerating episode names from season`);
+        logWriter.info(`Parent Folder: ${PARAMS.parentFolder}`);
+
+        // Validate required parameters
+        if (!PARAMS.config) {
+          throw new Error('Missing config file path');
+        }
+        if (!PARAMS.parentFolder) {
+          throw new Error('Missing parent folder path');
+        }
+
+        return await regenerateEpisodeNamesFromSeasonWithIni(
+          PARAMS.config,
+          PARAMS.parentFolder,
+          {
+            verbose: true,
+            logFile: LOG_FILE,
+            dryRun: PARAMS.dryRun || false
+          }
+        );
       }
     };
 
@@ -269,10 +506,19 @@ async function executeTask() {
     logWriter.info('Executing function...');
     const result = await executeFn();
 
-    if (result.success) {
+    // Handle both old format (result.success) and new format (presence of data fields)
+    const hasError = result.success === false || result.error;
+    const hasSuccessData = result.pictureId || result.uploaded || result.success === true;
+
+    if (hasError) {
+      logWriter.warn('Task completed with errors');
+      if (result.error) {
+        logWriter.error(`Error: ${result.error}`);
+      }
+    } else if (hasSuccessData) {
       logWriter.info('Task completed successfully');
     } else {
-      logWriter.warn('Task completed with errors');
+      logWriter.warn('Task completed with uncertain status');
     }
     logWriter.info(`Result: ${JSON.stringify(result, null, 2)}`);
 

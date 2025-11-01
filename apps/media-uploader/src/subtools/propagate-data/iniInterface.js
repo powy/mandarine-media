@@ -4,7 +4,7 @@
  */
 
 import fs from 'fs-extra';
-import { propagateSeasonData } from './wrapper.js';
+import { propagateSeasonDataFromMediaDescriptionWithIni } from './wrapper.js';
 
 /**
  * Propagate season data from INI configuration
@@ -54,14 +54,12 @@ export async function propagateSeasonDataFromIni(iniFilePath, seasonId, options 
     throw new Error('Season ID is required and must be a string');
   }
 
-  // Call existing wrapper - it already handles INI files via loadJsonFile()
-  // The wrapper's loadJsonFile() detects .ini extension and converts to JSON
-  return await propagateSeasonData({
-    seasonId,
-    config: iniFilePath,
-    verbose: options.verbose ?? false,
-    dryRun: options.dryRun ?? false
-  });
+  // Use the new Level 4 function directly
+  return await propagateSeasonDataFromMediaDescriptionWithIni(
+    seasonId,      // Actually media description ID
+    iniFilePath,
+    options
+  );
 }
 
 export default {

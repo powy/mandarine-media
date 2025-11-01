@@ -196,16 +196,35 @@ export class ExcelService {
       const targetPath = path.join(targetFolder, excelFileName);
 
       // Load season Excel as template
+      this.logger.info(`🔍 DIAGNOSTIC: Loading season Excel from: ${seasonExcelPath}`);
       const seasonWorkbook = new ExcelJS.Workbook();
       await seasonWorkbook.xlsx.readFile(seasonExcelPath);
+      this.logger.info(`✓ Season Excel workbook loaded successfully`);
 
       const descriptionSheet = seasonWorkbook.getWorksheet('Description');
       if (!descriptionSheet) {
         throw new Error('Description sheet not found in season Excel');
       }
 
+      // DIAGNOSTIC: Dump ALL Description sheet data from loaded season Excel
+      this.logger.info(`🔍 DIAGNOSTIC: Reading ALL Description sheet data from season Excel:`);
+      const seasonDescriptionData = [];
+      descriptionSheet.eachRow((row, rowNumber) => {
+        const col1 = row.getCell(1).value;
+        const col2 = row.getCell(2).value;
+        const col3 = row.getCell(3).value;
+        seasonDescriptionData.push({row: rowNumber, colA: col1, colB: col2, colC: col3});
+        this.logger.info(`  Row ${rowNumber}: A="${col1}" | B="${col2}" | C="${col3}"`);
+      });
+      this.logger.info(`📊 Total Description sheet rows in season Excel: ${seasonDescriptionData.length}`);
+
       // Extract episode number from folder name if numeric
       const episodeNumber = this.extractEpisodeNumber(folderName);
+      if (episodeNumber !== null) {
+        this.logger.info(`Extracted episode number from folder name "${folderName}": ${episodeNumber}`);
+      } else {
+        this.logger.warn(`Could not extract episode number from folder name "${folderName}" (non-numeric folder name)`);
+      }
 
       // Get season name from the template
       let seasonName = null;
@@ -214,44 +233,84 @@ export class ExcelService {
         const valueCell = row.getCell(3);
         if (keyCell.value && keyCell.value.toString() === 'season_name') {
           seasonName = valueCell.value ? valueCell.value.toString() : null;
+          this.logger.info(`Found season_name in Description sheet: "${seasonName}"`);
         }
       });
+
+      if (!seasonName) {
+        this.logger.warn('season_name not found or empty in season Excel Description sheet');
+      }
 
       // Update episode-specific fields in Description sheet
-      descriptionSheet.eachRow((row) => {
-        const keyCell = row.getCell(2);
-        const valueCell = row.getCell(3);
+      // FIX: Use two-pass approach to ensure cell modifications persist
+      // Pass 1: Build a map of keys to row numbers
+      // Pass 2: Update cells using direct row access (proven working pattern)
+      this.logger.info(`Processing episode: folder="${folderName}", episodeNumber=${episodeNumber}, seasonName="${seasonName}"`);
 
+      const rowMap = new Map();
+      descriptionSheet.eachRow((row, rowNumber) => {
+        const keyCell = row.getCell(2);
         if (keyCell.value) {
           const key = keyCell.value.toString();
-          switch (key) {
-            case 'episode_title':
-              if (episodeNumber !== null && seasonName) {
-                valueCell.value = `${seasonName} episode ${episodeNumber}`;
-              }
-              break;
-            case 'slug':
-              if (episodeNumber !== null && seasonName) {
-                const baseSlug = seasonName
-                  .toLowerCase()
-                  .replace(/[^a-z0-9\s-]/g, '')
-                  .replace(/\s+/g, '-')
-                  .replace(/-+/g, '-')
-                  .trim('-');
-                valueCell.value = `${baseSlug}-episode-${episodeNumber}`;
-              }
-              break;
-            case 'episode_number':
-              if (episodeNumber !== null) {
-                valueCell.value = episodeNumber;
-              }
-              break;
-            case 'media_type':
-              valueCell.value = 'video'; // Episodes are videos, not seasons
-              break;
-          }
+          rowMap.set(key, rowNumber);
         }
       });
+
+      this.logger.info(`Description sheet contains ${rowMap.size} keys: ${Array.from(rowMap.keys()).join(', ')}`);
+
+      // Update episode_title
+      if (rowMap.has('episode_title')) {
+        if (episodeNumber !== null && seasonName) {
+          const row = descriptionSheet.getRow(rowMap.get('episode_title'));
+          row.getCell(3).value = `${seasonName} episode ${episodeNumber}`;
+          this.logger.info(`✓ Set episode_title = "${seasonName} episode ${episodeNumber}"`);
+        } else {
+          this.logger.warn(`✗ Cannot set episode_title (episodeNumber=${episodeNumber}, seasonName="${seasonName}")`);
+        }
+      } else {
+        this.logger.warn('✗ Key "episode_title" not found in season Excel Description sheet');
+      }
+
+      // Update slug
+      if (rowMap.has('slug')) {
+        if (episodeNumber !== null && seasonName) {
+          const row = descriptionSheet.getRow(rowMap.get('slug'));
+          const baseSlug = seasonName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim('-');
+          row.getCell(3).value = `${baseSlug}-episode-${episodeNumber}`;
+          this.logger.info(`✓ Set slug = "${baseSlug}-episode-${episodeNumber}"`);
+        } else {
+          this.logger.warn(`✗ Cannot set slug (episodeNumber=${episodeNumber}, seasonName="${seasonName}")`);
+        }
+      } else {
+        this.logger.warn('✗ Key "slug" not found in season Excel Description sheet');
+      }
+
+      // Update episode_number
+      if (rowMap.has('episode_number')) {
+        if (episodeNumber !== null) {
+          const row = descriptionSheet.getRow(rowMap.get('episode_number'));
+          row.getCell(3).value = episodeNumber;
+          this.logger.info(`✓ Set episode_number = "${episodeNumber}"`);
+        } else {
+          this.logger.warn(`✗ Cannot set episode_number (episodeNumber=${episodeNumber}, folder="${folderName}")`);
+        }
+      } else {
+        this.logger.warn('✗ Key "episode_number" not found in season Excel Description sheet');
+      }
+
+      // Update media_type (unconditional - episodes are always videos)
+      if (rowMap.has('media_type')) {
+        const row = descriptionSheet.getRow(rowMap.get('media_type'));
+        row.getCell(3).value = 'video';
+        this.logger.info('✓ Set media_type = "video"');
+      } else {
+        this.logger.warn('✗ Key "media_type" not found in season Excel Description sheet');
+      }
 
       // Remove the ID line from Description sheet (episodes get their own ID when uploaded)
       const rowsToDelete = [];
@@ -269,26 +328,57 @@ export class ExcelService {
       });
 
       // Clear the Files sheet data (columns B-F) while keeping structure
+      // BUT delete entire row if row type is "ID" (same logic as Description sheet)
       const filesSheet = seasonWorkbook.getWorksheet('Files');
       if (filesSheet) {
-        // Clear data cells (columns 2-6) while keeping row type labels in column 1
+        const filesRowsToDelete = [];
+
         filesSheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
           if (rowNumber > 1) { // Skip header row
-            // Clear columns: File name (2), Poster (3), Fr subtitle (4), En subtitle (5), Ko Subtitle (6)
-            row.getCell(2).value = null; // File name
-            row.getCell(3).value = null; // Poster
-            row.getCell(4).value = null; // Fr subtitle
-            row.getCell(5).value = null; // En subtitle
-            row.getCell(6).value = null; // Ko Subtitle
-            // Keep column 1 (row type label) unchanged
+            const rowTypeCell = row.getCell(1);
+            const rowType = rowTypeCell.value?.toString().toLowerCase();
+
+            // Check if this is an ID row - if so, mark for deletion
+            if (rowType === 'id') {
+              filesRowsToDelete.push(rowNumber);
+            } else {
+              // For non-ID rows, clear data cells (columns 2-6) while keeping row type label
+              row.getCell(2).value = null; // File name
+              row.getCell(3).value = null; // Poster
+              row.getCell(4).value = null; // Fr subtitle
+              row.getCell(5).value = null; // En subtitle
+              row.getCell(6).value = null; // Ko Subtitle
+            }
           }
         });
+
+        // Delete ID rows in reverse order to maintain correct row numbers
+        if (filesRowsToDelete.length > 0) {
+          filesRowsToDelete.reverse().forEach(rowNumber => {
+            filesSheet.spliceRows(rowNumber, 1);
+            this.logger.info(`Removed ID row (row ${rowNumber}) from episode Files sheet`);
+          });
+        }
 
         this.logger.info('Cleared Files sheet data from season template - keeping row structure for auto-fill');
       }
 
+      // DIAGNOSTIC: Dump Description sheet data BEFORE saving to verify what will be saved
+      this.logger.info(`🔍 DIAGNOSTIC: Verifying Description sheet data BEFORE save:`);
+      const finalDescriptionData = [];
+      descriptionSheet.eachRow((row, rowNumber) => {
+        const col1 = row.getCell(1).value;
+        const col2 = row.getCell(2).value;
+        const col3 = row.getCell(3).value;
+        finalDescriptionData.push({row: rowNumber, colA: col1, colB: col2, colC: col3});
+        this.logger.info(`  Row ${rowNumber}: A="${col1}" | B="${col2}" | C="${col3}"`);
+      });
+      this.logger.info(`📊 Total Description sheet rows BEFORE save: ${finalDescriptionData.length}`);
+
       // Save the episode Excel file
+      this.logger.info(`💾 Saving episode Excel to: ${targetPath}`);
       await seasonWorkbook.xlsx.writeFile(targetPath);
+      this.logger.info(`✅ Episode Excel file saved successfully`);
 
       this.logger.info(`Created episode Excel from season template: ${excelFileName}`);
       console.log(chalk.green(`✅ Created episode Excel from season: ${excelFileName}`));

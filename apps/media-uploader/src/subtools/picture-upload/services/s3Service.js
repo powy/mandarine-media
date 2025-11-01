@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import fs from 'fs-extra';
 import path from 'path';
+import { sanitizePath } from '../utils/fileUtils.js';
 
 export class S3Service {
   constructor(config) {
@@ -27,10 +28,13 @@ export class S3Service {
    */
   async uploadPicture(filePath, recordId = null, customKey = null) {
     try {
-      const originalFileName = path.basename(filePath);
+      // Sanitize file path to remove Unicode control characters
+      const cleanFilePath = sanitizePath(filePath);
+
+      const originalFileName = path.basename(cleanFilePath);
       const sanitizedFileName = this.sanitizeFilename(originalFileName);
       let s3Key;
-      
+
       if (customKey) {
         s3Key = customKey;
       } else if (recordId) {
@@ -43,8 +47,8 @@ export class S3Service {
         const cleanKeyPrefix = this.keyPrefix.replace(/\/$/, '');
         s3Key = `${cleanKeyPrefix}/${Date.now()}-${sanitizedFileName}`;
       }
-      
-      const fileStream = fs.createReadStream(filePath);
+
+      const fileStream = fs.createReadStream(cleanFilePath);
       
       const upload = new Upload({
         client: this.s3Client,

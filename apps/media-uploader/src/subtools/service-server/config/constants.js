@@ -95,6 +95,36 @@ export const CONFIG = {
       description: 'Reload all subtitles for single media (V2 - proper backend chain)',
       requiredParams: ['config', 'folder']
     },
+    'upload-subtitle-by-media-desc-id': {
+      function: 'uploadSubtitleByMediaDescriptionId',
+      description: 'Upload subtitle using media description ID from backend',
+      requiredParams: ['config', 'mediaDescriptionId', 'subtitle', 'language']
+    },
+    'upload-subtitle-by-mux-asset-id': {
+      function: 'uploadSubtitleByMuxAssetId',
+      description: 'Upload subtitle directly to Mux asset by asset ID',
+      requiredParams: ['config', 'muxAssetId', 'subtitle', 'language']
+    },
+    'upload-picture-with-ini': {
+      function: 'uploadPictureWithIni',
+      description: 'Upload picture with known format and media description ID',
+      requiredParams: ['config', 'picture', 'format', 'mediaDescriptionId']
+    },
+    'upload-picture-with-format-detection': {
+      function: 'uploadPictureWithFormatDetection',
+      description: 'Upload picture with automatic format detection',
+      requiredParams: ['config', 'picture', 'mediaDescriptionId']
+    },
+    'upload-pictures-in-folder-with-ini': {
+      function: 'uploadPicturesInFolderWithIni',
+      description: 'Batch upload all images in folder',
+      requiredParams: ['config', 'folderPath', 'mediaDescriptionId']
+    },
+    'delete-subtitle-by-media-desc-id': {
+      function: 'deleteSubtitleByMediaDescriptionId',
+      description: 'Delete subtitle track using media description ID from backend',
+      requiredParams: ['config', 'mediaDescriptionId', 'language']
+    },
 
     // Batch operations
     'prepare-excel-batch': {
@@ -121,8 +151,61 @@ export const CONFIG = {
       function: 'propagateSeasonDataBatch',
       description: 'Propagate SEASON data to episodes from parent folder Excel file',
       requiredParams: ['config', 'parentFolder']
+    },
+    'propagate-by-media-description-id': {
+      function: 'propagateSeasonDataFromMediaDescriptionWithIni',
+      description: 'Propagate season data to episodes by media description ID',
+      requiredParams: ['config', 'mediaDescriptionId']
+    },
+    'propagate-by-season-entity-id': {
+      function: 'propagateSeasonDataFromSeasonIdWithIni',
+      description: 'Propagate season data to episodes by season entity ID',
+      requiredParams: ['config', 'seasonEntityId']
+    },
+
+    // Excel edition by Column A description
+    'edit-excel-single-by-desc': {
+      function: 'editExcelSingleByDescription',
+      description: 'Modify one Excel file by Column A description in treated folder',
+      requiredParams: ['config', 'folder', 'descriptionText', 'newValue']
+    },
+    'edit-excel-batch-by-desc': {
+      function: 'editExcelBatchByDescription',
+      description: 'Modify all Excel files by Column A description in parent folder and subfolders',
+      requiredParams: ['config', 'parentFolder', 'descriptionText', 'newValue']
+    },
+    'regenerate-episode-names': {
+      function: 'regenerateEpisodeNames',
+      description: 'Regenerate episode names from season name and folder structure',
+      requiredParams: ['config', 'parentFolder']
     }
   },
+
+  // Excel Column A description texts for dropdown
+  EXCEL_COLUMN_A_DESCRIPTIONS: [
+    "Sécurité (public, drm, signed)",
+    "Type (video, season, program)",
+    "Titre du programme",
+    "Titre de la saison",
+    "Catégories",
+    "Themes",
+    "Description courte",
+    "Synopsis",
+    "nom pour le lien direct",
+    "Année de production",
+    "Date de diffusion originale",
+    "Détenteur des droits",
+    "Propriétaire des droits d'auteur",
+    "Langue originale",
+    "Liste des acteurs",
+    "Liste des réalisateurs",
+    "Liste des producteurs",
+    "Liste des auteurs",
+    "Pays disponibles",
+    "Catégories de public",
+    "Hashtags",
+    "Mots-clés"
+  ],
 
   // Resolution options
   RESOLUTIONS: {

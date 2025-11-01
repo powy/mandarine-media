@@ -417,6 +417,169 @@ export class ExcelBatchService {
   }
 
   /**
+   * Update a specific field in an Excel file's Description sheet by Column A description
+   * @param {string} filePath - Path to Excel file
+   * @param {string} descriptionText - Description text in Column A to find
+   * @param {string} newValue - New value for Column C
+   * @param {boolean} dryRun - If true, don't save changes
+   * @returns {Promise<Object>} Update result
+   */
+  async updateExcelFieldByDescription(filePath, descriptionText, newValue, dryRun = false) {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+
+      const descriptionSheet = workbook.getWorksheet('Description');
+      if (!descriptionSheet) {
+        throw new Error('Description sheet not found');
+      }
+
+      let fieldFound = false;
+      let oldValue = null;
+      let rowNumber = null;
+
+      // Find the description in Column A of the Description sheet
+      descriptionSheet.eachRow((row, rowNum) => {
+        if (fieldFound) return; // Already found, skip remaining rows
+
+        // Check if this row contains our description in Column A
+        // Format: [description (Column A), key (Column B), value (Column C)]
+        const descCell = row.getCell(1);
+        const valueCell = row.getCell(3);
+
+        if (descCell.value && descCell.value.toString().trim() === descriptionText.trim()) {
+          fieldFound = true;
+          oldValue = valueCell.value;
+          rowNumber = rowNum;
+
+          if (!dryRun) {
+            // Update the value while preserving formatting
+            valueCell.value = newValue;
+          }
+        }
+      });
+
+      if (!fieldFound) {
+        return {
+          success: false,
+          error: `Description "${descriptionText}" not found in Column A of Description sheet`,
+          filePath
+        };
+      }
+
+      const result = {
+        success: true,
+        filePath,
+        descriptionText,
+        oldValue: oldValue ? oldValue.toString() : '',
+        newValue,
+        rowNumber,
+        dryRun
+      };
+
+      if (!dryRun) {
+        // Save the workbook with retry mechanism for file locks
+        await this.saveWithRetry(workbook, filePath);
+        this.logger.info(`Updated ${path.basename(filePath)}: "${descriptionText}" = "${newValue}"`);
+      } else {
+        this.logger.info(`[DRY RUN] Would update ${path.basename(filePath)}: "${descriptionText}" "${oldValue}" → "${newValue}"`);
+      }
+
+      return result;
+
+    } catch (error) {
+      this.logger.error(`Error updating ${path.basename(filePath)}: ${error.message}`);
+      return {
+        success: false,
+        error: error.message,
+        filePath
+      };
+    }
+  }
+
+  /**
+   * Batch update multiple Excel files by Column A description
+   * @param {Array} fileList - List of file objects from findExcelFiles
+   * @param {string} descriptionText - Description text in Column A to find
+   * @param {string} newValue - New value for Column C (can contain placeholders like {{current_folder}})
+   * @param {boolean} dryRun - If true, don't save changes
+   * @returns {Promise<Object>} Batch update results
+   */
+  async batchUpdateFilesByDescription(fileList, descriptionText, newValue, dryRun = false) {
+    const results = {
+      totalFiles: fileList.length,
+      successful: 0,
+      failed: 0,
+      skipped: 0,
+      details: [],
+      errors: []
+    };
+
+    this.logger.info(`${dryRun ? '[DRY RUN] ' : ''}Starting batch update of ${fileList.length} files...`);
+    this.logger.info(`Description: "${descriptionText}" → Value template: "${newValue}"`);
+
+    for (const fileInfo of fileList) {
+      try {
+        // Resolve folder-specific value for this file
+        const resolvedValue = this.resolveFieldValue(newValue, fileInfo);
+
+        const result = await this.updateExcelFieldByDescription(
+          fileInfo.filePath,
+          descriptionText,
+          resolvedValue,
+          dryRun
+        );
+
+        if (result.success) {
+          results.successful++;
+          results.details.push({
+            file: fileInfo.fileName,
+            folder: fileInfo.folderName,
+            oldValue: result.oldValue,
+            newValue: result.newValue,
+            status: 'updated',
+            resolvedFrom: newValue !== resolvedValue ? newValue : undefined
+          });
+        } else {
+          results.failed++;
+          results.errors.push({
+            file: fileInfo.fileName,
+            folder: fileInfo.folderName,
+            error: result.error
+          });
+        }
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          file: fileInfo.fileName,
+          folder: fileInfo.folderName,
+          error: error.message
+        });
+      }
+    }
+
+    // Print summary
+    this.logger.info('\n' + chalk.bold('Batch Update Summary:'));
+    this.logger.info(`Total files processed: ${results.totalFiles}`);
+    this.logger.info(chalk.green(`Successful: ${results.successful}`));
+    if (results.failed > 0) {
+      this.logger.info(chalk.red(`Failed: ${results.failed}`));
+    }
+    if (results.skipped > 0) {
+      this.logger.info(chalk.yellow(`Skipped: ${results.skipped}`));
+    }
+
+    if (results.errors.length > 0) {
+      this.logger.info('\n' + chalk.red('Errors:'));
+      results.errors.forEach(error => {
+        this.logger.error(`${error.folder}/${error.file}: ${error.error}`);
+      });
+    }
+
+    return results;
+  }
+
+  /**
    * Batch update multiple Excel files
    * @param {Array} fileList - List of file objects from findExcelFiles
    * @param {string} fieldName - Field to update
@@ -496,6 +659,186 @@ export class ExcelBatchService {
     }
 
     return results;
+  }
+
+  /**
+   * Regenerate episode names from season name and folder structure
+   * @param {string} parentFolderPath - Parent folder containing season Excel and episode subfolders
+   * @param {Object} options - { verbose, dryRun, logFile }
+   * @returns {Promise<Object>} Regeneration results
+   */
+  async regenerateEpisodeNames(parentFolderPath, options = {}) {
+    const dryRun = options.dryRun || false;
+    const results = {
+      seasonName: null,
+      totalFolders: 0,
+      successful: 0,
+      failed: 0,
+      skipped: 0,
+      details: [],
+      errors: [],
+      warnings: []
+    };
+
+    try {
+      this.logger.info('Starting episode name regeneration...');
+      this.logger.info(`Parent folder: ${parentFolderPath}`);
+
+      // Step 1: Find parent folder Excel (0_desc*.xlsx)
+      const parentFiles = await fs.readdir(parentFolderPath);
+      const parentExcel = parentFiles.find(file =>
+        file.startsWith('0_desc') && file.endsWith('.xlsx')
+      );
+
+      if (!parentExcel) {
+        throw new Error(`No season Excel file (0_desc*.xlsx) found in parent folder: ${parentFolderPath}`);
+      }
+
+      this.logger.info(`Found season Excel: ${parentExcel}`);
+
+      // Step 2: Read season name from parent Excel
+      const parentExcelPath = path.join(parentFolderPath, parentExcel);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(parentExcelPath);
+
+      const descriptionSheet = workbook.getWorksheet('Description');
+      if (!descriptionSheet) {
+        throw new Error('Description sheet not found in season Excel');
+      }
+
+      let seasonName = null;
+      descriptionSheet.eachRow((row) => {
+        const descCell = row.getCell(1); // Column A
+        const valueCell = row.getCell(3); // Column C
+
+        if (descCell.value && descCell.value.toString().trim() === "Titre de la saison") {
+          seasonName = valueCell.value ? valueCell.value.toString() : null;
+        }
+      });
+
+      if (!seasonName) {
+        throw new Error('Field "Titre de la saison" not found in parent Excel or has no value');
+      }
+
+      results.seasonName = seasonName;
+      this.logger.info(`Season name: "${seasonName}"`);
+
+      // Step 3: Find all subfolders
+      const items = await fs.readdir(parentFolderPath, { withFileTypes: true });
+      const subfolders = items.filter(item => item.isDirectory());
+
+      if (subfolders.length === 0) {
+        this.logger.warn('No subfolders found in parent folder');
+        return {
+          ...results,
+          success: true,
+          message: 'No subfolders to process'
+        };
+      }
+
+      results.totalFolders = subfolders.length;
+      this.logger.info(`Found ${subfolders.length} subfolder(s) to process`);
+
+      // Step 4: Process each subfolder
+      for (const subfolder of subfolders) {
+        const folderPath = path.join(parentFolderPath, subfolder.name);
+        const folderName = subfolder.name;
+
+        try {
+          this.logger.info(`Processing folder: ${folderName}`);
+
+          // Find Excel in subfolder
+          const files = await fs.readdir(folderPath);
+          const excelFile = files.find(file =>
+            file.startsWith('0_desc') && file.endsWith('.xlsx')
+          );
+
+          if (!excelFile) {
+            results.skipped++;
+            results.warnings.push(`No Excel file found in folder: ${folderName}`);
+            this.logger.warn(`No Excel file found in ${folderName} - skipping`);
+            continue;
+          }
+
+          // Generate episode title
+          const episodeTitle = `${seasonName} - Episode ${folderName}`;
+          this.logger.info(`Generating title: "${episodeTitle}"`);
+
+          // Update Excel
+          const excelPath = path.join(folderPath, excelFile);
+          const updateResult = await this.updateExcelFieldByDescription(
+            excelPath,
+            "Titre de la vidéo",
+            episodeTitle,
+            dryRun
+          );
+
+          if (updateResult.success) {
+            results.successful++;
+            results.details.push({
+              folder: folderName,
+              file: excelFile,
+              oldTitle: updateResult.oldValue,
+              newTitle: episodeTitle,
+              status: 'updated'
+            });
+            this.logger.info(`✓ Updated ${folderName}: "${episodeTitle}"`);
+          } else {
+            results.failed++;
+            results.errors.push({
+              folder: folderName,
+              file: excelFile,
+              error: updateResult.error
+            });
+            this.logger.error(`✗ Failed ${folderName}: ${updateResult.error}`);
+          }
+
+        } catch (error) {
+          results.failed++;
+          results.errors.push({
+            folder: folderName,
+            error: error.message
+          });
+          this.logger.error(`Error processing ${folderName}: ${error.message}`);
+        }
+      }
+
+      // Print summary
+      this.logger.info('\n' + chalk.bold('Episode Name Regeneration Summary:'));
+      this.logger.info(`Season: "${seasonName}"`);
+      this.logger.info(`Total folders: ${results.totalFolders}`);
+      this.logger.info(chalk.green(`Successful: ${results.successful}`));
+      if (results.failed > 0) {
+        this.logger.info(chalk.red(`Failed: ${results.failed}`));
+      }
+      if (results.skipped > 0) {
+        this.logger.info(chalk.yellow(`Skipped: ${results.skipped}`));
+      }
+
+      if (results.warnings.length > 0) {
+        this.logger.info('\n' + chalk.yellow('Warnings:'));
+        results.warnings.forEach(warning => {
+          this.logger.warn(`  ${warning}`);
+        });
+      }
+
+      if (results.errors.length > 0) {
+        this.logger.info('\n' + chalk.red('Errors:'));
+        results.errors.forEach(error => {
+          this.logger.error(`  ${error.folder}: ${error.error}`);
+        });
+      }
+
+      return {
+        ...results,
+        success: results.failed === 0,
+        dryRun
+      };
+
+    } catch (error) {
+      this.logger.error(`Error in episode name regeneration: ${error.message}`);
+      throw error;
+    }
   }
 
   /**

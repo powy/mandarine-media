@@ -1,28 +1,108 @@
-// Function wrapper for propagate-data tool
+// Function wrappers for propagate-data tool
+// Implements 9-level hierarchy for maximum flexibility
+
 import { PropagationService } from './services/propagationService.js';
 import { loadJsonFile } from '../one-media-complete-upload/utils/fileUtils.js';
 import { createFileLogger, redirectConsoleToLogger } from '../../shared/utils/fileLogger.js';
 import chalk from 'chalk';
 import fs from 'fs/promises';
 import path from 'path';
+import ExcelJS from 'exceljs';
 
 /**
- * Propagate Season Data Function Wrapper
- * @param {Object} options - Propagation options
- * @param {string} options.seasonId - Season media description ID
- * @param {string} options.config - Configuration file path
- * @param {boolean} options.verbose - Verbose output
- * @param {boolean} options.dryRun - Preview changes without updating
- * @param {string} [options.logFile] - Optional log file path for capturing all output
- * @returns {Promise<Object>} Propagation results
+ * Create a simple logger based on verbose flag
+ * @private
  */
-export async function propagateSeasonData(options) {
+function createLogger(verbose) {
+  return {
+    info: (msg) => verbose && console.log(chalk.gray(msg)),
+    warn: (msg) => console.log(chalk.yellow(msg)),
+    error: (msg) => console.error(chalk.red(msg))
+  };
+}
+
+/**
+ * Display propagation results to console
+ * @private
+ */
+function displayResults(result, options) {
+  const { dryRun = false, verbose = false } = options;
+
+  // Display results
+  if (dryRun) {
+    console.log(chalk.yellow.bold('\n🔍 Dry Run Complete - No changes were made'));
+  } else if (result.success) {
+    console.log(chalk.green.bold('\n✅ Propagation completed successfully!'));
+  } else {
+    console.log(chalk.yellow.bold('\n⚠️  Propagation completed with errors'));
+  }
+
+  console.log(chalk.cyan(`\n📊 Results:`));
+  if (dryRun) {
+    console.log(chalk.yellow(`   Would update: ${result.updated} episode(s)`));
+  } else {
+    console.log(chalk.green(`   Updated: ${result.updated} episode(s)`));
+  }
+  console.log(chalk.gray(`   Skipped: ${result.skipped} episode(s)`));
+
+  if (result.errors.length > 0) {
+    console.log(chalk.red(`   Errors: ${result.errors.length} episode(s)`));
+    console.log(chalk.red('\nFailed episodes:'));
+    result.errors.forEach(err => {
+      console.log(chalk.red(`  • ${err.title || err.id}: ${err.error}`));
+    });
+  }
+
+  if (verbose && result.details) {
+    console.log(chalk.gray('\n📋 Detailed Results:'));
+    console.log(JSON.stringify(result.details, null, 2));
+  }
+}
+
+// ============================================================
+// LEVEL 1: CORE - Direct parameters, no files
+// ============================================================
+
+/**
+ * LEVEL 1: Core propagation function with direct parameters
+ *
+ * @param {string} seasonId - Season entity ID
+ * @param {string} seasonMediaDescriptionId - Season media description ID (general description)
+ * @param {Object} auth - Authentication credentials
+ * @param {string} auth.username - Backend username
+ * @param {string} auth.password - Backend password
+ * @param {Object} addresses - Backend addresses
+ * @param {string} addresses.baseUrl - Backend base URL
+ * @param {Object} options - Optional parameters
+ * @param {boolean} [options.verbose=false] - Verbose logging
+ * @param {boolean} [options.dryRun=false] - Preview mode
+ * @param {string} [options.logFile] - Optional log file path
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataCore(
+ *   'season-entity-123',
+ *   'season-description-456',
+ *   { username: 'user', password: 'pass' },
+ *   { baseUrl: 'https://api.example.com' },
+ *   { dryRun: true }
+ * );
+ */
+export async function propagateSeasonDataCore(
+  seasonId,
+  seasonMediaDescriptionId,
+  auth,
+  addresses,
+  options = {}
+) {
+  const { verbose = false, dryRun = false, logFile = null } = options;
+
   let restoreConsole = null;
 
-  if (options.logFile) {
+  if (logFile) {
     const logger = createFileLogger({
-      logFile: options.logFile,
-      verbose: options.verbose,
+      logFile,
+      verbose,
       quiet: false
     });
     restoreConsole = redirectConsoleToLogger(logger);
@@ -30,86 +110,48 @@ export async function propagateSeasonData(options) {
 
   try {
     console.log(chalk.blue.bold('🔄 Season Data Propagation Tool\n'));
+    console.log(chalk.cyan(`Season Entity ID: ${seasonId}`));
+    console.log(chalk.cyan(`Season Media Description ID: ${seasonMediaDescriptionId}\n`));
 
-    // Load configuration
-    console.log(chalk.gray(`Loading configuration from: ${options.config}`));
-    const config = await loadJsonFile(options.config);
-    console.log(chalk.green('✅ Configuration loaded\n'));
-
-    if (options.verbose) {
+    if (verbose) {
       console.log(chalk.gray('Configuration:'));
-      console.log(chalk.gray(`  Backend: ${config.backend.baseUrl}`));
-      console.log(chalk.gray(`  Username: ${config.backend.username}`));
+      console.log(chalk.gray(`  Backend: ${addresses.baseUrl}`));
+      console.log(chalk.gray(`  Username: ${auth.username}`));
       console.log('');
     }
 
-    // Validate season ID
-    if (!options.seasonId) {
-      throw new Error('Season ID is required');
-    }
-
-    console.log(chalk.cyan(`Season ID: ${options.seasonId}\n`));
-
-    // Show dry run warning
-    if (options.dryRun) {
+    if (dryRun) {
       console.log(chalk.yellow('⚠️  DRY RUN MODE - No changes will be made\n'));
     }
 
-    // Create propagation service
-    const logger = {
-      info: (msg) => options.verbose && console.log(chalk.gray(msg)),
-      warn: (msg) => console.log(chalk.yellow(msg)),
-      error: (msg) => console.error(chalk.red(msg))
+    const config = {
+      backend: {
+        baseUrl: addresses.baseUrl,
+        username: auth.username,
+        password: auth.password
+      }
     };
 
+    const logger = createLogger(verbose);
     const propagationService = new PropagationService(config, logger);
 
-    // Execute propagation (with dry run flag)
-    const result = await propagationService.propagateMissingFromSeasonToEpisodes(
-      options.seasonId,
-      options.dryRun
+    const result = await propagationService.propagateSeasonDataCore(
+      seasonId,
+      seasonMediaDescriptionId,
+      dryRun
     );
 
-    // Display results
-    if (options.dryRun) {
-      console.log(chalk.yellow.bold('\n🔍 Dry Run Complete - No changes were made'));
-    } else if (result.success) {
-      console.log(chalk.green.bold('\n✅ Propagation completed successfully!'));
-    } else {
-      console.log(chalk.yellow.bold('\n⚠️  Propagation completed with errors'));
-    }
+    displayResults(result, options);
 
-    console.log(chalk.cyan(`\n📊 Results:`));
-    if (options.dryRun) {
-      console.log(chalk.yellow(`   Would update: ${result.updated} episode(s)`));
-    } else {
-      console.log(chalk.green(`   Updated: ${result.updated} episode(s)`));
-    }
-    console.log(chalk.gray(`   Skipped: ${result.skipped} episode(s)`));
-
-    if (result.errors.length > 0) {
-      console.log(chalk.red(`   Errors: ${result.errors.length} episode(s)`));
-      console.log(chalk.red('\nFailed episodes:'));
-      result.errors.forEach(err => {
-        console.log(chalk.red(`  • ${err.title || err.id}: ${err.error}`));
-      });
-    }
-
-    if (options.verbose && result.details) {
-      console.log(chalk.gray('\n📋 Detailed Results:'));
-      console.log(JSON.stringify(result.details, null, 2));
-    }
-
-    // Generate dry-run report if requested
-    if (options.dryRun) {
-      await generateDryRunReport(options.seasonId, result);
+    if (dryRun) {
+      await generateDryRunReport(seasonMediaDescriptionId, result);
     }
 
     return result;
 
   } catch (error) {
     console.error(chalk.red(`\n❌ Propagation failed: ${error.message}`));
-    if (options.verbose && error.stack) {
+    if (verbose && error.stack) {
       console.error(chalk.gray(error.stack));
     }
     throw error;
@@ -119,6 +161,501 @@ export async function propagateSeasonData(options) {
     }
   }
 }
+
+// ============================================================
+// LEVEL 2: CORE + INI
+// ============================================================
+
+/**
+ * LEVEL 2: Core propagation with INI configuration file
+ *
+ * @param {string} seasonId - Season entity ID
+ * @param {string} seasonMediaDescriptionId - Season media description ID
+ * @param {string} iniPath - Path to INI configuration file
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataCoreWithIni(
+ *   'season-123',
+ *   'desc-456',
+ *   './config.ini',
+ *   { dryRun: true }
+ * );
+ */
+export async function propagateSeasonDataCoreWithIni(
+  seasonId,
+  seasonMediaDescriptionId,
+  iniPath,
+  options = {}
+) {
+  console.log(chalk.gray(`Loading configuration from: ${iniPath}`));
+  const config = await loadJsonFile(iniPath);
+  console.log(chalk.green('✅ Configuration loaded\n'));
+
+  const auth = {
+    username: config.backend.username,
+    password: config.backend.password
+  };
+
+  const addresses = {
+    baseUrl: config.backend.baseUrl
+  };
+
+  return await propagateSeasonDataCore(
+    seasonId,
+    seasonMediaDescriptionId,
+    auth,
+    addresses,
+    options
+  );
+}
+
+// ============================================================
+// LEVEL 3: FROM MEDIA DESCRIPTION
+// ============================================================
+
+/**
+ * LEVEL 3: Propagate from media description ID (resolves to season entity)
+ *
+ * @param {string} mediaDescriptionId - Media description ID
+ * @param {Object} auth - Authentication credentials
+ * @param {Object} addresses - Backend addresses
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataFromMediaDescription(
+ *   'desc-456',
+ *   { username: 'user', password: 'pass' },
+ *   { baseUrl: 'https://api.example.com' }
+ * );
+ */
+export async function propagateSeasonDataFromMediaDescription(
+  mediaDescriptionId,
+  auth,
+  addresses,
+  options = {}
+) {
+  const { verbose = false, dryRun = false, logFile = null } = options;
+
+  let restoreConsole = null;
+
+  if (logFile) {
+    const logger = createFileLogger({
+      logFile,
+      verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
+  try {
+    console.log(chalk.blue.bold('🔄 Season Data Propagation Tool\n'));
+    console.log(chalk.cyan(`Media Description ID: ${mediaDescriptionId}\n`));
+
+    if (verbose) {
+      console.log(chalk.gray('Configuration:'));
+      console.log(chalk.gray(`  Backend: ${addresses.baseUrl}`));
+      console.log(chalk.gray(`  Username: ${auth.username}`));
+      console.log('');
+    }
+
+    if (dryRun) {
+      console.log(chalk.yellow('⚠️  DRY RUN MODE - No changes will be made\n'));
+    }
+
+    const config = {
+      backend: {
+        baseUrl: addresses.baseUrl,
+        username: auth.username,
+        password: auth.password
+      }
+    };
+
+    const logger = createLogger(verbose);
+    const propagationService = new PropagationService(config, logger);
+
+    const result = await propagationService.propagateSeasonDataFromMediaDescription(
+      mediaDescriptionId,
+      dryRun
+    );
+
+    displayResults(result, options);
+
+    if (dryRun) {
+      await generateDryRunReport(mediaDescriptionId, result);
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error(chalk.red(`\n❌ Propagation failed: ${error.message}`));
+    if (verbose && error.stack) {
+      console.error(chalk.gray(error.stack));
+    }
+    throw error;
+  } finally {
+    if (restoreConsole) {
+      restoreConsole();
+    }
+  }
+}
+
+// ============================================================
+// LEVEL 4: FROM MEDIA DESCRIPTION + INI
+// ============================================================
+
+/**
+ * LEVEL 4: Propagate from media description ID with INI configuration
+ *
+ * @param {string} mediaDescriptionId - Media description ID
+ * @param {string} iniPath - Path to INI configuration file
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataFromMediaDescriptionWithIni(
+ *   'desc-456',
+ *   './config.ini',
+ *   { dryRun: true }
+ * );
+ */
+export async function propagateSeasonDataFromMediaDescriptionWithIni(
+  mediaDescriptionId,
+  iniPath,
+  options = {}
+) {
+  console.log(chalk.gray(`Loading configuration from: ${iniPath}`));
+  const config = await loadJsonFile(iniPath);
+  console.log(chalk.green('✅ Configuration loaded\n'));
+
+  const auth = {
+    username: config.backend.username,
+    password: config.backend.password
+  };
+
+  const addresses = {
+    baseUrl: config.backend.baseUrl
+  };
+
+  return await propagateSeasonDataFromMediaDescription(
+    mediaDescriptionId,
+    auth,
+    addresses,
+    options
+  );
+}
+
+// ============================================================
+// LEVEL 5: FROM SEASON ID
+// ============================================================
+
+/**
+ * LEVEL 5: Propagate from season entity ID (resolves to media description)
+ *
+ * @param {string} seasonId - Season entity ID
+ * @param {Object} auth - Authentication credentials
+ * @param {Object} addresses - Backend addresses
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataFromSeasonId(
+ *   'season-123',
+ *   { username: 'user', password: 'pass' },
+ *   { baseUrl: 'https://api.example.com' }
+ * );
+ */
+export async function propagateSeasonDataFromSeasonId(
+  seasonId,
+  auth,
+  addresses,
+  options = {}
+) {
+  const { verbose = false, dryRun = false, logFile = null } = options;
+
+  let restoreConsole = null;
+
+  if (logFile) {
+    const logger = createFileLogger({
+      logFile,
+      verbose,
+      quiet: false
+    });
+    restoreConsole = redirectConsoleToLogger(logger);
+  }
+
+  try {
+    console.log(chalk.blue.bold('🔄 Season Data Propagation Tool\n'));
+    console.log(chalk.cyan(`Season Entity ID: ${seasonId}\n`));
+
+    if (verbose) {
+      console.log(chalk.gray('Configuration:'));
+      console.log(chalk.gray(`  Backend: ${addresses.baseUrl}`));
+      console.log(chalk.gray(`  Username: ${auth.username}`));
+      console.log('');
+    }
+
+    if (dryRun) {
+      console.log(chalk.yellow('⚠️  DRY RUN MODE - No changes will be made\n'));
+    }
+
+    const config = {
+      backend: {
+        baseUrl: addresses.baseUrl,
+        username: auth.username,
+        password: auth.password
+      }
+    };
+
+    const logger = createLogger(verbose);
+    const propagationService = new PropagationService(config, logger);
+
+    const result = await propagationService.propagateSeasonDataFromSeasonId(
+      seasonId,
+      dryRun
+    );
+
+    displayResults(result, options);
+
+    if (dryRun) {
+      await generateDryRunReport(seasonId, result);
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error(chalk.red(`\n❌ Propagation failed: ${error.message}`));
+    if (verbose && error.stack) {
+      console.error(chalk.gray(error.stack));
+    }
+    throw error;
+  } finally {
+    if (restoreConsole) {
+      restoreConsole();
+    }
+  }
+}
+
+// ============================================================
+// LEVEL 6: FROM SEASON ID + INI
+// ============================================================
+
+/**
+ * LEVEL 6: Propagate from season entity ID with INI configuration
+ *
+ * @param {string} seasonId - Season entity ID
+ * @param {string} iniPath - Path to INI configuration file
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataFromSeasonIdWithIni(
+ *   'season-123',
+ *   './config.ini',
+ *   { dryRun: true }
+ * );
+ */
+export async function propagateSeasonDataFromSeasonIdWithIni(
+  seasonId,
+  iniPath,
+  options = {}
+) {
+  console.log(chalk.gray(`Loading configuration from: ${iniPath}`));
+  const config = await loadJsonFile(iniPath);
+  console.log(chalk.green('✅ Configuration loaded\n'));
+
+  const auth = {
+    username: config.backend.username,
+    password: config.backend.password
+  };
+
+  const addresses = {
+    baseUrl: config.backend.baseUrl
+  };
+
+  return await propagateSeasonDataFromSeasonId(
+    seasonId,
+    auth,
+    addresses,
+    options
+  );
+}
+
+// ============================================================
+// LEVEL 7: FROM EXCEL
+// ============================================================
+
+/**
+ * LEVEL 7: Propagate from Excel file (extracts media description ID)
+ *
+ * @param {string} excelPath - Path to Excel file
+ * @param {Object} auth - Authentication credentials
+ * @param {Object} addresses - Backend addresses
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataFromExcel(
+ *   './season-data.xlsx',
+ *   { username: 'user', password: 'pass' },
+ *   { baseUrl: 'https://api.example.com' }
+ * );
+ */
+export async function propagateSeasonDataFromExcel(
+  excelPath,
+  auth,
+  addresses,
+  options = {}
+) {
+  const { verbose = false } = options;
+
+  try {
+    if (verbose) {
+      console.log(chalk.gray(`Reading Excel file: ${excelPath}`));
+    }
+
+    // Parse Excel to extract media description ID
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(excelPath);
+
+    const descriptionSheet = workbook.getWorksheet('Description');
+    if (!descriptionSheet) {
+      throw new Error('No Description sheet found in Excel file');
+    }
+
+    let mediaType = null;
+    let mediaDescriptionId = null;
+
+    descriptionSheet.eachRow((row, rowNumber) => {
+      const field = row.getCell(2).value;
+      const value = row.getCell(3).value;
+
+      if (field === 'media_type') {
+        mediaType = value;
+      }
+      if (field === 'id') {
+        mediaDescriptionId = value;
+      }
+    });
+
+    if (verbose) {
+      console.log(chalk.gray(`  Media Type: ${mediaType}`));
+      console.log(chalk.gray(`  ID: ${mediaDescriptionId}`));
+    }
+
+    if (mediaType !== 'season') {
+      throw new Error(`Media type is "${mediaType}", not "season"`);
+    }
+
+    if (!mediaDescriptionId) {
+      throw new Error('Season ID not found in Excel file');
+    }
+
+    console.log(chalk.cyan(`\n🔄 Season detected - propagating data to episodes...`));
+
+    return await propagateSeasonDataFromMediaDescription(
+      mediaDescriptionId,
+      auth,
+      addresses,
+      options
+    );
+
+  } catch (error) {
+    throw error;
+  }
+}
+
+// ============================================================
+// LEVEL 8: FROM EXCEL + INI
+// ============================================================
+
+/**
+ * LEVEL 8: Propagate from Excel file with INI configuration
+ *
+ * @param {string} excelPath - Path to Excel file
+ * @param {string} iniPath - Path to INI configuration file
+ * @param {Object} options - Optional parameters
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonDataFromExcelWithIni(
+ *   './season-data.xlsx',
+ *   './config.ini',
+ *   { dryRun: true }
+ * );
+ */
+export async function propagateSeasonDataFromExcelWithIni(
+  excelPath,
+  iniPath,
+  options = {}
+) {
+  console.log(chalk.gray(`Loading configuration from: ${iniPath}`));
+  const config = await loadJsonFile(iniPath);
+  console.log(chalk.green('✅ Configuration loaded\n'));
+
+  const auth = {
+    username: config.backend.username,
+    password: config.backend.password
+  };
+
+  const addresses = {
+    baseUrl: config.backend.baseUrl
+  };
+
+  return await propagateSeasonDataFromExcel(
+    excelPath,
+    auth,
+    addresses,
+    options
+  );
+}
+
+// ============================================================
+// LEVEL 9: ORIGINAL FUNCTION - Backward compatibility wrapper
+// ============================================================
+
+/**
+ * LEVEL 9: Original propagate season data function (backward compatibility)
+ *
+ * @param {Object} options - Propagation options
+ * @param {string} options.seasonId - Season media description ID
+ * @param {string} options.config - Configuration file path (INI or JSON)
+ * @param {boolean} options.verbose - Verbose output
+ * @param {boolean} options.dryRun - Preview changes without updating
+ * @param {string} [options.logFile] - Optional log file path
+ * @returns {Promise<Object>} Propagation results
+ *
+ * @example
+ * const result = await propagateSeasonData({
+ *   seasonId: 'desc-456',
+ *   config: './config.ini',
+ *   dryRun: true,
+ *   verbose: true
+ * });
+ */
+export async function propagateSeasonData(options) {
+  // Validate season ID
+  if (!options.seasonId) {
+    throw new Error('Season ID is required');
+  }
+
+  // For backward compatibility, treat seasonId as media description ID
+  return await propagateSeasonDataFromMediaDescriptionWithIni(
+    options.seasonId,
+    options.config,
+    {
+      verbose: options.verbose,
+      dryRun: options.dryRun,
+      logFile: options.logFile
+    }
+  );
+}
+
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
 
 /**
  * Generate a detailed dry-run report
@@ -247,4 +784,14 @@ async function generateDryRunReport(seasonId, result) {
   }
 }
 
-export default { propagateSeasonData };
+export default {
+  propagateSeasonData,
+  propagateSeasonDataCore,
+  propagateSeasonDataCoreWithIni,
+  propagateSeasonDataFromMediaDescription,
+  propagateSeasonDataFromMediaDescriptionWithIni,
+  propagateSeasonDataFromSeasonId,
+  propagateSeasonDataFromSeasonIdWithIni,
+  propagateSeasonDataFromExcel,
+  propagateSeasonDataFromExcelWithIni
+};

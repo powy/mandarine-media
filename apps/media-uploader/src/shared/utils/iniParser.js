@@ -7,6 +7,20 @@ import fs from 'fs-extra';
 import path from 'path';
 
 /**
+ * Sanitize file path by removing invisible Unicode characters
+ * @param {string} filePath - Path to sanitize
+ * @returns {string} Cleaned path
+ */
+function sanitizePath(filePath) {
+  if (!filePath) return filePath;
+
+  return filePath
+    .trim()  // Remove leading/trailing whitespace
+    .normalize('NFC')  // Normalize Unicode to composed form
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2066-\u206F\uFEFF]/g, '');  // Remove all Unicode control characters
+}
+
+/**
  * Parse INI file content into a structured object
  * @param {string} iniContent - Raw INI file content
  * @returns {Object} Parsed configuration object
@@ -84,7 +98,8 @@ function parseValue(value) {
  */
 export async function readIniFile(filePath) {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const cleanPath = sanitizePath(filePath);
+    const content = await fs.readFile(cleanPath, 'utf-8');
     return parseIniContent(content);
   } catch (error) {
     throw new Error(`Failed to read INI file at ${filePath}: ${error.message}`);

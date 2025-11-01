@@ -137,6 +137,125 @@ export default function InputSection({ inputs, onChange, errors }) {
           </select>
           {errors.language && <p className="error-text">{errors.language}</p>}
         </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-300 my-4"></div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Upload par ID (optionnel)</p>
+
+        {/* Media Description ID */}
+        <div>
+          <label className="label">Media Description ID</label>
+          <input
+            type="text"
+            className={`input w-full ${errors.mediaDescriptionId ? 'border-red-500' : ''}`}
+            value={inputs.mediaDescriptionId || ''}
+            onChange={(e) => handleChange('mediaDescriptionId', e.target.value)}
+            placeholder="e.g., a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            title="UUID from backend media-description"
+          />
+          {errors.mediaDescriptionId && <p className="error-text">{errors.mediaDescriptionId}</p>}
+          <p className="text-xs text-gray-500 mt-1">UUID from backend API (media-description entity) - For propagation</p>
+        </div>
+
+        {/* Season Entity ID */}
+        <div>
+          <label className="label">Season Entity ID</label>
+          <input
+            type="text"
+            className={`input w-full ${errors.seasonEntityId ? 'border-red-500' : ''}`}
+            value={inputs.seasonEntityId || ''}
+            onChange={(e) => handleChange('seasonEntityId', e.target.value)}
+            placeholder="e.g., xyz789-abc123-def456-ghi789"
+            title="UUID from backend season entity"
+          />
+          {errors.seasonEntityId && <p className="error-text">{errors.seasonEntityId}</p>}
+          <p className="text-xs text-gray-500 mt-1">UUID from backend API (season entity) - For propagation</p>
+        </div>
+
+        {/* Mux Asset ID */}
+        <div>
+          <label className="label">Mux Asset ID</label>
+          <input
+            type="text"
+            className={`input w-full ${errors.muxAssetId ? 'border-red-500' : ''}`}
+            value={inputs.muxAssetId || ''}
+            onChange={(e) => handleChange('muxAssetId', e.target.value)}
+            placeholder="e.g., abc123xyz456def789"
+            title="Asset ID from Mux platform"
+          />
+          {errors.muxAssetId && <p className="error-text">{errors.muxAssetId}</p>}
+          <p className="text-xs text-gray-500 mt-1">Direct asset ID from Mux dashboard</p>
+        </div>
+      </div>
+
+      {/* Section E: Excel Edition */}
+      <div className="border-t border-gray-300 my-6"></div>
+      <p className="text-sm font-semibold text-gray-700 mb-3">E. Edition Excel</p>
+
+      <div className="space-y-4">
+        {/* Excel Description Field (Champ) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Champ (Column A Description)
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <select
+            className={`select select-bordered w-full ${errors.excelDescriptionField ? 'border-red-500' : ''}`}
+            value={inputs.excelDescriptionField || ''}
+            onChange={(e) => handleChange('excelDescriptionField', e.target.value)}
+          >
+            <option value="">-- Sélectionner un champ --</option>
+            <option value="Sécurité (public, drm, signed)">Sécurité (public, drm, signed)</option>
+            <option value="Type (video, season, program)">Type (video, season, program)</option>
+            <option value="Titre du programme">Titre du programme</option>
+            <option value="Titre de la saison">Titre de la saison</option>
+            <option value="Catégories">Catégories</option>
+            <option value="Themes">Themes</option>
+            <option value="Description courte">Description courte</option>
+            <option value="Synopsis">Synopsis</option>
+            <option value="nom pour le lien direct">nom pour le lien direct</option>
+            <option value="Année de production">Année de production</option>
+            <option value="Date de diffusion originale">Date de diffusion originale</option>
+            <option value="Détenteur des droits">Détenteur des droits</option>
+            <option value="Propriétaire des droits d'auteur">Propriétaire des droits d'auteur</option>
+            <option value="Langue originale">Langue originale</option>
+            <option value="Liste des acteurs">Liste des acteurs</option>
+            <option value="Liste des réalisateurs">Liste des réalisateurs</option>
+            <option value="Liste des producteurs">Liste des producteurs</option>
+            <option value="Liste des auteurs">Liste des auteurs</option>
+            <option value="Pays disponibles">Pays disponibles</option>
+            <option value="Catégories de public">Catégories de public</option>
+            <option value="Hashtags">Hashtags</option>
+            <option value="Mots-clés">Mots-clés</option>
+          </select>
+          {errors.excelDescriptionField && (
+            <p className="text-red-500 text-xs mt-1">{errors.excelDescriptionField}</p>
+          )}
+          <p className="text-gray-500 text-xs mt-1">
+            Ce champ correspond à la colonne A du fichier Excel
+          </p>
+        </div>
+
+        {/* Excel New Value (Nouvelle Valeur) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nouvelle Valeur
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            type="text"
+            className={`input input-bordered w-full ${errors.excelNewValue ? 'border-red-500' : ''}`}
+            value={inputs.excelNewValue || ''}
+            onChange={(e) => handleChange('excelNewValue', e.target.value)}
+            placeholder="Entrez la nouvelle valeur pour la colonne C"
+          />
+          {errors.excelNewValue && (
+            <p className="text-red-500 text-xs mt-1">{errors.excelNewValue}</p>
+          )}
+          <p className="text-gray-500 text-xs mt-1">
+            💡 Astuce: Utilisez <code className="bg-gray-100 px-1 rounded">{'{{'} folder_name {'}}'}</code> pour insérer le nom du dossier dynamiquement
+          </p>
+        </div>
       </div>
     </div>
   );

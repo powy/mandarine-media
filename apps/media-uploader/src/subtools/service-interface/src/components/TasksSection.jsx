@@ -23,7 +23,10 @@ const TASK_TYPE_LABELS = {
   'prepare-excel-batch': 'Prépare Excels (Batch)',
   'upload-media-batch': 'Upload Medias (Batch)',
   'upload-picture-batch': 'Upload Image (Batch)',
-  'reload-subtitles-batch': 'Reload Subtitles (Batch)'
+  'reload-subtitles-batch': 'Reload Subtitles (Batch)',
+  'upload-picture-with-ini': 'Upload Image (INI + ID)',
+  'upload-picture-with-format-detection': 'Upload Image (Auto Format)',
+  'upload-pictures-in-folder-with-ini': 'Upload Images (Folder)'
 };
 
 function formatTime(timestamp) {
@@ -155,7 +158,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
         {/* Finished Tasks */}
         <div>
           <h3 className="text-lg font-semibold mb-2 text-green-700">
-            Finished Tasks ({safeFinishedTasks.length})
+            Finished Tasks ({safeFinishedTasks.length > 500 ? `Showing 500 of ${safeFinishedTasks.length}` : safeFinishedTasks.length})
           </h3>
           <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
             {safeFinishedTasks.length === 0 ? (
@@ -176,7 +179,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
                     </tr>
                   </thead>
                   <tbody>
-                    {safeFinishedTasks.slice(0, 50).map(task => (
+                    {safeFinishedTasks.slice(0, 500).map(task => (
                       <TaskRow
                         key={task.id}
                         task={task}

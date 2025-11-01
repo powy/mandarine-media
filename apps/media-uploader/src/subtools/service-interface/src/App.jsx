@@ -30,7 +30,12 @@ function App() {
       picture: '',
       resolution: '',
       subtitle: '',
-      language: ''
+      language: '',
+      mediaDescriptionId: '',
+      seasonEntityId: '',
+      muxAssetId: '',
+      excelDescriptionField: '',
+      excelNewValue: ''
     };
   });
 

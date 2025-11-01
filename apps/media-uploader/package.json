@@ -28,7 +28,7 @@
     "model:start": "concurrently \"npm run model:server\" \"npm run model:interface\"",
     "build:ui:static": "cd src/subtools/service-interface && npm run build",
     "build": "npm run build:ui:static && node scripts/create-package.js",
-    "package:zip": "node scripts/create-package.js",
+    "package:zip": "npm run build:ui:static && node scripts/create-package.js",
     "extract:standalone": "node scripts/extract-media-uploader.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",

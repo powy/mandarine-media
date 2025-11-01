@@ -5,8 +5,7 @@
  * into server-side Excel processing workflows.
  */
 
-import { propagateSeasonData } from './wrapper.js';
-import ExcelJS from 'exceljs';
+import { propagateSeasonDataFromExcelWithIni } from './wrapper.js';
 import fs from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
@@ -19,83 +18,38 @@ import chalk from 'chalk';
  * @returns {Promise<Object>} Processing result
  */
 export async function processExcelFileForPropagation(excelFilePath, configPath, options = {}) {
-  const { verbose = false, dryRun = false } = options;
-
   try {
-    if (verbose) {
-      console.log(chalk.gray(`Reading Excel file: ${excelFilePath}`));
-    }
-
-    // Read the Excel file
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(excelFilePath);
-
-    // Get the Description sheet
-    const descriptionSheet = workbook.getWorksheet('Description');
-    if (!descriptionSheet) {
-      return {
-        success: false,
-        skipped: true,
-        reason: 'No Description sheet found in Excel file'
-      };
-    }
-
-    // Find media_type and id fields
-    let mediaType = null;
-    let mediaDescriptionId = null;
-
-    descriptionSheet.eachRow((row, rowNumber) => {
-      const field = row.getCell(2).value;
-      const value = row.getCell(3).value;
-
-      if (field === 'media_type') {
-        mediaType = value;
-      }
-      if (field === 'id') {
-        mediaDescriptionId = value;
-      }
-    });
-
-    if (verbose) {
-      console.log(chalk.gray(`  Media Type: ${mediaType}`));
-      console.log(chalk.gray(`  ID: ${mediaDescriptionId}`));
-    }
-
-    // Check if it's a season type
-    if (mediaType !== 'season') {
-      return {
-        success: false,
-        skipped: true,
-        reason: `Media type is "${mediaType}", not "season"`
-      };
-    }
-
-    if (!mediaDescriptionId) {
-      return {
-        success: false,
-        error: 'Season ID not found in Excel file'
-      };
-    }
-
-    // Propagate data from season to episodes
-    console.log(chalk.cyan(`\n🔄 Season detected - propagating data to episodes...`));
-
-    const result = await propagateSeasonData({
-      seasonId: mediaDescriptionId,
-      config: configPath,
-      verbose,
-      dryRun,
-      logFile: options.logFile
-    });
+    // Use the new Level 8 function - it handles Excel parsing and INI loading
+    const result = await propagateSeasonDataFromExcelWithIni(
+      excelFilePath,
+      configPath,
+      options
+    );
 
     return {
       success: result.success,
       propagated: true,
-      seasonId: mediaDescriptionId,
       ...result
     };
 
   } catch (error) {
+    // Handle "not a season" errors gracefully (return skipped instead of error)
+    if (error.message.includes('not "season"')) {
+      return {
+        success: false,
+        skipped: true,
+        reason: error.message
+      };
+    }
+
+    if (error.message.includes('No Description sheet')) {
+      return {
+        success: false,
+        skipped: true,
+        reason: error.message
+      };
+    }
+
     return {
       success: false,
       error: error.message

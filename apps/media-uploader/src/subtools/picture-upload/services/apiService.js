@@ -132,6 +132,54 @@ export class ApiService {
       }
     }
   }
+
+  /**
+   * Update a media description (PATCH)
+   * @param {string} mediaDescriptionId - UUID of media description
+   * @param {Object} updateData - Fields to update (e.g., { image_1920_1080_id: 'uuid' })
+   * @returns {Promise<Object>} Updated media description
+   */
+  async updateMediaDescription(mediaDescriptionId, updateData) {
+    if (!this.token) {
+      await this.authenticate();
+    }
+
+    try {
+      const response = await this.axiosInstance.patch(
+        `/api/v1/media-descriptions/${mediaDescriptionId}`,
+        updateData
+      );
+      return response.data;
+    } catch (error) {
+      // Handle 401 (token expired) - retry once
+      if (error.response?.status === 401) {
+        this.token = null;
+        await this.authenticate();
+        const retryResponse = await this.axiosInstance.patch(
+          `/api/v1/media-descriptions/${mediaDescriptionId}`,
+          updateData
+        );
+        return retryResponse.data;
+      }
+
+      // Handle validation errors
+      if (error.response?.data?.detail) {
+        const errorDetails = Array.isArray(error.response.data.detail)
+          ? error.response.data.detail.map(err =>
+              `${err.loc?.join('.')} - ${err.msg}`
+            ).join(', ')
+          : JSON.stringify(error.response.data.detail);
+
+        throw new Error(
+          `Failed to update media description: ${errorDetails}`
+        );
+      }
+
+      throw new Error(
+        `Failed to update media description: ${error.message}`
+      );
+    }
+  }
 }
 
 /**

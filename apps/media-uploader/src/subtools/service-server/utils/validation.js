@@ -9,6 +9,8 @@ import { CONFIG } from '../config/constants.js';
 
 /**
  * Validate config file path
+ * NOTE: Only validates format/extension, not file existence.
+ * File existence is validated by workers at execution time for better error logging.
  */
 export function validateConfigFile(configPath) {
   const errors = [];
@@ -18,11 +20,7 @@ export function validateConfigFile(configPath) {
     return { valid: false, errors };
   }
 
-  if (!fs.existsSync(configPath)) {
-    errors.push('Config file not found');
-    return { valid: false, errors };
-  }
-
+  // Validate extension only (file existence checked by worker)
   const ext = path.extname(configPath).toLowerCase();
   if (!CONFIG.VALIDATION.CONFIG_EXTENSIONS.includes(ext)) {
     errors.push(`Config must be ${CONFIG.VALIDATION.CONFIG_EXTENSIONS.join(' or ')} file`);
@@ -33,6 +31,8 @@ export function validateConfigFile(configPath) {
 
 /**
  * Validate folder path
+ * NOTE: Only validates that path is provided, not that it exists.
+ * Folder existence is validated by workers at execution time for better error logging.
  */
 export function validateFolder(folderPath) {
   const errors = [];
@@ -42,21 +42,14 @@ export function validateFolder(folderPath) {
     return { valid: false, errors };
   }
 
-  if (!fs.existsSync(folderPath)) {
-    errors.push('Folder does not exist');
-    return { valid: false, errors };
-  }
-
-  const stats = fs.statSync(folderPath);
-  if (!stats.isDirectory()) {
-    errors.push('Path must be a directory');
-  }
-
+  // Folder existence and type checked by worker
   return { valid: errors.length === 0, errors };
 }
 
 /**
  * Validate image file
+ * NOTE: Only validates format/extension, not file existence.
+ * File existence is validated by workers at execution time for better error logging.
  */
 export function validateImageFile(imagePath, resolutionRequired = false) {
   const errors = [];
@@ -66,11 +59,7 @@ export function validateImageFile(imagePath, resolutionRequired = false) {
     return { valid: false, errors };
   }
 
-  if (!fs.existsSync(imagePath)) {
-    errors.push('Image file not found');
-    return { valid: false, errors };
-  }
-
+  // Validate extension only (file existence checked by worker)
   const ext = path.extname(imagePath).toLowerCase();
   if (!CONFIG.VALIDATION.IMAGE_EXTENSIONS.includes(ext)) {
     errors.push(`Invalid image format. Supported: ${CONFIG.VALIDATION.IMAGE_EXTENSIONS.join(', ')}`);
@@ -81,6 +70,8 @@ export function validateImageFile(imagePath, resolutionRequired = false) {
 
 /**
  * Validate subtitle file
+ * NOTE: Only validates that path is provided, not format or existence.
+ * File format and existence are validated by workers at execution time for better error logging.
  */
 export function validateSubtitleFile(subtitlePath, languageRequired = false) {
   const errors = [];
@@ -90,16 +81,7 @@ export function validateSubtitleFile(subtitlePath, languageRequired = false) {
     return { valid: false, errors };
   }
 
-  if (!fs.existsSync(subtitlePath)) {
-    errors.push('Subtitle file not found');
-    return { valid: false, errors };
-  }
-
-  const ext = path.extname(subtitlePath).toLowerCase();
-  if (!CONFIG.VALIDATION.SUBTITLE_EXTENSIONS.includes(ext)) {
-    errors.push(`Invalid subtitle format. Supported: ${CONFIG.VALIDATION.SUBTITLE_EXTENSIONS.join(', ')}`);
-  }
-
+  // Extension and file existence checked by worker
   return { valid: errors.length === 0, errors };
 }
 
@@ -141,6 +123,13 @@ export function validateLanguage(language) {
 
 /**
  * Validate task parameters based on task type
+ *
+ * NOTE: API validation is MINIMAL - only checks task type exists.
+ * ALL business logic validation (required params, file existence, formats, etc.)
+ * happens in WORKERS for better error logging and task tracking.
+ *
+ * This ensures tasks are always created, even with invalid inputs,
+ * so users can see detailed error logs in the task viewer.
  */
 export function validateTaskParameters(taskType, parameters) {
   const errors = [];
@@ -151,75 +140,18 @@ export function validateTaskParameters(taskType, parameters) {
     return { valid: false, errors };
   }
 
-  // Check required parameters
-  const requiredParams = taskConfig.requiredParams || [];
-  for (const param of requiredParams) {
-    if (!parameters[param]) {
-      errors.push(`Missing required parameter: ${param}`);
-    }
-  }
+  // All other validation happens in workers
+  // Workers validate:
+  // - Required parameters
+  // - File existence
+  // - File formats/extensions
+  // - Cross-field dependencies
+  // - Business logic
+  //
+  // This allows tasks to be created immediately and fail gracefully
+  // with detailed error logs that users can view in the task viewer.
 
-  // Validate specific parameters
-  if (parameters.config) {
-    const configValidation = validateConfigFile(parameters.config);
-    if (!configValidation.valid) {
-      errors.push(...configValidation.errors);
-    }
-  }
-
-  if (parameters.folder) {
-    const folderValidation = validateFolder(parameters.folder);
-    if (!folderValidation.valid) {
-      errors.push(...folderValidation.errors);
-    }
-  }
-
-  if (parameters.parentFolder) {
-    const folderValidation = validateFolder(parameters.parentFolder);
-    if (!folderValidation.valid) {
-      errors.push(...folderValidation.errors.map(e => e.replace('Folder', 'Parent folder')));
-    }
-  }
-
-  if (parameters.picture) {
-    const imageValidation = validateImageFile(parameters.picture);
-    if (!imageValidation.valid) {
-      errors.push(...imageValidation.errors);
-    }
-
-    // Resolution required when picture is provided
-    if (parameters.picture && !parameters.resolution) {
-      errors.push('Resolution is required when picture is provided');
-    }
-  }
-
-  if (parameters.resolution) {
-    const resolutionValidation = validateResolution(parameters.resolution);
-    if (!resolutionValidation.valid) {
-      errors.push(...resolutionValidation.errors);
-    }
-  }
-
-  if (parameters.subtitle) {
-    const subtitleValidation = validateSubtitleFile(parameters.subtitle);
-    if (!subtitleValidation.valid) {
-      errors.push(...subtitleValidation.errors);
-    }
-
-    // Language required when subtitle is provided
-    if (parameters.subtitle && !parameters.language) {
-      errors.push('Language is required when subtitle is provided');
-    }
-  }
-
-  if (parameters.language) {
-    const languageValidation = validateLanguage(parameters.language);
-    if (!languageValidation.valid) {
-      errors.push(...languageValidation.errors);
-    }
-  }
-
-  return { valid: errors.length === 0, errors };
+  return { valid: true, errors: [] };
 }
 
 export default {

@@ -76,7 +76,7 @@ export class OrchestrationService {
     const dateStr = dateValue.toString().trim();
     if (!dateStr) return null;
 
-    console.log(chalk.cyan(`🔍 DATE PARSING DEBUG: "${dateStr}"`));
+    this.logger.info(chalk.cyan(`🔍 DATE PARSING DEBUG: "${dateStr}"`));
 
     // Handle various date formats
     const datePatterns = [
@@ -108,29 +108,29 @@ export class OrchestrationService {
         const minute = parseInt(match[5] || '00');
         const second = parseInt(match[6] || '00');
 
-        console.log(chalk.gray(`  Matched format: ${format}`));
-        console.log(chalk.gray(`  Regex match: ${JSON.stringify(match)}`));
-        console.log(chalk.gray(`  Parsed: Day=${day}, Month=${month}, Year=${year}, Time=${hour}:${minute}:${second}`));
+        this.logger.info(chalk.gray(`  Matched format: ${format}`));
+        this.logger.info(chalk.gray(`  Regex match: ${JSON.stringify(match)}`));
+        this.logger.info(chalk.gray(`  Parsed: Day=${day}, Month=${month}, Year=${year}, Time=${hour}:${minute}:${second}`));
 
         // Validate date components
         if (year < 1900 || year > 2100) {
-          console.log(chalk.red(`  ❌ Invalid year: ${year}`));
+          this.logger.info(chalk.red(`  ❌ Invalid year: ${year}`));
           continue;
         }
         if (month < 1 || month > 12) {
-          console.log(chalk.red(`  ❌ Invalid month: ${month}`));
+          this.logger.info(chalk.red(`  ❌ Invalid month: ${month}`));
           continue;
         }
         if (day < 1 || day > 31) {
-          console.log(chalk.red(`  ❌ Invalid day: ${day}`));
+          this.logger.info(chalk.red(`  ❌ Invalid day: ${day}`));
           continue;
         }
         if (hour < 0 || hour > 23) {
-          console.log(chalk.red(`  ❌ Invalid hour: ${hour}`));
+          this.logger.info(chalk.red(`  ❌ Invalid hour: ${hour}`));
           continue;
         }
         if (minute < 0 || minute > 59) {
-          console.log(chalk.red(`  ❌ Invalid minute: ${minute}`));
+          this.logger.info(chalk.red(`  ❌ Invalid minute: ${minute}`));
           continue;
         }
 
@@ -138,17 +138,17 @@ export class OrchestrationService {
 
         // Validate that the date is valid (e.g., not February 30th)
         if (date.getFullYear() !== year || date.getMonth() !== (month - 1) || date.getDate() !== day) {
-          console.log(chalk.red(`  ❌ Invalid date combination: ${day}/${month}/${year}`));
+          this.logger.info(chalk.red(`  ❌ Invalid date combination: ${day}/${month}/${year}`));
           continue;
         }
 
         const isoString = date.toISOString();
-        console.log(chalk.green(`  ✅ Successfully parsed to ISO: ${isoString}`));
+        this.logger.info(chalk.green(`  ✅ Successfully parsed to ISO: ${isoString}`));
         return isoString;
       }
     }
 
-    console.log(chalk.red(`  ❌ No matching date pattern found for: "${dateStr}"`));
+    this.logger.info(chalk.red(`  ❌ No matching date pattern found for: "${dateStr}"`));
     return null;
   }
 
@@ -218,40 +218,40 @@ export class OrchestrationService {
       // Override media type based on season level flag
       if (options.isSeasonLevel === true) {
         mediaType = 'season';
-        console.log(chalk.yellow('🔄 Overriding media type to "season" based on folder structure'));
+        this.logger.info(chalk.yellow('🔄 Overriding media type to "season" based on folder structure'));
       } else if (options.isSeasonLevel === false) {
         // Ensure episode-level folders are treated as video/episode content
         if (mediaType === 'season' || mediaType === 'program') {
           mediaType = 'video';
-          console.log(chalk.yellow('🔄 Overriding media type to "video" for episode-level folder'));
+          this.logger.info(chalk.yellow('🔄 Overriding media type to "video" for episode-level folder'));
         }
       }
 
       const requiresVideo = mediaType === 'video' || mediaType === 'excerpt' || mediaType === 'trailer';
 
-      console.log(chalk.blue.bold(`\n📦 Processing ${mediaType.toUpperCase()} Upload\n`));
+      this.logger.info(chalk.blue.bold(`\n📦 Processing ${mediaType.toUpperCase()} Upload\n`));
 
       // Display mode-specific information
       switch(mediaType) {
         case 'season':
-          console.log(chalk.cyan('📺 Season Mode:'));
-          console.log(chalk.gray(`  • Season Name: ${excelData.description.season_name || 'Not specified'}`));
-          console.log(chalk.gray(`  • Videos: Optional (none expected)`));
-          console.log(chalk.gray(`  • Will create/link season entity`));
+          this.logger.info(chalk.cyan('📺 Season Mode:'));
+          this.logger.info(chalk.gray(`  • Season Name: ${excelData.description.season_name || 'Not specified'}`));
+          this.logger.info(chalk.gray(`  • Videos: Optional (none expected)`));
+          this.logger.info(chalk.gray(`  • Will create/link season entity`));
           break;
 
         case 'program':
-          console.log(chalk.cyan('📺 Program Mode:'));
-          console.log(chalk.gray(`  • Program Name: ${excelData.description.program_name || 'Not specified'}`));
-          console.log(chalk.gray(`  • Videos: Optional (none expected)`));
-          console.log(chalk.gray(`  • Will create/link program entity`));
+          this.logger.info(chalk.cyan('📺 Program Mode:'));
+          this.logger.info(chalk.gray(`  • Program Name: ${excelData.description.program_name || 'Not specified'}`));
+          this.logger.info(chalk.gray(`  • Videos: Optional (none expected)`));
+          this.logger.info(chalk.gray(`  • Will create/link program entity`));
           break;
 
         default:
-          console.log(chalk.cyan('🎬 Video Mode:'));
-          console.log(chalk.gray(`  • Episode: ${excelData.description.episode_title || 'Not specified'}`));
-          console.log(chalk.gray(`  • Videos: Required`));
-          console.log(chalk.gray(`  • Standard video upload flow`));
+          this.logger.info(chalk.cyan('🎬 Video Mode:'));
+          this.logger.info(chalk.gray(`  • Episode: ${excelData.description.episode_title || 'Not specified'}`));
+          this.logger.info(chalk.gray(`  • Videos: Required`));
+          this.logger.info(chalk.gray(`  • Standard video upload flow`));
           break;
       }
 
@@ -260,7 +260,7 @@ export class OrchestrationService {
 
       // Step 1: Upload videos to Mux (CONDITIONAL)
       if (requiresVideo) {
-        console.log(chalk.cyan('📹 Uploading videos to Mux...'));
+        this.logger.info(chalk.cyan('📹 Uploading videos to Mux...'));
         const videoResults = await this.uploadVideosToMux(excelData.files, mediaFiles, folderPath, excelData.description);
         results.uploads.videos = videoResults.successes;
         if (videoResults.errors.length > 0) {
@@ -272,7 +272,7 @@ export class OrchestrationService {
 
         // Step 2: Upload subtitles to Mux (after videos are ready)
         if (videoResults.successes.length > 0) {
-          console.log(chalk.cyan('📝 Uploading subtitles to Mux...'));
+          this.logger.info(chalk.cyan('📝 Uploading subtitles to Mux...'));
           const subtitleResults = await this.uploadSubtitlesToMux(
             excelData.files,
             mediaFiles,
@@ -285,11 +285,11 @@ export class OrchestrationService {
           }
         }
       } else {
-        console.log(chalk.yellow(`ℹ️  Media type "${mediaType}" does not require video uploads - skipping video processing`));
+        this.logger.info(chalk.yellow(`ℹ️  Media type "${mediaType}" does not require video uploads - skipping video processing`));
       }
 
       // Step 3: Upload images to S3 (always required)
-      console.log(chalk.cyan('🖼️  Uploading images to S3...'));
+      this.logger.info(chalk.cyan('🖼️  Uploading images to S3...'));
       const imageResults = await this.uploadImagesToS3(excelData.files, mediaFiles, folderPath);
       results.uploads.images = imageResults.successes;
       if (imageResults.errors.length > 0) {
@@ -298,7 +298,7 @@ export class OrchestrationService {
 
       // Safety check: Ensure images are uploaded even if normal flow was bypassed
       if ((!results.uploads.images || results.uploads.images.length === 0) && mediaFiles.images.length > 0) {
-        console.log(chalk.cyan('🖼️  Uploading missing images to S3...'));
+        this.logger.info(chalk.cyan('🖼️  Uploading missing images to S3...'));
         const imageResults = await this.uploadImagesToS3(excelData.files, mediaFiles, folderPath);
         results.uploads.images = imageResults.successes;
         if (imageResults.errors.length > 0) {
@@ -307,7 +307,7 @@ export class OrchestrationService {
       }
 
       // Step 4: Create media description via API (two-step process)
-      console.log(chalk.cyan('📄 Creating media description...'));
+      this.logger.info(chalk.cyan('📄 Creating media description...'));
       const apiResult = await this.createMediaDescription(
         excelData.description,
         results.uploads.images,
@@ -317,25 +317,25 @@ export class OrchestrationService {
       if (apiResult.success) {
         results.mediaDescriptionId = apiResult.id;
         results.success = true;
-        console.log(chalk.green(`✅ Media description created with ID: ${apiResult.id}`));
+        this.logger.info(chalk.green(`✅ Media description created with ID: ${apiResult.id}`));
         
         // Update Excel file with media_description ID and rename file
         if (this.excelService && excelPath) {
           try {
-            console.log(chalk.cyan('📄 Updating Excel file with media description ID...'));
+            this.logger.info(chalk.cyan('📄 Updating Excel file with media description ID...'));
             
             // Save media_description ID to Description sheet
             await this.excelService.saveMediaDescriptionToExcel(excelPath, apiResult.id);
-            console.log(chalk.green(`✅ Saved media description ID to Excel`));
+            this.logger.info(chalk.green(`✅ Saved media description ID to Excel`));
             
             // Rename Excel file with _uploaded suffix
             const newExcelPath = await this.excelService.renameExcelFile(excelPath);
             const wasRenamed = (newExcelPath !== excelPath);
 
             if (wasRenamed) {
-              console.log(chalk.green(`✅ Renamed Excel file: ${path.basename(newExcelPath)}`));
+              this.logger.info(chalk.green(`✅ Renamed Excel file: ${path.basename(newExcelPath)}`));
             } else {
-              console.log(chalk.yellow(`⚠️  Excel file not renamed (may be open): ${path.basename(excelPath)}`));
+              this.logger.info(chalk.yellow(`⚠️  Excel file not renamed (may be open): ${path.basename(excelPath)}`));
             }
 
             // Store the new Excel path and rename status in results for reference
@@ -348,9 +348,9 @@ export class OrchestrationService {
             results.errors.push(`Excel update failed: ${excelError.message}`);
 
             // Enhanced visible error reporting
-            console.log(chalk.red.bold(`\n❌ EXCEL UPDATE FAILED`));
-            console.log(chalk.yellow(`📄 Media Description ID: ${chalk.white.bold(apiResult.id)}`));
-            console.log(chalk.red(`🔒 Error: ${excelError.message}`));
+            this.logger.info(chalk.red.bold(`\n❌ EXCEL UPDATE FAILED`));
+            this.logger.info(chalk.yellow(`📄 Media Description ID: ${chalk.white.bold(apiResult.id)}`));
+            this.logger.info(chalk.red(`🔒 Error: ${excelError.message}`));
 
             // Check if it's a file lock error and provide specific guidance
             const isFileLocked = excelError.message.includes('locked') ||
@@ -359,13 +359,13 @@ export class OrchestrationService {
                                excelError.message.includes('EPERM');
 
             if (isFileLocked) {
-              console.log(chalk.cyan(`\n💡 To fix this:`));
-              console.log(chalk.cyan(`   1. Close the Excel file`));
-              console.log(chalk.cyan(`   2. The media description was created successfully with ID: ${apiResult.id}`));
-              console.log(chalk.cyan(`   3. You can manually add this ID to your Excel file if needed`));
+              this.logger.info(chalk.cyan(`\n💡 To fix this:`));
+              this.logger.info(chalk.cyan(`   1. Close the Excel file`));
+              this.logger.info(chalk.cyan(`   2. The media description was created successfully with ID: ${apiResult.id}`));
+              this.logger.info(chalk.cyan(`   3. You can manually add this ID to your Excel file if needed`));
             }
 
-            console.log(chalk.green(`\n✅ Upload was successful despite Excel update failure!`));
+            this.logger.info(chalk.green(`\n✅ Upload was successful despite Excel update failure!`));
           }
         } else {
           this.logger.warn('ExcelService or excelPath not available - skipping Excel update');
@@ -410,10 +410,10 @@ export class OrchestrationService {
 
       if (videoEntries.length === 0) {
         this.logger.info(`No videos specified for ${mediaType} type - this is acceptable`);
-        console.log(chalk.gray(`  No video files specified for ${mediaType} - this is normal`));
+        this.logger.info(chalk.gray(`  No video files specified for ${mediaType} - this is normal`));
         return { successes: [], errors: [] };
       } else {
-        console.log(chalk.gray(`  Found ${videoEntries.length} video(s) for ${mediaType} - processing as optional content`));
+        this.logger.info(chalk.gray(`  Found ${videoEntries.length} video(s) for ${mediaType} - processing as optional content`));
       }
     }
 
@@ -498,7 +498,7 @@ export class OrchestrationService {
           });
         }
         
-        console.log(chalk.gray(`  Uploading ${videoFile.name}...`));
+        this.logger.info(chalk.gray(`  Uploading ${videoFile.name}...`));
 
         const result = await uploadToMux({
           config: configPath,
@@ -542,7 +542,7 @@ export class OrchestrationService {
         
         successes.push(uploadData);
         
-        console.log(chalk.green(`    ✅ ${videoFile.name} uploaded (Asset: ${result.asset.id}, Type: ${entry.type})`));
+        this.logger.info(chalk.green(`    ✅ ${videoFile.name} uploaded (Asset: ${result.asset.id}, Type: ${entry.type})`));
         
       } catch (error) {
         const isMainVideo = entry.type.toLowerCase() === 'video';
@@ -568,14 +568,14 @@ export class OrchestrationService {
           errorContext.details = error.details;
         }
 
-        console.log(chalk.red(`    ❌ ${entry.fileName}: ${error.message}`));
+        this.logger.info(chalk.red(`    ❌ ${entry.fileName}: ${error.message}`));
         this.logger.error('Video upload failed with detailed context', errorContext);
 
         // Critical failure handling - stop immediately for main videos
         if (isCritical) {
-          console.log(chalk.red.bold(`\n🚨 CRITICAL UPLOAD FAILURE`));
-          console.log(chalk.red(`Main video upload failed: ${entry.fileName}`));
-          console.log(chalk.red(`Process terminated to prevent incomplete upload.`));
+          this.logger.info(chalk.red.bold(`\n🚨 CRITICAL UPLOAD FAILURE`));
+          this.logger.info(chalk.red(`Main video upload failed: ${entry.fileName}`));
+          this.logger.info(chalk.red(`Process terminated to prevent incomplete upload.`));
 
           this.logger.error('Critical video upload failure - terminating process', {
             fileName: entry.fileName,
@@ -642,7 +642,7 @@ export class OrchestrationService {
         // Generate config for picture-upload
         const configPath = await this.generatePictureUploadConfig(imageFile);
         
-        console.log(chalk.gray(`  Uploading ${imageFile.name}...`));
+        this.logger.info(chalk.gray(`  Uploading ${imageFile.name}...`));
         
         const result = await uploadPicture({
           config: configPath,
@@ -667,12 +667,12 @@ export class OrchestrationService {
           result
         });
         
-        console.log(chalk.green(`    ✅ ${imageFile.name} uploaded (ID: ${result.api.id})`));
+        this.logger.info(chalk.green(`    ✅ ${imageFile.name} uploaded (ID: ${result.api.id})`));
         
       } catch (error) {
         const errorMsg = `Failed to upload image ${fileName}: ${error.message}`;
         errors.push(errorMsg);
-        console.log(chalk.red(`    ❌ ${fileName}: ${error.message}`));
+        this.logger.info(chalk.red(`    ❌ ${fileName}: ${error.message}`));
         this.logger.error(errorMsg);
       }
     }
@@ -695,7 +695,7 @@ export class OrchestrationService {
     });
     
     if (subtitleFiles.length === 0) {
-      console.log(chalk.gray('  No subtitles to upload'));
+      this.logger.info(chalk.gray('  No subtitles to upload'));
       return { successes, errors };
     }
     
@@ -721,12 +721,12 @@ export class OrchestrationService {
         this.logger.info(`Matched subtitle "${subtitleFile.fileName}" (${subtitleFile.language}) to video asset: ${matchingAsset.assetId} (${matchingAsset.type}) ${matchType}`);
 
         // Log specific matching details for Excel-forced uploads
-        console.log(chalk.cyan(`📎 Subtitle Match: "${subtitleFile.fileName}" -> "${matchingAsset.fileName}" ${matchType}`));
+        this.logger.info(chalk.cyan(`📎 Subtitle Match: "${subtitleFile.fileName}" -> "${matchingAsset.fileName}" ${matchType}`));
       } else {
         const errorMsg = `No matching video asset found for subtitle: ${subtitleFile.fileName}`;
         errors.push(errorMsg);
         this.logger.error(errorMsg);
-        console.log(chalk.red(`❌ Subtitle Match Failed: "${subtitleFile.fileName}" - no compatible video asset found`));
+        this.logger.info(chalk.red(`❌ Subtitle Match Failed: "${subtitleFile.fileName}" - no compatible video asset found`));
       }
     });
     
@@ -743,17 +743,17 @@ export class OrchestrationService {
 
           if (isExcelForced) {
             this.logger.info(`  🔍 EXCEL-FORCED: "${subtitle.fileName}" -> ${subtitle.language} (column-based language assignment)`);
-            console.log(chalk.yellow(`    📋 Language from Excel column, not filename pattern`));
+            this.logger.info(chalk.yellow(`    📋 Language from Excel column, not filename pattern`));
           } else {
             this.logger.debug(`  📝 Pattern-based: "${subtitle.fileName}" -> ${subtitle.language} (traditional filename matching)`);
-            console.log(chalk.gray(`    🔤 Language detected from filename pattern`));
+            this.logger.info(chalk.gray(`    🔤 Language detected from filename pattern`));
           }
         });
 
         // Generate config for this specific asset's subtitles
         const configPath = await this.generateSubtitleUploadConfig(assetData.subtitles, mediaFiles, assetId);
 
-        console.log(chalk.gray(`  Uploading ${assetData.subtitles.length} subtitle files for ${assetData.asset.type}...`));
+        this.logger.info(chalk.gray(`  Uploading ${assetData.subtitles.length} subtitle files for ${assetData.asset.type}...`));
 
         const result = await uploadSubtitlesToMux({
           config: configPath,
@@ -768,15 +768,15 @@ export class OrchestrationService {
                 fileName: res.subtitle.file_path,
                 language: res.subtitle.language_code,
                 name: res.subtitle.name,
-                trackId: res.trackId,
+                trackId: res.trackId || res.muxResult?.trackId,
                 assetId: assetId,
                 videoType: assetData.asset.type,
                 result: res
               });
-              console.log(chalk.green(`    ✅ ${res.subtitle.language_code} (${assetData.asset.type}): ${res.trackId}`));
+              this.logger.info(chalk.green(`    ✅ ${res.subtitle.language_code} (${assetData.asset.type}): ${res.trackId || res.muxResult?.trackId || 'unknown'}`));
             } else {
               errors.push(`Subtitle upload failed (${res.subtitle.language_code}, ${assetData.asset.type}): ${res.error}`);
-              console.log(chalk.red(`    ❌ ${res.subtitle.language_code} (${assetData.asset.type}): ${res.error}`));
+              this.logger.info(chalk.red(`    ❌ ${res.subtitle.language_code} (${assetData.asset.type}): ${res.error}`));
             }
           });
         }
@@ -784,7 +784,7 @@ export class OrchestrationService {
       } catch (error) {
         const errorMsg = `Subtitle upload failed for asset ${assetId} (${assetData.asset.type}): ${error.message}`;
         errors.push(errorMsg);
-        console.log(chalk.red(`    ❌ ${errorMsg}`));
+        this.logger.info(chalk.red(`    ❌ ${errorMsg}`));
         this.logger.error(errorMsg);
       }
     }
@@ -1096,7 +1096,7 @@ export class OrchestrationService {
           throw new Error('Season name is required for season type media');
         }
 
-        console.log(chalk.cyan('📂 Processing Season type - managing season entity...'));
+        this.logger.info(chalk.cyan('📂 Processing Season type - managing season entity...'));
 
         const season = await this.getOrCreateSeason(descriptionData.season_name);
         seasonId = season.id;
@@ -1104,13 +1104,13 @@ export class OrchestrationService {
         // For season type, use temporary episode title (required field) if not provided
         if (!descriptionData.episode_title) {
           descriptionData.episode_title = `${descriptionData.season_name} all episodes`;
-          console.log(chalk.yellow(`🔄 Using temporary episode title for season: ${descriptionData.episode_title}`));
+          this.logger.info(chalk.yellow(`🔄 Using temporary episode title for season: ${descriptionData.episode_title}`));
         }
 
         // ALWAYS mark season uploads for cleanup (to remove season_id and link to season.general_media_description_id)
         descriptionData._needsSeasonCleanup = true;
         descriptionData._seasonName = descriptionData.season_name;
-        console.log(chalk.cyan(`🧹 Season upload marked for post-treatment cleanup`));
+        this.logger.info(chalk.cyan(`🧹 Season upload marked for post-treatment cleanup`));
       }
 
       // For PROGRAM type: get or create program first
@@ -1119,7 +1119,7 @@ export class OrchestrationService {
           throw new Error('Program name is required for program type media');
         }
 
-        console.log(chalk.cyan('📂 Processing Program type - managing program entity...'));
+        this.logger.info(chalk.cyan('📂 Processing Program type - managing program entity...'));
 
         const program = await this.getOrCreateProgram(descriptionData.program_name);
         programId = program.id;
@@ -1137,11 +1137,11 @@ export class OrchestrationService {
       // Add the season or program ID if applicable
       if (seasonId) {
         textOnlyData.season_id = seasonId;
-        console.log(chalk.gray(`  • Linking to season ID: ${seasonId}`));
+        this.logger.info(chalk.gray(`  • Linking to season ID: ${seasonId}`));
       }
       if (programId) {
         textOnlyData.program_id = programId;
-        console.log(chalk.gray(`  • Linking to program ID: ${programId}`));
+        this.logger.info(chalk.gray(`  • Linking to program ID: ${programId}`));
       }
       
       const createUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/media-descriptions/from-text`);
@@ -1151,37 +1151,37 @@ export class OrchestrationService {
       this.logger.info(`Text-only API payload keys: ${Object.keys(textOnlyData).join(', ')}`);
 
       // Enhanced API payload logging for debugging
-      console.log(chalk.blue('\n🔍 API Payload Debug Information:'));
-      console.log(chalk.gray('===================================='));
+      this.logger.info(chalk.blue('\n🔍 API Payload Debug Information:'));
+      this.logger.info(chalk.gray('===================================='));
 
       // Log arrays specifically to debug array processing issue
       const arrayFields = ['actor_names', 'director_names', 'producer_names', 'author_names', 'tags', 'hashtags_text_list', 'human_keywords_text_list'];
       arrayFields.forEach(field => {
         if (textOnlyData[field]) {
-          console.log(chalk.yellow(`${field}: ${JSON.stringify(textOnlyData[field])} (${Array.isArray(textOnlyData[field]) ? 'array' : 'type: ' + typeof textOnlyData[field]})`));
+          this.logger.info(chalk.yellow(`${field}: ${JSON.stringify(textOnlyData[field])} (${Array.isArray(textOnlyData[field]) ? 'array' : 'type: ' + typeof textOnlyData[field]})`));
         }
       });
 
       // Log all other fields
       const otherFields = Object.keys(textOnlyData).filter(key => !arrayFields.includes(key));
       if (otherFields.length > 0) {
-        console.log(chalk.cyan('\nOther fields:'));
+        this.logger.info(chalk.cyan('\nOther fields:'));
         otherFields.forEach(field => {
-          console.log(chalk.gray(`${field}: "${textOnlyData[field]}"`));
+          this.logger.info(chalk.gray(`${field}: "${textOnlyData[field]}"`));
         });
       }
 
       // Log backend API compliance summary
-      console.log(chalk.cyan('\n📋 Backend API Compliance Summary:'));
-      console.log(chalk.green('✅ Field mappings fixed to match /from-text endpoint schema exactly'));
-      console.log(chalk.green('✅ Legacy productors_id_list → producer_names mapping corrected'));
-      console.log(chalk.green('✅ Removed invalid "tags" field (not supported by backend)'));
-      console.log(chalk.green('✅ Array fields sending exact backend field names only'));
-      console.log(chalk.yellow('⚠️  Some fields not supported by /from-text endpoint (see warnings above)'));
+      this.logger.info(chalk.cyan('\n📋 Backend API Compliance Summary:'));
+      this.logger.info(chalk.green('✅ Field mappings fixed to match /from-text endpoint schema exactly'));
+      this.logger.info(chalk.green('✅ Legacy productors_id_list → producer_names mapping corrected'));
+      this.logger.info(chalk.green('✅ Removed invalid "tags" field (not supported by backend)'));
+      this.logger.info(chalk.green('✅ Array fields sending exact backend field names only'));
+      this.logger.info(chalk.yellow('⚠️  Some fields not supported by /from-text endpoint (see warnings above)'));
 
       // Log complete JSON payload for backend debugging
       this.logger.info(`Complete API payload: ${JSON.stringify(textOnlyData, null, 2)}`);
-      console.log(chalk.gray('====================================\n'));
+      this.logger.info(chalk.gray('====================================\n'));
 
       // Make API call to create media description with text-only fields
       const createResponse = await axios.post(
@@ -1214,7 +1214,7 @@ export class OrchestrationService {
 
       // Log backend response to see which fields were actually saved
       if (createResponse.data) {
-        console.log(chalk.green('\n🔍 Backend Response Analysis:'));
+        this.logger.info(chalk.green('\n🔍 Backend Response Analysis:'));
 
         // Check array fields in the response - only backend-supported fields
         const responseArrayFields = [
@@ -1225,9 +1225,9 @@ export class OrchestrationService {
         ];
         responseArrayFields.forEach(field => {
           if (createResponse.data[field]) {
-            console.log(chalk.yellow(`✅ ${field}: ${JSON.stringify(createResponse.data[field])} (saved as: ${Array.isArray(createResponse.data[field]) ? 'array' : typeof createResponse.data[field]})`));
+            this.logger.info(chalk.yellow(`✅ ${field}: ${JSON.stringify(createResponse.data[field])} (saved as: ${Array.isArray(createResponse.data[field]) ? 'array' : typeof createResponse.data[field]})`));
           } else {
-            console.log(chalk.red(`❌ ${field}: not found in response`));
+            this.logger.info(chalk.red(`❌ ${field}: not found in response`));
           }
         });
 
@@ -1238,13 +1238,13 @@ export class OrchestrationService {
         ];
         responseOtherFields.forEach(field => {
           if (createResponse.data[field]) {
-            console.log(chalk.yellow(`✅ ${field}: "${createResponse.data[field]}"`));
+            this.logger.info(chalk.yellow(`✅ ${field}: "${createResponse.data[field]}"`));
           } else {
-            console.log(chalk.red(`❌ ${field}: not found in response`));
+            this.logger.info(chalk.red(`❌ ${field}: not found in response`));
           }
         });
 
-        console.log(chalk.gray('====================================\n'));
+        this.logger.info(chalk.gray('====================================\n'));
       }
       
       // STEP 2: Patch media description with all asset IDs
@@ -1404,13 +1404,13 @@ export class OrchestrationService {
 
     // Handle themes (semicolon-separated)
     if (descriptionData.media_themes) {
-      console.log(chalk.cyan('🔍 THEMES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.media_themes}"`));
+      this.logger.info(chalk.cyan('🔍 THEMES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${descriptionData.media_themes}"`));
 
       const themes = this.splitSemicolonSeparatedList(descriptionData.media_themes);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(themes)}`));
-      console.log(chalk.gray(`  Final array length: ${themes.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(themes)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${themes.length}`));
 
       apiData.theme_names = themes;
 
@@ -1420,7 +1420,7 @@ export class OrchestrationService {
         count: themes.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No themes data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No themes data found in Excel'));
     }
 
     // Handle actors (semicolon-separated) - Backend expects 'actor_names' only
@@ -1428,18 +1428,18 @@ export class OrchestrationService {
       // Support both old field name and new field name during transition
       const actorsData = descriptionData.actor_ids || descriptionData.actors_id_list;
 
-      console.log(chalk.cyan('🔍 ACTORS DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${actorsData}"`));
-      console.log(chalk.gray(`  Data type: ${typeof actorsData}`));
-      console.log(chalk.gray(`  Is array: ${Array.isArray(actorsData)}`));
+      this.logger.info(chalk.cyan('🔍 ACTORS DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${actorsData}"`));
+      this.logger.info(chalk.gray(`  Data type: ${typeof actorsData}`));
+      this.logger.info(chalk.gray(`  Is array: ${Array.isArray(actorsData)}`));
 
       const actors = Array.isArray(actorsData)
         ? actorsData
         : this.splitSemicolonSeparatedList(actorsData);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(actors)}`));
-      console.log(chalk.gray(`  Final array length: ${actors.length}`));
-      console.log(chalk.gray(`  Each item: ${actors.map(a => `"${a}" (${typeof a})`).join(', ')}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(actors)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${actors.length}`));
+      this.logger.info(chalk.gray(`  Each item: ${actors.map(a => `"${a}" (${typeof a})`).join(', ')}`));
 
       // Backend /from-text endpoint expects exactly 'actor_names' as array
       apiData.actor_names = actors;
@@ -1451,7 +1451,7 @@ export class OrchestrationService {
         sourceField: descriptionData.actors_id_list ? 'actors_id_list' : 'actor_ids'
       });
     } else {
-      console.log(chalk.yellow('⚠️  No actors data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No actors data found in Excel'));
     }
 
     // Handle directors (semicolon-separated) - Backend expects 'director_names' only
@@ -1459,16 +1459,16 @@ export class OrchestrationService {
       // Support both old field name and new field name during transition
       const directorsData = descriptionData.director_ids || descriptionData.directors_id_list;
 
-      console.log(chalk.cyan('🔍 DIRECTORS DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${directorsData}"`));
-      console.log(chalk.gray(`  Data type: ${typeof directorsData}`));
+      this.logger.info(chalk.cyan('🔍 DIRECTORS DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${directorsData}"`));
+      this.logger.info(chalk.gray(`  Data type: ${typeof directorsData}`));
 
       const directors = Array.isArray(directorsData)
         ? directorsData
         : this.splitSemicolonSeparatedList(directorsData);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(directors)}`));
-      console.log(chalk.gray(`  Final array length: ${directors.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(directors)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${directors.length}`));
 
       // Backend /from-text endpoint expects exactly 'director_names' as array
       apiData.director_names = directors;
@@ -1480,7 +1480,7 @@ export class OrchestrationService {
         sourceField: descriptionData.directors_id_list ? 'directors_id_list' : 'director_ids'
       });
     } else {
-      console.log(chalk.yellow('⚠️  No directors data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No directors data found in Excel'));
     }
 
     // Handle producers (semicolon-separated) - Legacy Excel uses 'productors_id_list'
@@ -1488,16 +1488,16 @@ export class OrchestrationService {
       // Support legacy Excel field name 'productors_id_list' and map to backend 'producer_names'
       const producersData = descriptionData.productors_id_list || descriptionData.producer_ids;
 
-      console.log(chalk.cyan('🔍 PRODUCERS DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${producersData}"`));
-      console.log(chalk.gray(`  Source field: ${descriptionData.productors_id_list ? 'productors_id_list (legacy)' : 'producer_ids'}`));
+      this.logger.info(chalk.cyan('🔍 PRODUCERS DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${producersData}"`));
+      this.logger.info(chalk.gray(`  Source field: ${descriptionData.productors_id_list ? 'productors_id_list (legacy)' : 'producer_ids'}`));
 
       const producers = Array.isArray(producersData)
         ? producersData
         : this.splitSemicolonSeparatedList(producersData);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(producers)}`));
-      console.log(chalk.gray(`  Final array length: ${producers.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(producers)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${producers.length}`));
 
       // Backend /from-text endpoint expects exactly 'producer_names' as array
       apiData.producer_names = producers;
@@ -1509,7 +1509,7 @@ export class OrchestrationService {
         count: producers.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No producers data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No producers data found in Excel'));
     }
 
     // Handle authors (semicolon-separated) - Backend expects 'author_names' only
@@ -1517,15 +1517,15 @@ export class OrchestrationService {
       // Support both old field name and new field name during transition
       const authorsData = descriptionData.author_ids || descriptionData.authors_id_list;
 
-      console.log(chalk.cyan('🔍 AUTHORS DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${authorsData}"`));
+      this.logger.info(chalk.cyan('🔍 AUTHORS DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${authorsData}"`));
 
       const authors = Array.isArray(authorsData)
         ? authorsData
         : this.splitSemicolonSeparatedList(authorsData);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(authors)}`));
-      console.log(chalk.gray(`  Final array length: ${authors.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(authors)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${authors.length}`));
 
       // Backend /from-text endpoint expects exactly 'author_names' as array
       apiData.author_names = authors;
@@ -1536,16 +1536,16 @@ export class OrchestrationService {
         count: authors.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No authors data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No authors data found in Excel'));
     }
 
     // Handle original languages (semicolon-separated) - Backend expects 'original_language_names'
     if (descriptionData.original_languages_list || descriptionData.original_languages || descriptionData.original_language) {
       const originalLanguagesData = descriptionData.original_languages_list || descriptionData.original_languages || descriptionData.original_language;
 
-      console.log(chalk.cyan('🔍 ORIGINAL LANGUAGES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${originalLanguagesData}"`));
-      console.log(chalk.gray(`  Source field: ${descriptionData.original_languages_list ? 'original_languages_list' : descriptionData.original_languages ? 'original_languages' : 'original_language (singular)'}`));
+      this.logger.info(chalk.cyan('🔍 ORIGINAL LANGUAGES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${originalLanguagesData}"`));
+      this.logger.info(chalk.gray(`  Source field: ${descriptionData.original_languages_list ? 'original_languages_list' : descriptionData.original_languages ? 'original_languages' : 'original_language (singular)'}`));
 
       const originalLanguages = Array.isArray(originalLanguagesData)
         ? originalLanguagesData
@@ -1554,9 +1554,9 @@ export class OrchestrationService {
       // Apply language normalization to handle gender forms and common variations
       const normalizedOriginalLanguages = originalLanguages.map(lang => this.normalizeLanguage(lang));
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(originalLanguages)}`));
-      console.log(chalk.gray(`  After normalization: ${JSON.stringify(normalizedOriginalLanguages)}`));
-      console.log(chalk.gray(`  Final array length: ${normalizedOriginalLanguages.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(originalLanguages)}`));
+      this.logger.info(chalk.gray(`  After normalization: ${JSON.stringify(normalizedOriginalLanguages)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${normalizedOriginalLanguages.length}`));
 
       // Backend /from-text endpoint expects exactly 'original_language_names' as array
       apiData.original_language_names = normalizedOriginalLanguages;
@@ -1568,15 +1568,15 @@ export class OrchestrationService {
         count: normalizedOriginalLanguages.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No original languages data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No original languages data found in Excel'));
     }
 
     // Handle available subtitle languages (semicolon-separated) - Backend expects 'available_subtitle_language_names'
     if (descriptionData.available_subtitle_languages_list || descriptionData.available_subtitle_languages) {
       const subtitleLanguagesData = descriptionData.available_subtitle_languages_list || descriptionData.available_subtitle_languages;
 
-      console.log(chalk.cyan('🔍 SUBTITLE LANGUAGES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${subtitleLanguagesData}"`));
+      this.logger.info(chalk.cyan('🔍 SUBTITLE LANGUAGES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${subtitleLanguagesData}"`));
 
       const subtitleLanguages = Array.isArray(subtitleLanguagesData)
         ? subtitleLanguagesData
@@ -1585,9 +1585,9 @@ export class OrchestrationService {
       // Apply language normalization to handle gender forms and common variations
       const normalizedSubtitleLanguages = subtitleLanguages.map(lang => this.normalizeLanguage(lang));
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(subtitleLanguages)}`));
-      console.log(chalk.gray(`  After normalization: ${JSON.stringify(normalizedSubtitleLanguages)}`));
-      console.log(chalk.gray(`  Final array length: ${normalizedSubtitleLanguages.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(subtitleLanguages)}`));
+      this.logger.info(chalk.gray(`  After normalization: ${JSON.stringify(normalizedSubtitleLanguages)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${normalizedSubtitleLanguages.length}`));
 
       // Backend /from-text endpoint expects exactly 'available_subtitle_language_names' as array
       apiData.available_subtitle_language_names = normalizedSubtitleLanguages;
@@ -1598,15 +1598,15 @@ export class OrchestrationService {
         count: normalizedSubtitleLanguages.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No subtitle languages data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No subtitle languages data found in Excel'));
     }
 
     // Handle available audio languages (semicolon-separated) - Backend expects 'available_audio_language_names'
     if (descriptionData.available_audio_languages_list || descriptionData.available_audio_languages) {
       const audioLanguagesData = descriptionData.available_audio_languages_list || descriptionData.available_audio_languages;
 
-      console.log(chalk.cyan('🔍 AUDIO LANGUAGES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${audioLanguagesData}"`));
+      this.logger.info(chalk.cyan('🔍 AUDIO LANGUAGES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${audioLanguagesData}"`));
 
       const audioLanguages = Array.isArray(audioLanguagesData)
         ? audioLanguagesData
@@ -1615,9 +1615,9 @@ export class OrchestrationService {
       // Apply language normalization to handle gender forms and common variations
       const normalizedAudioLanguages = audioLanguages.map(lang => this.normalizeLanguage(lang));
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(audioLanguages)}`));
-      console.log(chalk.gray(`  After normalization: ${JSON.stringify(normalizedAudioLanguages)}`));
-      console.log(chalk.gray(`  Final array length: ${normalizedAudioLanguages.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(audioLanguages)}`));
+      this.logger.info(chalk.gray(`  After normalization: ${JSON.stringify(normalizedAudioLanguages)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${normalizedAudioLanguages.length}`));
 
       // Backend /from-text endpoint expects exactly 'available_audio_language_names' as array
       apiData.available_audio_language_names = normalizedAudioLanguages;
@@ -1628,18 +1628,18 @@ export class OrchestrationService {
         count: normalizedAudioLanguages.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No audio languages data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No audio languages data found in Excel'));
     }
 
     // Handle available countries (semicolon-separated) - Backend expects 'available_country_names'
     if (descriptionData.available_countries_id_list) {
-      console.log(chalk.cyan('🔍 COUNTRIES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.available_countries_id_list}"`));
+      this.logger.info(chalk.cyan('🔍 COUNTRIES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${descriptionData.available_countries_id_list}"`));
 
       const countries = this.splitSemicolonSeparatedList(descriptionData.available_countries_id_list);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(countries)}`));
-      console.log(chalk.gray(`  Final array length: ${countries.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(countries)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${countries.length}`));
 
       // Backend /from-text endpoint expects exactly 'available_country_names' as array
       apiData.available_country_names = countries;
@@ -1650,18 +1650,18 @@ export class OrchestrationService {
         count: countries.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No countries data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No countries data found in Excel'));
     }
 
     // Handle audience categories (semicolon-separated) - Backend expects 'audience_category_names'
     if (descriptionData.audience_categories_id_list) {
-      console.log(chalk.cyan('🔍 AUDIENCE CATEGORIES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.audience_categories_id_list}"`));
+      this.logger.info(chalk.cyan('🔍 AUDIENCE CATEGORIES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${descriptionData.audience_categories_id_list}"`));
 
       const audienceCategories = this.splitSemicolonSeparatedList(descriptionData.audience_categories_id_list);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(audienceCategories)}`));
-      console.log(chalk.gray(`  Final array length: ${audienceCategories.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(audienceCategories)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${audienceCategories.length}`));
 
       // Backend /from-text endpoint expects exactly 'audience_category_names' as array
       apiData.audience_category_names = audienceCategories;
@@ -1672,18 +1672,18 @@ export class OrchestrationService {
         count: audienceCategories.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No audience categories data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No audience categories data found in Excel'));
     }
 
     // Handle eligible plans (semicolon-separated) - Backend expects 'eligible_plan_names'
     if (descriptionData.eligible_plans_id_list) {
-      console.log(chalk.cyan('🔍 ELIGIBLE PLANS DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${descriptionData.eligible_plans_id_list}"`));
+      this.logger.info(chalk.cyan('🔍 ELIGIBLE PLANS DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${descriptionData.eligible_plans_id_list}"`));
 
       const eligiblePlans = this.splitSemicolonSeparatedList(descriptionData.eligible_plans_id_list);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(eligiblePlans)}`));
-      console.log(chalk.gray(`  Final array length: ${eligiblePlans.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(eligiblePlans)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${eligiblePlans.length}`));
 
       // Backend /from-text endpoint expects exactly 'eligible_plan_names' as array
       apiData.eligible_plan_names = eligiblePlans;
@@ -1694,7 +1694,7 @@ export class OrchestrationService {
         count: eligiblePlans.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No eligible plans data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No eligible plans data found in Excel'));
     }
 
     // Handle hashtags (semicolon-separated)
@@ -1708,16 +1708,16 @@ export class OrchestrationService {
       // Support legacy Excel field name 'hashtags_id_list' and map to backend 'tags'
       const tagsData = descriptionData.hashtags_id_list || descriptionData.tags;
 
-      console.log(chalk.cyan('🔍 TAGS DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${tagsData}"`));
-      console.log(chalk.gray(`  Source field: ${descriptionData.hashtags_id_list ? 'hashtags_id_list (legacy)' : 'tags'}`));
+      this.logger.info(chalk.cyan('🔍 TAGS DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${tagsData}"`));
+      this.logger.info(chalk.gray(`  Source field: ${descriptionData.hashtags_id_list ? 'hashtags_id_list (legacy)' : 'tags'}`));
 
       const tags = Array.isArray(tagsData)
         ? tagsData
         : this.splitSemicolonSeparatedList(tagsData);
 
-      console.log(chalk.gray(`  Parsed tags: [${tags.join(', ')}]`));
-      console.log(chalk.gray(`  Tags count: ${tags.length}`));
+      this.logger.info(chalk.gray(`  Parsed tags: [${tags.join(', ')}]`));
+      this.logger.info(chalk.gray(`  Tags count: ${tags.length}`));
 
       // Backend /from-text endpoint expects exactly 'tags' as array
       apiData.tags = tags;
@@ -1729,7 +1729,7 @@ export class OrchestrationService {
         count: tags.length
       });
     } else {
-      console.log(chalk.yellow('⚠️  No tags data found in Excel'));
+      this.logger.info(chalk.yellow('⚠️  No tags data found in Excel'));
     }
 
     // Handle keywords (semicolon-separated) - Backend expects 'human_keywords_text_list'
@@ -1774,16 +1774,16 @@ export class OrchestrationService {
     if (descriptionData.origin_countries_list || descriptionData.origin_countries || descriptionData.origin_country || descriptionData.origin_country_name) {
       const originCountriesData = descriptionData.origin_countries_list || descriptionData.origin_countries || descriptionData.origin_country || descriptionData.origin_country_name;
 
-      console.log(chalk.cyan('🔍 ORIGIN COUNTRIES DEBUG:'));
-      console.log(chalk.gray(`  Raw Excel data: "${originCountriesData}"`));
-      console.log(chalk.gray(`  Source field: ${descriptionData.origin_countries_list ? 'origin_countries_list' : descriptionData.origin_countries ? 'origin_countries' : descriptionData.origin_country ? 'origin_country' : 'origin_country_name'}`));
+      this.logger.info(chalk.cyan('🔍 ORIGIN COUNTRIES DEBUG:'));
+      this.logger.info(chalk.gray(`  Raw Excel data: "${originCountriesData}"`));
+      this.logger.info(chalk.gray(`  Source field: ${descriptionData.origin_countries_list ? 'origin_countries_list' : descriptionData.origin_countries ? 'origin_countries' : descriptionData.origin_country ? 'origin_country' : 'origin_country_name'}`));
 
       const originCountries = Array.isArray(originCountriesData)
         ? originCountriesData
         : this.splitSemicolonSeparatedList(originCountriesData);
 
-      console.log(chalk.gray(`  After splitting: ${JSON.stringify(originCountries)}`));
-      console.log(chalk.gray(`  Final array length: ${originCountries.length}`));
+      this.logger.info(chalk.gray(`  After splitting: ${JSON.stringify(originCountries)}`));
+      this.logger.info(chalk.gray(`  Final array length: ${originCountries.length}`));
 
       // Backend /from-text endpoint expects exactly 'origin_country_names' as array
       apiData.origin_country_names = originCountries;
@@ -1796,9 +1796,9 @@ export class OrchestrationService {
       });
     } else {
       // No origin country provided - use default value "Corée du Sud"
-      console.log(chalk.cyan('🔍 ORIGIN COUNTRIES DEBUG:'));
-      console.log(chalk.yellow('  No origin country data found in Excel - using default'));
-      console.log(chalk.gray(`  Default value: "Corée du Sud"`));
+      this.logger.info(chalk.cyan('🔍 ORIGIN COUNTRIES DEBUG:'));
+      this.logger.info(chalk.yellow('  No origin country data found in Excel - using default'));
+      this.logger.info(chalk.gray(`  Default value: "Corée du Sud"`));
 
       // Backend /from-text endpoint expects exactly 'origin_country_names' as array
       apiData.origin_country_names = ["Corée du Sud"];
@@ -1968,7 +1968,7 @@ export class OrchestrationService {
         `${this.config.backend.baseUrl}/api/v1/seasons?q=${encodeURIComponent(seasonName)}&limit=50`
       );
 
-      console.log(chalk.gray(`  Searching for season: "${seasonName}"`));
+      this.logger.info(chalk.gray(`  Searching for season: "${seasonName}"`));
 
       const searchResponse = await axios.get(searchUrl, {
         headers: { 'Authorization': `Bearer ${authResult.token}` },
@@ -1981,12 +1981,12 @@ export class OrchestrationService {
       );
 
       if (season) {
-        console.log(chalk.green(`  ✅ Using existing season: ${season.season_name} (ID: ${season.id})`));
+        this.logger.info(chalk.green(`  ✅ Using existing season: ${season.season_name} (ID: ${season.id})`));
         return season;
       }
 
       // Create new season
-      console.log(chalk.yellow(`  Creating new season: ${seasonName}`));
+      this.logger.info(chalk.yellow(`  Creating new season: ${seasonName}`));
 
       const createUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/seasons`);
 
@@ -2008,7 +2008,7 @@ export class OrchestrationService {
       });
 
       season = createResponse.data;
-      console.log(chalk.green(`  ✅ Created season: ${season.season_name} (ID: ${season.id})`));
+      this.logger.info(chalk.green(`  ✅ Created season: ${season.season_name} (ID: ${season.id})`));
 
       return season;
 
@@ -2023,7 +2023,7 @@ export class OrchestrationService {
    */
   async cleanupSeasonUpload(mediaDescriptionId, seasonId, seasonName, authToken) {
     try {
-      console.log(chalk.cyan(`🧹 Cleaning up season upload for: ${seasonName}`));
+      this.logger.info(chalk.cyan(`🧹 Cleaning up season upload for: ${seasonName}`));
 
       // Step 1: Update media description to remove season_id (keep the episode_title set earlier)
       const mediaDescriptionUpdateUrl = this.forceIPv4Url(
@@ -2034,7 +2034,7 @@ export class OrchestrationService {
         season_id: null      // Remove episode-season relationship
       };
 
-      console.log(chalk.gray(`  • Removing episode-season link from media description ${mediaDescriptionId}`));
+      this.logger.info(chalk.gray(`  • Removing episode-season link from media description ${mediaDescriptionId}`));
 
       const mediaDescriptionResponse = await axios.patch(mediaDescriptionUpdateUrl, mediaDescriptionUpdate, {
         headers: {
@@ -2045,9 +2045,9 @@ export class OrchestrationService {
       });
 
       if (mediaDescriptionResponse.status === 200 || mediaDescriptionResponse.status === 204) {
-        console.log(chalk.green(`  ✅ Media description cleaned up successfully`));
+        this.logger.info(chalk.green(`  ✅ Media description cleaned up successfully`));
       } else {
-        console.log(chalk.red(`  ❌ Failed to clean up media description (status: ${mediaDescriptionResponse.status})`));
+        this.logger.info(chalk.red(`  ❌ Failed to clean up media description (status: ${mediaDescriptionResponse.status})`));
       }
 
       // Step 2: Update season to link this media description as the season description
@@ -2059,7 +2059,7 @@ export class OrchestrationService {
         general_media_description_id: mediaDescriptionId
       };
 
-      console.log(chalk.gray(`  • Linking media description ${mediaDescriptionId} as season description for season ${seasonId}`));
+      this.logger.info(chalk.gray(`  • Linking media description ${mediaDescriptionId} as season description for season ${seasonId}`));
 
       const seasonResponse = await axios.put(seasonUpdateUrl, seasonUpdate, {
         headers: {
@@ -2070,14 +2070,14 @@ export class OrchestrationService {
       });
 
       if (seasonResponse.status === 200 || seasonResponse.status === 204) {
-        console.log(chalk.green(`  ✅ Season description relationship established successfully`));
-        console.log(chalk.cyan(`🎯 Season cleanup completed: "${seasonName}" now has proper description relationship`));
+        this.logger.info(chalk.green(`  ✅ Season description relationship established successfully`));
+        this.logger.info(chalk.cyan(`🎯 Season cleanup completed: "${seasonName}" now has proper description relationship`));
       } else {
-        console.log(chalk.red(`  ❌ Failed to establish season description relationship (status: ${seasonResponse.status})`));
+        this.logger.info(chalk.red(`  ❌ Failed to establish season description relationship (status: ${seasonResponse.status})`));
       }
 
     } catch (error) {
-      console.log(chalk.red(`❌ Season cleanup failed: ${error.message}`));
+      this.logger.info(chalk.red(`❌ Season cleanup failed: ${error.message}`));
       this.logger.error(`Season cleanup failed for ${seasonName}: ${error.message}`);
 
       if (error.response) {
@@ -2086,7 +2086,7 @@ export class OrchestrationService {
       }
 
       // Don't throw - cleanup failure shouldn't break the main upload flow
-      console.log(chalk.yellow(`⚠️  Season upload completed but cleanup failed - manual cleanup may be needed`));
+      this.logger.info(chalk.yellow(`⚠️  Season upload completed but cleanup failed - manual cleanup may be needed`));
     }
   }
 
@@ -2105,7 +2105,7 @@ export class OrchestrationService {
         `${this.config.backend.baseUrl}/api/v1/programs?q=${encodeURIComponent(programName)}&limit=50`
       );
 
-      console.log(chalk.gray(`  Searching for program: "${programName}"`));
+      this.logger.info(chalk.gray(`  Searching for program: "${programName}"`));
 
       const searchResponse = await axios.get(searchUrl, {
         headers: { 'Authorization': `Bearer ${authResult.token}` },
@@ -2118,12 +2118,12 @@ export class OrchestrationService {
       );
 
       if (program) {
-        console.log(chalk.green(`  ✅ Using existing program: ${program.program_name} (ID: ${program.id})`));
+        this.logger.info(chalk.green(`  ✅ Using existing program: ${program.program_name} (ID: ${program.id})`));
         return program;
       }
 
       // Create new program
-      console.log(chalk.yellow(`  Creating new program: ${programName}`));
+      this.logger.info(chalk.yellow(`  Creating new program: ${programName}`));
 
       const createUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/programs`);
 
@@ -2140,7 +2140,7 @@ export class OrchestrationService {
       });
 
       program = createResponse.data;
-      console.log(chalk.green(`  ✅ Created program: ${program.program_name} (ID: ${program.id})`));
+      this.logger.info(chalk.green(`  ✅ Created program: ${program.program_name} (ID: ${program.id})`));
 
       return program;
 
