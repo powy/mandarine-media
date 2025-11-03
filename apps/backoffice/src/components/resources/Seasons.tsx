@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   List,
   Datagrid,
@@ -27,9 +27,14 @@ import {
   FilterButton,
   ExportButton,
   ReferenceField,
+  useRecordContext,
+  useNotify,
+  useRefresh,
 } from 'react-admin';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Box } from '@mui/material';
 import { MediaDescriptionInput } from '../inputs/MediaDescriptionInput';
+import { getSeasonJSON, refreshSeasonJSON, refreshAllSeasonJSONs } from 'share';
 
 // Define filters for the season list
 // API supports: q (search) and program_id (filter by program)
@@ -68,11 +73,152 @@ const SeasonToolbar = () => {
   );
 };
 
+// JSON Dialog Component for viewing season JSON cache
+const SeasonJsonDialog = ({ open, onClose, title, jsonData }) => (
+  <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <DialogTitle>{title}</DialogTitle>
+    <DialogContent>
+      <Box
+        component="pre"
+        sx={{
+          backgroundColor: '#f5f5f5',
+          padding: 2,
+          borderRadius: 1,
+          overflow: 'auto',
+          maxHeight: '60vh',
+          fontSize: '0.875rem',
+          fontFamily: 'monospace',
+        }}
+      >
+        {JSON.stringify(jsonData, null, 2)}
+      </Box>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={onClose}>Close</Button>
+    </DialogActions>
+  </Dialog>
+);
+
+// View JSON Button Component
+const ViewJsonButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
+  const [jsonData, setJsonData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleViewJson = async () => {
+    if (!record) return;
+
+    setIsLoading(true);
+    try {
+      const json = await getSeasonJSON(record.id);
+      setJsonData(json);
+      setJsonDialogOpen(true);
+    } catch (error) {
+      notify(`Error fetching JSON: ${error.message}`, { type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        onClick={handleViewJson}
+        disabled={isLoading}
+        label={isLoading ? "Loading..." : "View JSON"}
+        variant="outlined"
+        color="primary"
+      />
+      <SeasonJsonDialog
+        open={jsonDialogOpen}
+        onClose={() => setJsonDialogOpen(false)}
+        title={`Season JSON: ${record?.season_name || `Season ${record?.season_number}`}`}
+        jsonData={jsonData}
+      />
+    </>
+  );
+};
+
+// Refresh JSON Button Component
+const RefreshJsonButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRefreshJson = async () => {
+    if (!record) return;
+
+    setIsLoading(true);
+    try {
+      await refreshSeasonJSON(record.id);
+      notify('JSON cache refreshed successfully', { type: 'success' });
+      refresh();
+    } catch (error) {
+      notify(`Error refreshing JSON: ${error.message}`, { type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRefreshJson}
+      disabled={isLoading}
+      label={isLoading ? "Refreshing..." : "Refresh JSON"}
+      variant="outlined"
+      color="secondary"
+    />
+  );
+};
+
+// Bulk Refresh JSON Button Component
+const BulkRefreshSeasonJsonButton = () => {
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRefreshAll = async () => {
+    setIsLoading(true);
+    try {
+      const result = await refreshAllSeasonJSONs();
+      notify(
+        `Successfully refreshed ${result.refreshed_count}/${result.total_count} season JSONs`,
+        { type: 'success' }
+      );
+      if (result.failed_count > 0) {
+        notify(
+          `${result.failed_count} seasons failed to refresh`,
+          { type: 'warning' }
+        );
+      }
+      refresh();
+    } catch (error) {
+      notify(`Error refreshing all JSONs: ${error.message}`, { type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRefreshAll}
+      disabled={isLoading}
+      label={isLoading ? "Refreshing..." : "Refresh All JSONs"}
+      variant="outlined"
+      color="primary"
+    />
+  );
+};
+
 const SeasonListActions = () => (
   <TopToolbar>
     <FilterButton />
     <CreateButton />
     <ExportButton />
+    <BulkRefreshSeasonJsonButton />
   </TopToolbar>
 );
 
@@ -80,6 +226,8 @@ const SeasonShowActions = () => (
   <TopToolbar>
     <ListButton label="Back to Seasons" />
     <EditButton />
+    <ViewJsonButton />
+    <RefreshJsonButton />
   </TopToolbar>
 );
 

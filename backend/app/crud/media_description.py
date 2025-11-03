@@ -61,6 +61,12 @@ class CRUDMediaDescription(
                 joinedload(MediaDescription.excerpts),
                 joinedload(MediaDescription.media_themes),
                 joinedload(MediaDescription.additional_images),
+                # Eager load all 5 image format relationships for JSON serialization
+                joinedload(MediaDescription.image_1920_1080),
+                joinedload(MediaDescription.image_1920_720),
+                joinedload(MediaDescription.image_1080_1080),
+                joinedload(MediaDescription.image_810_1080),
+                joinedload(MediaDescription.image_1080_1920),
             )
             .filter(MediaDescription.id == id)
             .first()
@@ -626,6 +632,12 @@ class CRUDMediaDescription(
                 joinedload(MediaDescription.main_video_file),
                 joinedload(MediaDescription.program),
                 joinedload(MediaDescription.season),
+                # Eager load all 5 image format relationships for JSON serialization
+                joinedload(MediaDescription.image_1920_1080),
+                joinedload(MediaDescription.image_1920_720),
+                joinedload(MediaDescription.image_1080_1080),
+                joinedload(MediaDescription.image_810_1080),
+                joinedload(MediaDescription.image_1080_1920),
             )
             .filter(self.model.id == id)
             .first()

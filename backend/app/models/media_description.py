@@ -107,8 +107,8 @@ class MediaDescription(Base):
     
     # Relationships
     main_video_file = relationship("VideoFile", backref="media_descriptions")
-    program = relationship("Program", back_populates="media_descriptions")
-    season = relationship("Season", back_populates="media_descriptions")
+    program = relationship("Program", foreign_keys=[program_id], back_populates="media_descriptions")
+    season = relationship("Season", foreign_keys=[season_id], back_populates="media_descriptions")
     video_file_reports = relationship("VideoFileReport", back_populates="media_description")
 
     # Image relationships for thumbnail formats

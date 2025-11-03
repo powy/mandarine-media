@@ -66,3 +66,57 @@ class SeasonInDB(SeasonBase):
 
 class Season(SeasonInDB):
     pass
+
+
+# JSON Cache Schemas for Season
+
+class SeasonEpisodeItemJSON(BaseModel):
+    """Individual episode in the season JSON cache"""
+    id: str
+    title: str
+    media_type: str
+    friendly_url: Optional[str]
+    slug: Optional[str]
+    media_categories_list: Optional[List[str]]
+    descriptive_summary_text: Optional[str]
+    is_featured: bool
+    program_id: Optional[str]
+    season_id: Optional[str]
+    episode_number: Optional[int]
+    episode_order: int  # Order within the season
+    # Picture format URLs for all 5 supported formats
+    image_1920_1080_url: Optional[str] = None
+    image_1920_720_url: Optional[str] = None
+    image_1080_1080_url: Optional[str] = None
+    image_810_1080_url: Optional[str] = None
+    image_1080_1920_url: Optional[str] = None
+
+
+class SeasonJSON(BaseModel):
+    """Complete JSON representation of a Season with episodes"""
+    id: str
+    season_number: int
+    season_name: Optional[str]
+    program_id: Optional[str]
+    creation_date_utc: str
+    last_updated: str
+    episode_count: int
+    general_description: Optional[dict] = None  # Serialized MediaDescription
+    episodes: List[SeasonEpisodeItemJSON]
+
+
+class SeasonBulkRefreshResponse(BaseModel):
+    """Schema for bulk JSON cache refresh response"""
+    message: str
+    refreshed_count: int
+    failed_count: int
+    total_count: int
+    errors: List[str] = []
+
+
+# Update existing Season schema to include JSON fields
+class SeasonWithJSON(SeasonInDB):
+    """Season with JSON cache metadata"""
+    json_last_updated: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)

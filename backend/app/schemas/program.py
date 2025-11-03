@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 
@@ -56,3 +56,33 @@ class ProgramInDB(ProgramBase):
 
 class Program(ProgramInDB):
     pass
+
+
+# JSON Cache Schemas for Program
+
+class ProgramJSON(BaseModel):
+    """Complete JSON representation of a Program with nested seasons"""
+    id: str
+    program_name: str
+    creation_date_utc: str
+    last_updated: str
+    season_count: int
+    general_description: Optional[dict] = None  # Serialized MediaDescription
+    seasons: List[dict]  # List of SeasonJSON objects
+
+
+class ProgramBulkRefreshResponse(BaseModel):
+    """Schema for bulk JSON cache refresh response"""
+    message: str
+    refreshed_count: int
+    failed_count: int
+    total_count: int
+    errors: List[str] = []
+
+
+# Update existing Program schema to include JSON fields
+class ProgramWithJSON(ProgramInDB):
+    """Program with JSON cache metadata"""
+    json_last_updated: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)

@@ -344,6 +344,69 @@ export interface Season {
   media_descriptions?: MediaDescription[];
 }
 
+// Season JSON Cache Types
+
+export interface SeasonEpisodeItemJSON {
+  id: string;
+  title: string;
+  media_type: string;
+  friendly_url?: string;
+  slug?: string;
+  media_categories_list?: string[];
+  descriptive_summary_text?: string;
+  is_featured: boolean;
+  program_id?: string;
+  season_id?: string;
+  episode_number?: number;
+  episode_order: number;  // Order within the season
+  // Picture format URLs for all 5 supported formats
+  image_1920_1080_url?: string;
+  image_1920_720_url?: string;
+  image_1080_1080_url?: string;
+  image_810_1080_url?: string;
+  image_1080_1920_url?: string;
+}
+
+export interface SeasonJSON {
+  id: string;
+  season_number: number;
+  season_name?: string;
+  program_id?: string;
+  creation_date_utc: string;
+  last_updated: string;
+  episode_count: number;
+  general_description?: SeasonEpisodeItemJSON;
+  episodes: SeasonEpisodeItemJSON[];
+}
+
+export interface SeasonBulkRefreshResponse {
+  message: string;
+  refreshed_count: number;
+  failed_count: number;
+  total_count: number;
+  errors: string[];
+}
+
+// Program JSON Cache Types
+
+export interface ProgramJSON {
+  id: string;
+  program_name: string;
+  creation_date_utc: string;
+  last_updated: string;
+  season_count: number;
+  general_description?: SeasonEpisodeItemJSON;  // Reuse MediaDescription JSON structure
+  seasons: SeasonJSON[];  // Nested complete season JSONs
+}
+
+export interface ProgramBulkRefreshResponse {
+  message: string;
+  refreshed_count: number;
+  failed_count: number;
+  total_count: number;
+  errors: string[];
+}
+
 export interface Language {
   id: string;
   creation_date_utc: string;

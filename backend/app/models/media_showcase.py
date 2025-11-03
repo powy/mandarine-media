@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional
 from app.db.database import Base
 from app.models.common import GUID, JSONArray
 from app.models.associations import media_showcase_media_descriptions, media_showcase_media_themes
+from app.utils.media_description_serializer import serialize_media_description_to_json
 
 
 class MediaShowcase(Base):
@@ -71,77 +72,16 @@ class MediaShowcase(Base):
         # Get ordered media descriptions with their details
         # Filter: only include published media descriptions
         for media_desc in [md for md in self.media_descriptions if md.content_status == "published"]:
-            # Determine program_id and season_id based on media_type
-            # Special handling for season and program media types
-            if media_desc.media_type == "season":
-                # This MediaDescription IS a season's general description
-                # Find the Season that points to this MediaDescription
-                from app.models.season import Season
-                from app.db.database import SessionLocal
+            # Use common serialization function
+            item_data = serialize_media_description_to_json(
+                media_desc,
+                db_session=db_session,
+                thumbnail_format=self.thumbnail_format
+            )
 
-                db = db_session if db_session else SessionLocal()
-                should_close = db_session is None
+            # Add showcase-specific display_order
+            item_data["display_order"] = self._get_item_priority_in_showcase(media_desc.id, db_session)
 
-                try:
-                    season = db.query(Season).filter(
-                        Season.general_media_description_id == media_desc.id
-                    ).first()
-
-                    program_id_val = str(season.program_id) if season and season.program_id else None
-                    season_id_val = str(season.id) if season else None
-                finally:
-                    if should_close:
-                        db.close()
-
-            elif media_desc.media_type == "program":
-                # This MediaDescription IS a program's general description
-                # Find the Program that points to this MediaDescription
-                from app.models.program import Program
-                from app.db.database import SessionLocal
-
-                db = db_session if db_session else SessionLocal()
-                should_close = db_session is None
-
-                try:
-                    program = db.query(Program).filter(
-                        Program.general_media_description_id == media_desc.id
-                    ).first()
-
-                    program_id_val = str(program.id) if program else None
-                    season_id_val = None  # Programs don't have a season
-                finally:
-                    if should_close:
-                        db.close()
-
-            else:
-                # Regular episode or other content type - use standard FK fields
-                program_id_val = str(media_desc.program_id) if media_desc.program_id else None
-                season_id_val = str(media_desc.season_id) if media_desc.season_id else None
-
-            # Get all format URLs
-            format_urls = self._get_all_format_urls(media_desc)
-
-            item_data = {
-                "id": str(media_desc.id),
-                "title": media_desc.episode_title,
-                "media_type": media_desc.media_type,
-                "friendly_url": media_desc.friendly_url,
-                "slug": media_desc.slug,
-                "media_categories_list": media_desc.media_categories_list,
-                "descriptive_summary_text": media_desc.descriptive_summary_text,
-                "is_featured": media_desc.is_featured,
-                "thumbnail_url": self._get_thumbnail_url(media_desc, self.thumbnail_format),
-                "program_id": program_id_val,
-                "season_id": season_id_val,
-                "episode_number": media_desc.episode_number,
-                "display_order": self._get_item_priority_in_showcase(media_desc.id, db_session),
-                # Add all 5 format URLs
-                "image_1920_1080_url": format_urls["image_1920_1080_url"],
-                "image_1920_720_url": format_urls["image_1920_720_url"],
-                "image_1080_1080_url": format_urls["image_1080_1080_url"],
-                "image_810_1080_url": format_urls["image_810_1080_url"],
-                "image_1080_1920_url": format_urls["image_1080_1920_url"]
-            }
             json_data["items"].append(item_data)
 
         # Store the JSON

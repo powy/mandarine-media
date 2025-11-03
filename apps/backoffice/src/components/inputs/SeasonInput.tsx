@@ -81,14 +81,14 @@ export const SeasonInput: React.FC<SeasonInputProps> = ({
         filterToQuery={(searchText) => ({ q: searchText })}
       >
         <AutocompleteInput
-          optionText={(record) => record.title || `Season ${record.season_number}`}
+          optionText={(record) => record.season_name || `Season ${record.season_number}`}
           optionValue="id"
           matchSuggestion={(searchText, suggestion) => {
             if (!searchText) return true;
             const search = searchText.toLowerCase();
             return (
               suggestion.season_number?.toString().includes(search) ||
-              suggestion.title?.toLowerCase().includes(search) ||
+              suggestion.season_name?.toLowerCase().includes(search) ||
               suggestion.id?.toLowerCase().includes(search) // Allow searching by UUID too
             );
           }}

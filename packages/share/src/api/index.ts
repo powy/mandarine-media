@@ -28,8 +28,8 @@ export * from './category-lists';
 
 // Core function exports
 export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData, getSeasonScreenData, getProgramScreenData, getProgramScreenDataByProgramId, completeFromMux } from './media';
-export { getSeason, getSeasonsByProgram } from './seasons';
-export { getProgram } from './programs';
+export { getSeason, getSeasonsByProgram, getSeasonJSON, refreshSeasonJSON, refreshAllSeasonJSONs } from './seasons';
+export { getProgram, getProgramJSON, refreshProgramJSON, refreshAllProgramJSONs } from './programs';
 
 // API 1.13 New function exports
 export {

@@ -164,6 +164,82 @@ def delete_program(
     program = crud.program.get(db=db, id=id)
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
-    
+
     program = crud.program.remove(db=db, id=id)
     return program
+
+
+# JSON Cache Management Endpoints
+
+@router.get("/{program_id}/json", response_model=schemas.ProgramJSON)
+def get_program_json_cache(
+    *,
+    db: Session = Depends(deps.get_db),
+    program_id: UUID,
+    refresh: bool = Query(False, description="Force refresh of cached JSON"),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
+) -> Any:
+    """
+    Get cached JSON representation of program with nested seasons.
+
+    **Query Parameters:**
+    - `refresh` (bool): If true, regenerate JSON before returning
+
+    **Access:** All authenticated users can read program JSON.
+    """
+    json_data = crud.program.get_json_cache(db=db, program_id=program_id, refresh=refresh)
+
+    if not json_data:
+        raise HTTPException(status_code=404, detail="Program not found")
+
+    return json_data
+
+
+@router.post("/{program_id}/refresh-cache", response_model=schemas.Program)
+def refresh_program_json_cache(
+    *,
+    db: Session = Depends(deps.get_db),
+    program_id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Force refresh of the JSON cache for a program.
+
+    **Access:** Admin users only.
+    """
+    try:
+        program = crud.program.refresh_json_cache(db=db, program_id=program_id)
+        return program
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/refresh-all-caches", response_model=schemas.ProgramBulkRefreshResponse)
+def refresh_all_program_json_caches(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Refresh JSON cache for all programs.
+
+    **Access:** Admin users only.
+
+    This operation may take some time for large databases.
+    Returns statistics about the refresh operation.
+    """
+    try:
+        result = crud.program.refresh_all_json_caches(db=db)
+
+        return schemas.ProgramBulkRefreshResponse(
+            message=f"Bulk JSON cache refresh completed. {result['refreshed_count']} successful, {result['failed_count']} errors.",
+            refreshed_count=result['refreshed_count'],
+            failed_count=result['failed_count'],
+            total_count=result['total_count'],
+            errors=result['errors']
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Bulk refresh failed: {str(e)}"
+        )

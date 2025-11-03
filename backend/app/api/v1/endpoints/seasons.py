@@ -168,3 +168,79 @@ def delete_season(
 
     season = crud.season.remove(db=db, id=id)
     return season
+
+
+# JSON Cache Management Endpoints
+
+@router.get("/{season_id}/json", response_model=schemas.SeasonJSON)
+def get_season_json_cache(
+    *,
+    db: Session = Depends(deps.get_db),
+    season_id: UUID,
+    refresh: bool = Query(False, description="Force refresh of cached JSON"),
+    current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
+) -> Any:
+    """
+    Get cached JSON representation of season with episode list.
+
+    **Query Parameters:**
+    - `refresh` (bool): If true, regenerate JSON before returning
+
+    **Access:** All authenticated users can read season JSON.
+    """
+    json_data = crud.season.get_json_cache(db=db, season_id=season_id, refresh=refresh)
+
+    if not json_data:
+        raise HTTPException(status_code=404, detail="Season not found")
+
+    return json_data
+
+
+@router.post("/{season_id}/refresh-cache", response_model=schemas.Season)
+def refresh_season_json_cache(
+    *,
+    db: Session = Depends(deps.get_db),
+    season_id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Force refresh of the JSON cache for a season.
+
+    **Access:** Admin users only.
+    """
+    try:
+        season = crud.season.refresh_json_cache(db=db, season_id=season_id)
+        return season
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/refresh-all-caches", response_model=schemas.SeasonBulkRefreshResponse)
+def refresh_all_season_json_caches(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Refresh JSON cache for all seasons.
+
+    **Access:** Admin users only.
+
+    This operation may take some time for large databases.
+    Returns statistics about the refresh operation.
+    """
+    try:
+        result = crud.season.refresh_all_json_caches(db=db)
+
+        return schemas.SeasonBulkRefreshResponse(
+            message=f"Bulk JSON cache refresh completed. {result['refreshed_count']} successful, {result['failed_count']} errors.",
+            refreshed_count=result['refreshed_count'],
+            failed_count=result['failed_count'],
+            total_count=result['total_count'],
+            errors=result['errors']
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Bulk refresh failed: {str(e)}"
+        )

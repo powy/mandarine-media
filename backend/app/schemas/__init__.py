@@ -52,8 +52,20 @@ from .program import (
     ProgramCreateRequest,
     ProgramUpdate,
     ProgramInDB,
+    ProgramJSON,
+    ProgramBulkRefreshResponse,
+    ProgramWithJSON,
 )
-from .season import Season, SeasonCreate, SeasonUpdate, SeasonInDB
+from .season import (
+    Season,
+    SeasonCreate,
+    SeasonUpdate,
+    SeasonInDB,
+    SeasonJSON,
+    SeasonEpisodeItemJSON,
+    SeasonBulkRefreshResponse,
+    SeasonWithJSON,
+)
 from .language import Language, LanguageCreate, LanguageUpdate, LanguageInDB
 from .country import Country, CountryCreate, CountryUpdate, CountryInDB
 from .picture import Picture, PictureCreate, PictureUpdate, PictureInDB
