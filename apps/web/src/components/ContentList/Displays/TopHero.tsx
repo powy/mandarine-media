@@ -23,7 +23,6 @@ const BigCarousel: React.FC<BigCarouselProps> = ({ showcase }) => {
   } = useMediaShowcaseLogic(showcase);
 
   if (!isValidShowcase) {
-    console.log('not valid showcase? %o', showcase);
     return null;
   }
 
@@ -60,12 +59,13 @@ const BigCarousel: React.FC<BigCarouselProps> = ({ showcase }) => {
   };
 
   const renderCarouselItem = (item: MediaShowcaseItem) => {
+    console.log('tophero item %o', item);
     return (
       <div
         key={item.id}
-        className="cursor-pointer flex flex-col items-left absolute bottom-16 w-full px-16"
+        className="cursor-pointer flex flex-col items-left absolute bottom-16 w-full max-w-[1920px] m-auto px-4"
       >
-        <h3 className="text-white text-lg font-extrabold text-left leading-tight max-w-sm p-4">
+        <h3 className="text-white text-lg font-extrabold text-left leading-tight max-w-sm py-4">
           {item.title}
         </h3>
         {item.descriptive_summary_text && (
@@ -75,7 +75,8 @@ const BigCarousel: React.FC<BigCarouselProps> = ({ showcase }) => {
         )}
         <div className="flex flex-row items-center">
           <ContentThemedButton
-            className="m-2"
+            radius="sm"
+            className="my-4"
             onClick={() => handleItemClick(item)}
           >
             Regarder

@@ -13,9 +13,9 @@ export const getMediaShowcaseItemRoute = (item: MediaShowcaseItem): string => {
     case 'media_description':
       return `/video/${item.id}`;
     case 'program':
-      return `/program/${item.id}`;
+      return `/program/${item.program_id || item.id}`;
     case 'season':
-      return `/season/${item.id}`;
+      return `/season/${item.season_id || item.id}`;
     default:
       console.warn('Unknown media_type for showcase item:', item.media_type);
       return `/video/${item.id}`; // fallback to video route

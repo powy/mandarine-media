@@ -1,140 +1,122 @@
 import {
-  ContentListItem,
-  getContentListItemRoute,
-  useContentList,
+  getMediaShowcaseItemRoute,
+  MediaShowcaseItem,
+  MediaShowcaseJSON,
+  resolveMediaDescriptionId,
+  useMediaShowcaseLogic,
 } from 'share';
-import ContentList from '../ContentList';
 import { useNavigate } from 'react-router-dom';
+import { ContentThemedButton } from './TopHero.styles';
 
 interface CarouselProps {
-  contentList: ContentList;
+  showcase: MediaShowcaseJSON;
 }
 
-const Carousel: React.FC<CarouselProps> = ({ contentList }) => {
+const Carousel: React.FC<CarouselProps> = ({ showcase }) => {
   const navigate = useNavigate();
 
   const {
     sortedItems,
+    isValidShowcase,
     currentCarouselIndex,
-    goToNextCarouselItem,
-    goToPrevCarouselItem,
     goToCarouselItem,
-    getThumbnailDimensions,
-  } = useContentList(contentList);
+  } = useMediaShowcaseLogic(showcase);
 
-  const handleItemClick = (item: ContentListItem) => {
-    console.log('ContentList: Item clicked:', item);
-    navigate(getContentListItemRoute(item));
+  if (!isValidShowcase) {
+    return null;
+  }
+
+  const handleItemClick = async (item: MediaShowcaseItem) => {
+    console.log('MediaShowcase: Item clicked:', item);
+
+    try {
+      console.log(
+        '🔍 MediaShowcase: Resolving MediaDescription for navigation:',
+        item.id
+      );
+      const resolution = await resolveMediaDescriptionId(item.id);
+
+      if (resolution.isMediaDescription && resolution.redirectPath) {
+        console.log(
+          '✅ MediaShowcase: Navigating to resolved path:',
+          resolution.redirectPath
+        );
+        navigate(resolution.redirectPath);
+      } else {
+        console.log('🔄 MediaShowcase: Using fallback navigation logic');
+        // Fallback to original logic for non-MediaDescription items or direct entity IDs
+        navigate(getMediaShowcaseItemRoute(item));
+      }
+    } catch (error) {
+      console.error(
+        '❌ MediaShowcase: Failed to resolve MediaDescription for navigation:',
+        error
+      );
+      // Fallback to video route if resolution fails
+      console.log('🔄 MediaShowcase: Falling back to video route');
+      navigate(`/video/${item.id}`);
+    }
   };
 
-  const renderCarouselItem = (item: ContentListItem) => {
-    // Use shared utility for carousel thumbnail dimensions
-    const { width, height } = getThumbnailDimensions(600);
-
+  const renderCarouselItem = (item: MediaShowcaseItem) => {
+    console.log('item %o', item);
     return (
       <div
-        key={item.content_id}
-        className="cursor-pointer flex flex-col items-center"
-        onClick={() => handleItemClick(item)}
+        key={item.id}
+        className="flex flex-col items-left absolute bottom-16 w-full px-16 max-w-[1920px] m-auto"
       >
-        <div
-          className="rounded-lg overflow-hidden mb-4 bg-gray-800 shadow-lg"
-          style={{ width: `${width}px`, height: `${height}px` }}
-        >
-          {item.thumbnail_url ? (
-            <img
-              src={item.thumbnail_url}
-              alt={item.image_alt_text || item.title}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-              title={item.short_summary || item.description || item.title}
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">No Image</span>
-            </div>
-          )}
-        </div>
-        <h3 className="text-kyool-blue text-lg font-medium text-center leading-tight max-w-sm">
+        <h3 className="text-white text-lg font-extrabold text-left leading-tight max-w-sm py-4 capitalize">
           {item.title}
         </h3>
-        {(item.short_summary || item.description) && (
-          <p className="text-gray-400 text-sm text-center mt-2 max-w-sm line-clamp-2">
-            {item.short_summary || item.description}
+        {item.descriptive_summary_text && (
+          <p className="text-gray-400 text-sm text-left mt-2 max-w-1/2 line-clamp-2">
+            {item.descriptive_summary_text}
           </p>
         )}
+        <div className="flex flex-row items-center">
+          <ContentThemedButton
+            className="my-4"
+            radius="sm"
+            onClick={() => handleItemClick(item)}
+          >
+            Regarder
+          </ContentThemedButton>
+        </div>
       </div>
     );
   };
 
   return (
     // Carousel display
-    <div className="relative flex flex-col items-center">
+    <div
+      className="relative flex flex-col items-center mx-4"
+      style={{
+        backgroundImage: `url(${sortedItems[currentCarouselIndex].thumbnail_url})`,
+        height: '600px',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+      }}
+    >
       {/* Carousel Container */}
-      <div className="relative flex justify-center items-center w-full py-8">
-        {/* Left Arrow */}
-        <button
-          onClick={goToPrevCarouselItem}
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full p-3 transition-all duration-200"
-          aria-label="Previous item"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M15 18L9 12L15 6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
+      <div className="flex justify-center items-center w-full py-8 h-full bg-gradient-to-t from-black/95 to-100%">
         {/* Current Carousel Item */}
         {renderCarouselItem(sortedItems[currentCarouselIndex])}
-
-        {/* Right Arrow */}
-        <button
-          onClick={goToNextCarouselItem}
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full p-3 transition-all duration-200"
-          aria-label="Next item"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M9 18L15 12L9 6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* Dot Indicators */}
+        <div className="flex space-x-2 mt-4 absolute bottom-8">
+          {sortedItems.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToCarouselItem(index)}
+              className={`w-3 h-3 rounded-full transition-all duration-200 hover:cursor-pointer ${
+                index === currentCarouselIndex
+                  ? 'bg-white'
+                  : 'bg-gray-400 hover:bg-gray-500'
+              }`}
+              aria-label={`Go to item ${index + 1}`}
             />
-          </svg>
-        </button>
-      </div>
-
-      {/* Dot Indicators */}
-      <div className="flex space-x-2 mt-4">
-        {sortedItems.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => goToCarouselItem(index)}
-            className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              index === currentCarouselIndex
-                ? 'bg-kyool-blue'
-                : 'bg-gray-600 hover:bg-gray-400'
-            }`}
-            aria-label={`Go to item ${index + 1}`}
-          />
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

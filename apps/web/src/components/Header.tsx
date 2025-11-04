@@ -52,17 +52,17 @@ const Header: React.FC = () => {
   return (
     <header className="bg-gradient-to-b from-black/70 to-100% fixed top-0 w-full z-1">
       {/* First line: Logo, Search, User */}
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-1 max-w-[1920px] m-auto">
         {/* Logo */}
         <button
           onClick={handleLogoClick}
           className="flex items-center hover:opacity-80 transition-opacity hover:cursor-pointer"
         >
-          <img src={kyoolLogo} alt="KYOOL" className="h-6" />
+          <img src={kyoolLogo} alt="KYOOL" className="h-8" />
         </button>
 
         {/* Second line: Navigation */}
-        <nav className="border-white border-1 rounded-sm">
+        <nav className="border-white border-1 rounded-sm my-2">
           <div className="flex items-center px-4 gap-6 overflow-x-auto">
             {menu.map((item, index) => (
               <button

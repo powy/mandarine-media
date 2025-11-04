@@ -9,6 +9,8 @@ export interface User {
   subscription_plans_id_list?: string[];  // v1.12 new field
 }
 
+export type MediaCategory = ('movie' | 'drama' | 'short-drama' | 'short-film' | 'musical' | 'animation' | 'documentary' | 'tvshow' | 'web-drama' | 'other')  
+
 export interface MediaDescription {
   id: string;
   creation_date_utc: string;
@@ -22,7 +24,7 @@ export interface MediaDescription {
   episode_number?: number;
 
   // Content categorization - API 1.13
-  media_categories_list?: ('movie' | 'drama' | 'short-drama' | 'short-film' | 'musical' | 'animation' | 'documentary' | 'tvshow' | 'web-drama' | 'other')[];
+  media_categories_list?: MediaCategory[];
   content_status?: 'draft' | 'published' | 'archived' | 'scheduled';
   is_featured?: boolean;
 
@@ -309,7 +311,7 @@ export interface MediaShowcase {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   priority_in_screen: number;
-  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
+  list_type: ListTypeEnum;
   percentage_width: number;
   percentage_height: number;
   media_type?: string;
@@ -992,6 +994,8 @@ export interface CategoryListItemJSON {
 // v1.6 New Types - Updated to dimension-based naming
 export type ThumbnailFormatEnum = '1920x1080' | '1920x720' | '1080x1080' | '810x1080' | '1080x1920';
 
+export type ListTypeEnum = 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
+
 export interface ContentList {
   id: string;
   creation_date_utc: string;
@@ -1000,7 +1004,7 @@ export interface ContentList {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
-  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking'; // Required field
+  list_type: ListTypeEnum; // Required field
   percentage_width: number; // Required field (0-100)
   percentage_height: number; // Required field (0-100)
   latest_first: boolean; // v1.9 new required field
@@ -1026,7 +1030,7 @@ export interface ContentListCreate {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   display_order: number;
-  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking'; // Required field
+  list_type: ListTypeEnum; // Required field
   percentage_width: number; // Required field (0-100)
   percentage_height: number; // Required field (0-100)
   latest_first: boolean; // v1.9 new required field
@@ -1050,7 +1054,7 @@ export interface ContentListUpdate {
   thumbnail_format?: ThumbnailFormatEnum;
   is_active?: boolean;
   display_order?: number;
-  list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking'; // Optional field
+  list_type?: ListTypeEnum; // Optional field
   percentage_width?: number; // Optional field (0-100)
   percentage_height?: number; // Optional field (0-100)
   latest_first?: boolean; // v1.9 field
@@ -1335,7 +1339,7 @@ export interface MediaShowcaseCreate {
   thumbnail_format: ThumbnailFormatEnum;
   is_active: boolean;
   priority_in_screen?: number;
-  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
+  list_type: ListTypeEnum;
   percentage_width: number;
   percentage_height: number;
   media_type?: string;
@@ -1352,7 +1356,7 @@ export interface MediaShowcaseUpdate {
   thumbnail_format?: ThumbnailFormatEnum;
   is_active?: boolean;
   priority_in_screen?: number;
-  list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
+  list_type?: ListTypeEnum;
   percentage_width?: number;
   percentage_height?: number;
   media_type?: string;
@@ -1365,7 +1369,7 @@ export interface MediaShowcaseFilters {
   skip?: number;
   limit?: number;
   q?: string;
-  list_type?: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
+  list_type?: ListTypeEnum;
   is_active?: boolean;
   thumbnail_format?: ThumbnailFormatEnum;
 }
@@ -1391,12 +1395,12 @@ export interface MediaShowcaseJSON {
   id: string;
   title: string;
   description?: string;
-  thumbnail_format: string;
+  thumbnail_format: ThumbnailFormatEnum;
   width_percentage: number;
   height_percentage: number;
   is_active: boolean;
   priority_in_screen: number;
-  list_type: 'classic' | 'carousel' | 'hero' | 'field' | 'ranking';
+  list_type: ListTypeEnum;
   last_updated?: string;
   items: MediaShowcaseItemJSON[];
 }

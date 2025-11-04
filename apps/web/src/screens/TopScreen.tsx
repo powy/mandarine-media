@@ -57,13 +57,17 @@ const TopScreen: React.FC<TopScreenProps> = ({ screenType }) => {
   const showcases = screenData.media_showcases || [];
   const hero = showcases.length > 0 ? showcases[0] : null;
 
+  console.log('All showcased %o', showcases);
+
   return (
     <div className="min-h-screen bg-black text-kyool-blue">
       {/* Hero Top Section */}
       {hero && <BigCarousel showcase={hero} />}
 
       {/* Media Showcases */}
-      <div className="max-w-6xl mx-auto mt-8">
+      <div className="mx-auto mt-10 max-w-[1920px] m-auto">
+        {/* Media Showcase rendering */}
+
         {showcases.length > 0 ? (
           showcases.map((showcase: any, index: number) => {
             // Ensure the showcase has the required structure
@@ -77,7 +81,12 @@ const TopScreen: React.FC<TopScreenProps> = ({ screenType }) => {
             }
 
             return (
-              <MediaShowcase key={showcase.id || index} showcase={showcase} />
+              <>
+                <MediaShowcase key={showcase.id || index} showcase={showcase} />
+                {index < showcases.length - 1 && (
+                  <hr className="border-kyool-blue-dark/30 m-auto mb-10" />
+                )}
+              </>
             );
           })
         ) : (

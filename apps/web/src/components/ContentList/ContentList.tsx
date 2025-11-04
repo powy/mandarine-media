@@ -1,7 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useContentList, getContentListItemRoute } from 'share';
-import type { ContentListItem } from 'share';
+import { useMediaShowcaseLogic } from 'share';
+import type {
+  ContentListItem,
+  MediaShowcaseItem,
+  MediaShowcaseJSON,
+} from 'share';
 import BigCarousel from './Displays/TopHero';
 
 type ContentList = {
@@ -20,11 +23,10 @@ type ContentList = {
 };
 
 interface ContentListProps {
-  contentList: ContentList;
+  contentList: MediaShowcaseJSON;
 }
 
 const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
-  const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -32,19 +34,18 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
   // Use shared hook for logic
   const {
     sortedItems,
-    isValidContentList,
+    isValidShowcase,
     goToNextCarouselItem,
     goToPrevCarouselItem,
     getThumbnailDimensions,
-  } = useContentList(contentList);
+  } = useMediaShowcaseLogic(contentList);
 
-  if (!isValidContentList) {
+  if (!isValidShowcase) {
     return null;
   }
 
-  const handleItemClick = (item: ContentListItem) => {
+  const handleItemClick = (item: MediaShowcaseItem) => {
     console.log('ContentList: Item clicked:', item);
-    navigate(getContentListItemRoute(item));
   };
 
   const checkScrollButtons = () => {
@@ -104,13 +105,13 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
     goToNextCarouselItem,
   ]);
 
-  const renderContentItem = (item: ContentListItem) => {
+  const renderContentItem = (item: MediaShowcaseItem) => {
     // Use shared utility for thumbnail dimensions
-    const { width, height } = getThumbnailDimensions(300);
+    const { width, height } = getThumbnailDimensions('1920x1080', 300);
 
     return (
       <div
-        key={item.content_id}
+        key={item.id}
         className="cursor-pointer shrink-0 mr-3"
         style={{ width: `${width}px` }}
         onClick={() => handleItemClick(item)}
@@ -122,9 +123,9 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
           {item.thumbnail_url ? (
             <img
               src={item.thumbnail_url}
-              alt={item.image_alt_text || item.title}
+              alt={item.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-              title={item.short_summary || item.description || item.title}
+              title={item.descriptive_summary_text || item.title}
             />
           ) : (
             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
@@ -148,7 +149,7 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
         // Classic horizontal list display
         <>
           {contentList?.list_type === 'carousel' ? (
-            <BigCarousel contentList={contentList} />
+            <BigCarousel showcase={contentList} />
           ) : (
             <>
               <h2 className="text-kyool-blue text-xl font-bold mb-2 px-4">
@@ -193,7 +194,7 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
                     className="flex overflow-x-auto scrollbar-hide pb-2"
                     onScroll={checkScrollButtons}
                   >
-                    {sortedItems.map((item: ContentListItem) =>
+                    {sortedItems.map((item: MediaShowcaseItem) =>
                       renderContentItem(item)
                     )}
                   </div>

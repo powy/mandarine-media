@@ -19,8 +19,6 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppContextProvider: FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  let homePageId: AppContextProps['homePageId'] = null;
-
   const { isPending, data: screenDescriptions } = useQuery({
     queryKey: ['screenDescriptions', 'active'],
     queryFn: () =>
@@ -32,20 +30,37 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     retry: 1,
   });
 
+  console.log('receiving screen descriptions %o', screenDescriptions);
+
+  const homePageId: AppContextProps['homePageId'] = useMemo(() => {
+    if (screenDescriptions) {
+      const homeScreen = (screenDescriptions.data || []).find(
+        (screen) => screen.title == 'A la une'
+      );
+      if (homeScreen) {
+        return homeScreen.id;
+      } else {
+        screenDescriptions.data.length > 0
+          ? screenDescriptions.data.sort(
+              (a, b) => a.display_order - b.display_order
+            )[0].id
+          : null;
+      }
+    }
+    return null;
+  }, [screenDescriptions]);
+
   const navigationItems: NavigationItem[] = useMemo(
     () => [
       // Add dynamic screen descriptions
       ...(screenDescriptions?.data || [])
-        //.filter((screen) => screen.title !== 'A la une')
+        .filter((screen) => screen.title !== 'A la une')
         .sort((a, b) => a.display_order - b.display_order)
-        .map((screen, index) => {
-          if (index === 0) {
-            homePageId = screen.id;
-          }
+        .map((screen) => {
           return {
-            label: index === 0 ? 'A la une' : screen.title,
+            label: screen.title,
             id: screen.id,
-            path: index === 0 ? '/home' : `/screen/${screen.id}`,
+            path: `/screen/${screen.id}`,
           };
         }),
     ],

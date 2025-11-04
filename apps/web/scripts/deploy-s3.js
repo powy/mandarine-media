@@ -113,6 +113,7 @@ async function deployToS3() {
         's3', 'sync', DIST_PATH, `s3://${S3_BUCKET}`,
         '--exclude', '*',
         '--include', '*.html',
+        '--content-type', 'text/html',
         '--cache-control', 'no-cache',
         '--profile', AWS_PROFILE,
         '--region', S3_REGION,
@@ -122,35 +123,70 @@ async function deployToS3() {
       log('HTML files sync completed (may not exist)');
     }
     
-    // Upload CSS/JS files with long cache headers
+    // Upload CSS files with long cache headers
     try {
       await runCommand('aws', [
         's3', 'sync', DIST_PATH, `s3://${S3_BUCKET}`,
         '--exclude', '*',
         '--include', '*.css',
-        '--include', '*.js',
-        '--include', '*.map',
+        '--content-type', 'text/css',
         '--cache-control', 'max-age=31536000',
         '--profile', AWS_PROFILE,
         '--region', S3_REGION,
         '--delete'
       ]);
     } catch (error) {
-      log('CSS/JS files sync completed (may not exist)');
+      log('CSS files sync completed (may not exist)');
+    }
+
+    // Upload JS files with long cache headers
+    try {
+      await runCommand('aws', [
+        's3', 'sync', DIST_PATH, `s3://${S3_BUCKET}`,
+        '--exclude', '*',
+        '--include', '*.js',
+        '--content-type', 'application/javascript',
+        '--cache-control', 'max-age=31536000',
+        '--profile', AWS_PROFILE,
+        '--region', S3_REGION,
+        '--delete'
+      ]);
+    } catch (error) {
+      log('JS files sync completed (may not exist)');
+    }
+
+    // Upload source map files with long cache headers
+    try {
+      await runCommand('aws', [
+        's3', 'sync', DIST_PATH, `s3://${S3_BUCKET}`,
+        '--exclude', '*',
+        '--include', '*.map',
+        '--content-type', 'application/json',
+        '--cache-control', 'max-age=31536000',
+        '--profile', AWS_PROFILE,
+        '--region', S3_REGION,
+        '--delete'
+      ]);
+    } catch (error) {
+      log('Source map files sync completed (may not exist)');
     }
     
-    // Upload other assets with medium cache headers
-    await runCommand('aws', [
-      's3', 'sync', DIST_PATH, `s3://${S3_BUCKET}`,
-      '--exclude', '*.html',
-      '--exclude', '*.css',
-      '--exclude', '*.js',
-      '--exclude', '*.map',
-      '--cache-control', 'max-age=86400',
-      '--profile', AWS_PROFILE,
-      '--region', S3_REGION,
-      '--delete'
-    ]);
+    // Upload other assets (images, fonts, etc.) with medium cache headers
+    try {
+      await runCommand('aws', [
+        's3', 'sync', DIST_PATH, `s3://${S3_BUCKET}`,
+        '--exclude', '*.html',
+        '--exclude', '*.css',
+        '--exclude', '*.js',
+        '--exclude', '*.map',
+        '--cache-control', 'max-age=86400',
+        '--profile', AWS_PROFILE,
+        '--region', S3_REGION,
+        '--delete'
+      ]);
+    } catch (error) {
+      log('Other assets sync completed (may not exist)');
+    }
     
     log('S3 deployment completed successfully!');
     log(`Website URL: https://${S3_BUCKET}.s3-website-${S3_REGION}.amazonaws.com`);

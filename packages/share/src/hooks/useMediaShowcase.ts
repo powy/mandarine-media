@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { MediaShowcaseJSON } from '../types';
+import type { MediaShowcaseJSON, ThumbnailFormatEnum } from '../types';
 
 export const useMediaShowcase = (showcase: MediaShowcaseJSON | null) => {
   // Carousel state management
@@ -39,14 +39,31 @@ export const useMediaShowcase = (showcase: MediaShowcaseJSON | null) => {
     }
   }, [sortedItems.length, currentCarouselIndex]);
 
-  // Calculate thumbnail dimensions based on showcase percentages
-  const getThumbnailDimensions = (baseWidth: number = 300) => {
+  // Calculate thumbnail dimensions based on showcase format
+  const getThumbnailDimensions = (format: ThumbnailFormatEnum, baseWidth: number = 300) => {
     if (!showcase) return { width: 128, height: 128 };
 
-    const width = Math.round((showcase.width_percentage / 100) * baseWidth);
-    const height = Math.round((showcase.height_percentage / 100) * baseWidth);
-    return { width, height };
+    switch (format) {
+      case '1920x1080':
+        return { width: baseWidth, height: Math.round(baseWidth / (1920 / 1080)) };
+
+      case '1920x720':
+        return { width: baseWidth, height: Math.round(baseWidth / (1920 / 1070)) };
+      
+      case '1080x1080':
+        return { width: baseWidth, height: baseWidth };
+
+      case '810x1080':
+        return { width: baseWidth, height: Math.round(baseWidth / (810 / 1080)) };
+
+      case '1080x1920':
+        return { width: baseWidth, height: Math.round(baseWidth / (1080 / 1920)) };
+
+      default:
+        return { width: 128, height: 128 };
+    }
   };
+
 
   // Check if showcase is valid and active
   const isValidShowcase = showcase && showcase.is_active;
