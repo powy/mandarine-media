@@ -58,6 +58,7 @@ def read_media_descriptions(
         allowed_sort_fields=(
             'creation_date_utc',
             'file_number',
+            'original_broadcast_date_utc',
             'episode_title',
             'media_type',
             'content_status',

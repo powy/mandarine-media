@@ -36,6 +36,8 @@ const SearchScreen: React.FC = () => {
         q: debouncedSearch,
         skip,
         limit: RESULTS_PER_PAGE,
+        order_by: 'original_broadcast_date_utc',
+        order_dir: 'desc',
       });
 
       // Fetch thumbnails for results
