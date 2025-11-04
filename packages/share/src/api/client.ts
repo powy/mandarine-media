@@ -6,6 +6,7 @@ import { isTokenExpired } from '../utils/token-utils';
 interface ApiConfig {
   baseURL: string;
   onAuthError?: () => void;
+  bypassCache?: boolean;  // Enable cache bypass for admin/backoffice
 }
 
 let apiConfig: ApiConfig = {
@@ -75,6 +76,14 @@ apiClient.interceptors.request.use(
       isPublic: isPublic,
       timestamp: new Date().toISOString()
     });
+
+    // Add cache bypass headers if configured (for backoffice/admin)
+    if (apiConfig.bypassCache) {
+      config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      config.headers['Pragma'] = 'no-cache';
+      config.headers['Expires'] = '0';
+      console.log('🚫 API Client: Cache bypass headers added');
+    }
 
     if (!isPublic) {
       // Add auth token for non-public endpoints

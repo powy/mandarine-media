@@ -2,11 +2,12 @@ from typing import Any, List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.api.dependencies.caching import cache_media_description, no_cache
 from app.core.config import settings
 from app.schemas import description_report
 from app.models.media_description import MediaDescription
@@ -23,6 +24,7 @@ router = APIRouter()
 
 @router.get("", response_model=schemas.media_description.MediaDescriptionListResponse)
 def read_media_descriptions(
+    response: Response,
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -38,6 +40,7 @@ def read_media_descriptions(
     """
     Retrieve media descriptions with optional filtering.
     """
+    cache_media_description(response)
     query = crud.media_description.build_filter_query(
         db,
         q=q,
@@ -196,6 +199,7 @@ def create_bulk_media_descriptions(
 @router.get("/{id}", response_model=schemas.media_description.MediaDescription)
 def read_media_description(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
@@ -203,6 +207,7 @@ def read_media_description(
     """
     Get media description by ID with all relationships loaded.
     """
+    cache_media_description(response)
     media_description = crud.media_description.get_with_relationships(db=db, id=str(id))
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
@@ -287,6 +292,7 @@ def delete_media_description(
 
 @router.get("/featured/list", response_model=List[schemas.media_description.MediaDescription])
 def read_featured_media(
+    response: Response,
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -295,6 +301,7 @@ def read_featured_media(
     """
     Retrieve featured media descriptions.
     """
+    cache_media_description(response)
     return crud.media_description.get_multi_with_filters(
         db=db, skip=skip, limit=limit, is_featured=True
     )
@@ -302,6 +309,7 @@ def read_featured_media(
 
 @router.get("/trending/list", response_model=List[schemas.media_description.MediaDescription])
 def read_trending_media(
+    response: Response,
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -310,6 +318,7 @@ def read_trending_media(
     """
     Retrieve trending media descriptions. (Returns all for now)
     """
+    cache_media_description(response)
     return crud.media_description.get_multi(db=db, skip=skip, limit=limit)
 
 
@@ -319,6 +328,7 @@ def read_trending_media(
 @router.get("/by-video/{video_file_id}", response_model=List[schemas.media_description.MediaDescription])
 def read_media_descriptions_by_video(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     video_file_id: UUID,
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
@@ -327,6 +337,7 @@ def read_media_descriptions_by_video(
     Get media descriptions by video file ID.
     Returns all media descriptions that use this video file as their main video.
     """
+    cache_media_description(response)
     # Check if video file exists
     video_file = crud.video_file.get(db=db, id=video_file_id)
     if not video_file:

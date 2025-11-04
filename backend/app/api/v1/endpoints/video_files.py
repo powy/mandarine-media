@@ -4,11 +4,12 @@ from datetime import datetime, timezone
 import time
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, Response
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.api.dependencies.caching import cache_video_metadata, no_cache
 from app.core.config import settings
 from app.services.upload_service import MediaUploadService
 from app.services.mux_token_service import mux_token_service
@@ -21,6 +22,7 @@ router = APIRouter()
 
 @router.get("", response_model=PaginatedResponse[schemas.video_file.VideoFile])
 def read_video_files(
+    response: Response,
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -33,6 +35,7 @@ def read_video_files(
     """
     Retrieve video files.
     """
+    cache_video_metadata(response)
     query = db.query(VideoFile)
 
     if q:
@@ -78,6 +81,7 @@ def create_video_file(
 @router.get("/{id}", response_model=schemas.video_file.VideoFile)
 def read_video_file(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
@@ -85,6 +89,7 @@ def read_video_file(
     """
     Get video file by ID.
     """
+    cache_video_metadata(response)
     video_file = crud.video_file.get(db=db, id=id)
     if not video_file:
         raise HTTPException(status_code=404, detail="Video file not found")
@@ -243,6 +248,7 @@ def link_video_to_media(
 
 @router.get("/unlinked/list", response_model=List[schemas.video_file.VideoFile])
 def read_unlinked_video_files(
+    response: Response,
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -251,12 +257,14 @@ def read_unlinked_video_files(
     """
     Retrieve unlinked video files. Admin only.
     """
+    cache_video_metadata(response)
     return crud.video_file.get_unlinked(db=db, skip=skip, limit=limit)
 
 
 @router.get("/by-media/{media_id}", response_model=List[schemas.video_file.VideoFile])
 def read_video_files_by_media(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     media_id: UUID,
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
@@ -265,6 +273,7 @@ def read_video_files_by_media(
     Get video files by media description ID.
     Returns the main video file linked to this media description.
     """
+    cache_video_metadata(response)
     media_description = crud.media_description.get(db=db, id=media_id)
     if not media_description:
         raise HTTPException(status_code=404, detail="Media description not found")
@@ -531,6 +540,7 @@ def test_video_file_playback(
 @router.post("/{id}/playback-token", response_model=dict)
 def generate_playback_token(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
     expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
@@ -538,13 +548,15 @@ def generate_playback_token(
 ) -> Any:
     """
     Generate signed JWT token for secure video playback.
-    
-    This endpoint generates a JWT token required for accessing Mux videos 
+
+    This endpoint generates a JWT token required for accessing Mux videos
     with signed playback policies.
     """
+    no_cache(response)
+
     import re
     import logging
-    
+
     logger = logging.getLogger(__name__)
     
     # Get video file
@@ -613,6 +625,7 @@ def generate_playback_token(
 @router.post("/{id}/drm-token", response_model=dict)
 def generate_drm_token(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
     expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
@@ -621,13 +634,15 @@ def generate_drm_token(
 ) -> Any:
     """
     Generate JWT token for DRM license requests.
-    
-    This endpoint generates a DRM-specific JWT token for accessing 
+
+    This endpoint generates a DRM-specific JWT token for accessing
     DRM-protected content through Mux's license server.
     """
+    no_cache(response)
+
     import re
     import logging
-    
+
     logger = logging.getLogger(__name__)
     
     # Get video file

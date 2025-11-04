@@ -45,6 +45,7 @@ class S3StorageBackend(BaseStorageBackend):
                 'Key': destination_path,
                 'Body': content,
                 'ContentType': file_info.content_type,
+                'CacheControl': 'public, max-age=31536000, immutable',  # 1 year cache for immutable assets
                 'Metadata': {
                     'original_filename': file_info.filename,
                     'media_type': file_info.media_type,

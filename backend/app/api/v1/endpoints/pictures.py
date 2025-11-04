@@ -1,12 +1,13 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api import deps
+from app.api.dependencies.caching import cache_picture_metadata, no_cache
 from app.models.picture import Picture
 from app.schemas.pagination import PaginatedResponse
 from app.utils.pagination import paginate_query
@@ -16,6 +17,7 @@ router = APIRouter()
 
 @router.get("", response_model=PaginatedResponse[schemas.Picture])
 def read_pictures(
+    response: Response,
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -27,6 +29,7 @@ def read_pictures(
     """
     Retrieve pictures.
     """
+    cache_picture_metadata(response)
     query = db.query(Picture)
 
     if q:
@@ -77,6 +80,7 @@ def create_picture(
 @router.get("/{id}", response_model=schemas.Picture)
 def read_picture(
     *,
+    response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
     current_user: Optional[schemas.User] = Depends(deps.get_current_user_optional),
@@ -84,6 +88,7 @@ def read_picture(
     """
     Get picture by ID.
     """
+    cache_picture_metadata(response)
     picture = crud.picture.get(db=db, id=id)
     if not picture:
         raise HTTPException(status_code=404, detail="Picture not found")
