@@ -2,6 +2,26 @@ import { useQuery } from '@tanstack/react-query';
 import { getProgramScreenDataByProgramId } from '../api';
 import type { ProgramScreenData } from '../types';
 
+/**
+ * @deprecated Use `useProgramJSON` hook instead for better performance.
+ *
+ * This hook makes 15-30 API calls to fetch program data. The new `useProgramJSON`
+ * hook uses cached JSON from the backend (1 API call) for much better performance.
+ *
+ * Migration:
+ * ```
+ * // Old:
+ * import { useProgramScreen } from 'share';
+ * const { data, isLoading, error } = useProgramScreen(programId);
+ *
+ * // New:
+ * import { useProgramJSON } from 'share';
+ * const { data, isLoading, error } = useProgramJSON(programId);
+ * ```
+ *
+ * Note: The new hook returns a simplified data structure without actors/directors/producers.
+ * If you need that data, additional API calls will be required.
+ */
 export const useProgramScreen = (programId: string | undefined) => {
   return useQuery<ProgramScreenData>({
     queryKey: ['program-screen', programId],

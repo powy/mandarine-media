@@ -1,14 +1,10 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  useProgramScreen,
-  formatPersonsList,
-  formatLanguagesList,
-  formatCountriesList,
+  useProgramJSON,
   formatGenresList,
   formatEpisodeCount,
   formatSeasonTitle,
-  formatCrewRole,
   getSeasonRoute,
   resolveMediaDescriptionId
 } from 'share';
@@ -43,7 +39,7 @@ const ProgramScreen: React.FC = () => {
     checkAndResolveId();
   }, [id, navigate]);
 
-  const { data: programData, isLoading, error } = useProgramScreen(id);
+  const { data: programData, isLoading, error } = useProgramJSON(id);
 
   useEffect(() => {
     if (error) {
@@ -93,25 +89,18 @@ const ProgramScreen: React.FC = () => {
     );
   }
 
-  const { 
-    program, 
+  const {
+    program,
     programImageUrl,
     synopsis,
     description,
     genres,
-    audioLanguages,
-    subtitleLanguages,
-    releaseDate,
-    originCountries,
-    actors, 
-    directors, 
-    producers,
     allSeasons
   } = programData;
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-screen-2xl mx-auto px-4 py-8">
         {/* Program Header Section */}
         <div className="mb-8">
           {/* Program Title */}
@@ -125,7 +114,7 @@ const ProgramScreen: React.FC = () => {
               <img
                 src={programImageUrl}
                 alt={program.program_name}
-                className="w-full h-64 md:h-96 object-cover rounded-lg"
+                className="w-full h-auto object-contain rounded-lg"
               />
             </div>
           )}
@@ -142,80 +131,16 @@ const ProgramScreen: React.FC = () => {
         )}
 
         {/* Details Section */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-kyool-blue mb-4">Détails</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {genres.length > 0 && (
+        {genres.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-kyool-blue mb-4">Détails</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-400">Genres: </span>
                 <span className="text-white">
                   {formatGenresList(genres)}
                 </span>
               </div>
-            )}
-            {audioLanguages.length > 0 && (
-              <div>
-                <span className="text-gray-400">Langues audio: </span>
-                <span className="text-white">
-                  {formatLanguagesList(audioLanguages)}
-                </span>
-              </div>
-            )}
-            {subtitleLanguages.length > 0 && (
-              <div>
-                <span className="text-gray-400">Sous-titres: </span>
-                <span className="text-white">
-                  {formatLanguagesList(subtitleLanguages)}
-                </span>
-              </div>
-            )}
-            {releaseDate && (
-              <div>
-                <span className="text-gray-400">Année de sortie: </span>
-                <span className="text-white">{releaseDate}</span>
-              </div>
-            )}
-            {originCountries.length > 0 && (
-              <div>
-                <span className="text-gray-400">Pays d'origine: </span>
-                <span className="text-white">
-                  {formatCountriesList(originCountries)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Crew Section */}
-        {(actors.length > 0 || directors.length > 0 || producers.length > 0) && (
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-kyool-blue mb-4">Distribution et équipe</h3>
-            <div className="text-gray-300 leading-relaxed">
-              {producers.length > 0 && (
-                <div className="mb-2">
-                  <span className="text-gray-400">{formatCrewRole('producer', producers.length)}: </span>
-                  <span className="text-white">
-                    {formatPersonsList(producers)}
-                  </span>
-                </div>
-              )}
-              {directors.length > 0 && (
-                <div className="mb-2">
-                  <span className="text-gray-400">{formatCrewRole('director', directors.length)}: </span>
-                  <span className="text-white">
-                    {formatPersonsList(directors)}
-                  </span>
-                </div>
-              )}
-              {actors.length > 0 && (
-                <div>
-                  <span className="text-gray-400">avec </span>
-                  <span className="text-white">
-                    {formatPersonsList(actors)}
-                  </span>
-                  <span className="text-gray-400"> ({formatCrewRole('actor', actors.length)})</span>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -242,42 +167,61 @@ const ProgramScreen: React.FC = () => {
                 <div
                   key={season.id}
                   onClick={() => handleSeasonClick(season.id)}
-                  className="flex items-center p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+                  className="flex flex-col sm:flex-row items-start sm:items-center p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors gap-4"
                 >
-                  {/* Season Number */}
-                  <div className="shrink-0 w-16 text-center">
+                  {/* Season Number - hidden on mobile, shown on tablet+ */}
+                  <div className="hidden sm:block shrink-0 w-16 text-center">
                     <span className="text-kyool-blue font-bold text-lg">
                       {season.season_number}
                     </span>
                   </div>
 
-                  {/* Season Thumbnail */}
-                  <div className="shrink-0 w-40 h-24 ml-4 mr-6">
-                    {season.thumbnailUrl ? (
-                      <img
-                        src={season.thumbnailUrl}
-                        alt={`Saison ${season.season_number}`}
-                        className="w-full h-full object-cover rounded-sm"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-600 flex items-center justify-center rounded-sm">
-                        <span className="text-gray-400 text-xs">Pas d'image</span>
-                      </div>
-                    )}
+                  {/* Thumbnail with mobile season number */}
+                  <div className="flex items-start gap-3 sm:gap-0 w-full sm:w-auto">
+                    {/* Mobile season number */}
+                    <div className="sm:hidden shrink-0 w-12 pt-1">
+                      <span className="text-kyool-blue font-bold text-base">
+                        {season.season_number}
+                      </span>
+                    </div>
+
+                    {/* Thumbnail */}
+                    <div className="shrink-0 w-40 h-24 sm:ml-4 sm:mr-6">
+                      {season.thumbnailUrl ? (
+                        <img
+                          src={season.thumbnailUrl}
+                          alt={`Saison ${season.season_number}`}
+                          className="w-full h-full object-cover rounded-sm"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-600 flex items-center justify-center rounded-sm">
+                          <span className="text-gray-400 text-xs">Pas d'image</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Season Title and Info */}
-                  <div className="flex-1">
+                  {/* Text Content */}
+                  <div className="flex-1 w-full sm:w-auto">
                     <h4 className="font-semibold text-white text-lg mb-1">
                       {formatSeasonTitle(season.season_number)}
                     </h4>
+
+                    {/* Summary text - NEW */}
+                    {season.summaryText && (
+                      <p className="text-gray-300 text-sm mb-2 line-clamp-3 sm:line-clamp-2">
+                        {season.summaryText}
+                      </p>
+                    )}
+
+                    {/* Episode count */}
                     <p className="text-gray-400 text-sm">
                       {formatEpisodeCount(season.episodeCount)}
                     </p>
                   </div>
 
-                  {/* Arrow indicator */}
-                  <div className="shrink-0 ml-4">
+                  {/* Arrow */}
+                  <div className="hidden sm:block shrink-0 ml-4">
                     <span className="text-gray-400 text-xl">→</span>
                   </div>
                 </div>

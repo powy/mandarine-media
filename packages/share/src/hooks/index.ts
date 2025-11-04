@@ -8,6 +8,8 @@ export * from './useRegionAccess';
 export * from './useTrailersAndExcerpts';
 export * from './useMediaShowcases';
 export * from './useProgramScreen';
+export * from './useProgramJSON';
+export * from './useSeasonJSON';
 export { useMediaShowcase as useMediaShowcaseLogic } from './useMediaShowcase';
 export * from './usePicture';
 export * from './useDebounce';

@@ -665,6 +665,24 @@ export const getVideoScreenData = async (mediaDescriptionId: string, fetchPictur
   }
 };
 
+/**
+ * @deprecated Use `useSeasonJSON` hook instead for better performance (1-2 API calls vs 8-12 calls).
+ * This function makes multiple API calls to fetch season data. The new approach uses
+ * cached JSON from the backend which includes all necessary data in fewer calls.
+ *
+ * Migration example:
+ * ```
+ * // Old approach:
+ * const { data } = useQuery({
+ *   queryKey: ['season-screen', id],
+ *   queryFn: () => getSeasonScreenData(id)
+ * });
+ *
+ * // New approach:
+ * import { useSeasonJSON } from 'share';
+ * const { data } = useSeasonJSON(id);
+ * ```
+ */
 // Season screen detailed data function
 export const getSeasonScreenData = async (seasonId: string) => {
   try {
@@ -1165,6 +1183,21 @@ export const getProgramScreenData = async (seasonId: string) => {
   }
 };
 
+/**
+ * @deprecated Use `useProgramJSON` hook instead for better performance (1 API call vs 15-30 calls).
+ * This function makes multiple API calls to fetch program data. The new approach uses
+ * cached JSON from the backend which includes all necessary data in a single call.
+ *
+ * Migration example:
+ * ```
+ * // Old approach:
+ * const { data } = useProgramScreen(programId);
+ *
+ * // New approach:
+ * import { useProgramJSON } from 'share';
+ * const { data } = useProgramJSON(programId);
+ * ```
+ */
 // Program screen detailed data function by program ID
 export const getProgramScreenDataByProgramId = async (programId: string) => {
   try {

@@ -12,3 +12,5 @@ export * from './regionValidation';
 export * from './navigation';
 export * from './displayFormatters';
 export * from './media-description-resolver';
+export * from './programAdapters';
+export * from './seasonAdapters';
