@@ -137,15 +137,24 @@ def update_season(
     if not season:
         raise HTTPException(status_code=404, detail="Season not found")
 
-    # Check if updating season number to an existing one
-    if season_in.season_number is not None:
+    # Determine effective values after update
+    # Use model_dump to check which fields are actually provided
+    update_data = season_in.model_dump(exclude_unset=True)
+
+    effective_program_id = update_data.get('program_id', season.program_id)
+    effective_season_number = update_data.get('season_number', season.season_number)
+
+    # Check if the combination would conflict with an existing season
+    # Only check if program_id or season_number is being changed
+    if 'program_id' in update_data or 'season_number' in update_data:
         existing = crud.season.get_by_program_and_number(
-            db=db, program_id=season.program_id, season_number=season_in.season_number
+            db=db, program_id=effective_program_id, season_number=effective_season_number
         )
         if existing and existing.id != id:
+            program_info = "no program" if effective_program_id is None else f"program ID {effective_program_id}"
             raise HTTPException(
                 status_code=409,
-                detail=f"Season {season_in.season_number} already exists for this program",
+                detail=f"Season {effective_season_number} already exists for {program_info}",
             )
 
     season = crud.season.update(db=db, db_obj=season, obj_in=season_in)
