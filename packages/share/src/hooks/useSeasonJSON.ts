@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { seasonsApi } from '../api/seasons';
+import { mediaApi } from '../api/media';
 import { transformSeasonJSON, type TransformedSeasonData } from '../utils/seasonAdapters';
-import type { Season } from '../types';
+import type { Season, MediaDescription } from '../types';
 
 export interface SeasonNavigationData extends TransformedSeasonData {
   nextSeason: Season | null;
   previousSeason: Season | null;
+  generalDescription: MediaDescription | null;
 }
 
 /**
@@ -62,6 +64,21 @@ export function useSeasonJSON(seasonId: string | undefined, refresh: boolean = f
 
       console.log('✅ useSeasonJSON: Data transformed:', transformedData);
 
+      // Fetch full Season object to get general_media_description_id
+      let generalDescription: MediaDescription | null = null;
+      try {
+        console.log('🔍 useSeasonJSON: Fetching full Season object');
+        const season = await seasonsApi.getById(seasonId);
+
+        if (season.general_media_description_id) {
+          console.log('🔍 useSeasonJSON: Fetching general MediaDescription:', season.general_media_description_id);
+          generalDescription = await mediaApi.getMediaDescription(season.general_media_description_id);
+          console.log('✅ useSeasonJSON: General MediaDescription fetched');
+        }
+      } catch (error) {
+        console.warn('⚠️ useSeasonJSON: Failed to fetch general MediaDescription:', error);
+      }
+
       // Fetch prev/next season navigation if program_id exists (second API call)
       let nextSeason: Season | null = null;
       let previousSeason: Season | null = null;
@@ -111,13 +128,14 @@ export function useSeasonJSON(seasonId: string | undefined, refresh: boolean = f
       return {
         ...transformedData,
         nextSeason,
-        previousSeason
+        previousSeason,
+        generalDescription
       };
     },
     enabled: !!seasonId,
     staleTime: 5 * 60 * 1000, // 5 minutes - JSON cache is relatively stable
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 }
 
-export type { TransformedSeasonData, SeasonNavigationData };
+export type { TransformedSeasonData };

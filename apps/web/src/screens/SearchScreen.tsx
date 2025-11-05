@@ -141,7 +141,7 @@ const SearchScreen: React.FC = () => {
           {/* Search Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-kyool-blue mb-4">
-              Search Media
+              Rechercher des médias
             </h1>
 
             {/* Search Input */}
@@ -150,7 +150,7 @@ const SearchScreen: React.FC = () => {
                 type="text"
                 value={searchInput}
                 onChange={handleSearch}
-                placeholder="Search for videos, seasons, programs..."
+                placeholder="Rechercher des vidéos, saisons, programmes..."
                 className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg border border-gray-700 focus:border-kyool-blue focus:outline-none focus:ring-2 focus:ring-kyool-blue focus:ring-opacity-50 transition-all"
                 autoFocus
               />
@@ -161,7 +161,7 @@ const SearchScreen: React.FC = () => {
                     setCurrentPage(1);
                   }}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                  aria-label="Clear search"
+                  aria-label="Effacer la recherche"
                 >
                   <svg
                     width="20"
@@ -185,8 +185,8 @@ const SearchScreen: React.FC = () => {
             {/* Search Info */}
             {debouncedSearch && searchResults && (
               <p className="text-gray-400 text-sm mt-2">
-                Found {searchResults.total} result
-                {searchResults.total !== 1 ? 's' : ''} for "{debouncedSearch}"
+                Trouvé {searchResults.total} résultat
+                {searchResults.total !== 1 ? 's' : ''} pour "{debouncedSearch}"
               </p>
             )}
           </div>
@@ -196,7 +196,7 @@ const SearchScreen: React.FC = () => {
             <div className="flex justify-center items-center py-16">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kyool-blue mx-auto mb-4"></div>
-                <p className="text-kyool-blue">Searching...</p>
+                <p className="text-kyool-blue">Recherche en cours...</p>
               </div>
             </div>
           )}
@@ -207,7 +207,7 @@ const SearchScreen: React.FC = () => {
               <p className="text-red-500 text-lg">
                 {error instanceof Error
                   ? error.message
-                  : 'An error occurred while searching'}
+                  : 'Une erreur s\'est produite lors de la recherche'}
               </p>
             </div>
           )}
@@ -228,7 +228,7 @@ const SearchScreen: React.FC = () => {
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
-              <p className="text-lg">Start typing to search for media</p>
+              <p className="text-lg">Commencez à taper pour rechercher des médias</p>
             </div>
           )}
 
@@ -252,10 +252,10 @@ const SearchScreen: React.FC = () => {
                   />
                 </svg>
                 <p className="text-lg">
-                  No results found for "{debouncedSearch}"
+                  Aucun résultat trouvé pour "{debouncedSearch}"
                 </p>
                 <p className="text-sm mt-2">
-                  Try searching with different keywords
+                  Essayez avec des mots-clés différents
                 </p>
               </div>
             )}
@@ -281,7 +281,7 @@ const SearchScreen: React.FC = () => {
                       ) : (
                         <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                           <span className="text-gray-500 text-xs">
-                            No Image
+                            Pas d'image
                           </span>
                         </div>
                       )}
@@ -337,7 +337,7 @@ const SearchScreen: React.FC = () => {
                         ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                         : 'bg-gray-800 text-kyool-blue hover:bg-gray-700'
                     }`}
-                    aria-label="Previous page"
+                    aria-label="Page précédente"
                   >
                     <svg
                       width="20"
@@ -386,7 +386,7 @@ const SearchScreen: React.FC = () => {
                         ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                         : 'bg-gray-800 text-kyool-blue hover:bg-gray-700'
                     }`}
-                    aria-label="Next page"
+                    aria-label="Page suivante"
                   >
                     <svg
                       width="20"

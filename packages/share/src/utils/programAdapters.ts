@@ -1,4 +1,4 @@
-import type { ProgramJSON, Program } from '../types';
+import type { ProgramJSON } from '../types';
 
 /**
  * Program data transformation utilities

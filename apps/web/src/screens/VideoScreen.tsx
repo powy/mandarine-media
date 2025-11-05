@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import MuxPlayer from '@mux/mux-player-react';
 import { getVideoScreenData, getPosterUrl, apiClient, useAuth, useRegionAccessById, resolveMediaDescriptionId } from 'share';
 import type { MediaDescription, VideoFile, Program, Season, PublicPerson, Language, Country } from 'share';
+import DetailsSection from '../components/DetailsSection';
 
 interface VideoScreenData {
   mediaDescription: MediaDescription;
@@ -745,65 +746,50 @@ const VideoScreen: React.FC = () => {
           </div>
 
           {/* Detail Section */}
-          {(mediaDescription.original_broadcast_date_utc || mediaDescription.rights_holder ||
-            mediaDescription.original_languages?.length || originCountries.length > 0 ||
-            mediaDescription.duration_seconds) && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-kyool-blue mb-3">Détails</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {mediaDescription.original_broadcast_date_utc && (
-                  <div>
-                    <span className="text-gray-400">Diffusion originale: </span>
-                    <span className="text-white">
-                      {new Date(mediaDescription.original_broadcast_date_utc).toLocaleDateString('fr-FR')}
-                    </span>
-                  </div>
-                )}
-                {mediaDescription.rights_holder && (
-                  <div>
-                    <span className="text-gray-400">Détenteur des droits: </span>
-                    <span className="text-white">{mediaDescription.rights_holder}</span>
-                  </div>
-                )}
-                {mediaDescription.original_languages?.length > 0 && (
-                  <div>
-                    <span className="text-gray-400">Langue originale: </span>
-                    <span className="text-white">
-                      {mediaDescription.original_languages.map(lang => lang.name).join(', ')}
-                    </span>
-                  </div>
-                )}
-                {originCountries.length > 0 && (
-                  <div>
-                    <span className="text-gray-400">Pays d'origine: </span>
-                    <span className="text-white">{originCountries.map(country => country.name).join(', ')}</span>
-                  </div>
-                )}
-                {mediaDescription.human_keywords_text_list?.length > 0 && (
-                  <div>
-                    <span className="text-gray-400">Tags: </span>
-                    <span className="text-white">
-                      {mediaDescription.human_keywords_text_list.join(', ')}
-                    </span>
-                  </div>
-                )}
-                {mediaDescription.hashtags_text_list?.length > 0 && (
-                  <div>
-                    <span className="text-gray-400">Hashtags: </span>
-                    <span className="text-white">
-                      {mediaDescription.hashtags_text_list.map(tag => `#${tag}`).join(' ')}
-                    </span>
-                  </div>
-                )}
-                {mediaDescription.duration_seconds && (
-                  <div>
-                    <span className="text-gray-400">Durée: </span>
-                    <span className="text-white">{Math.floor(mediaDescription.duration_seconds / 60)} minutes</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <DetailsSection
+            fields={[
+              {
+                label: "Diffusion originale",
+                value: mediaDescription.original_broadcast_date_utc
+                  ? new Date(mediaDescription.original_broadcast_date_utc).toLocaleDateString('fr-FR')
+                  : null
+              },
+              {
+                label: "Détenteur des droits",
+                value: mediaDescription.rights_holder
+              },
+              {
+                label: "Langue originale",
+                value: mediaDescription.original_languages?.length > 0
+                  ? mediaDescription.original_languages.map(lang => lang.name).join(', ')
+                  : null
+              },
+              {
+                label: "Pays d'origine",
+                value: originCountries.length > 0
+                  ? originCountries.map(country => country.name).join(', ')
+                  : null
+              },
+              {
+                label: "Tags",
+                value: mediaDescription.human_keywords_text_list?.length > 0
+                  ? mediaDescription.human_keywords_text_list.join(', ')
+                  : null
+              },
+              {
+                label: "Hashtags",
+                value: mediaDescription.hashtags_text_list?.length > 0
+                  ? mediaDescription.hashtags_text_list.map(tag => `#${tag}`).join(' ')
+                  : null
+              },
+              {
+                label: "Durée",
+                value: mediaDescription.duration_seconds
+                  ? `${Math.floor(mediaDescription.duration_seconds / 60)} minutes`
+                  : null
+              }
+            ]}
+          />
 
           {/* Internal Section - Hidden from display */}
           {/*

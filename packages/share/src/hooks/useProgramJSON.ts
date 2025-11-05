@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { programsApi } from '../api/programs';
+import { mediaApi } from '../api/media';
 import { transformProgramJSON, type TransformedProgramData } from '../utils/programAdapters';
+import type { MediaDescription } from '../types';
+
+export interface ProgramDataWithDescription extends TransformedProgramData {
+  generalDescription: MediaDescription | null;
+}
 
 /**
  * Custom hook to fetch and transform program JSON cache data
@@ -50,11 +56,29 @@ export function useProgramJSON(programId: string | undefined, refresh: boolean =
 
       console.log('✅ useProgramJSON: Data transformed:', transformedData);
 
-      return transformedData;
+      // Fetch full Program object to get general_media_description_id
+      let generalDescription: MediaDescription | null = null;
+      try {
+        console.log('🔍 useProgramJSON: Fetching full Program object');
+        const program = await programsApi.getById(programId);
+
+        if (program.general_media_description_id) {
+          console.log('🔍 useProgramJSON: Fetching general MediaDescription:', program.general_media_description_id);
+          generalDescription = await mediaApi.getMediaDescription(program.general_media_description_id);
+          console.log('✅ useProgramJSON: General MediaDescription fetched');
+        }
+      } catch (error) {
+        console.warn('⚠️ useProgramJSON: Failed to fetch general MediaDescription:', error);
+      }
+
+      return {
+        ...transformedData,
+        generalDescription
+      };
     },
     enabled: !!programId,
     staleTime: 5 * 60 * 1000, // 5 minutes - JSON cache is relatively stable
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 }
 

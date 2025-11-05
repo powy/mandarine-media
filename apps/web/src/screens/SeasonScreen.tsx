@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSeasonJSON, resolveMediaDescriptionId } from 'share';
+import DetailsSection from '../components/DetailsSection';
 
 const SeasonScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -117,8 +118,17 @@ const SeasonScreen: React.FC = () => {
     nextSeason,
     previousSeason,
     seasonImageUrl,
-    genres
+    genres,
+    generalDescription
   } = seasonData;
+
+  // Extract detail fields from generalDescription MediaDescription
+  const original_broadcast_date_utc = generalDescription?.original_broadcast_date_utc || null;
+  const rights_holder = generalDescription?.rights_holder || null;
+  const original_languages = generalDescription?.original_languages || null;
+  const origin_countries = generalDescription?.origin_countries || null;
+  const human_keywords_text_list = generalDescription?.human_keywords_text_list || null;
+  const hashtags_text_list = generalDescription?.hashtags_text_list || null;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -138,7 +148,7 @@ const SeasonScreen: React.FC = () => {
 
           {/* Season Title */}
           <h1 className="text-3xl font-bold text-kyool-blue mb-4">
-            Saison {season.season_number}
+            {season.season_name || `Saison ${season.season_number}`}
           </h1>
 
           {/* Program Navigation */}
@@ -208,21 +218,45 @@ const SeasonScreen: React.FC = () => {
         )}
 
         {/* Details Section */}
-        {(genres.length > 0 || episodes.length > 0) && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-kyool-blue mb-3">
-              Détails
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {genres.length > 0 && (
-                <div>
-                  <span className="text-gray-400">Genres: </span>
-                  <span className="text-white">{genres.join(', ')}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <DetailsSection
+          fields={[
+            { label: "Genres", value: genres.join(', ') },
+            {
+              label: "Diffusion originale",
+              value: original_broadcast_date_utc
+                ? new Date(original_broadcast_date_utc).toLocaleDateString('fr-FR')
+                : null
+            },
+            {
+              label: "Détenteur des droits",
+              value: rights_holder
+            },
+            {
+              label: "Langue originale",
+              value: original_languages?.length
+                ? original_languages.map(lang => lang.name).join(', ')
+                : null
+            },
+            {
+              label: "Pays d'origine",
+              value: origin_countries?.length
+                ? origin_countries.map(country => country.name).join(', ')
+                : null
+            },
+            {
+              label: "Tags",
+              value: human_keywords_text_list?.length
+                ? human_keywords_text_list.join(', ')
+                : null
+            },
+            {
+              label: "Hashtags",
+              value: hashtags_text_list?.length
+                ? hashtags_text_list.map(tag => `#${tag}`).join(' ')
+                : null
+            }
+          ]}
+        />
 
         {/* Episodes List Section */}
         {episodes.length > 0 && (
