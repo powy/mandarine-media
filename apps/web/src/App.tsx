@@ -2,6 +2,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 import { HeroUIProvider } from '@heroui/react';
 import { AppContextProvider } from './AppContext';
 import MainContent from './MainContent';
@@ -20,6 +21,7 @@ function App() {
     <HeroUIProvider>
       <QueryClientProvider client={queryClient}>
         <Router>
+          <ScrollToTop />
           <AppContextProvider>
             <div className="min-h-screen bg-black text-kyool-blue flex flex-col">
               <Header />
