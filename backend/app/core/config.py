@@ -125,7 +125,8 @@ class Settings(BaseSettings):
         return config
     
     model_config = {
-        "env_file": [".env.test", ".env.local", ".env"],
+        # Load production config when building Lambda containers
+        "env_file": [".env.test", ".env.local", ".env.production", ".env"],
         "case_sensitive": True
     }
 

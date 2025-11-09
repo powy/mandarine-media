@@ -1,0 +1,21 @@
+# Requirements for running deployment scripts
+# Install these in a separate virtual environment outside the project
+#
+# Usage:
+#   python -m venv venv-deploy
+#   venv-deploy\Scripts\activate  (Windows)
+#   source venv-deploy/bin/activate  (Linux/Mac)
+#   pip install -r requirements-deploy.txt
+
+# AWS SDK for Python
+boto3>=1.34.0
+botocore>=1.34.0
+
+# Docker SDK for Python (optional - for programmatic Docker operations)
+docker>=6.1.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Additional utilities
+requests>=2.31.0

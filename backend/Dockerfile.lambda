@@ -1,0 +1,26 @@
+# AWS Lambda optimized Dockerfile for KYOOL Media Platform API
+# Uses official AWS Lambda Python 3.11 base image
+
+FROM public.ecr.aws/lambda/python:3.11
+
+# Set working directory (LAMBDA_TASK_ROOT is set by base image to /var/task)
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Copy requirements and install dependencies
+# This layer is cached unless requirements.txt changes
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
+
+# Copy application code
+COPY app/ ${LAMBDA_TASK_ROOT}/app/
+COPY alembic/ ${LAMBDA_TASK_ROOT}/alembic/
+COPY alembic.ini ${LAMBDA_TASK_ROOT}/
+
+# Copy production environment file (required for Lambda runtime settings)
+# Keep secrets minimal and prefer AWS Secrets Manager for sensitive data
+COPY .env.production ${LAMBDA_TASK_ROOT}/.env.production
+
+# Set the Lambda handler
+# Format: module.function_name
+# Points to lambda_handler() function in app/lambda_handler.py
+CMD ["app.lambda_handler.lambda_handler"]
