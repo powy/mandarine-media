@@ -17,8 +17,10 @@ const __dirname = path.dirname(__filename);
 const S3_BUCKET = process.env.S3_BUCKET || 'kyool-prod-site';
 const S3_REGION = process.env.S3_REGION || 'eu-west-3';
 
-// WARNING AWS profile may change
-const AWS_PROFILE = process.env.AWS_PROFILE || 'default';
+// AWS Profile: CLI arg > ENV var > AWS CLI default
+// Usage: node deploy-s3.js [profile-name]
+// Or set AWS_PROFILE environment variable
+const AWS_PROFILE = process.argv[2] || process.env.AWS_PROFILE || null;
 
 // Check for both local and monorepo dist paths
 const LOCAL_DIST_PATH = path.join(process.cwd(), 'dist');
@@ -27,6 +29,12 @@ const DIST_PATH = fs.existsSync(MONOREPO_DIST_PATH) ? MONOREPO_DIST_PATH : LOCAL
 
 function log(message) {
   console.log(`[S3-DEPLOY] ${new Date().toISOString()} - ${message}`);
+}
+
+function getProfileArgs() {
+  // Only add --profile flag if a profile is specified
+  // Otherwise, let AWS CLI use its default profile configuration
+  return AWS_PROFILE ? ['--profile', AWS_PROFILE] : [];
 }
 
 function runCommand(command, args, options = {}) {
@@ -66,7 +74,7 @@ async function checkAWSCLI() {
 
 async function checkS3Access() {
   try {
-    await runCommand('aws', ['s3', 'ls', `s3://${S3_BUCKET}`, '--profile', AWS_PROFILE]);
+    await runCommand('aws', ['s3', 'ls', `s3://${S3_BUCKET}`, ...getProfileArgs()]);
     log(`Access to S3 bucket ${S3_BUCKET} verified`);
   } catch (error) {
     throw new Error(`Cannot access S3 bucket ${S3_BUCKET}. Check your AWS credentials and bucket name.`);
@@ -115,7 +123,7 @@ async function deployToS3() {
         '--include', '*.html',
         '--content-type', 'text/html',
         '--cache-control', 'no-cache',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
@@ -131,7 +139,7 @@ async function deployToS3() {
         '--include', '*.css',
         '--content-type', 'text/css',
         '--cache-control', 'max-age=31536000',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
@@ -147,7 +155,7 @@ async function deployToS3() {
         '--include', '*.js',
         '--content-type', 'application/javascript',
         '--cache-control', 'max-age=31536000',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
@@ -163,7 +171,7 @@ async function deployToS3() {
         '--include', '*.map',
         '--content-type', 'application/json',
         '--cache-control', 'max-age=31536000',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
@@ -180,7 +188,7 @@ async function deployToS3() {
         '--exclude', '*.js',
         '--exclude', '*.map',
         '--cache-control', 'max-age=86400',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);

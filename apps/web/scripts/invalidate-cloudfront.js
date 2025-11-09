@@ -15,13 +15,22 @@ const __dirname = path.dirname(__filename);
 
 // FIXME: Configure your CloudFront settings
 const CLOUDFRONT_DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID || 'EXAMPLEWEBDIST';
-const AWS_PROFILE = process.env.AWS_PROFILE || 'default';
+// AWS Profile: CLI arg > ENV var > AWS CLI default
+// Usage: node invalidate-cloudfront.js [profile-name]
+// Or set AWS_PROFILE environment variable
+const AWS_PROFILE = process.argv[2] || process.env.AWS_PROFILE || null;
 const PATHS_TO_INVALIDATE = [
   '/*'  // Invalidate all paths - you can customize this
 ];
 
 function log(message) {
   console.log(`[CLOUDFRONT] ${new Date().toISOString()} - ${message}`);
+}
+
+function getProfileArgs() {
+  // Only add --profile flag if a profile is specified
+  // Otherwise, let AWS CLI use its default profile configuration
+  return AWS_PROFILE ? ['--profile', AWS_PROFILE] : [];
 }
 
 function runCommand(command, args, options = {}) {
@@ -99,7 +108,7 @@ async function checkCloudFrontAccess() {
     await runCommand('aws', [
       'cloudfront', 'get-distribution',
       '--id', CLOUDFRONT_DISTRIBUTION_ID,
-      '--profile', AWS_PROFILE,
+      ...getProfileArgs(),
       '--query', 'Distribution.Id',
       '--output', 'text'
     ]);
@@ -131,7 +140,7 @@ async function invalidateCloudFront() {
       'cloudfront', 'create-invalidation',
       '--distribution-id', CLOUDFRONT_DISTRIBUTION_ID,
       '--paths', ...PATHS_TO_INVALIDATE,
-      '--profile', AWS_PROFILE,
+      ...getProfileArgs(),
       '--output', 'json'
     ]);
     
@@ -146,7 +155,7 @@ async function invalidateCloudFront() {
       'cloudfront', 'wait', 'invalidation-completed',
       '--distribution-id', CLOUDFRONT_DISTRIBUTION_ID,
       '--id', invalidationId,
-      '--profile', AWS_PROFILE
+      ...getProfileArgs()
     ]);
     
     log('CloudFront invalidation completed successfully!');

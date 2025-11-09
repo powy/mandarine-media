@@ -13,19 +13,24 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// AWS Profile can be passed as CLI argument
+// Usage: node deploy.js [profile-name]
+// Or set AWS_PROFILE environment variable
+const AWS_PROFILE_ARG = process.argv[2] ? [process.argv[2]] : [];
+
 function log(message) {
   console.log(`[DEPLOY] ${new Date().toISOString()} - ${message}`);
 }
 
-function runScript(scriptName) {
+function runScript(scriptName, scriptArgs = []) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, scriptName);
     log(`Starting ${scriptName}...`);
-    
+
     const isWindows = process.platform === 'win32';
     const cmd = isWindows ? 'cmd' : 'node';
-    const args = isWindows ? ['/c', 'node', scriptPath] : [scriptPath];
-    
+    const args = isWindows ? ['/c', 'node', scriptPath, ...scriptArgs] : [scriptPath, ...scriptArgs];
+
     const child = spawn(cmd, args, {
       stdio: 'inherit',
       cwd: process.cwd(),
@@ -62,13 +67,13 @@ async function deploy() {
     
     // Step 2: Deploy to S3
     log('Step 2/3: Deploying to S3');
-    await runScript('deploy-s3.js');
+    await runScript('deploy-s3.js', AWS_PROFILE_ARG);
     log('✅ S3 deployment completed');
     log('-'.repeat(30));
-    
+
     // Step 3: Invalidate CloudFront
     log('Step 3/3: Invalidating CloudFront cache');
-    await runScript('invalidate-cloudfront.js');
+    await runScript('invalidate-cloudfront.js', AWS_PROFILE_ARG);
     log('✅ CloudFront invalidation completed');
     log('-'.repeat(30));
     
