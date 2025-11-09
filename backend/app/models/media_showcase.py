@@ -45,8 +45,12 @@ class MediaShowcase(Base):
     # Relationships
     media_themes = relationship("MediaTheme", secondary=media_showcase_media_themes, 
                                back_populates="media_showcases")
-    media_descriptions = relationship("MediaDescription", secondary=media_showcase_media_descriptions,
-                                     back_populates="media_showcases")
+    media_descriptions = relationship(
+        "MediaDescription",
+        secondary=media_showcase_media_descriptions,
+        order_by=media_showcase_media_descriptions.c.priority_in_showcase,
+        back_populates="media_showcases"
+    )
 
     def update_json(self, db_session=None) -> Dict[str, Any]:
         """

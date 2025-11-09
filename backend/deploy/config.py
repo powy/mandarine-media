@@ -127,7 +127,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-CORS_ALLOWED_HEADERS = ["Content-Type", "Authorization"]
+# Use wildcard to allow all headers (matches FastAPI CORS middleware)
+# This prevents API Gateway from blocking requests with cache-control, pragma, etc.
+CORS_ALLOWED_HEADERS = ["*"]
 
 # ============================================================================
 # IAM POLICY CONFIGURATION
