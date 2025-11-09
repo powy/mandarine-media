@@ -75,7 +75,10 @@ class Settings(BaseSettings):
     # Mux Signing Keys (Critical for Security)
     MUX_SIGNING_KEY_ID: Optional[str] = None
     MUX_PRIVATE_KEY: Optional[str] = None
-    
+
+    # Mux Token Expiration (in minutes)
+    MUX_TOKEN_EXPIRATION_MINUTES: int = 480  # Default: 8 hours (480 minutes)
+
     # Backend Selection for Media Types
     UPLOAD_VIDEO_BACKEND: str = "local"  # local, s3, mux
     UPLOAD_WEBCOMIC_BACKEND: str = "local"  # local, s3

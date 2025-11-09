@@ -221,7 +221,7 @@ export const mediaApi = {
     return response.data;
   },
 
-  async generatePlaybackToken(id: string, expirationMinutes: number = 60): Promise<{
+  async generatePlaybackToken(id: string, expirationMinutes: number = 480): Promise<{
     success: boolean;
     token: string;
     playback_url: string;
@@ -233,7 +233,7 @@ export const mediaApi = {
     return response.data;
   },
 
-  async generateDrmToken(id: string, expirationMinutes: number = 60, drmKeyId?: string): Promise<{
+  async generateDrmToken(id: string, expirationMinutes: number = 480, drmKeyId?: string): Promise<{
     success: boolean;
     token: string;
     drm_key_id?: string;

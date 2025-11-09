@@ -67,26 +67,29 @@ class MuxTokenService:
             raise ValueError(f"Failed to load MUX private key: {str(e)}")
     
     def generate_playback_token(
-        self, 
-        playback_id: str, 
-        expiration_minutes: int = 60, 
+        self,
+        playback_id: str,
+        expiration_minutes: int = None,
         audience: str = "v"
     ) -> str:
         """
         Generate JWT token for secure video playback.
-        
+
         Args:
             playback_id: Mux Video Playback ID (subject)
-            expiration_minutes: Token expiration in minutes (default: 60)
+            expiration_minutes: Token expiration in minutes (default: from settings.MUX_TOKEN_EXPIRATION_MINUTES)
             audience: Audience type ("v" for video, "s" for storyboard)
-        
+
         Returns:
             Signed JWT token string
-        
+
         Raises:
             ValueError: If required configuration is missing
             Exception: If token generation fails
         """
+        # Use configured default if not specified
+        if expiration_minutes is None:
+            expiration_minutes = settings.MUX_TOKEN_EXPIRATION_MINUTES
         import logging
         logger = logging.getLogger(__name__)
         
@@ -137,26 +140,29 @@ class MuxTokenService:
             raise Exception(f"Failed to generate playback token: {str(e)}")
     
     def generate_drm_token(
-        self, 
-        playback_id: str, 
-        expiration_minutes: int = 60, 
+        self,
+        playback_id: str,
+        expiration_minutes: int = None,
         key_id: Optional[str] = None
     ) -> str:
         """
         Generate JWT token for DRM license requests.
-        
+
         Args:
             playback_id: Mux Video Playback ID (subject)
-            expiration_minutes: Token expiration in minutes (default: 60)
+            expiration_minutes: Token expiration in minutes (default: from settings.MUX_TOKEN_EXPIRATION_MINUTES)
             key_id: Optional DRM key ID for specific DRM keys
-        
+
         Returns:
             Signed JWT token string for DRM
-        
+
         Raises:
             ValueError: If required configuration is missing
             Exception: If token generation fails
         """
+        # Use configured default if not specified
+        if expiration_minutes is None:
+            expiration_minutes = settings.MUX_TOKEN_EXPIRATION_MINUTES
         import logging
         logger = logging.getLogger(__name__)
         
@@ -211,22 +217,25 @@ class MuxTokenService:
             raise Exception(f"Failed to generate DRM token: {str(e)}")
     
     def generate_signed_playback_url(
-        self, 
-        playback_id: str, 
-        expiration_minutes: int = 60,
+        self,
+        playback_id: str,
+        expiration_minutes: int = None,
         format_type: str = "m3u8"
     ) -> str:
         """
         Generate a complete signed playback URL with embedded JWT token.
-        
+
         Args:
             playback_id: Mux Video Playback ID
-            expiration_minutes: Token expiration in minutes (default: 60)
+            expiration_minutes: Token expiration in minutes (default: from settings.MUX_TOKEN_EXPIRATION_MINUTES)
             format_type: Video format ("m3u8" for HLS, "mp4" for MP4)
-        
+
         Returns:
             Complete signed playback URL
         """
+        # Use configured default if not specified
+        if expiration_minutes is None:
+            expiration_minutes = settings.MUX_TOKEN_EXPIRATION_MINUTES
         # Generate the playback token
         token = self.generate_playback_token(playback_id, expiration_minutes)
         

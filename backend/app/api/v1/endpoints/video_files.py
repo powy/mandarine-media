@@ -543,7 +543,7 @@ def generate_playback_token(
     response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
+    expiration_minutes: int = Query(settings.MUX_TOKEN_EXPIRATION_MINUTES, ge=1, le=1440),  # 1 minute to 24 hours
     current_user: schemas.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
@@ -628,7 +628,7 @@ def generate_drm_token(
     response: Response,
     db: Session = Depends(deps.get_db),
     id: UUID,
-    expiration_minutes: int = Query(60, ge=1, le=1440),  # 1 minute to 24 hours
+    expiration_minutes: int = Query(settings.MUX_TOKEN_EXPIRATION_MINUTES, ge=1, le=1440),  # 1 minute to 24 hours
     drm_key_id: Optional[str] = Query(None),
     current_user: schemas.User = Depends(deps.get_current_active_admin),  # Admin only
 ) -> Any:

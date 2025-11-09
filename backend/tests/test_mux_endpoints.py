@@ -100,7 +100,7 @@ class TestMuxVideoSigningEndpoints:
         # Verify the service was called correctly
         mock_mux_service.generate_playback_token.assert_called_once_with(
             playback_id="test-playback-id",
-            expiration_minutes=60,  # default value
+            expiration_minutes=480,  # default value (8 hours)
             audience="v"
         )
     
@@ -138,7 +138,7 @@ class TestMuxVideoSigningEndpoints:
         # Verify the service was called correctly
         mock_mux_service.generate_drm_token.assert_called_once_with(
             playback_id="test-playback-id",
-            expiration_minutes=60,
+            expiration_minutes=480,  # default value (8 hours)
             key_id=None
         )
     
