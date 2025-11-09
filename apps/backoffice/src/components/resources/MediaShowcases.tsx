@@ -811,9 +811,9 @@ export const MediaShowcaseCreate = () => (
       />
       <BooleanInput
         source="latest_first"
-        defaultValue={true}
+        defaultValue={false}
         label="Show Latest First"
-        helperText="Order items by latest first"
+        helperText="Order items by latest first - reversing the displayed order"
       />
       <TextInput
         source="media_type"
@@ -882,7 +882,7 @@ export const MediaShowcaseEdit = () => (
       <BooleanInput
         source="latest_first"
         label="Show Latest First"
-        helperText="Order items by latest first"
+        helperText="Order items by latest first - reversing the displayed order"
       />
       <TextInput
         source="media_type"

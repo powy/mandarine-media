@@ -37,7 +37,7 @@ class MediaShowcaseBase(BaseModel):
     # Content filtering and organization
     media_type: Optional[str] = Field(None, description="Filter content by media type")
     media_categories_list: Optional[List[str]] = Field(None, description="Filter by category enum values")
-    latest_first: bool = Field(True, description="Order items by latest first")
+    latest_first: bool = Field(False, description="Order items by latest first - reversing the displayed order")
     slug: Optional[str] = Field(None, description="URL slug (auto-generated from title if empty)")
 
 
@@ -59,7 +59,7 @@ class MediaShowcaseUpdate(BaseModel):
     # Content filtering and organization
     media_type: Optional[str] = Field(None, description="Filter content by media type")
     media_categories_list: Optional[List[str]] = Field(None, description="Filter by category enum values")
-    latest_first: Optional[bool] = Field(None, description="Order items by latest first")
+    latest_first: Optional[bool] = Field(None, description="Order items by latest first - reversing the displayed order")
     slug: Optional[str] = Field(None, description="URL slug")
 
     # Relationships

@@ -555,7 +555,7 @@ const mediaShowcases = {
     media_themes: item.media_themes || [],
     // Ensure all boolean fields have proper defaults
     is_active: item.is_active !== undefined ? item.is_active : true,
-    latest_first: item.latest_first !== undefined ? item.latest_first : true,
+    latest_first: item.latest_first !== undefined ? item.latest_first : false,
     // Ensure numeric fields have defaults
     priority_in_screen: item.priority_in_screen !== undefined ? item.priority_in_screen : 0,
     percentage_width: item.percentage_width !== undefined ? item.percentage_width : 100,
@@ -590,7 +590,7 @@ const mediaShowcases = {
       percentage_height: data.percentage_height !== undefined ? data.percentage_height : 100,
       media_type: data.media_type || null,
       media_categories_list: data.media_categories_list || [],
-      latest_first: data.latest_first !== false,
+      latest_first: data.latest_first === true,
       slug: data.slug || null,
       // Map relationship ID arrays
       media_description_ids: data.media_description_ids || [],

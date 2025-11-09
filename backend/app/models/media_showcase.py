@@ -35,7 +35,7 @@ class MediaShowcase(Base):
     # Content filtering
     media_type = Column(String, nullable=True)  # Filter by media type
     media_categories_list = Column(JSONArray(), nullable=True)  # Array of MediaCategoryEnum values
-    latest_first = Column(Boolean, default=True, nullable=False)
+    latest_first = Column(Boolean, default=False, nullable=False)
     slug = Column(String, nullable=True, unique=True, index=True)
     
     # Performance optimization
@@ -48,7 +48,6 @@ class MediaShowcase(Base):
     media_descriptions = relationship(
         "MediaDescription",
         secondary=media_showcase_media_descriptions,
-        order_by=media_showcase_media_descriptions.c.priority_in_showcase,
         back_populates="media_showcases"
     )
 
@@ -73,9 +72,20 @@ class MediaShowcase(Base):
             "items": []
         }
 
-        # Get ordered media descriptions with their details
-        # Filter: only include published media descriptions
-        for media_desc in [md for md in self.media_descriptions if md.content_status == "published"]:
+        # Get published media descriptions with their priorities
+        published_items = []
+        for md in self.media_descriptions:
+            if md.content_status == "published":
+                priority = self._get_item_priority_in_showcase(md.id, db_session)
+                published_items.append((md, priority))
+
+        # Sort based on latest_first setting
+        # latest_first=True → DESC (highest priority first)
+        # latest_first=False → ASC (lowest priority first)
+        published_items.sort(key=lambda x: x[1], reverse=self.latest_first)
+
+        # Iterate through sorted items
+        for media_desc, priority in published_items:
             # Use common serialization function
             item_data = serialize_media_description_to_json(
                 media_desc,
@@ -83,8 +93,8 @@ class MediaShowcase(Base):
                 thumbnail_format=self.thumbnail_format
             )
 
-            # Add showcase-specific display_order
-            item_data["display_order"] = self._get_item_priority_in_showcase(media_desc.id, db_session)
+            # Add showcase-specific display_order (use already-fetched priority)
+            item_data["display_order"] = priority
 
             json_data["items"].append(item_data)
 
