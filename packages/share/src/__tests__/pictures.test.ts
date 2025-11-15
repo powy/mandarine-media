@@ -94,14 +94,15 @@ describe('Pictures API', () => {
   describe('getById', () => {
     it('should fetch a single picture by ID', async () => {
       const mockPicture: Picture = {
-        id: 1,
-        title: 'Test Image',
-        file_path: '/images/test.jpg',
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/test.jpg',
+        large_image_url: 'https://example.com/test-large.jpg',
+        small_image_url: 'https://example.com/test-small.jpg',
+        file_name: 'test.jpg',
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
-        format: 'jpg',
-        description: 'A test image for the platform',
         alt_text: 'Test image alt text',
       };
 
@@ -133,14 +134,16 @@ describe('Pictures API', () => {
       };
 
       const createdPicture: Picture = {
-        id: 3,
-        title: 'Uploaded Image',
-        file_path: '/images/uploaded.jpg',
+        id: '3',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/uploaded.jpg',
+        large_image_url: 'https://example.com/uploaded-large.jpg',
+        small_image_url: 'https://example.com/uploaded-small.jpg',
+        file_name: 'uploaded.jpg',
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
-        format: 'jpg',
-        description: 'An uploaded test image',
+        alt_text: 'An uploaded test image',
       };
 
       mockApiClient.post.mockResolvedValue({ data: createdPicture });
@@ -173,14 +176,15 @@ describe('Pictures API', () => {
       };
 
       const updatedPicture: Picture = {
-        id: 1,
-        title: 'Updated Title',
-        file_path: '/images/test.jpg',
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/updated.jpg',
+        large_image_url: 'https://example.com/updated-large.jpg',
+        small_image_url: 'https://example.com/updated-small.jpg',
+        file_name: 'updated.jpg',
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
-        format: 'jpg',
-        description: 'Updated description',
         alt_text: 'Updated alt text',
       };
 
@@ -204,13 +208,15 @@ describe('Pictures API', () => {
   describe('delete', () => {
     it('should delete a picture', async () => {
       const deletedPicture: Picture = {
-        id: 1,
-        title: 'Deleted Image',
-        file_path: '/images/test.jpg',
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/deleted.jpg',
+        large_image_url: 'https://example.com/deleted-large.jpg',
+        small_image_url: 'https://example.com/deleted-small.jpg',
+        file_name: 'deleted.jpg',
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
-        format: 'jpg',
       };
 
       mockApiClient.delete.mockResolvedValue({ data: deletedPicture });
@@ -242,13 +248,15 @@ describe('Pictures API', () => {
         };
 
         const createdPicture: Picture = {
-          id: 1,
-          title: `Test ${format.toUpperCase()}`,
-          file_path: `/images/test.${format}`,
+          id: '1',
+          creation_date_utc: '2024-01-01T00:00:00Z',
+          image_url: `https://example.com/test.${format}`,
+          large_image_url: `https://example.com/test-large.${format}`,
+          small_image_url: `https://example.com/test-small.${format}`,
+          file_name: `test.${format}`,
           file_size_bytes: 1024,
           width: 1920,
           height: 1080,
-          format,
         };
 
         mockApiClient.post.mockResolvedValue({ data: createdPicture });
@@ -270,13 +278,15 @@ describe('Pictures API', () => {
       };
 
       const createdPicture: Picture = {
-        id: 1,
-        title: 'Large Image',
-        file_path: '/images/large.jpg',
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/large.jpg',
+        large_image_url: 'https://example.com/large-large.jpg',
+        small_image_url: 'https://example.com/large-small.jpg',
+        file_name: 'large.jpg',
         file_size_bytes: largeFileSize,
         width: 4096,
         height: 3072,
-        format: 'jpg',
       };
 
       mockApiClient.post.mockResolvedValue({ data: createdPicture });
@@ -290,13 +300,13 @@ describe('Pictures API', () => {
   describe('Edge Cases', () => {
     it('should handle pictures with no dimensions', async () => {
       const pictureWithoutDimensions: Picture = {
-        id: 1,
-        title: 'Vector Image',
-        file_path: '/images/vector.svg',
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/vector.svg',
+        file_name: 'vector.svg',
         file_size_bytes: 512,
         width: 0,
         height: 0,
-        format: 'svg',
       };
 
       mockApiClient.get.mockResolvedValue({ data: pictureWithoutDimensions });
@@ -315,13 +325,15 @@ describe('Pictures API', () => {
       };
 
       const updatedPicture: Picture = {
-        id: 1,
-        title: 'Long filename',
-        file_path: '/images/long.jpg',
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: 'https://example.com/long.jpg',
+        large_image_url: 'https://example.com/long-large.jpg',
+        small_image_url: 'https://example.com/long-small.jpg',
+        file_name: 'long.jpg',
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
-        format: 'jpg',
       };
 
       mockApiClient.put.mockResolvedValue({ data: updatedPicture });
@@ -334,20 +346,22 @@ describe('Pictures API', () => {
     it('should handle special characters in filenames', async () => {
       const specialFilename = 'test-file_with-special.chars@#$%^&*()!.jpg';
       const picture: Picture = {
-        id: 1,
-        title: 'Special Filename',
-        file_path: `/images/${specialFilename}`,
+        id: '1',
+        creation_date_utc: '2024-01-01T00:00:00Z',
+        image_url: `https://example.com/${specialFilename}`,
+        large_image_url: `https://example.com/large-${specialFilename}`,
+        small_image_url: `https://example.com/small-${specialFilename}`,
+        file_name: specialFilename,
         file_size_bytes: 1024,
         width: 1920,
         height: 1080,
-        format: 'jpg',
       };
 
       mockApiClient.get.mockResolvedValue({ data: picture });
 
       const result = await picturesApi.getById('1');
 
-      expect(result.file_path).toContain(specialFilename);
+      expect(result.file_name).toContain(specialFilename);
     });
 
     it('should handle empty result sets', async () => {

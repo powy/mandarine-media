@@ -264,6 +264,8 @@ export interface MediaDescriptionSimple {
 export interface PictureSimple {
   id: string;
   image_url: string;
+  large_image_url?: string;
+  small_image_url?: string;
   file_name?: string;
   alt_text?: string;
 }
@@ -435,6 +437,8 @@ export interface Picture {
   id: string;
   creation_date_utc: string;
   image_url: string;
+  large_image_url?: string;
+  small_image_url?: string;
   file_name?: string;
   file_size_bytes?: number;
   width?: number;
@@ -784,6 +788,8 @@ export interface TerritoryUpdate {
 
 export interface PictureCreate {
   image_url: string;
+  large_image_url?: string;
+  small_image_url?: string;
   file_name?: string;
   file_size_bytes?: number;
   width?: number;
@@ -793,6 +799,8 @@ export interface PictureCreate {
 
 export interface PictureUpdate {
   image_url?: string;
+  large_image_url?: string;
+  small_image_url?: string;
   file_name?: string;
   file_size_bytes?: number;
   width?: number;

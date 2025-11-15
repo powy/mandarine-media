@@ -14,7 +14,9 @@ class Picture(Base):
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     creation_date_utc = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     image_url = Column(String, nullable=False)
-    
+    large_image_url = Column(String, nullable=True)
+    small_image_url = Column(String, nullable=True)
+
     # Optional metadata
     file_name = Column(String, nullable=True)
     file_size_bytes = Column(Integer, nullable=True)

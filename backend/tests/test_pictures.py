@@ -8,6 +8,8 @@ def sample_picture_data():
     """Sample picture data for testing."""
     return {
         "image_url": "https://example.com/test-image.jpg",
+        "large_image_url": "https://example.com/test-image-large.jpg",
+        "small_image_url": "https://example.com/test-image-small.jpg",
         "file_name": "test-image.jpg",
         "width": 1920,
         "height": 1080,
@@ -21,6 +23,8 @@ def sample_picture_update_data():
     """Sample picture update data for testing."""
     return {
         "image_url": "https://example.com/updated-image.jpg",
+        "large_image_url": "https://example.com/updated-image-large.jpg",
+        "small_image_url": "https://example.com/updated-image-small.jpg",
         "file_name": "updated-image.jpg",
         "alt_text": "Updated image description"
     }
@@ -40,12 +44,14 @@ class TestPicturesCRUD:
     def test_create_picture_success(self, client, admin_token, sample_picture_data):
         """Test successful picture creation."""
         headers = {"Authorization": f"Bearer {admin_token}"}
-        
+
         response = client.post("/api/v1/pictures", json=sample_picture_data, headers=headers)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["image_url"] == sample_picture_data["image_url"]
+        assert data["large_image_url"] == sample_picture_data["large_image_url"]
+        assert data["small_image_url"] == sample_picture_data["small_image_url"]
         assert data["file_name"] == sample_picture_data["file_name"]
         assert data["width"] == sample_picture_data["width"]
         assert data["height"] == sample_picture_data["height"]
@@ -120,15 +126,17 @@ class TestPicturesCRUD:
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         create_response = client.post("/api/v1/pictures", json=sample_picture_data, headers=admin_headers)
         picture_id = create_response.json()["id"]
-        
+
         # Get picture
         user_headers = {"Authorization": f"Bearer {user_token}"}
         response = client.get(f"/api/v1/pictures/{picture_id}", headers=user_headers)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == picture_id
         assert data["image_url"] == sample_picture_data["image_url"]
+        assert data["large_image_url"] == sample_picture_data["large_image_url"]
+        assert data["small_image_url"] == sample_picture_data["small_image_url"]
 
     def test_get_picture_not_found(self, client, user_token):
         """Test picture retrieval with non-existent ID."""
@@ -142,36 +150,54 @@ class TestPicturesCRUD:
     def test_update_picture_success(self, client, admin_token, sample_picture_data, sample_picture_update_data):
         """Test successful picture update."""
         headers = {"Authorization": f"Bearer {admin_token}"}
-        
+
         # Create picture first
         create_response = client.post("/api/v1/pictures", json=sample_picture_data, headers=headers)
         picture_id = create_response.json()["id"]
-        
+
         # Update picture
         response = client.put(f"/api/v1/pictures/{picture_id}", json=sample_picture_update_data, headers=headers)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["image_url"] == sample_picture_update_data["image_url"]
+        assert data["large_image_url"] == sample_picture_update_data["large_image_url"]
+        assert data["small_image_url"] == sample_picture_update_data["small_image_url"]
         assert data["file_name"] == sample_picture_update_data["file_name"]
         assert data["alt_text"] == sample_picture_update_data["alt_text"]
 
     def test_update_picture_partial(self, client, admin_token, sample_picture_data):
         """Test partial picture update."""
         headers = {"Authorization": f"Bearer {admin_token}"}
-        
+
         # Create picture first
         create_response = client.post("/api/v1/pictures", json=sample_picture_data, headers=headers)
         picture_id = create_response.json()["id"]
-        
+
         # Update only alt_text
         update_data = {"alt_text": "Updated description"}
         response = client.put(f"/api/v1/pictures/{picture_id}", json=update_data, headers=headers)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["alt_text"] == update_data["alt_text"]
         assert data["image_url"] == sample_picture_data["image_url"]
+        # Verify URL variants are preserved
+        assert data["large_image_url"] == sample_picture_data["large_image_url"]
+        assert data["small_image_url"] == sample_picture_data["small_image_url"]
+
+        # Update only URL variants
+        url_update = {
+            "large_image_url": "https://example.com/new-large.jpg",
+            "small_image_url": "https://example.com/new-small.jpg"
+        }
+        response2 = client.put(f"/api/v1/pictures/{picture_id}", json=url_update, headers=headers)
+
+        assert response2.status_code == 200
+        data2 = response2.json()
+        assert data2["large_image_url"] == url_update["large_image_url"]
+        assert data2["small_image_url"] == url_update["small_image_url"]
+        assert data2["image_url"] == sample_picture_data["image_url"]  # Main URL preserved
 
     def test_update_picture_duplicate_url(self, client, admin_token, sample_picture_data):
         """Test picture update with duplicate URL fails."""

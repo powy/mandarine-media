@@ -23,7 +23,7 @@ def serialize_media_description_to_json(
     This function creates a JSON-friendly representation of a MediaDescription with:
     - Core fields (title, media_type, slug, etc.)
     - Resolved program_id and season_id based on media_type
-    - All 5 image format URLs resolved from Picture relationships
+    - All 5 image format URLs with 3 variants each (standard, large, small) - 15 URL fields total
     - Optional thumbnail_url for a specific format
     - Optional display_order from association table
 
@@ -56,12 +56,27 @@ def serialize_media_description_to_json(
         "program_id": program_id_val,
         "season_id": season_id_val,
         "episode_number": media_desc.episode_number,
-        # Add all 5 format URLs
+        # Add all format URLs (standard, large, and small variants)
+        # Resolution: 1920x1080
         "image_1920_1080_url": format_urls["image_1920_1080_url"],
+        "image_1920_1080_large_url": format_urls["image_1920_1080_large_url"],
+        "image_1920_1080_small_url": format_urls["image_1920_1080_small_url"],
+        # Resolution: 1920x720
         "image_1920_720_url": format_urls["image_1920_720_url"],
+        "image_1920_720_large_url": format_urls["image_1920_720_large_url"],
+        "image_1920_720_small_url": format_urls["image_1920_720_small_url"],
+        # Resolution: 1080x1080
         "image_1080_1080_url": format_urls["image_1080_1080_url"],
+        "image_1080_1080_large_url": format_urls["image_1080_1080_large_url"],
+        "image_1080_1080_small_url": format_urls["image_1080_1080_small_url"],
+        # Resolution: 810x1080
         "image_810_1080_url": format_urls["image_810_1080_url"],
-        "image_1080_1920_url": format_urls["image_1080_1920_url"]
+        "image_810_1080_large_url": format_urls["image_810_1080_large_url"],
+        "image_810_1080_small_url": format_urls["image_810_1080_small_url"],
+        # Resolution: 1080x1920
+        "image_1080_1920_url": format_urls["image_1080_1920_url"],
+        "image_1080_1920_large_url": format_urls["image_1080_1920_large_url"],
+        "image_1080_1920_small_url": format_urls["image_1080_1920_small_url"]
     }
 
     # Step 4: Add optional thumbnail_url
@@ -115,32 +130,46 @@ def _resolve_program_season_ids(media_desc, db_session: Session) -> tuple[Option
 
 def _get_all_image_format_urls(media_desc) -> Dict[str, Optional[str]]:
     """
-    Get all 5 thumbnail format URLs for a media description.
+    Get all thumbnail format URLs for a media description.
 
-    Returns dictionary with keys:
-    - image_1920_1080_url
-    - image_1920_720_url
-    - image_1080_1080_url
-    - image_810_1080_url
-    - image_1080_1920_url
+    Returns dictionary with keys for each resolution:
+    - image_1920_1080_url, image_1920_1080_large_url, image_1920_1080_small_url
+    - image_1920_720_url, image_1920_720_large_url, image_1920_720_small_url
+    - image_1080_1080_url, image_1080_1080_large_url, image_1080_1080_small_url
+    - image_810_1080_url, image_810_1080_large_url, image_810_1080_small_url
+    - image_1080_1920_url, image_1080_1920_large_url, image_1080_1920_small_url
 
     Each value is either the image URL string or None if not set.
     """
     format_fields = {
-        "image_1920_1080_url": 'image_1920_1080',
-        "image_1920_720_url": 'image_1920_720',
-        "image_1080_1080_url": 'image_1080_1080',
-        "image_810_1080_url": 'image_810_1080',
-        "image_1080_1920_url": 'image_1080_1920'
+        "image_1920_1080": 'image_1920_1080',
+        "image_1920_720": 'image_1920_720',
+        "image_1080_1080": 'image_1080_1080',
+        "image_810_1080": 'image_810_1080',
+        "image_1080_1920": 'image_1080_1920'
     }
 
     result = {}
-    for url_field, picture_attr in format_fields.items():
+    for base_name, picture_attr in format_fields.items():
         picture = getattr(media_desc, picture_attr, None)
+
+        # Get standard image URL
         if picture and hasattr(picture, 'image_url') and picture.image_url:
-            result[url_field] = picture.image_url
+            result[f"{base_name}_url"] = picture.image_url
         else:
-            result[url_field] = None
+            result[f"{base_name}_url"] = None
+
+        # Get large image URL
+        if picture and hasattr(picture, 'large_image_url') and picture.large_image_url:
+            result[f"{base_name}_large_url"] = picture.large_image_url
+        else:
+            result[f"{base_name}_large_url"] = None
+
+        # Get small image URL
+        if picture and hasattr(picture, 'small_image_url') and picture.small_image_url:
+            result[f"{base_name}_small_url"] = picture.small_image_url
+        else:
+            result[f"{base_name}_small_url"] = None
 
     return result
 

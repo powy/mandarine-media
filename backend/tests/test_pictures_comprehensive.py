@@ -9,6 +9,8 @@ def sample_picture_data():
     """Sample picture data for testing."""
     return {
         "image_url": "https://example.com/image.jpg",
+        "large_image_url": "https://example.com/image-large.jpg",
+        "small_image_url": "https://example.com/image-small.jpg",
         "file_name": "test_image.jpg",
         "file_size_bytes": 1024000,
         "width": 1920,
@@ -22,6 +24,8 @@ def sample_picture_update_data():
     """Sample picture update data for testing."""
     return {
         "image_url": "https://example.com/updated_image.jpg",
+        "large_image_url": "https://example.com/updated_image-large.jpg",
+        "small_image_url": "https://example.com/updated_image-small.jpg",
         "file_name": "updated_image.jpg",
         "file_size_bytes": 2048000,
         "width": 3840,

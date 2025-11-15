@@ -116,6 +116,8 @@ describe('Picture Components', () => {
       expect(screen.getByTestId('create')).toBeInTheDocument();
       expect(screen.getByTestId('form')).toBeInTheDocument();
       expect(screen.getByTestId('input-image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('input-large_image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('input-small_image_url')).toBeInTheDocument();
       expect(screen.getByTestId('input-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('input-alt_text')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-width')).toBeInTheDocument();
@@ -148,6 +150,8 @@ describe('Picture Components', () => {
       expect(screen.getByTestId('edit')).toBeInTheDocument();
       expect(screen.getByTestId('form')).toBeInTheDocument();
       expect(screen.getByTestId('input-image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('input-large_image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('input-small_image_url')).toBeInTheDocument();
       expect(screen.getByTestId('input-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('input-alt_text')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-width')).toBeInTheDocument();
@@ -181,6 +185,8 @@ describe('Picture Components', () => {
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
       expect(screen.getByTestId('image-field-image_url')).toBeInTheDocument();
       expect(screen.getByTestId('url-field-image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('url-field-large_image_url')).toBeInTheDocument();
+      expect(screen.getByTestId('url-field-small_image_url')).toBeInTheDocument();
       expect(screen.getByTestId('field-file_name')).toBeInTheDocument();
       expect(screen.getByTestId('field-alt_text')).toBeInTheDocument();
       expect(screen.getByTestId('field-width')).toBeInTheDocument();

@@ -110,16 +110,26 @@ export const PictureList = () => (
 export const PictureCreate = () => (
   <Create redirect="list">
     <SimpleForm toolbar={<PictureToolbar />}>
-      <TextInput 
-        source="image_url" 
+      <TextInput
+        source="image_url"
         label="Photo URL"
-        validate={[required()]} 
-        fullWidth 
+        validate={[required()]}
+        fullWidth
       />
-      <TextInput 
-        source="file_name" 
+      <TextInput
+        source="large_image_url"
+        label="Large Image URL"
+        fullWidth
+      />
+      <TextInput
+        source="small_image_url"
+        label="Small Image URL"
+        fullWidth
+      />
+      <TextInput
+        source="file_name"
         label="File Name"
-        fullWidth 
+        fullWidth
       />
       <TextInput 
         source="alt_text" 
@@ -144,16 +154,26 @@ export const PictureCreate = () => (
 export const PictureEdit = () => (
   <Edit>
     <SimpleForm toolbar={<PictureToolbar />}>
-      <TextInput 
-        source="image_url" 
+      <TextInput
+        source="image_url"
         label="Photo URL"
-        validate={[required()]} 
-        fullWidth 
+        validate={[required()]}
+        fullWidth
       />
-      <TextInput 
-        source="file_name" 
+      <TextInput
+        source="large_image_url"
+        label="Large Image URL"
+        fullWidth
+      />
+      <TextInput
+        source="small_image_url"
+        label="Small Image URL"
+        fullWidth
+      />
+      <TextInput
+        source="file_name"
         label="File Name"
-        fullWidth 
+        fullWidth
       />
       <TextInput 
         source="alt_text" 
@@ -181,6 +201,8 @@ export const PictureShow = () => (
       <TextField source="id" />
       <ImageField source="image_url" label="Image" />
       <UrlField source="image_url" label="Photo URL" />
+      <UrlField source="large_image_url" label="Large Image URL" />
+      <UrlField source="small_image_url" label="Small Image URL" />
       <TextField source="file_name" label="File Name" />
       <TextField source="alt_text" label="Alt Text" />
       <TextField source="width" label="Width (pixels)" />
