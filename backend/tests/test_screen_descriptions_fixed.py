@@ -15,6 +15,7 @@ def sample_screen_description_data():
         "screen_type": ScreenTypeEnum.homepage,
         "is_active": True,
         "display_order": 1,
+        "in_top_menu": False,
         "media_showcases": []
     }
 

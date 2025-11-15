@@ -27,6 +27,7 @@ def sample_showcase_data():
         "media_categories_list": ["movie", "action"],
         "latest_first": True,
         "slug": "api-test-showcase",
+        "relative_url_link": None,
         "media_description_ids": [],
         "media_theme_ids": []
     }

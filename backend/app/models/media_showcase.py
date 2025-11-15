@@ -37,6 +37,7 @@ class MediaShowcase(Base):
     media_categories_list = Column(JSONArray(), nullable=True)  # Array of MediaCategoryEnum values
     latest_first = Column(Boolean, default=False, nullable=False)
     slug = Column(String, nullable=True, unique=True, index=True)
+    relative_url_link = Column(String, nullable=True)  # Relative URL link for navigation
     
     # Performance optimization
     json_content = Column(Text, nullable=True)  # Cached JSON representation
@@ -68,6 +69,7 @@ class MediaShowcase(Base):
             "is_active": self.is_active,
             "priority_in_screen": self.priority_in_screen,
             "list_type": self.list_type,
+            "relative_url_link": self.relative_url_link,
             "last_updated": self.last_updated_utc.isoformat() if self.last_updated_utc else None,
             "items": []
         }

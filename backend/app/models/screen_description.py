@@ -35,6 +35,7 @@ class ScreenDescription(Base):
     # Display properties
     is_active = Column(Boolean, default=True, nullable=False)
     display_order = Column(Integer, default=0, nullable=False)
+    in_top_menu = Column(Boolean, default=False, nullable=False)
     
     # Content organization - ordered list of media showcase IDs
     media_showcases = Column(JSONArray(), nullable=True, default=list)  # Array of media showcase UUIDs
@@ -61,6 +62,7 @@ class ScreenDescription(Base):
                 "screen_type": self.screen_type,
                 "is_active": self.is_active,
                 "display_order": self.display_order,
+                "in_top_menu": self.in_top_menu,
                 "last_updated": self.last_updated_utc.isoformat() if self.last_updated_utc else None,
                 "media_showcases": []
             }

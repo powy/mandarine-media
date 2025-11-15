@@ -825,6 +825,11 @@ export const MediaShowcaseCreate = () => (
         label="Slug (Optional)"
         helperText="SEO-friendly URL slug"
       />
+      <TextInput
+        source="relative_url_link"
+        label="Relative URL Link (Optional)"
+        helperText="Relative URL path for navigation (e.g., /category/action)"
+      />
       {/* Initial Media Items - Enhanced with ordering */}
       <MediaDescriptionManager
         source="media_description_ids"
@@ -894,6 +899,11 @@ export const MediaShowcaseEdit = () => (
         label="Slug (Optional)"
         helperText="SEO-friendly URL slug"
       />
+      <TextInput
+        source="relative_url_link"
+        label="Relative URL Link (Optional)"
+        helperText="Relative URL path for navigation (e.g., /category/action)"
+      />
 
       {/* Media Description Management - Enhanced with ordering */}
       <MediaDescriptionManager
@@ -945,6 +955,7 @@ export const MediaShowcaseShow = () => (
         </SingleFieldList>
       </ArrayField>
       <TextField source="slug" label="SEO Slug" />
+      <TextField source="relative_url_link" label="Relative URL Link" />
 
       {/* Media Items */}
       <FunctionField

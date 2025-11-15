@@ -60,6 +60,7 @@ describe('Screen Contents API (v1.9 with Screen Descriptions)', () => {
     title: 'Homepage',
     is_active: true,
     display_order: 1,
+    in_top_menu: true,
     description: 'Main homepage content layout',
     content_lists: ['list1', 'list2', 'list3'],
     screen_type: 'homepage',
@@ -73,6 +74,7 @@ describe('Screen Contents API (v1.9 with Screen Descriptions)', () => {
     title: 'Homepage',
     is_active: true,
     display_order: 1,
+    in_top_menu: true,
     description: 'Main homepage content layout',
     content_lists: ['list1', 'list2', 'list3'],
     screen_type: 'homepage',
@@ -84,6 +86,7 @@ describe('Screen Contents API (v1.9 with Screen Descriptions)', () => {
     title: 'Homepage',
     description: 'Main homepage content layout',
     screen_type: 'homepage',
+    in_top_menu: true,
     last_updated: '2024-01-15T14:30:00Z',
     content_lists: [
       {

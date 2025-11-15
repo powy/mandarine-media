@@ -23,8 +23,9 @@ class ScreenDescriptionBase(BaseModel):
     screen_type: Optional[ScreenTypeEnum] = Field(None, description="Type of screen this represents")
     is_active: bool = Field(True, description="Whether the screen content is active")
     display_order: int = Field(0, description="Order in which screen appears", ge=0)
+    in_top_menu: bool = Field(False, description="Whether the screen appears in the top menu")
     media_showcases: Optional[List[str]] = Field(default_factory=list, description="List of content list IDs (UUIDs as strings)")
-    
+
     # v1.9 field
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
 
@@ -52,8 +53,9 @@ class ScreenDescriptionUpdate(BaseModel):
     screen_type: Optional[ScreenTypeEnum] = Field(None, description="Type of screen this represents")
     is_active: Optional[bool] = Field(None, description="Whether the screen content is active")
     display_order: Optional[int] = Field(None, description="Order in which screen appears", ge=0)
+    in_top_menu: Optional[bool] = Field(None, description="Whether the screen appears in the top menu")
     media_showcases: Optional[List[str]] = Field(None, description="List of content list IDs (UUIDs as strings)")
-    
+
     # v1.9 field
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from title if empty)")
 
@@ -133,6 +135,7 @@ class ScreenDescriptionJSONResponse(BaseModel):
     screen_type: Optional[ScreenTypeEnum]
     is_active: bool
     display_order: int
+    in_top_menu: bool
     last_updated: Optional[str]
     media_showcases: List[ScreenDescriptionMediaShowcase]
 

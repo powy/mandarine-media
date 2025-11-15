@@ -254,6 +254,7 @@ export const ScreenContentList = () => (
       />
       <TextField source="slug" label="Slug" />
       <BooleanField source="is_active" label="Active" />
+      <BooleanField source="in_top_menu" label="Top Menu" />
       <TextField source="display_order" label="Order" />
       <FunctionField
         label="Media Showcases"
@@ -290,14 +291,15 @@ export const ScreenContentCreate = () => (
         multiline
         fullWidth 
       />
-      <TextInput 
-        source="slug" 
-        fullWidth 
+      <TextInput
+        source="slug"
+        fullWidth
       />
       <BooleanInput source="is_active" defaultValue={true} />
-      <NumberInput 
-        source="display_order" 
-        defaultValue={0} 
+      <BooleanInput source="in_top_menu" label="Show in Top Menu" defaultValue={false} />
+      <NumberInput
+        source="display_order"
+        defaultValue={0}
         helperText="Order for display (lower numbers appear first)"
       />
       <ArrayInput source="media_showcases" label="Related Media Showcases">
@@ -324,13 +326,14 @@ export const ScreenContentEdit = () => (
         multiline
         fullWidth 
       />
-      <TextInput 
-        source="slug" 
-        fullWidth 
+      <TextInput
+        source="slug"
+        fullWidth
       />
       <BooleanInput source="is_active" />
-      <NumberInput 
-        source="display_order" 
+      <BooleanInput source="in_top_menu" label="Show in Top Menu" />
+      <NumberInput
+        source="display_order"
         helperText="Order for display (lower numbers appear first)"
       />
       <ArrayInput source="media_showcases" label="Related Media Showcases">
@@ -352,6 +355,7 @@ export const ScreenContentShow = () => (
       <TextField source="description" />
       <TextField source="slug" label="Slug" />
       <BooleanField source="is_active" label="Active" />
+      <BooleanField source="in_top_menu" label="Show in Top Menu" />
       <TextField source="display_order" label="Display Order" />
       <ArrayField source="media_showcases" label="Related Media Showcases">
         <SingleFieldList>

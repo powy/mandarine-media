@@ -318,6 +318,7 @@ export interface MediaShowcase {
   media_categories_list?: string[];
   latest_first?: boolean;
   slug?: string;
+  relative_url_link?: string;
   // Relationship arrays - now included in API response
   media_descriptions?: MediaDescriptionSimple[];
   media_themes?: MediaThemeSimple[];
@@ -1105,6 +1106,7 @@ export interface ScreenDescription {
   title: string;
   is_active: boolean;
   display_order: number;
+  in_top_menu?: boolean;
   description?: string;
   media_showcases?: string[];
   screen_type?: string;
@@ -1121,6 +1123,7 @@ export interface ScreenDescriptionCreate {
   title: string;
   is_active: boolean;
   display_order: number;
+  in_top_menu?: boolean;
   description?: string;
   media_showcases?: string[];
   screen_type?: string;
@@ -1135,6 +1138,7 @@ export interface ScreenDescriptionUpdate {
   title?: string;
   is_active?: boolean;
   display_order?: number;
+  in_top_menu?: boolean;
   description?: string;
   media_showcases?: string[];
   screen_type?: string;
@@ -1150,6 +1154,7 @@ export interface ScreenDescriptionJSON {
   title: string;
   description?: string;
   screen_type?: string;
+  in_top_menu: boolean;
   last_updated: string;
   media_showcases: MediaShowcaseJSON[];
   /** @deprecated Use media_showcases instead */
@@ -1346,6 +1351,7 @@ export interface MediaShowcaseCreate {
   media_categories_list?: string[];
   latest_first?: boolean;
   slug?: string;
+  relative_url_link?: string;
   media_description_ids?: string[];
   media_theme_ids?: string[];
 }
@@ -1363,6 +1369,7 @@ export interface MediaShowcaseUpdate {
   media_categories_list?: string[];
   latest_first?: boolean;
   slug?: string;
+  relative_url_link?: string;
 }
 
 export interface MediaShowcaseFilters {
@@ -1401,6 +1408,7 @@ export interface MediaShowcaseJSON {
   is_active: boolean;
   priority_in_screen: number;
   list_type: ListTypeEnum;
+  relative_url_link?: string;
   last_updated?: string;
   items: MediaShowcaseItemJSON[];
 }

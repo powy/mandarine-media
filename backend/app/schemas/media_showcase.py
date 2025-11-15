@@ -39,6 +39,7 @@ class MediaShowcaseBase(BaseModel):
     media_categories_list: Optional[List[str]] = Field(None, description="Filter by category enum values")
     latest_first: bool = Field(False, description="Order items by latest first - reversing the displayed order")
     slug: Optional[str] = Field(None, description="URL slug (auto-generated from title if empty)")
+    relative_url_link: Optional[str] = Field(None, description="Relative URL link for navigation")
 
 
 class MediaShowcaseCreate(MediaShowcaseBase):
@@ -61,6 +62,7 @@ class MediaShowcaseUpdate(BaseModel):
     media_categories_list: Optional[List[str]] = Field(None, description="Filter by category enum values")
     latest_first: Optional[bool] = Field(None, description="Order items by latest first - reversing the displayed order")
     slug: Optional[str] = Field(None, description="URL slug")
+    relative_url_link: Optional[str] = Field(None, description="Relative URL link for navigation")
 
     # Relationships
     media_description_ids: Optional[List[UUID]] = Field(None, description="Media descriptions to associate with showcase")
@@ -123,6 +125,7 @@ class MediaShowcaseJSON(BaseModel):
     is_active: bool
     priority_in_screen: int  # Showcase's priority on screen
     list_type: str
+    relative_url_link: Optional[str]
     last_updated: Optional[str]
     items: List[MediaShowcaseItemJSON]
 

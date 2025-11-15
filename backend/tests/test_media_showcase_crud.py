@@ -31,6 +31,7 @@ def sample_media_showcase_create():
         media_type="video",
         media_categories_list=["movie", "drama"],
         slug="test-showcase-crud",
+        relative_url_link=None,
         media_description_ids=[],
         media_theme_ids=[]
     )
