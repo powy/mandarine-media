@@ -619,14 +619,39 @@ async function processBatchFolderParallel(parentFolderPath, options, maxConcurre
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
     }
 
-    // Final summary
-    console.log(`🎉 Worker pool parallel batch upload completed: ${processedCount}/${validFolders.length} successful, ${failedFolders.length} failed`);
-    if (failedFolders.length > 0) {
-      console.log(`❌ Failed uploads: ${failedFolders.join(', ')}`);
-    }
-    if (skippedFolders.length > 0) {
-      console.log(`⚠️ Skipped folders (no Excel): ${skippedFolders.join(', ')}`);
-    }
+    // Final summary - detailed episode-by-episode breakdown
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📋 BATCH UPLOAD SUMMARY`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    console.log(`Episode Results:\n`);
+
+    // Show successful episodes
+    results.forEach((item) => {
+      if (item.status === 'completed') {
+        console.log(`  ✅ ${item.folder} - Success`);
+      }
+    });
+
+    // Show failed episodes with brief error message
+    results.forEach((item) => {
+      if (item.status === 'failed' || item.status === 'error') {
+        const errorMsg = item.result?.error || item.result?.message || 'Unknown error';
+        // Truncate long error messages to ~60 characters
+        const briefError = errorMsg.length > 60 ? errorMsg.substring(0, 57) + '...' : errorMsg;
+        console.log(`  ❌ ${item.folder} - Failed: ${briefError}`);
+      }
+    });
+
+    // Show skipped episodes
+    skippedFolders.forEach((folder) => {
+      console.log(`  ⚠️  ${folder} - Skipped (No Excel file)`);
+    });
+
+    // Display totals
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`📊 TOTALS: ${processedCount} Success | ${skippedFolders.length} Skipped | ${failedFolders.length} Failed`);
+    console.log(`${'='.repeat(60)}\n`);
 
     const successMessage = skippedFolders.length > 0
       ? `Worker pool parallel processing completed: ${processedCount} successful, ${failedFolders.length} failed, ${skippedFolders.length} skipped`

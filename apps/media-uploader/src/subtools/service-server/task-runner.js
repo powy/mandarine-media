@@ -266,6 +266,46 @@ async function executeTask() {
         );
       },
 
+      uploadSubtitlesFromFolderByIdWithIni: async () => {
+        // Upload subtitles from folder using prepare-excel matching logic
+        const { uploadSubtitlesFromFolderByIdWithIni } = await import('../mux-subtitle-upload/iniWrappers/uploadSubtitlesFromFolderByIdWithIni.js');
+
+        logWriter.info(`Uploading subtitles from folder by media description ID`);
+        logWriter.info(`  Media Description ID: ${PARAMS.mediaDescriptionId}`);
+        logWriter.info(`  Folder: ${PARAMS.folder}`);
+
+        return await uploadSubtitlesFromFolderByIdWithIni(
+          PARAMS.mediaDescriptionId,   // Media description UUID from backend
+          PARAMS.folder,               // Folder path to scan for subtitles
+          PARAMS.config,               // INI config file path
+          {
+            verbose: true,
+            logger: logWriter,
+            delayBetweenUploadsMs: 2000  // 2-second delay for Mux rate limiting
+          }
+        );
+      },
+
+      uploadSubtitlesBySeasonFolder: async () => {
+        // Upload subtitles for all episodes in a season from numbered folders (v2 batch)
+        const { uploadSubtitlesFromSeasonFolderWithIni } = await import('../mux-subtitle-upload/iniWrappers/uploadSubtitlesFromSeasonFolderWithIni.js');
+
+        logWriter.info(`Uploading subtitles by season folder (batch operation)`);
+        logWriter.info(`  Season Media Description ID: ${PARAMS.mediaDescriptionId}`);
+        logWriter.info(`  Parent Folder: ${PARAMS.parentFolder}`);
+
+        return await uploadSubtitlesFromSeasonFolderWithIni(
+          PARAMS.mediaDescriptionId,        // Season's general media description UUID
+          PARAMS.parentFolder,              // Parent folder containing numbered episode folders
+          PARAMS.config,                    // INI config file path
+          {
+            verbose: true,
+            logger: logWriter,
+            delayBetweenUploadsMs: 2000  // 2-second delay for Mux rate limiting
+          }
+        );
+      },
+
       deleteSubtitleByMediaDescriptionId: async () => {
         // Uses mux-subtitle-delete tool (Layer 4: INI config wrapper)
         const { deleteWithIniConfig } = await import('../mux-subtitle-delete/core/deleteWithIniConfig.js');

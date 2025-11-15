@@ -197,7 +197,7 @@ export async function resendSubtitlesFromIni(folderPath, iniPath, options = {}) 
 
       // Build options for this subtitle
       const uploadOptions = {
-        subtitleName: `${subtitle.languageName} (${subtitle.rowType})`,
+        subtitleName: subtitle.languageName,
         isDefault: subtitle.isDefault,
         closedCaptions: subtitle.isDefault,
         textType: 'subtitles',

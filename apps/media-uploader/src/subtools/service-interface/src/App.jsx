@@ -97,15 +97,15 @@ function App() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">MEDIA UPLOADER</h1>
-              <p className="text-blue-100 text-sm mt-1">Model Uploader Service Interface</p>
+              <h1 className="text-3xl font-bold">TÉLÉVERSEUR DE MÉDIAS</h1>
+              <p className="text-blue-100 text-sm mt-1">Interface du Service de Téléversement Modèle</p>
             </div>
             <div className="flex items-center gap-4">
               {/* Health Status */}
               <div className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${isHealthy ? 'bg-green-400' : 'bg-red-400'} animate-pulse`} />
                 <span className="text-sm">
-                  {isHealthy ? 'Connected' : 'Disconnected'}
+                  {isHealthy ? 'Connecté' : 'Déconnecté'}
                 </span>
               </div>
               {/* Version */}
@@ -120,21 +120,21 @@ function App() {
         {/* Error Messages */}
         {tasksError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 font-semibold">Error loading tasks:</p>
+            <p className="text-red-800 font-semibold">Erreur lors du chargement des tâches :</p>
             <p className="text-red-700 text-sm mt-1">{tasksError}</p>
           </div>
         )}
 
         {createError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 font-semibold">Error creating task:</p>
+            <p className="text-red-800 font-semibold">Erreur lors de la création de la tâche :</p>
             <p className="text-red-700 text-sm mt-1">{createError}</p>
           </div>
         )}
 
         {errors.general && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 font-semibold">Error:</p>
+            <p className="text-red-800 font-semibold">Erreur :</p>
             <p className="text-red-700 text-sm mt-1">{errors.general}</p>
           </div>
         )}
@@ -175,16 +175,16 @@ function App() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>
-              <p>Model Uploader Service Interface</p>
+              <p>Interface du Service de Téléversement Modèle</p>
               <p className="text-xs text-gray-500 mt-1">
-                Server: {health?.status === 'healthy' ? `http://localhost:${health?.system?.port || 3011}` : 'Not connected'}
+                Serveur : {health?.status === 'healthy' ? `http://localhost:${health?.system?.port || 3011}` : 'Non connecté'}
               </p>
             </div>
             <div className="text-right">
-              <p>Tasks: {runningTasks.length} running, {finishedTasks.length} finished</p>
+              <p>Tâches : {runningTasks.length} en cours, {finishedTasks.length} terminées</p>
               {health?.uptime && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Uptime: {Math.floor(health.uptime / 60)}m {health.uptime % 60}s
+                  Temps de fonctionnement : {Math.floor(health.uptime / 60)}m {health.uptime % 60}s
                 </p>
               )}
             </div>

@@ -8,6 +8,30 @@ import { useState } from 'react';
 export default function ActionsSection({ inputs, onCreateTask, creating }) {
   const [selectedAction, setSelectedAction] = useState(null);
 
+  // Helper function to create enriched tooltips
+  const createTooltip = (requiredFields, description) => {
+    const fieldLabels = {
+      folder: 'Dossier traité',
+      parentFolder: 'Dossier parent',
+      picture: 'Chemin de l\'image',
+      resolution: 'Résolution',
+      subtitle: 'Chemin des sous-titres',
+      language: 'Langue',
+      mediaDescriptionId: 'Media Description ID',
+      seasonEntityId: 'Season Entity ID',
+      muxAssetId: 'Mux Asset ID',
+      excelDescriptionField: 'Champ (description colonne A)',
+      excelNewValue: 'Nouvelle valeur'
+    };
+
+    const inputs = requiredFields
+      .filter(field => field !== 'configFile')
+      .map(field => `• ${fieldLabels[field] || field}`)
+      .join('\n');
+
+    return inputs ? `Inputs requis :\n${inputs}\n\n${description}` : description;
+  };
+
   const handleAction = async (taskType, requiredFields) => {
     setSelectedAction(taskType);
 
@@ -54,7 +78,7 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
       }`}
       onClick={() => handleAction(taskType, requiredFields)}
       disabled={isDisabled(requiredFields)}
-      title={description}
+      title={createTooltip(requiredFields, description)}
     >
       {creating && selectedAction === taskType && (
         <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -71,7 +95,7 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
         {/* Category 1: UPLOAD */}
         <div>
           <h2 className="text-lg font-bold mb-4 text-purple-800 border-b-2 border-purple-300 pb-2">
-            1. UPLOAD
+            1. TÉLÉVERSEMENT
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 1.A - À l'unité */}
@@ -82,13 +106,13 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
                   taskType="prepare-excel-single"
                   label="Prépare un Excel"
                   requiredFields={['configFile', 'folder']}
-                  description="Prepare Excel file with template and auto-fill Files sheet"
+                  description="Prépare le fichier Excel avec modèle et remplit automatiquement la feuille Fichiers"
                 />
                 <ActionButton
                   taskType="upload-media-single"
                   label="Upload un Media"
                   requiredFields={['configFile', 'folder']}
-                  description="Complete media upload workflow (video, images, subtitles)"
+                  description="Flux complet de téléversement de média (vidéo, images, sous-titres)"
                 />
               </div>
             </div>
@@ -101,13 +125,13 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
                   taskType="prepare-excel-batch"
                   label="Prépare des Excels"
                   requiredFields={['configFile', 'parentFolder']}
-                  description="Prepare Excel files for all subfolders"
+                  description="Prépare les fichiers Excel pour tous les sous-dossiers"
                 />
                 <ActionButton
                   taskType="upload-media-batch"
                   label="Upload des Medias"
                   requiredFields={['configFile', 'parentFolder']}
-                  description="Upload multiple media from parent folder"
+                  description="Téléverse plusieurs médias depuis le dossier parent"
                 />
               </div>
             </div>
@@ -128,19 +152,19 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
                   taskType="upload-picture-single"
                   label="Charge une Image"
                   requiredFields={['configFile', 'folder', 'picture', 'resolution']}
-                  description="Upload a picture for single media"
+                  description="Téléverse une image pour un seul média"
                 />
                 <ActionButton
                   taskType="upload-subtitle-single"
                   label="Charge un Sous-titre"
                   requiredFields={['configFile', 'folder', 'subtitle', 'language']}
-                  description="Upload specific subtitle for single media"
+                  description="Téléverse un sous-titre spécifique pour un seul média"
                 />
                 <ActionButton
                   taskType="reload-subtitles-single"
                   label="Recharge les Sous-titres"
                   requiredFields={['configFile', 'folder']}
-                  description="Reload all subtitles for single media"
+                  description="Recharge tous les sous-titres pour un seul média"
                 />
               </div>
             </div>
@@ -153,19 +177,19 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
                   taskType="upload-picture-batch"
                   label="Upload une Photo sur Tous"
                   requiredFields={['configFile', 'parentFolder', 'picture', 'resolution']}
-                  description="Upload picture to all media in parent folder"
+                  description="Téléverse une image sur tous les médias du dossier parent"
                 />
                 <ActionButton
                   taskType="reload-subtitles-batch"
                   label="Tous les Sous-titres pour Tous les Medias"
                   requiredFields={['configFile', 'parentFolder']}
-                  description="Reload subtitles for all media in parent folder"
+                  description="Recharge les sous-titres pour tous les médias du dossier parent"
                 />
                 <ActionButton
                   taskType="propagate-season-data-batch"
                   label="Propager Données de Saison"
                   requiredFields={['configFile', 'parentFolder']}
-                  description="Propagate SEASON data to episodes from parent folder Excel file"
+                  description="Propage les données de SAISON vers les épisodes depuis le fichier Excel du dossier parent"
                 />
               </div>
             </div>
@@ -186,37 +210,43 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
                   taskType="upload-subtitle-by-media-desc-id"
                   label="Sous-titre par Media Description ID"
                   requiredFields={['configFile', 'mediaDescriptionId', 'subtitle', 'language']}
-                  description="Upload subtitle using backend media description UUID"
+                  description="Téléverse un sous-titre en utilisant l'UUID de description média du backend"
                 />
                 <ActionButton
                   taskType="upload-subtitle-by-mux-asset-id"
                   label="Sous-titre par Mux Asset ID"
                   requiredFields={['configFile', 'muxAssetId', 'subtitle', 'language']}
-                  description="Upload subtitle directly to Mux asset"
+                  description="Téléverse un sous-titre directement vers l'asset Mux"
                 />
                 <ActionButton
                   taskType="upload-picture-with-ini"
                   label="Image par ID (format connu)"
                   requiredFields={['configFile', 'picture', 'resolution', 'mediaDescriptionId']}
-                  description="Upload picture with known format and media description ID"
+                  description="Téléverse une image avec format connu et ID de description média"
                 />
                 <ActionButton
                   taskType="upload-picture-with-format-detection"
                   label="Image par ID (auto format)"
                   requiredFields={['configFile', 'picture', 'mediaDescriptionId']}
-                  description="Upload picture with automatic format detection from dimensions"
+                  description="Téléverse une image avec détection automatique du format depuis les dimensions"
                 />
                 <ActionButton
                   taskType="upload-pictures-in-folder-with-ini"
                   label="Images Dossier par ID"
                   requiredFields={['configFile', 'folder', 'mediaDescriptionId']}
-                  description="Batch upload all images in folder with auto-format detection"
+                  description="Téléversement par lot (saison) de toutes les images du dossier avec détection auto du format"
                 />
                 <ActionButton
                   taskType="delete-subtitle-by-media-desc-id"
                   label="Supprimer Sous-titre par ID"
                   requiredFields={['configFile', 'mediaDescriptionId', 'language']}
-                  description="Delete subtitle track from Mux asset using media description ID"
+                  description="Supprime la piste de sous-titres de l'asset Mux en utilisant l'ID de description média"
+                />
+                <ActionButton
+                  taskType="upload-subtitles-by-id-and-folder"
+                  label="Charge sous-titre avec ID et dossier"
+                  requiredFields={['configFile', 'mediaDescriptionId', 'folder']}
+                  description="Scanne automatiquement le dossier pour trouver les sous-titres, les associe à la vidéo principale et les téléverse vers l'ID de description média"
                 />
               </div>
             </div>
@@ -226,16 +256,22 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
               <h3 className="text-md font-semibold mb-3 text-green-700">B) Par lot</h3>
               <div className="space-y-2">
                 <ActionButton
+                  taskType="upload-subtitles-by-season-folder"
+                  label="Sous-titres Saison (dossiers numérotés)"
+                  requiredFields={['configFile', 'mediaDescriptionId', 'parentFolder']}
+                  description="Charge les sous-titres pour tous les épisodes d'une saison depuis des dossiers numérotés (01/, 02/, etc.)"
+                />
+                <ActionButton
                   taskType="propagate-by-media-description-id"
                   label="Propager Saison par Media Desc ID"
                   requiredFields={['configFile', 'mediaDescriptionId']}
-                  description="Propagate season data to episodes using media description ID with INI config"
+                  description="Propage les données de saison vers les épisodes en utilisant l'ID de description média avec config INI"
                 />
                 <ActionButton
                   taskType="propagate-by-season-entity-id"
                   label="Propager Saison par Season Entity ID"
                   requiredFields={['configFile', 'seasonEntityId']}
-                  description="Propagate season data to episodes using season entity ID with INI config"
+                  description="Propage les données de saison vers les épisodes en utilisant l'ID d'entité saison avec config INI"
                 />
               </div>
             </div>
@@ -331,7 +367,7 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
       {creating && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            Creating task... The task will appear in the Running Tasks section below.
+            Création de la tâche... La tâche apparaîtra dans la section Tâches en Cours ci-dessous.
           </p>
         </div>
       )}

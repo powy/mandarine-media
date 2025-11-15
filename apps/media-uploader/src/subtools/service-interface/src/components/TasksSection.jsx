@@ -6,27 +6,27 @@
 import { useState } from 'react';
 
 const STATUS_LABELS = {
-  queued: 'Queued',
-  processing: 'Processing',
-  success: 'Success',
-  failed: 'Failed',
-  canceled: 'Canceled',
-  partial: 'Partial'
+  queued: 'En file d\'attente',
+  processing: 'Traitement en cours',
+  success: 'Réussi',
+  failed: 'Échoué',
+  canceled: 'Annulé',
+  partial: 'Partiel'
 };
 
 const TASK_TYPE_LABELS = {
   'prepare-excel-single': 'Prépare Excel',
-  'upload-media-single': 'Upload Media',
-  'upload-picture-single': 'Upload Image',
-  'upload-subtitle-single': 'Upload Subtitle',
-  'reload-subtitles-single': 'Reload Subtitles',
-  'prepare-excel-batch': 'Prépare Excels (Batch)',
-  'upload-media-batch': 'Upload Medias (Batch)',
-  'upload-picture-batch': 'Upload Image (Batch)',
-  'reload-subtitles-batch': 'Reload Subtitles (Batch)',
-  'upload-picture-with-ini': 'Upload Image (INI + ID)',
-  'upload-picture-with-format-detection': 'Upload Image (Auto Format)',
-  'upload-pictures-in-folder-with-ini': 'Upload Images (Folder)'
+  'upload-media-single': 'Téléversement Média',
+  'upload-picture-single': 'Téléversement Image',
+  'upload-subtitle-single': 'Téléversement Sous-titre',
+  'reload-subtitles-single': 'Rechargement Sous-titres',
+  'prepare-excel-batch': 'Prépare Excels (Par lot (saison))',
+  'upload-media-batch': 'Téléversement Médias (Par lot (saison))',
+  'upload-picture-batch': 'Téléversement Image (Par lot (saison))',
+  'reload-subtitles-batch': 'Rechargement Sous-titres (Par lot (saison))',
+  'upload-picture-with-ini': 'Téléversement Image (INI + ID)',
+  'upload-picture-with-format-detection': 'Téléversement Image (Format Auto)',
+  'upload-pictures-in-folder-with-ini': 'Téléversement Images (Dossier)'
 };
 
 function formatTime(timestamp) {
@@ -80,7 +80,7 @@ function TaskRow({ task, onSelect, onStop, isSelected, showStop = false }) {
       </td>
       <td className="px-4 py-2 border text-xs">
         {task.started_at ? formatTime(task.started_at) : (
-          <span className="text-gray-400 italic">Queued</span>
+          <span className="text-gray-400 italic">En file d'attente</span>
         )}
       </td>
       <td className="px-4 py-2 border text-xs">
@@ -93,7 +93,7 @@ function TaskRow({ task, onSelect, onStop, isSelected, showStop = false }) {
           <button
             className="btn btn-danger btn-sm"
             onClick={handleStop}
-            title="Stop task"
+            title="Arrêter la tâche"
           >
             ✕
           </button>
@@ -116,13 +116,13 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
         {/* Running Tasks */}
         <div>
           <h3 className="text-lg font-semibold mb-2 text-blue-700">
-            Running Tasks ({safeRunningTasks.length})
+            Tâches en Cours ({safeRunningTasks.length})
           </h3>
           <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
             {safeRunningTasks.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                <p>No running tasks</p>
-                <p className="text-sm mt-2">Tasks will appear here when created</p>
+                <p>Aucune tâche en cours</p>
+                <p className="text-sm mt-2">Les tâches apparaîtront ici une fois créées</p>
               </div>
             ) : (
               <div className="overflow-y-auto max-h-96 border-2 border-gray-200 rounded">
@@ -131,10 +131,10 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
                     <tr>
                       <th className="px-4 py-2 border text-left">ID</th>
                       <th className="px-4 py-2 border text-left">Type</th>
-                      <th className="px-4 py-2 border text-left">Status</th>
-                      <th className="px-4 py-2 border text-left">Time</th>
-                      <th className="px-4 py-2 border text-left">Duration</th>
-                      <th className="px-4 py-2 border text-center">Stop</th>
+                      <th className="px-4 py-2 border text-left">Statut</th>
+                      <th className="px-4 py-2 border text-left">Heure</th>
+                      <th className="px-4 py-2 border text-left">Durée</th>
+                      <th className="px-4 py-2 border text-center">Arrêter</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -158,13 +158,13 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
         {/* Finished Tasks */}
         <div>
           <h3 className="text-lg font-semibold mb-2 text-green-700">
-            Finished Tasks ({safeFinishedTasks.length > 500 ? `Showing 500 of ${safeFinishedTasks.length}` : safeFinishedTasks.length})
+            Tâches Terminées ({safeFinishedTasks.length > 500 ? `Affichage de 500 sur ${safeFinishedTasks.length}` : safeFinishedTasks.length})
           </h3>
           <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
             {safeFinishedTasks.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                <p>No finished tasks</p>
-                <p className="text-sm mt-2">Completed tasks will appear here</p>
+                <p>Aucune tâche terminée</p>
+                <p className="text-sm mt-2">Les tâches terminées apparaîtront ici</p>
               </div>
             ) : (
               <div className="overflow-y-auto max-h-96 border-2 border-gray-200 rounded">
@@ -173,9 +173,9 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
                     <tr>
                       <th className="px-4 py-2 border text-left">ID</th>
                       <th className="px-4 py-2 border text-left">Type</th>
-                      <th className="px-4 py-2 border text-left">Status</th>
-                      <th className="px-4 py-2 border text-left">Time</th>
-                      <th className="px-4 py-2 border text-left">Duration</th>
+                      <th className="px-4 py-2 border text-left">Statut</th>
+                      <th className="px-4 py-2 border text-left">Heure</th>
+                      <th className="px-4 py-2 border text-left">Durée</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -197,7 +197,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
           {safeFinishedTasks.length > 50 && (
             <p className="text-xs text-gray-500 mt-2 flex items-center justify-center gap-1">
               <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-              Showing 50 most recent tasks (scroll to view all)
+              Affichage des 50 tâches les plus récentes (faites défiler pour tout voir)
             </p>
           )}
         </div>
@@ -206,7 +206,7 @@ export default function TasksSection({ runningTasks, finishedTasks, selectedTask
       {/* Info message */}
       <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
         <p className="text-sm text-gray-700">
-          💡 Click on a task to view its logs in the Journal section below
+          💡 Cliquez sur une tâche pour voir ses logs dans la section Journal ci-dessous
         </p>
       </div>
     </div>

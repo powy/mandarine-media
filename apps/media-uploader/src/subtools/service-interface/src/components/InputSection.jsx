@@ -4,11 +4,11 @@
  */
 
 const RESOLUTIONS = {
-  '1920x1080': 'Full HD Landscape',
-  '1920x720': 'HD Landscape',
-  '1080x1080': 'Square',
+  '1920x1080': 'Full HD Paysage',
+  '1920x720': 'HD Paysage',
+  '1080x1080': 'Carré',
   '810x1080': 'Portrait',
-  '1080x1920': 'Full Portrait'
+  '1080x1920': 'Portrait Complet'
 };
 
 const LANGUAGES = {
@@ -29,73 +29,73 @@ export default function InputSection({ inputs, onChange, errors }) {
       <div className="space-y-4">
         {/* Config File */}
         <div>
-          <label className="label">Config File Path *</label>
+          <label className="label">Chemin du Fichier de Configuration *</label>
           <input
             type="text"
             className={`input w-full ${errors.configFile ? 'border-red-500' : ''}`}
             value={inputs.configFile || ''}
             onChange={(e) => handleChange('configFile', e.target.value)}
-            placeholder="Type or paste full path to .ini config file (e.g., C:\path\to\config.ini)"
-            title="Paste the full file path here"
+            placeholder="Saisissez ou collez le chemin complet vers le fichier .ini (ex: C:\chemin\vers\config.ini)"
+            title="Collez le chemin complet du fichier ici"
           />
           {errors.configFile && <p className="error-text">{errors.configFile}</p>}
-          <p className="text-xs text-gray-500 mt-1">Tip: Copy the full file path from File Explorer and paste it here</p>
+          <p className="text-xs text-gray-500 mt-1">Astuce : Copiez le chemin complet depuis l'Explorateur de fichiers et collez-le ici</p>
         </div>
 
         {/* Treated Folder */}
         <div>
-          <label className="label">Treated Folder Path</label>
+          <label className="label">Chemin du Dossier Traité (traitement d'un dossier seul)</label>
           <input
             type="text"
             className={`input w-full ${errors.folder ? 'border-red-500' : ''}`}
             value={inputs.folder || ''}
             onChange={(e) => handleChange('folder', e.target.value)}
-            placeholder="Type or paste full path to media folder (e.g., C:\path\to\folder)"
-            title="Paste the full folder path here"
+            placeholder="Saisissez ou collez le chemin complet vers le dossier média (ex: C:\chemin\vers\dossier)"
+            title="Collez le chemin complet du dossier ici"
           />
           {errors.folder && <p className="error-text">{errors.folder}</p>}
-          <p className="text-xs text-gray-500 mt-1">Tip: Copy the full folder path from File Explorer and paste it here</p>
+          <p className="text-xs text-gray-500 mt-1">Astuce : Copiez le chemin complet depuis l'Explorateur de fichiers et collez-le ici</p>
         </div>
 
         {/* Parent Folder (for batch operations) */}
         <div>
-          <label className="label">Parent Folder Path (for batch operations)</label>
+          <label className="label">Chemin du Dossier Parent (pour opérations par lot (saison))</label>
           <input
             type="text"
             className={`input w-full ${errors.parentFolder ? 'border-red-500' : ''}`}
             value={inputs.parentFolder || ''}
             onChange={(e) => handleChange('parentFolder', e.target.value)}
-            placeholder="Type or paste full path to parent folder (e.g., C:\path\to\parent)"
-            title="Paste the full folder path here"
+            placeholder="Saisissez ou collez le chemin complet vers le dossier parent (ex: C:\chemin\vers\parent)"
+            title="Collez le chemin complet du dossier ici"
           />
           {errors.parentFolder && <p className="error-text">{errors.parentFolder}</p>}
-          <p className="text-xs text-gray-500 mt-1">Tip: Copy the full folder path from File Explorer and paste it here</p>
+          <p className="text-xs text-gray-500 mt-1">Astuce : Copiez le chemin complet depuis l'Explorateur de fichiers et collez-le ici</p>
         </div>
 
         {/* Picture Path */}
         <div>
-          <label className="label">Picture Path</label>
+          <label className="label">Chemin de l'Image</label>
           <input
             type="text"
             className={`input w-full ${errors.picture ? 'border-red-500' : ''}`}
             value={inputs.picture || ''}
             onChange={(e) => handleChange('picture', e.target.value)}
-            placeholder="Type or paste full path to image file (e.g., C:\path\to\image.jpg)"
-            title="Paste the full file path here"
+            placeholder="Saisissez ou collez le chemin complet vers le fichier image (ex: C:\chemin\vers\image.jpg)"
+            title="Collez le chemin complet du fichier ici"
           />
           {errors.picture && <p className="error-text">{errors.picture}</p>}
         </div>
 
         {/* Resolution */}
         <div>
-          <label className="label">Resolution {inputs.picture && '*'}</label>
+          <label className="label">Résolution {inputs.picture && '*'}</label>
           <select
             className={`select w-full ${errors.resolution ? 'border-red-500' : ''}`}
             value={inputs.resolution || ''}
             onChange={(e) => handleChange('resolution', e.target.value)}
             disabled={!inputs.picture}
           >
-            <option value="">Select resolution...</option>
+            <option value="">Sélectionner une résolution...</option>
             {Object.entries(RESOLUTIONS).map(([value, label]) => (
               <option key={value} value={value}>
                 {value} - {label}
@@ -107,28 +107,28 @@ export default function InputSection({ inputs, onChange, errors }) {
 
         {/* Subtitle Path */}
         <div>
-          <label className="label">Subtitle Path</label>
+          <label className="label">Chemin des Sous-titres</label>
           <input
             type="text"
             className={`input w-full ${errors.subtitle ? 'border-red-500' : ''}`}
             value={inputs.subtitle || ''}
             onChange={(e) => handleChange('subtitle', e.target.value)}
-            placeholder="Type or paste full path to subtitle file (e.g., C:\path\to\subtitle.vtt)"
-            title="Paste the full file path here"
+            placeholder="Saisissez ou collez le chemin complet vers le fichier de sous-titres (ex: C:\chemin\vers\soustitres.vtt)"
+            title="Collez le chemin complet du fichier ici"
           />
           {errors.subtitle && <p className="error-text">{errors.subtitle}</p>}
         </div>
 
         {/* Language */}
         <div>
-          <label className="label">Language {inputs.subtitle && '*'}</label>
+          <label className="label">Langue {inputs.subtitle && '*'}</label>
           <select
             className={`select w-full ${errors.language ? 'border-red-500' : ''}`}
             value={inputs.language || ''}
             onChange={(e) => handleChange('language', e.target.value)}
             disabled={!inputs.subtitle}
           >
-            <option value="">Select language...</option>
+            <option value="">Sélectionner une langue...</option>
             {Object.entries(LANGUAGES).map(([value, label]) => (
               <option key={value} value={value}>
                 {label} ({value})
@@ -150,11 +150,11 @@ export default function InputSection({ inputs, onChange, errors }) {
             className={`input w-full ${errors.mediaDescriptionId ? 'border-red-500' : ''}`}
             value={inputs.mediaDescriptionId || ''}
             onChange={(e) => handleChange('mediaDescriptionId', e.target.value)}
-            placeholder="e.g., a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-            title="UUID from backend media-description"
+            placeholder="ex: a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            title="UUID depuis la media-description du backend"
           />
           {errors.mediaDescriptionId && <p className="error-text">{errors.mediaDescriptionId}</p>}
-          <p className="text-xs text-gray-500 mt-1">UUID from backend API (media-description entity) - For propagation</p>
+          <p className="text-xs text-gray-500 mt-1">UUID de l'API backend (entité media-description) - Pour la propagation</p>
         </div>
 
         {/* Season Entity ID */}
@@ -165,11 +165,11 @@ export default function InputSection({ inputs, onChange, errors }) {
             className={`input w-full ${errors.seasonEntityId ? 'border-red-500' : ''}`}
             value={inputs.seasonEntityId || ''}
             onChange={(e) => handleChange('seasonEntityId', e.target.value)}
-            placeholder="e.g., xyz789-abc123-def456-ghi789"
-            title="UUID from backend season entity"
+            placeholder="ex: xyz789-abc123-def456-ghi789"
+            title="UUID depuis l'entité saison du backend"
           />
           {errors.seasonEntityId && <p className="error-text">{errors.seasonEntityId}</p>}
-          <p className="text-xs text-gray-500 mt-1">UUID from backend API (season entity) - For propagation</p>
+          <p className="text-xs text-gray-500 mt-1">UUID de l'API backend (entité saison) - Pour la propagation</p>
         </div>
 
         {/* Mux Asset ID */}
@@ -180,11 +180,11 @@ export default function InputSection({ inputs, onChange, errors }) {
             className={`input w-full ${errors.muxAssetId ? 'border-red-500' : ''}`}
             value={inputs.muxAssetId || ''}
             onChange={(e) => handleChange('muxAssetId', e.target.value)}
-            placeholder="e.g., abc123xyz456def789"
-            title="Asset ID from Mux platform"
+            placeholder="ex: abc123xyz456def789"
+            title="ID d'asset depuis la plateforme Mux"
           />
           {errors.muxAssetId && <p className="error-text">{errors.muxAssetId}</p>}
-          <p className="text-xs text-gray-500 mt-1">Direct asset ID from Mux dashboard</p>
+          <p className="text-xs text-gray-500 mt-1">ID d'asset direct depuis le tableau de bord Mux</p>
         </div>
       </div>
 
@@ -196,7 +196,7 @@ export default function InputSection({ inputs, onChange, errors }) {
         {/* Excel Description Field (Champ) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Champ (Column A Description)
+            Champ (Description Colonne A)
             <span className="text-red-500 ml-1">*</span>
           </label>
           <select

@@ -1,10 +1,15 @@
 import path from 'path';
 import stringSimilarity from 'string-similarity';
 import { detectLanguageFromFilename, getLanguageDisplayName } from '../../../shared/utils/languageUtils.js';
+import { getSubtitleDuration } from '../../../shared/utils/subtitleDurationParser.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const Config = require('../../media-analyzer/config.js');
 
 export class MediaAnalysisService {
   constructor(logger) {
     this.logger = logger;
+    this.config = new Config();
   }
 
   /**
@@ -166,9 +171,54 @@ export class MediaAnalysisService {
   }
 
   /**
+   * Check if a video is an extract based on filename patterns
+   */
+  isExtractVideo(video, videoAnalysis) {
+    // Check if video is in the extracts array
+    if (videoAnalysis && videoAnalysis.extracts) {
+      const isInExtracts = videoAnalysis.extracts.some(extract => extract.name === video.name);
+      if (isInExtracts) return true;
+    }
+
+    // Also check filename patterns for "EX" or other extract markers
+    const fileName = video.name;
+    return this.config.CLIP_PATTERNS.some(pattern => pattern.test(fileName));
+  }
+
+  /**
+   * Check if subtitle filename has extract/clip markers
+   */
+  hasExtractMarker(subtitleFileName) {
+    return this.config.CLIP_PATTERNS.some(pattern => pattern.test(subtitleFileName));
+  }
+
+  /**
+   * Calculate duration difference bonus/penalty for scoring
+   */
+  calculateDurationScore(subtitleDuration, videoDuration) {
+    if (!subtitleDuration || !videoDuration) {
+      return 0; // No bonus/penalty if duration not available
+    }
+
+    const diff = Math.abs(videoDuration - subtitleDuration);
+    const thresholds = this.config.DURATION_MATCH_THRESHOLDS;
+    const scoring = this.config.SCORING_CONFIG;
+
+    if (diff < thresholds.PERFECT) {
+      return scoring.DURATION_PERFECT_BONUS;
+    } else if (diff < thresholds.GOOD) {
+      return scoring.DURATION_GOOD_BONUS;
+    } else if (diff < thresholds.ACCEPTABLE) {
+      return scoring.DURATION_ACCEPTABLE_BONUS;
+    } else {
+      return -scoring.DURATION_MISMATCH_PENALTY;
+    }
+  }
+
+  /**
    * Analyze subtitles and associate them with videos
    */
-  analyzeSubtitles(subtitles, videoAnalysis) {
+  async analyzeSubtitles(subtitles, videoAnalysis) {
     const { mainVideo, trailers, extracts } = videoAnalysis;
     const allVideos = [mainVideo, ...trailers, ...extracts].filter(Boolean);
     
@@ -178,21 +228,42 @@ export class MediaAnalysisService {
       ko: new Map()
     };
 
+    // Extract duration for each subtitle (async operation)
+    this.logger.info('[analyzeSubtitles] Extracting subtitle durations...');
+    const subtitleDurations = new Map();
+    for (const subtitle of subtitles) {
+      try {
+        const duration = await getSubtitleDuration(subtitle.fullPath);
+        subtitleDurations.set(subtitle.name, duration);
+        if (duration > 0) {
+          this.logger.debug(`Subtitle ${subtitle.name}: ${duration}s`);
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to extract duration for subtitle ${subtitle.name}: ${error.message}`);
+        subtitleDurations.set(subtitle.name, 0);
+      }
+    }
+
     // Extract language from subtitle filenames using shared utilities
     for (const subtitle of subtitles) {
       const fileName = subtitle.name;
 
       // Use shared language detection function
       const detectedLanguage = detectLanguageFromFilename(fileName);
-      
+
       if (!detectedLanguage) {
         this.logger.warn(`Could not detect language for subtitle: ${subtitle.name}`);
         continue;
       }
 
+      const subtitleDuration = subtitleDurations.get(subtitle.name) || 0;
+
+      this.logger.info(`[analyzeSubtitles] Matching subtitle '${subtitle.name}' (${detectedLanguage}, ${subtitleDuration}s)`);
+
       // Find best matching video for this subtitle
       let bestMatch = null;
-      let bestScore = 0;
+      let bestScore = -Infinity;
+      const scoringDetails = []; // For detailed logging
 
       for (const video of allVideos) {
         // Special handling for trailers - strict basename containment required
@@ -209,6 +280,7 @@ export class MediaAnalysisService {
           this.logger.debug(`Accepting subtitle ${subtitle.name} for trailer ${video.name} - base name "${videoBaseName}" found in subtitle`);
         }
 
+        // Base string similarity
         const similarity = stringSimilarity.compareTwoStrings(
           path.parse(subtitle.name).name,
           path.parse(video.name).name
@@ -216,22 +288,94 @@ export class MediaAnalysisService {
 
         // Size correlation factor (closer sizes get bonus)
         const sizeFactor = this.calculateSizeCorrelation(subtitle.size, video.size);
-        const totalScore = similarity + (sizeFactor * 0.1); // Weight similarity more than size
+        const sizeScore = sizeFactor * this.config.SCORING_CONFIG.SIZE_CORRELATION_WEIGHT;
+
+        // Start with base score
+        let totalScore = similarity + sizeScore;
+
+        // Main video bonus
+        let mainVideoBonus = 0;
+        if (video === mainVideo) {
+          mainVideoBonus = this.config.SCORING_CONFIG.MAIN_VIDEO_BONUS;
+          totalScore += mainVideoBonus;
+        }
+
+        // Extract video penalty (unless subtitle has extract marker)
+        let extractPenalty = 0;
+        if (this.isExtractVideo(video, videoAnalysis) && !this.hasExtractMarker(subtitle.name)) {
+          extractPenalty = this.config.SCORING_CONFIG.EXTRACT_PENALTY;
+          totalScore -= extractPenalty;
+        }
+
+        // Duration matching bonus/penalty
+        const videoDuration = video.duration_seconds || 0;
+        const durationScore = this.calculateDurationScore(subtitleDuration, videoDuration);
+        totalScore += durationScore;
+
+        // Store scoring details for logging
+        const durationDiff = Math.abs(videoDuration - subtitleDuration);
+        scoringDetails.push({
+          videoName: video.name,
+          videoDuration,
+          similarity,
+          sizeScore,
+          mainVideoBonus,
+          extractPenalty,
+          durationScore,
+          durationDiff,
+          totalScore
+        });
 
         if (totalScore > bestScore) {
           bestScore = totalScore;
           bestMatch = video;
         }
       }
-      
+
+      // Log detailed scoring breakdown
+      if (scoringDetails.length > 0) {
+        this.logger.info(`  Scoring breakdown:`);
+        scoringDetails.forEach(detail => {
+          const markers = [];
+          if (detail.videoName === mainVideo?.name) markers.push('MAIN');
+          if (this.isExtractVideo({ name: detail.videoName }, videoAnalysis)) markers.push('EXTRACT');
+
+          this.logger.info(`    - ${detail.videoName}${markers.length > 0 ? ` [${markers.join(', ')}]` : ''} (${detail.videoDuration}s):`);
+          this.logger.info(`      • String similarity: ${detail.similarity.toFixed(3)}`);
+          this.logger.info(`      • Size correlation: ${detail.sizeScore.toFixed(3)}`);
+          if (detail.mainVideoBonus > 0) this.logger.info(`      • Main video bonus: +${detail.mainVideoBonus.toFixed(3)}`);
+          if (detail.extractPenalty > 0) this.logger.info(`      • Extract penalty: -${detail.extractPenalty.toFixed(3)}`);
+          if (detail.durationScore !== 0) {
+            this.logger.info(`      • Duration match (diff: ${detail.durationDiff}s): ${detail.durationScore > 0 ? '+' : ''}${detail.durationScore.toFixed(1)}`);
+          }
+          this.logger.info(`      • TOTAL SCORE: ${detail.totalScore.toFixed(3)}`);
+        });
+
+        if (bestMatch) {
+          this.logger.info(`  ✓ Best match: ${bestMatch.name} (score: ${bestScore.toFixed(3)})`);
+        }
+      }
+
       if (bestMatch) {
+        // Validate duration match - block if mismatch is too large
+        const videoDuration = bestMatch.duration_seconds || 0;
+        const durationDiff = Math.abs(videoDuration - subtitleDuration);
+
+        if (durationDiff > this.config.DURATION_MATCH_THRESHOLDS.BLOCK && subtitleDuration > 0 && videoDuration > 0) {
+          const errorMsg = `Duration mismatch too large for subtitle ${subtitle.name} and video ${bestMatch.name}. ` +
+            `Subtitle duration: ${subtitleDuration}s, Video duration: ${videoDuration}s, Difference: ${durationDiff}s ` +
+            `(max allowed: ${this.config.DURATION_MATCH_THRESHOLDS.BLOCK}s). This subtitle likely belongs to a different video.`;
+          this.logger.error(errorMsg);
+          throw new Error(errorMsg);
+        }
+
         // Check if this video already has a subtitle for this language
         const currentSubtitle = subtitleMappings[detectedLanguage].get(bestMatch);
-        
+
         if (!currentSubtitle) {
           // No subtitle yet for this video in this language - assign it
           subtitleMappings[detectedLanguage].set(bestMatch, subtitle);
-          this.logger.info(`Associated ${detectedLanguage} subtitle ${subtitle.name} with video ${bestMatch.name} (score: ${bestScore.toFixed(3)})`);
+          this.logger.info(`✓ Associated ${detectedLanguage} subtitle ${subtitle.name} with video ${bestMatch.name} (score: ${bestScore.toFixed(3)})`);
         } else {
           // Video already has a subtitle for this language - check if this one is better
           const currentScore = stringSimilarity.compareTwoStrings(
@@ -294,12 +438,12 @@ export class MediaAnalysisService {
   /**
    * Generate complete file mappings for Excel template
    */
-  generateFileMappings(mediaFiles) {
+  async generateFileMappings(mediaFiles) {
     this.logger.info('Starting media analysis for auto-fill...');
-    
+
     const videoAnalysis = this.analyzeVideos(mediaFiles.videos);
     const imageAnalysis = this.analyzeImages(mediaFiles.images, videoAnalysis.mainVideo?.name);
-    const subtitleAnalysis = this.analyzeSubtitles(mediaFiles.subtitles, videoAnalysis);
+    const subtitleAnalysis = await this.analyzeSubtitles(mediaFiles.subtitles, videoAnalysis);
 
     // Build mappings for Excel template rows
     const mappings = {

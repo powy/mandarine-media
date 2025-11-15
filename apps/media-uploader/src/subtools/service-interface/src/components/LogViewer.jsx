@@ -64,23 +64,23 @@ export default function LogViewer({ taskId }) {
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={togglePause}
-                title={isPaused ? 'Resume auto-update' : 'Pause auto-update'}
+                title={isPaused ? 'Reprendre la mise à jour auto' : 'Mettre en pause la mise à jour auto'}
               >
-                {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+                {isPaused ? '▶️ Reprendre' : '⏸️ Pause'}
               </button>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={scrollToBottom}
-                title="Scroll to bottom"
+                title="Défiler vers le bas"
               >
-                ⬇️ Bottom
+                ⬇️ Bas
               </button>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={clearLog}
-                title="Clear display (doesn't delete log file)"
+                title="Effacer l'affichage (ne supprime pas le fichier de log)"
               >
-                🗑️ Clear
+                🗑️ Effacer
               </button>
             </>
           )}
@@ -96,20 +96,20 @@ export default function LogViewer({ taskId }) {
         {!taskId ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
-              <p className="text-lg mb-2">No task selected</p>
-              <p className="text-sm">Select a task from the Tasks section above to view its logs</p>
+              <p className="text-lg mb-2">Aucune tâche sélectionnée</p>
+              <p className="text-sm">Sélectionnez une tâche depuis la section Tâches ci-dessus pour voir ses logs</p>
             </div>
           </div>
         ) : loading && !log ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="inline-block w-8 h-8 border-4 border-gray-600 border-t-white rounded-full animate-spin mb-2" />
-              <p className="text-sm text-gray-400">Loading logs...</p>
+              <p className="text-sm text-gray-400">Chargement des logs...</p>
             </div>
           </div>
         ) : error ? (
           <div className="text-red-400">
-            <p className="font-semibold">Error loading logs:</p>
+            <p className="font-semibold">Erreur lors du chargement des logs :</p>
             <p className="text-sm mt-1">{error}</p>
           </div>
         ) : log ? (
@@ -118,8 +118,8 @@ export default function LogViewer({ taskId }) {
           </div>
         ) : (
           <div className="text-gray-500 text-center py-8">
-            <p>No logs available yet</p>
-            <p className="text-xs mt-2">Logs will appear when the task starts processing</p>
+            <p>Aucun log disponible pour le moment</p>
+            <p className="text-xs mt-2">Les logs apparaîtront quand la tâche commencera le traitement</p>
           </div>
         )}
       </div>
@@ -128,20 +128,20 @@ export default function LogViewer({ taskId }) {
       {taskId && (
         <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
           <div className="flex items-center gap-4">
-            <span>Task ID: {taskId}</span>
+            <span>ID de Tâche : {taskId}</span>
             {isPaused && (
               <span className="text-yellow-600 font-semibold">
-                ⏸️ Paused
+                ⏸️ En pause
               </span>
             )}
             {!shouldAutoScrollRef.current && !isPaused && (
               <span className="text-blue-600">
-                📌 Auto-scroll disabled (scroll to bottom to re-enable)
+                📌 Défilement auto désactivé (défiler vers le bas pour réactiver)
               </span>
             )}
           </div>
           <div>
-            {log && <span>{log.split('\n').length} lines</span>}
+            {log && <span>{log.split('\n').length} lignes</span>}
           </div>
         </div>
       )}

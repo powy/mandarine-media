@@ -343,14 +343,14 @@ export async function multiUploadFromParent(iniFilePath, parentFolderPath, optio
     }
   }
 
-  if (subfolders.length === 0) {
-    throw new Error(`No subfolders found in: ${parentFolderPath}`);
-  }
+  // Include parent folder itself in the upload list (at the beginning)
+  const allFolders = [parentFolderPath, ...subfolders];
 
-  log(chalk.blue(`🔍 Found ${subfolders.length} subfolders in: ${path.basename(parentFolderPath)}\n`), logger);
+  log(chalk.blue(`🔍 Found ${subfolders.length} subfolders in: ${path.basename(parentFolderPath)}`), logger);
+  log(chalk.blue(`📁 Total folders to upload: ${allFolders.length} (including parent folder)\n`), logger);
 
-  // Use multiUploadFromList to process subfolders
-  return await multiUploadFromList(iniFilePath, subfolders, options);
+  // Use multiUploadFromList to process all folders (parent + subfolders)
+  return await multiUploadFromList(iniFilePath, allFolders, options);
 }
 
 export default {

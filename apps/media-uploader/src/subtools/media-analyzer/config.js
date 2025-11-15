@@ -115,6 +115,25 @@ class Config {
         // Seuils
         this.MIN_MATCH_SCORE = 60;
         this.SIMILARITY_THRESHOLD = 0.7;
+
+        // Duration matching thresholds (in seconds)
+        this.DURATION_MATCH_THRESHOLDS = {
+            PERFECT: 15,      // < 15s difference = perfect match (bonus: +50)
+            GOOD: 30,         // < 30s difference = good match (bonus: +20)
+            ACCEPTABLE: 60,   // < 60s difference = acceptable (bonus: +5)
+            BLOCK: 60         // > 60s difference = block upload or heavy penalty
+        };
+
+        // Scoring weights and bonuses
+        this.SCORING_CONFIG = {
+            SIZE_CORRELATION_WEIGHT: 0.4,   // Weight for size correlation in scoring (was 0.1)
+            MAIN_VIDEO_BONUS: 0.20,         // Bonus points for main video
+            EXTRACT_PENALTY: 0.15,          // Penalty for extract videos (without extract markers in subtitle)
+            DURATION_PERFECT_BONUS: 50,     // Bonus when duration difference < 15s
+            DURATION_GOOD_BONUS: 20,        // Bonus when duration difference < 30s
+            DURATION_ACCEPTABLE_BONUS: 5,   // Bonus when duration difference < 60s
+            DURATION_MISMATCH_PENALTY: 100  // Penalty when duration difference > 60s
+        };
     }
 }
 

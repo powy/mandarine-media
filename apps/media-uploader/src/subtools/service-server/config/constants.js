@@ -105,6 +105,16 @@ export const CONFIG = {
       description: 'Upload subtitle directly to Mux asset by asset ID',
       requiredParams: ['config', 'muxAssetId', 'subtitle', 'language']
     },
+    'upload-subtitles-by-id-and-folder': {
+      function: 'uploadSubtitlesFromFolderByIdWithIni',
+      description: 'Upload subtitles from folder using media description ID (auto-detects main video subtitles)',
+      requiredParams: ['config', 'mediaDescriptionId', 'folder']
+    },
+    'upload-subtitles-by-season-folder': {
+      function: 'uploadSubtitlesBySeasonFolder',
+      description: 'Upload subtitles for all episodes in a season from numbered folders',
+      requiredParams: ['config', 'mediaDescriptionId', 'parentFolder']
+    },
     'upload-picture-with-ini': {
       function: 'uploadPictureWithIni',
       description: 'Upload picture with known format and media description ID',

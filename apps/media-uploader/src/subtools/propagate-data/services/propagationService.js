@@ -132,11 +132,30 @@ export class PropagationService {
         }
       } catch (error) {
         // Log detailed error information for debugging
+        const url = `${this.config.backend.baseUrl}/api/v1/seasons`;
+        console.error(chalk.red('[_resolveSeasonEntity] Error details:'), {
+          message: error.message,
+          code: error.code,
+          url: url,
+          hasResponse: !!error.response,
+          hasRequest: !!error.request
+        });
+
         if (error.response) {
           console.log(chalk.red(`API Error: ${error.response.status} ${error.response.statusText}`));
           console.log(chalk.red(`Response: ${JSON.stringify(error.response.data, null, 2)}`));
+          throw new Error(`Failed to resolve Season entity (${error.response.status}): ${error.response.statusText}`);
+        } else if (error.request) {
+          // Request was made but no response received (network error)
+          const errorCode = error.code || 'UNKNOWN';
+          throw new Error(
+            `Failed to resolve Season entity - no response from server (${errorCode}): ${error.message}. URL: ${url}`
+          );
+        } else {
+          // Error setting up the request or other error type
+          const errorMsg = error.message || JSON.stringify(error, Object.getOwnPropertyNames(error));
+          throw new Error(`Failed to resolve Season entity - request setup error: ${errorMsg}`);
         }
-        throw new Error(`Failed to resolve Season entity: ${error.message}`);
       }
     }
 
