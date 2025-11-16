@@ -11,6 +11,70 @@ For staging environment (future):
 
 import os
 from pathlib import Path
+from typing import Dict
+
+# ============================================================================
+# HELPER FUNCTIONS (defined early for use in configuration)
+# ============================================================================
+
+
+def load_env_file(env_file_path: Path) -> Dict[str, str]:
+    """
+    Load environment variables from a .env file.
+    Handles both standard format and files with unusual spacing/formatting.
+
+    Args:
+        env_file_path: Path to the .env file
+
+    Returns:
+        Dictionary of environment variable key-value pairs
+    """
+    import re
+    env_vars = {}
+
+    if not env_file_path.exists():
+        print(f"Warning: Environment file not found: {env_file_path}")
+        return env_vars
+
+    try:
+        with open(env_file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Pattern to match KEY=value, handling various formats
+        # Matches: KEY=value where KEY is uppercase letters/underscores
+        # and value can contain anything until the next KEY= or end of string
+        pattern = r'([A-Z_][A-Z0-9_]*)\s*=\s*([^\n]*?)(?=\s+[A-Z_][A-Z0-9_]*\s*=|$)'
+
+        matches = re.findall(pattern, content, re.MULTILINE | re.DOTALL)
+
+        for key, value in matches:
+            key = key.strip()
+            value = value.strip()
+
+            # Skip if empty
+            if not key or not value:
+                continue
+
+            # Remove quotes if present
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1]
+            elif value.startswith("'") and value.endswith("'"):
+                value = value[1:-1]
+
+            # Clean up any trailing comments or whitespace
+            # Stop at # unless it's within a value that was quoted
+            if '#' in value and not (value.count('"') >= 2 or value.count("'") >= 2):
+                value = value.split('#')[0].strip()
+
+            env_vars[key] = value
+
+    except Exception as e:
+        print(f"Error loading environment file {env_file_path}: {e}")
+        import traceback
+        traceback.print_exc()
+
+    return env_vars
+
 
 # ============================================================================
 # ENVIRONMENT CONFIGURATION
@@ -55,6 +119,23 @@ IMAGE_TAG = "latest"
 IMAGE_NAME = f"{ECR_REPOSITORY_NAME}:{IMAGE_TAG}"
 
 # ============================================================================
+# PATH CONFIGURATION
+# ============================================================================
+
+# Project root directory
+PROJECT_ROOT = Path(__file__).parent.parent.absolute()
+
+# Deploy directory
+DEPLOY_DIR = Path(__file__).parent.absolute()
+
+# Backend directory
+BACKEND_DIR = PROJECT_ROOT
+
+# Environment file paths
+ENV_PRODUCTION_TEMPLATE = DEPLOY_DIR / ".env.production.template"
+ENV_PRODUCTION_FILE = BACKEND_DIR / ".env.production"
+
+# ============================================================================
 # LAMBDA CONFIGURATION
 # ============================================================================
 
@@ -66,16 +147,44 @@ LAMBDA_ARCHITECTURE = "x86_64"  # or "arm64" for Graviton2
 # Lambda handler path in the container
 LAMBDA_HANDLER = "app.lambda_handler.lambda_handler"
 
-# Lambda environment variables (non-sensitive)
-# Sensitive values should be stored in AWS Secrets Manager
-LAMBDA_ENVIRONMENT_VARS = {
+# Lambda environment variables
+# Load essential variables from .env.production file
+# Note: Lambda has a 4KB limit for environment variables, so we filter out large values
+# Large/sensitive values (like private keys) are loaded from .env file in the container
+_env_file_vars = load_env_file(ENV_PRODUCTION_FILE)
+
+# List of essential variables to include (others are loaded from .env file in container)
+# Only include variables that:
+# 1. Are needed before app initialization (DATABASE_URI, ENVIRONMENT, etc.)
+# 2. Override defaults (API_GATEWAY_BASE_PATH)
+# 3. Are small in size
+_essential_vars = {
+    "DATABASE_URI",
+    "ENVIRONMENT",
+    "POSTGRES_SERVER",
+    "POSTGRES_USER",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_DB",
+    "SECRET_KEY",
+    "API_HOST",
+    "API_PORT",
+}
+
+# Filter environment file variables to only essential ones
+_filtered_env_vars = {k: v for k, v in _env_file_vars.items() if k in _essential_vars}
+
+# Base Lambda configuration (these override .env file if present)
+_lambda_base_config = {
     "ENVIRONMENT": ENVIRONMENT,
     "API_HOST": "0.0.0.0",
     "API_PORT": "8000",
-    # For custom domain (api.kyool.eu): no stage prefix, use empty string
-    # For direct API Gateway URL: set to "/production" to strip stage from path
-    "API_GATEWAY_BASE_PATH": "",  # Empty for custom domain usage
+    # Set to "/production" to strip the stage prefix from incoming paths
+    # This is needed because API Gateway is passing /production/api/v1/... to Lambda
+    "API_GATEWAY_BASE_PATH": "/production",
 }
+
+# Merge: filtered .env.production variables first, then override with Lambda-specific config
+LAMBDA_ENVIRONMENT_VARS = {**_filtered_env_vars, **_lambda_base_config}
 
 # VPC Configuration (set these if Lambda needs to access RDS in VPC)
 LAMBDA_VPC_SUBNET_IDS = (
@@ -154,23 +263,6 @@ RDS_INSTANCE_ID = os.getenv("RDS_INSTANCE_ID", f"{RESOURCE_NAME}-db")
 # Database connection will be configured via environment variables or Secrets Manager
 
 # ============================================================================
-# PATH CONFIGURATION
-# ============================================================================
-
-# Project root directory
-PROJECT_ROOT = Path(__file__).parent.parent.absolute()
-
-# Deploy directory
-DEPLOY_DIR = Path(__file__).parent.absolute()
-
-# Backend directory
-BACKEND_DIR = PROJECT_ROOT
-
-# Environment file paths
-ENV_PRODUCTION_TEMPLATE = DEPLOY_DIR / ".env.production.template"
-ENV_PRODUCTION_FILE = BACKEND_DIR / ".env.production"
-
-# ============================================================================
 # SCRIPT CONFIGURATION
 # ============================================================================
 
@@ -181,7 +273,7 @@ VERBOSE = os.getenv("VERBOSE", "false").lower() == "true"
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 
 # ============================================================================
-# HELPER FUNCTIONS
+# ADDITIONAL HELPER FUNCTIONS
 # ============================================================================
 
 
