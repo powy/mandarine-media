@@ -157,7 +157,7 @@ _env_file_vars = load_env_file(ENV_PRODUCTION_FILE)
 # Only include variables that:
 # 1. Are needed before app initialization (DATABASE_URI, ENVIRONMENT, etc.)
 # 2. Override defaults (API_GATEWAY_BASE_PATH)
-# 3. Are small in size
+# 3. Are required by services that initialize at startup
 _essential_vars = {
     "DATABASE_URI",
     "ENVIRONMENT",
@@ -168,6 +168,10 @@ _essential_vars = {
     "SECRET_KEY",
     "API_HOST",
     "API_PORT",
+    # MUX signing keys (required by MuxTokenService initialized at startup)
+    "MUX_SIGNING_KEY_ID",
+    "MUX_PRIVATE_KEY",
+    "MUX_TOKEN_EXPIRATION_MINUTES",
 }
 
 # Filter environment file variables to only essential ones
