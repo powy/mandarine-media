@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYOOL Media Uploader - Guide d'Utilisation</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary-color: #10b981;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--background);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            background: var(--surface);
+            z-index: 10;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .nav-menu {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            padding: 0.625rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--background);
+            color: var(--primary-color);
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+            background: var(--background);
+            border-left-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem 3rem;
+            max-width: 1200px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            opacity: 0.95;
+            max-width: 700px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        /* Sections */
+        .section {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .section.hidden {
+            display: none;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-header h2 {
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+        }
+
+        .toggle-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--background);
+            border-radius: 50%;
+            transition: transform 0.3s, background 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .section-header:hover .toggle-icon {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .section.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            margin-top: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .section.collapsed .section-content {
+            display: none;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            margin: 1.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin: 1.25rem 0 0.75rem;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        ul, ol {
+            margin: 1rem 0 1rem 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .workflow-step {
+            background: var(--background);
+            padding: 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .workflow-step h4 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            margin: 1rem 0;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            color: #e2e8f0;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.25rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .info-box strong {
+            color: var(--primary-color);
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.25rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .warning-box strong {
+            color: #f59e0b;
+        }
+
+        .success-box {
+            background: #d1fae5;
+            border-left: 4px solid var(--secondary-color);
+            padding: 1rem 1.25rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .success-box strong {
+            color: var(--secondary-color);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .card {
+            background: var(--background);
+            padding: 1.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card h4 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        table tr:hover {
+            background: var(--background);
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary-color);
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .back-to-top:hover {
+            background: var(--primary-dark);
+            transform: translateY(-4px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1.5rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+        }
+
+        @media print {
+            .sidebar,
+            .search-box,
+            .back-to-top,
+            .toggle-icon {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .section.collapsed .section-content {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📚 Guide d'Utilisation</h1>
+                <p>KYOOL Media Uploader</p>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Rechercher dans le guide...">
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-item" data-section="intro">Introduction</div>
+                <div class="nav-item" data-section="quick-start">Démarrage Rapide</div>
+                <div class="nav-item" data-section="interface">Interface Utilisateur</div>
+                <div class="nav-item" data-section="workflows">Workflows Étape par Étape</div>
+                <div class="nav-item" data-section="configuration">Configuration</div>
+                <div class="nav-item" data-section="formats">Formats Supportés</div>
+                <div class="nav-item" data-section="troubleshooting">Résolution de Problèmes</div>
+                <div class="nav-item" data-section="advanced">Fonctionnalités Avancées</div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="hero">
+                <h1>🎬 KYOOL Media Uploader</h1>
+                <p>Guide complet d'utilisation de l'outil de téléversement de médias unifié. Gérez vos vidéos, images et sous-titres vers Mux et AWS S3 en toute simplicité.</p>
+                <span class="version-badge">Version 1.0.0</span>
+            </div>
+
+            <!-- Introduction Section -->
+            <section class="section" id="intro">
+                <div class="section-header">
+                    <h2><span class="section-icon">🎯</span> Introduction et Vue d'Ensemble</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <p><strong>KYOOL Media Uploader</strong> est un outil professionnel de téléversement de médias qui consolide plusieurs utilitaires en un seul système complet. Il gère l'ensemble du flux de travail de publication de contenu multimédia.</p>
+
+                    <h3>Capacités Principales</h3>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>🎥 Vidéos</h4>
+                            <p>Téléversement vers Mux avec encodage automatique et streaming adaptatif</p>
+                        </div>
+                        <div class="card">
+                            <h4>🖼️ Images</h4>
+                            <p>Upload vers AWS S3 avec support multi-résolutions (posters, vignettes)</p>
+                        </div>
+                        <div class="card">
+                            <h4>📝 Sous-titres</h4>
+                            <p>Gestion des sous-titres multilingues (FR, EN, KO) vers S3</p>
+                        </div>
+                        <div class="card">
+                            <h4>📊 Métadonnées</h4>
+                            <p>Gestion via Excel et synchronisation avec l'API backend</p>
+                        </div>
+                    </div>
+
+                    <h3>Fonctionnalités Clés</h3>
+                    <ul>
+                        <li><strong>Analyse de médias</strong> - Scan automatique des dossiers et association des fichiers</li>
+                        <li><strong>Traitement par lots</strong> - Gestion de médias uniques ou de saisons complètes</li>
+                        <li><strong>Workflow Excel</strong> - Interface Excel pour les métadonnées et la gestion des fichiers</li>
+                        <li><strong>Support multi-plateformes</strong> - Mux pour vidéos, S3 pour images/sous-titres</li>
+                        <li><strong>Gestion des tâches</strong> - Suivi en temps réel avec logs et progression</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <strong>Architecture en Deux Services :</strong>
+                        <ul>
+                            <li><strong>Service-Server (Port 3011)</strong> - Gestion et exécution des tâches</li>
+                            <li><strong>Service-Interface (Port 3010)</strong> - Interface web React en temps réel</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Start Section -->
+            <section class="section" id="quick-start">
+                <div class="section-header">
+                    <h2><span class="section-icon">🚀</span> Démarrage Rapide</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <h3>Installation et Lancement</h3>
+
+                    <div class="workflow-step">
+                        <h4>Étape 1 : Lancement de l'Application</h4>
+                        <p>Double-cliquez sur <code>START.bat</code> dans le dossier d'installation.</p>
+                        <div class="success-box">
+                            <strong>Résultat :</strong>
+                            <ul>
+                                <li>Serveur démarré sur le port 3011</li>
+                                <li>Interface web ouverte automatiquement sur http://localhost:3010</li>
+                                <li>Indicateur de connexion vert dans l'en-tête</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 2 : Préparation du Fichier de Configuration</h4>
+                        <p>Créez un fichier <code>.ini</code> avec vos identifiants d'accès (voir section Configuration pour les détails).</p>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 3 : Premier Upload</h4>
+                        <ol>
+                            <li>Dans l'interface web, entrez le chemin vers votre fichier de configuration</li>
+                            <li>Entrez le chemin du dossier contenant votre média</li>
+                            <li>Cliquez sur "Prépare un Excel" pour générer le fichier de métadonnées</li>
+                            <li>Remplissez les informations dans le fichier Excel</li>
+                            <li>Cliquez sur "Upload un Media" pour lancer le téléversement</li>
+                        </ol>
+                    </div>
+
+                    <h3>Prérequis Système</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Composant</th>
+                                <th>Requis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Système d'exploitation</td>
+                                <td>Windows 10/11 (64-bit)</td>
+                            </tr>
+                            <tr>
+                                <td>Node.js</td>
+                                <td>Version 18 ou supérieure</td>
+                            </tr>
+                            <tr>
+                                <td>RAM</td>
+                                <td>2 Go minimum</td>
+                            </tr>
+                            <tr>
+                                <td>Espace disque</td>
+                                <td>~200 Mo pour l'application</td>
+                            </tr>
+                            <tr>
+                                <td>Connexion Internet</td>
+                                <td>Requise pour les uploads</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="warning-box">
+                        <strong>Important :</strong> Ne pas installer dans <code>C:\Program Files\</code> pour éviter les problèmes de permissions. Utilisez un répertoire accessible en écriture.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interface Section -->
+            <section class="section" id="interface">
+                <div class="section-header">
+                    <h2><span class="section-icon">🖥️</span> Interface Utilisateur</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <p>L'interface web est accessible sur <strong>http://localhost:3010</strong> après le lancement. Elle est divisée en quatre sections principales.</p>
+
+                    <h3>Section A : ENTRÉES</h3>
+                    <p>Champs de saisie pour configurer vos opérations :</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Champ</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Fichier de configuration</td>
+                                <td>Chemin vers votre fichier .ini contenant les identifiants</td>
+                            </tr>
+                            <tr>
+                                <td>Dossier</td>
+                                <td>Chemin du dossier contenant un média unique</td>
+                            </tr>
+                            <tr>
+                                <td>Dossier parent</td>
+                                <td>Chemin du dossier parent pour traitement par lots (saisons)</td>
+                            </tr>
+                            <tr>
+                                <td>Chemin de l'image</td>
+                                <td>Chemin vers un fichier image à uploader</td>
+                            </tr>
+                            <tr>
+                                <td>Résolution image</td>
+                                <td>Format de l'image (1920x1080, 1080x1080, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td>Chemin du sous-titre</td>
+                                <td>Chemin vers un fichier de sous-titre</td>
+                            </tr>
+                            <tr>
+                                <td>Langue</td>
+                                <td>Langue du sous-titre (Français, English, Korean)</td>
+                            </tr>
+                            <tr>
+                                <td>ID Description Média</td>
+                                <td>UUID backend du média (optionnel)</td>
+                            </tr>
+                            <tr>
+                                <td>ID Entité Saison</td>
+                                <td>UUID backend de la saison (optionnel)</td>
+                            </tr>
+                            <tr>
+                                <td>ID Asset Mux</td>
+                                <td>ID Mux direct (optionnel)</td>
+                            </tr>
+                            <tr>
+                                <td>Champ Excel / Nouvelle valeur</td>
+                                <td>Pour édition de champs Excel en masse</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Section B : ACTIONS</h3>
+                    <p>Les actions sont organisées en 4 catégories :</p>
+
+                    <h4>Catégorie 1 : TÉLÉVERSEMENT</h4>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>Opérations Uniques (1.A)</h4>
+                            <ul>
+                                <li><strong>Prépare un Excel</strong> - Génère un fichier Excel pour un média</li>
+                                <li><strong>Upload un Media</strong> - Téléverse un média complet</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Opérations par Lots (1.B)</h4>
+                            <ul>
+                                <li><strong>Prépare des Excels</strong> - Génère Excel pour tous les sous-dossiers</li>
+                                <li><strong>Upload des Medias</strong> - Téléverse tous les médias d'un dossier parent</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4>Catégorie 2 : MISE À JOUR DEPUIS EXCEL</h4>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>Opérations Uniques (2.A)</h4>
+                            <ul>
+                                <li><strong>Charge une Image</strong> - Upload d'une image unique</li>
+                                <li><strong>Charge un Sous-titre</strong> - Upload d'un sous-titre unique</li>
+                                <li><strong>Recharge Sous-titres</strong> - Réimporte tous les sous-titres d'un média</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Opérations par Lots (2.B)</h4>
+                            <ul>
+                                <li><strong>Charge Images pour Tous</strong> - Upload images pour tous les médias</li>
+                                <li><strong>Recharge Tous Sous-titres</strong> - Réimporte tous les sous-titres de la saison</li>
+                                <li><strong>Propager Données Saison</strong> - Copie métadonnées de saison vers épisodes</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4>Catégorie 3 : MISE À JOUR PAR ID</h4>
+                    <p>Opérations ciblées utilisant les identifiants backend ou Mux :</p>
+                    <ul>
+                        <li><strong>Sous-titre par ID Description</strong> - Upload via UUID backend</li>
+                        <li><strong>Sous-titre par Asset Mux</strong> - Upload via ID Mux</li>
+                        <li><strong>Image par ID</strong> - Upload image via UUID backend</li>
+                        <li><strong>Supprimer Sous-titre</strong> - Suppression d'un sous-titre</li>
+                        <li><strong>Upload Sous-titres par ID et Dossier</strong> - Batch via UUID</li>
+                        <li><strong>Sous-titres pour Saison</strong> - Batch pour une saison entière</li>
+                        <li><strong>Propager Saison par ID Description/Entité</strong> - Propagation ciblée</li>
+                    </ul>
+
+                    <h4>Catégorie 4 : EDITION EXCELS</h4>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>Opérations Uniques (4.A)</h4>
+                            <ul>
+                                <li><strong>Modifier un Excel</strong> - Édite un champ dans un fichier Excel</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Opérations par Lots (4.B)</h4>
+                            <ul>
+                                <li><strong>Modifier Tous les Excels</strong> - Édite tous les fichiers d'un dossier</li>
+                                <li><strong>Régénérer Noms Épisodes</strong> - Reconstruit les noms automatiquement</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>Section C : TÂCHES</h3>
+                    <p>Suivi en temps réel de vos opérations :</p>
+                    <ul>
+                        <li><strong>Tâches en Cours</strong> - Liste des opérations actives avec progression</li>
+                        <li><strong>Tâches Terminées</strong> - Historique avec statuts (succès, échec, partiel)</li>
+                        <li><strong>Sélection de tâche</strong> - Cliquez pour voir les logs détaillés</li>
+                    </ul>
+
+                    <h3>Section D : JOURNAL</h3>
+                    <p>Visualisation des logs :</p>
+                    <ul>
+                        <li>Affichage en temps réel des logs de la tâche sélectionnée</li>
+                        <li>Défilement automatique activé par défaut</li>
+                        <li>Codes couleur pour les différents niveaux (info, erreur, succès)</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <strong>En-tête de l'interface :</strong>
+                        <ul>
+                            <li><strong>Indicateur de connexion</strong> - Vert = connecté, Rouge = déconnecté</li>
+                            <li><strong>Version</strong> - Numéro de version actuelle (v1.0.0)</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Workflows Section -->
+            <section class="section" id="workflows">
+                <div class="section-header">
+                    <h2><span class="section-icon">⚙️</span> Workflows Étape par Étape</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <h3>Workflow 1 : Upload d'un Média Unique (Complet)</h3>
+
+                    <div class="workflow-step">
+                        <h4>Étape 1 : Démarrer l'Application</h4>
+                        <p>Double-cliquez sur <code>START.bat</code></p>
+                        <div class="success-box">
+                            <strong>Résultat :</strong> Serveur démarré sur port 3011, interface ouverte sur http://localhost:3010
+                        </div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 2 : Préparer les Entrées</h4>
+                        <p>Dans l'interface web :</p>
+                        <ol>
+                            <li>Entrez le chemin du fichier de configuration (ex: <code>C:\config\kyool.ini</code>)</li>
+                            <li>Entrez le chemin du dossier contenant le média (ex: <code>C:\Medias\Episode01</code>)</li>
+                        </ol>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 3 : Préparer l'Excel</h4>
+                        <ol>
+                            <li>Cliquez sur "Prépare un Excel" (Catégorie 1.A)</li>
+                            <li>Le système crée <code>0_desc_[NOM_DOSSIER]_auto.xlsx</code></li>
+                            <li>Excel s'ouvre automatiquement avec deux feuilles :
+                                <ul>
+                                    <li><strong>Description</strong> - Métadonnées du média</li>
+                                    <li><strong>Files</strong> - Mappage des fichiers</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 4 : Remplir le Fichier Excel</h4>
+                        <p><strong>Feuille "Description" - Remplissez les champs :</strong></p>
+                        <ul>
+                            <li>Titre du média</li>
+                            <li>Synopsis</li>
+                            <li>Catégories</li>
+                            <li>Tags</li>
+                            <li>Autres métadonnées pertinentes</li>
+                        </ul>
+                        <p><strong>Feuille "Files" - Indiquez les noms de fichiers :</strong></p>
+                        <ul>
+                            <li>Nom du fichier vidéo</li>
+                            <li>Noms des fichiers posters (différentes résolutions)</li>
+                            <li>Noms des fichiers de sous-titres (par langue)</li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 5 : Lancer l'Upload</h4>
+                        <ol>
+                            <li>Retournez à l'interface web</li>
+                            <li>Vérifiez que les mêmes entrées sont présentes (config + dossier)</li>
+                            <li>Cliquez sur "Upload un Media" (Catégorie 1.A)</li>
+                            <li>Surveillez la progression dans "Tâches en Cours"</li>
+                            <li>Visualisez les logs en temps réel dans la section "Journal"</li>
+                        </ol>
+                    </div>
+
+                    <div class="success-box">
+                        <strong>Résultat :</strong> Média complet téléversé avec vidéo (Mux), images (S3), sous-titres (S3), et métadonnées (Backend API).
+                    </div>
+
+                    <h3>Workflow 2 : Upload par Lots (Saison avec Épisodes)</h3>
+
+                    <div class="workflow-step">
+                        <h4>Étape 1 : Organiser la Structure des Dossiers</h4>
+                        <p>Structurez vos fichiers comme suit :</p>
+                        <div class="code-block"><code>Saison01/
+├── 01/
+│   ├── episode01.mp4
+│   ├── poster_1920x1080.jpg
+│   ├── poster_1080x1080.jpg
+│   ├── sub_fr.vtt
+│   └── sub_en.vtt
+├── 02/
+│   ├── episode02.mp4
+│   ├── poster_1920x1080.jpg
+│   └── ...
+└── 03/
+    └── ...</code></div>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 2 : Préparer Tous les Excels</h4>
+                        <ol>
+                            <li>Entrez le chemin du dossier parent : <code>C:\Medias\Saison01</code></li>
+                            <li>Cliquez sur "Prépare des Excels" (Catégorie 1.B)</li>
+                            <li>Un Excel est créé dans le dossier parent ET dans chaque sous-dossier</li>
+                        </ol>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 3 : Remplir l'Excel Parent (Saison)</h4>
+                        <p>Remplissez les métadonnées au niveau de la saison dans le fichier Excel du dossier parent.</p>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 4 : Remplir les Excels des Épisodes</h4>
+                        <p>Remplissez les métadonnées spécifiques à chaque épisode dans leurs fichiers Excel respectifs.</p>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 5 : Lancer l'Upload par Lots</h4>
+                        <ol>
+                            <li>Cliquez sur "Upload des Medias" (Catégorie 1.B)</li>
+                            <li>Le système traite tous les sous-dossiers en parallèle</li>
+                            <li>Chaque épisode est uploadé indépendamment</li>
+                            <li>Suivez la progression de chaque tâche dans la section "Tâches"</li>
+                        </ol>
+                    </div>
+
+                    <div class="workflow-step">
+                        <h4>Étape 6 : Propager les Données de Saison (Optionnel)</h4>
+                        <p>Pour copier les métadonnées communes de la saison vers tous les épisodes :</p>
+                        <ol>
+                            <li>Cliquez sur "Propager Données de Saison" (Catégorie 2.B)</li>
+                            <li>Les champs communs sont copiés du parent vers tous les enfants</li>
+                        </ol>
+                    </div>
+
+                    <h3>Workflow 3 : Mise à Jour d'Éléments Spécifiques</h3>
+
+                    <h4>Ajouter une Image à un Média Existant</h4>
+                    <div class="workflow-step">
+                        <ol>
+                            <li>Entrez le chemin du dossier du média</li>
+                            <li>Entrez le chemin de l'image</li>
+                            <li>Sélectionnez la résolution (ex: 1920x1080)</li>
+                            <li>Cliquez sur "Charge une Image" (Catégorie 2.A)</li>
+                        </ol>
+                    </div>
+
+                    <h4>Ajouter/Mettre à Jour des Sous-titres</h4>
+                    <div class="workflow-step">
+                        <ol>
+                            <li>Entrez le chemin du dossier du média</li>
+                            <li>Entrez le chemin du fichier de sous-titre</li>
+                            <li>Sélectionnez la langue (Français, English, Korean)</li>
+                            <li>Cliquez sur "Charge un Sous-titre" (Catégorie 2.A)</li>
+                        </ol>
+                    </div>
+
+                    <h4>Éditer un Champ Excel sur Tous les Épisodes</h4>
+                    <div class="workflow-step">
+                        <ol>
+                            <li>Entrez le chemin du dossier parent</li>
+                            <li>Sélectionnez le champ à modifier dans le menu déroulant (ex: "Catégories")</li>
+                            <li>Entrez la nouvelle valeur</li>
+                            <li>Cliquez sur "Modifier Tous les Excels" (Catégorie 4.B)</li>
+                        </ol>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Astuce :</strong> Utilisez les opérations par ID (Catégorie 3) pour des mises à jour ciblées sans avoir besoin des fichiers Excel locaux.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section class="section" id="configuration">
+                <div class="section-header">
+                    <h2><span class="section-icon">⚙️</span> Configuration</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <h3>Fichier de Configuration (.ini)</h3>
+                    <p>Le fichier de configuration utilise le format INI standard et contient tous vos identifiants et paramètres.</p>
+
+                    <h4>Structure Complète du Fichier</h4>
+                    <div class="code-block"><code>[general]
+verbose = true
+maxConcurrentUploads = 5
+retryAttempts = 3
+retryDelay = 2000
+
+[backend]
+baseUrl = https://api.kyool.com
+username = votre_utilisateur
+password = votre_mot_de_passe
+
+[mux]
+tokenId = votre_token_id_mux
+tokenSecret = votre_token_secret_mux
+
+[s3]
+accessKeyId = votre_access_key_aws
+secretAccessKey = votre_secret_key_aws
+region = eu-west-3
+
+[s3.pictures]
+bucket = kyool-pictures
+keyPrefix = medias/images/
+
+[s3.subtitles]
+bucket = kyool-subtitles
+keyPrefix = medias/subtitles/
+
+[logging]
+enabled = true
+level = info
+file = logs/uploader.log
+console = true</code></div>
+
+                    <h3>Description des Sections</h3>
+
+                    <h4>[general] - Paramètres Généraux</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paramètre</th>
+                                <th>Description</th>
+                                <th>Valeurs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>verbose</td>
+                                <td>Active les logs détaillés</td>
+                                <td>true / false</td>
+                            </tr>
+                            <tr>
+                                <td>maxConcurrentUploads</td>
+                                <td>Nombre max d'uploads parallèles</td>
+                                <td>1-1000 (recommandé: 3-10)</td>
+                            </tr>
+                            <tr>
+                                <td>retryAttempts</td>
+                                <td>Nombre de tentatives en cas d'échec</td>
+                                <td>1-10 (recommandé: 3)</td>
+                            </tr>
+                            <tr>
+                                <td>retryDelay</td>
+                                <td>Délai entre les tentatives (ms)</td>
+                                <td>1000-10000 (recommandé: 2000)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>[backend] - API Backend KYOOL</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paramètre</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>baseUrl</td>
+                                <td>URL de base de l'API backend</td>
+                            </tr>
+                            <tr>
+                                <td>username</td>
+                                <td>Nom d'utilisateur pour l'authentification</td>
+                            </tr>
+                            <tr>
+                                <td>password</td>
+                                <td>Mot de passe pour l'authentification</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>[mux] - Plateforme Mux Video</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paramètre</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>tokenId</td>
+                                <td>ID du token API Mux</td>
+                            </tr>
+                            <tr>
+                                <td>tokenSecret</td>
+                                <td>Secret du token API Mux</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>[s3] - AWS S3 (Général)</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paramètre</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>accessKeyId</td>
+                                <td>Clé d'accès AWS</td>
+                            </tr>
+                            <tr>
+                                <td>secretAccessKey</td>
+                                <td>Clé secrète AWS</td>
+                            </tr>
+                            <tr>
+                                <td>region</td>
+                                <td>Région AWS (ex: eu-west-3, us-east-1)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>[s3.pictures] et [s3.subtitles] - Buckets S3</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paramètre</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>bucket</td>
+                                <td>Nom du bucket S3</td>
+                            </tr>
+                            <tr>
+                                <td>keyPrefix</td>
+                                <td>Préfixe du chemin dans le bucket (ex: medias/images/)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>[logging] - Configuration des Logs</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paramètre</th>
+                                <th>Description</th>
+                                <th>Valeurs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>enabled</td>
+                                <td>Active/désactive les logs</td>
+                                <td>true / false</td>
+                            </tr>
+                            <tr>
+                                <td>level</td>
+                                <td>Niveau de log</td>
+                                <td>debug, info, warn, error</td>
+                            </tr>
+                            <tr>
+                                <td>file</td>
+                                <td>Chemin du fichier de log</td>
+                                <td>Chemin relatif ou absolu</td>
+                            </tr>
+                            <tr>
+                                <td>console</td>
+                                <td>Affiche les logs dans la console</td>
+                                <td>true / false</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="warning-box">
+                        <strong>Sécurité :</strong> Ne jamais partager votre fichier de configuration. Il contient des identifiants sensibles. Stockez-le dans un emplacement sécurisé et ne le commitez pas dans un système de contrôle de version.
+                    </div>
+
+                    <h3>Emplacements de Stockage</h3>
+                    <h4>Données de l'Application</h4>
+                    <div class="code-block"><code>%APPDATA%\Kyool\MediaUploader\
+├── data\
+│   └── tasks.db       # Base de données SQLite des tâches
+├── logs\              # Logs de l'application
+└── temp\              # Fichiers temporaires</code></div>
+
+                    <div class="info-box">
+                        <strong>Astuce :</strong> Pour accéder rapidement au dossier AppData, appuyez sur <code>Windows + R</code>, tapez <code>%APPDATA%\Kyool\MediaUploader</code> et appuyez sur Entrée.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Formats Section -->
+            <section class="section" id="formats">
+                <div class="section-header">
+                    <h2><span class="section-icon">📁</span> Formats Supportés</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <h3>Résolutions d'Images Supportées</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Résolution</th>
+                                <th>Dimensions</th>
+                                <th>Format</th>
+                                <th>Usage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1920x1080</td>
+                                <td>1920 × 1080 px</td>
+                                <td>Paysage (16:9)</td>
+                                <td>Poster principal Full HD</td>
+                            </tr>
+                            <tr>
+                                <td>1920x720</td>
+                                <td>1920 × 720 px</td>
+                                <td>Paysage large</td>
+                                <td>Bannières, headers</td>
+                            </tr>
+                            <tr>
+                                <td>1080x1080</td>
+                                <td>1080 × 1080 px</td>
+                                <td>Carré (1:1)</td>
+                                <td>Vignettes, réseaux sociaux</td>
+                            </tr>
+                            <tr>
+                                <td>810x1080</td>
+                                <td>810 × 1080 px</td>
+                                <td>Portrait (3:4)</td>
+                                <td>Affichage mobile portrait</td>
+                            </tr>
+                            <tr>
+                                <td>1080x1920</td>
+                                <td>1080 × 1920 px</td>
+                                <td>Portrait (9:16)</td>
+                                <td>Stories, format vertical</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Langues de Sous-titres Supportées</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Langue</th>
+                                <th>Nom Local</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>fr</td>
+                                <td>Français</td>
+                                <td>Français</td>
+                            </tr>
+                            <tr>
+                                <td>en</td>
+                                <td>Anglais</td>
+                                <td>English</td>
+                            </tr>
+                            <tr>
+                                <td>ko</td>
+                                <td>Coréen</td>
+                                <td>한국어</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Types de Fichiers Acceptés</h3>
+
+                    <h4>Fichiers Vidéo</h4>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>Extensions Supportées</h4>
+                            <ul>
+                                <li><strong>.mp4</strong> - MPEG-4 (recommandé)</li>
+                                <li><strong>.mov</strong> - QuickTime</li>
+                                <li><strong>.avi</strong> - Audio Video Interleave</li>
+                                <li><strong>.mkv</strong> - Matroska</li>
+                                <li><strong>.webm</strong> - WebM</li>
+                                <li><strong>.m4v</strong> - iTunes Video</li>
+                                <li><strong>.mpg / .mpeg</strong> - MPEG</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Recommandations</h4>
+                            <ul>
+                                <li>Codec H.264 ou H.265</li>
+                                <li>Audio AAC</li>
+                                <li>Bitrate : 5-20 Mbps</li>
+                                <li>Résolution : 1080p ou 4K</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4>Fichiers Image</h4>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>Extensions Supportées</h4>
+                            <ul>
+                                <li><strong>.jpg / .jpeg</strong> - JPEG (recommandé)</li>
+                                <li><strong>.png</strong> - PNG</li>
+                                <li><strong>.gif</strong> - GIF</li>
+                                <li><strong>.bmp</strong> - Bitmap</li>
+                                <li><strong>.webp</strong> - WebP</li>
+                                <li><strong>.svg</strong> - SVG</li>
+                                <li><strong>.tiff</strong> - TIFF</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Recommandations</h4>
+                            <ul>
+                                <li>Format JPEG pour photos</li>
+                                <li>Format PNG pour transparence</li>
+                                <li>Qualité : 85-95%</li>
+                                <li>Profil colorimétrique : sRGB</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4>Fichiers de Sous-titres</h4>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>Extensions Supportées</h4>
+                            <ul>
+                                <li><strong>.srt</strong> - SubRip (recommandé)</li>
+                                <li><strong>.vtt</strong> - WebVTT</li>
+                                <li><strong>.ass</strong> - Advanced SubStation</li>
+                                <li><strong>.ssa</strong> - SubStation Alpha</li>
+                                <li><strong>.sub</strong> - MicroDVD</li>
+                                <li><strong>.sbv</strong> - SubViewer</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Recommandations</h4>
+                            <ul>
+                                <li>Encodage UTF-8</li>
+                                <li>Timecodes précis</li>
+                                <li>Pas de caractères spéciaux non-UTF8</li>
+                                <li>Validation syntaxique recommandée</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>Note :</strong> Tous les formats vidéo sont automatiquement transcodés par Mux pour une diffusion optimale en streaming adaptatif.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Troubleshooting Section -->
+            <section class="section" id="troubleshooting">
+                <div class="section-header">
+                    <h2><span class="section-icon">🔧</span> Résolution de Problèmes</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <h3>Problèmes Courants et Solutions</h3>
+
+                    <h4>Problème : Les Ports Sont Déjà Utilisés</h4>
+                    <div class="warning-box">
+                        <strong>Symptôme :</strong> L'application ne démarre pas ou affiche une erreur "Port already in use".
+                    </div>
+                    <p><strong>Solutions :</strong></p>
+                    <ol>
+                        <li>Vérifiez si une autre instance est déjà en cours d'exécution</li>
+                        <li>Fermez les applications utilisant les ports 3010 ou 3011</li>
+                        <li>Utilisez la commande pour identifier les processus :
+                            <div class="code-block"><code>netstat -ano | findstr :3010
+netstat -ano | findstr :3011</code></div>
+                        </li>
+                        <li>Arrêtez le processus concerné ou redémarrez l'ordinateur</li>
+                    </ol>
+
+                    <h4>Problème : Erreurs de Permission</h4>
+                    <div class="warning-box">
+                        <strong>Symptôme :</strong> "Access denied" ou erreurs lors de l'écriture de fichiers.
+                    </div>
+                    <p><strong>Solutions :</strong></p>
+                    <ul>
+                        <li>N'installez PAS dans <code>C:\Program Files\</code></li>
+                        <li>Utilisez un répertoire utilisateur (ex: <code>C:\Users\VotreNom\MediaUploader\</code>)</li>
+                        <li>Exécutez en tant qu'administrateur (clic droit > Exécuter en tant qu'administrateur)</li>
+                        <li>Vérifiez les permissions du dossier de destination</li>
+                    </ul>
+
+                    <h4>Problème : Erreurs de Configuration</h4>
+                    <div class="warning-box">
+                        <strong>Symptôme :</strong> "Configuration error" ou échec d'authentification.
+                    </div>
+                    <p><strong>Solutions :</strong></p>
+                    <ol>
+                        <li>Vérifiez le format du fichier .ini (pas d'espaces superflus)</li>
+                        <li>Validez que tous les identifiants sont corrects</li>
+                        <li>Vérifiez que les chemins utilisent des barres obliques inversées doubles (<code>\\</code>) ou simples (<code>/</code>)</li>
+                        <li>Testez les identifiants manuellement (API backend, Mux, AWS)</li>
+                    </ol>
+
+                    <h4>Problème : Échecs d'Upload</h4>
+                    <div class="warning-box">
+                        <strong>Symptôme :</strong> Tâches marquées comme "failed" ou uploads incomplets.
+                    </div>
+                    <p><strong>Solutions :</strong></p>
+                    <ul>
+                        <li>Vérifiez votre connexion Internet</li>
+                        <li>Consultez les logs détaillés dans la section Journal</li>
+                        <li>Vérifiez les identifiants API (Mux, AWS, Backend)</li>
+                        <li>Réduisez <code>maxConcurrentUploads</code> dans la config si problèmes de bande passante</li>
+                        <li>Augmentez <code>retryAttempts</code> pour connexions instables</li>
+                        <li>Vérifiez que les buckets S3 et permissions sont corrects</li>
+                    </ul>
+
+                    <h4>Problème : Excel Ne S'Ouvre Pas Automatiquement</h4>
+                    <div class="warning-box">
+                        <strong>Symptôme :</strong> Fichier Excel créé mais pas ouvert.
+                    </div>
+                    <p><strong>Solutions :</strong></p>
+                    <ul>
+                        <li>Vérifiez que Microsoft Excel est installé</li>
+                        <li>Ouvrez manuellement le fichier <code>0_desc_[NOM]_auto.xlsx</code> dans le dossier</li>
+                        <li>Associez les fichiers .xlsx à Excel dans Windows</li>
+                    </ul>
+
+                    <h4>Problème : Interface Web Ne Se Charge Pas</h4>
+                    <div class="warning-box">
+                        <strong>Symptôme :</strong> Page blanche ou "Connection refused" dans le navigateur.
+                    </div>
+                    <p><strong>Solutions :</strong></p>
+                    <ol>
+                        <li>Vérifiez que le serveur est démarré (indicateur vert)</li>
+                        <li>Accédez manuellement à <code>http://localhost:3010</code></li>
+                        <li>Vérifiez les logs de démarrage dans le dossier <code>logs\</code></li>
+                        <li>Désactivez temporairement le pare-feu/antivirus</li>
+                        <li>Essayez un autre navigateur</li>
+                        <li>Effacez le cache du navigateur</li>
+                    </ol>
+
+                    <h3>Gestion des Erreurs Intégrée</h3>
+                    <p>L'application dispose de mécanismes automatiques de gestion des erreurs :</p>
+                    <ul>
+                        <li><strong>Retry automatique</strong> avec backoff exponentiel</li>
+                        <li><strong>Délais adaptatifs</strong> selon les conditions réseau</li>
+                        <li><strong>Circuit breaker</strong> pour échecs persistants</li>
+                        <li><strong>Reprise d'upload</strong> en cas d'interruption</li>
+                        <li><strong>Logs détaillés</strong> pour diagnostic</li>
+                    </ul>
+
+                    <h3>Emplacements des Logs</h3>
+                    <p>Pour diagnostiquer les problèmes, consultez les logs dans :</p>
+                    <ul>
+                        <li><strong>Console</strong> - Sortie en temps réel (si activée)</li>
+                        <li><strong>%APPDATA%\Kyool\MediaUploader\logs\</strong> - Logs persistants</li>
+                        <li><strong>Interface web, section Journal</strong> - Logs par tâche</li>
+                        <li><strong>Dossier d'installation\logs\</strong> - Logs de démarrage</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <strong>Astuce :</strong> Activez <code>verbose = true</code> dans votre fichier de configuration pour obtenir des logs plus détaillés lors du diagnostic de problèmes.
+                    </div>
+
+                    <h3>Support et Aide Supplémentaire</h3>
+                    <p>Si le problème persiste :</p>
+                    <ol>
+                        <li>Collectez les logs pertinents</li>
+                        <li>Notez les étapes pour reproduire le problème</li>
+                        <li>Vérifiez la version de l'application (affichée dans l'en-tête)</li>
+                        <li>Contactez le support technique avec ces informations</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- Advanced Features Section -->
+            <section class="section" id="advanced">
+                <div class="section-header">
+                    <h2><span class="section-icon">🚀</span> Fonctionnalités Avancées</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <h3>Intégration Excel Avancée</h3>
+
+                    <h4>Auto-remplissage à Partir des Fichiers Scannés</h4>
+                    <p>Lors de la préparation d'un Excel, l'application :</p>
+                    <ul>
+                        <li>Scanne automatiquement le dossier</li>
+                        <li>Détecte les fichiers vidéo, images et sous-titres</li>
+                        <li>Pré-remplit la feuille "Files" avec les noms détectés</li>
+                        <li>Propose des suggestions basées sur les conventions de nommage</li>
+                    </ul>
+
+                    <h4>Variables Dynamiques</h4>
+                    <p>Utilisez des variables dans vos fichiers Excel :</p>
+                    <div class="code-block"><code>{{ folder_name }}  # Nom du dossier parent
+{{ episode_number }}  # Numéro d'épisode auto-détecté
+{{ season_name }}     # Nom de la saison</code></div>
+                    <p>Ces variables sont automatiquement remplacées lors du traitement.</p>
+
+                    <h4>Édition par Lots de Champs Excel</h4>
+                    <p>Modifiez simultanément un champ dans tous les fichiers Excel d'une saison :</p>
+                    <ol>
+                        <li>Sélectionnez le champ dans le menu déroulant</li>
+                        <li>Entrez la nouvelle valeur</li>
+                        <li>L'opération s'applique à tous les sous-dossiers</li>
+                    </ol>
+
+                    <h4>Régénération Automatique des Noms d'Épisodes</h4>
+                    <p>Reconstruit automatiquement les noms d'épisodes basés sur :</p>
+                    <ul>
+                        <li>Le nom de la saison parent</li>
+                        <li>La numérotation séquentielle des dossiers</li>
+                        <li>Les patterns de nommage configurés</li>
+                    </ul>
+
+                    <h3>Opérations Basées sur les ID</h3>
+
+                    <h4>Opérations par ID Backend (UUID)</h4>
+                    <p>Effectuez des mises à jour sans avoir les fichiers Excel locaux :</p>
+                    <ul>
+                        <li><strong>Upload de sous-titres par Media Description ID</strong></li>
+                        <li><strong>Upload d'images par ID</strong></li>
+                        <li><strong>Propagation de saison par Entity ID</strong></li>
+                    </ul>
+                    <p>Utile pour les opérations à distance ou les corrections rapides.</p>
+
+                    <h4>Opérations par Mux Asset ID</h4>
+                    <p>Interagissez directement avec la plateforme Mux :</p>
+                    <ul>
+                        <li>Ajout de sous-titres à un asset Mux existant</li>
+                        <li>Mise à jour de métadonnées</li>
+                        <li>Gestion indépendante du workflow backend</li>
+                    </ul>
+
+                    <h3>Traitement Parallèle</h3>
+
+                    <h4>Configuration du Parallélisme</h4>
+                    <p>Paramètre <code>maxConcurrentUploads</code> (1-1000) :</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Valeur</th>
+                                <th>Usage Recommandé</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1-3</td>
+                                <td>Connexion lente ou médias très lourds</td>
+                            </tr>
+                            <tr>
+                                <td>5-10</td>
+                                <td>Usage standard (recommandé)</td>
+                            </tr>
+                            <tr>
+                                <td>10-50</td>
+                                <td>Connexion rapide, nombreux petits fichiers</td>
+                            </tr>
+                            <tr>
+                                <td>50+</td>
+                                <td>Serveurs haute performance, usage professionnel</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Démarrage Échelonné</h4>
+                    <p>Pour éviter la surcharge :</p>
+                    <ul>
+                        <li>Les tâches démarrent progressivement</li>
+                        <li>Délai automatique entre les démarrages</li>
+                        <li>Prévention de la saturation réseau</li>
+                    </ul>
+
+                    <h4>Suivi Indépendant des Tâches</h4>
+                    <p>Chaque tâche :</p>
+                    <ul>
+                        <li>S'exécute dans son propre processus</li>
+                        <li>A ses propres logs</li>
+                        <li>Peut échouer sans affecter les autres</li>
+                        <li>Peut être relancée individuellement</li>
+                    </ul>
+
+                    <h3>Gestion Avancée des Saisons</h3>
+
+                    <h4>Relations Parent-Enfant</h4>
+                    <p>Structure hiérarchique automatiquement détectée :</p>
+                    <div class="code-block"><code>Saison/           # Parent
+├── 01/           # Enfant (épisode)
+├── 02/           # Enfant (épisode)
+└── 03/           # Enfant (épisode)</code></div>
+
+                    <h4>Numérotation Automatique des Épisodes</h4>
+                    <p>Basée sur :</p>
+                    <ul>
+                        <li>L'ordre alphabétique des dossiers</li>
+                        <li>Les numéros dans les noms de dossiers</li>
+                        <li>La configuration personnalisée</li>
+                    </ul>
+
+                    <h4>Propagation de Données</h4>
+                    <p>Copiez des métadonnées communes du parent vers tous les enfants :</p>
+                    <ul>
+                        <li>Catégories</li>
+                        <li>Tags</li>
+                        <li>Informations de production</li>
+                        <li>Champs personnalisés</li>
+                    </ul>
+                    <p>Les champs spécifiques aux épisodes (titre, synopsis, etc.) restent inchangés.</p>
+
+                    <h3>Installation en Tant que Service Windows (Optionnel)</h3>
+
+                    <h4>Installation</h4>
+                    <p>Pour que l'application démarre automatiquement avec Windows :</p>
+                    <div class="code-block"><code>npm install
+node install-services.js</code></div>
+
+                    <h4>Avantages</h4>
+                    <ul>
+                        <li>Démarrage automatique au boot</li>
+                        <li>Exécution en arrière-plan</li>
+                        <li>Pas besoin de lancer START.bat</li>
+                        <li>Redémarrage automatique en cas d'erreur</li>
+                    </ul>
+
+                    <h4>Gestion</h4>
+                    <p>Via le Gestionnaire de Services Windows (<code>services.msc</code>) :</p>
+                    <ul>
+                        <li>Démarrer/Arrêter le service</li>
+                        <li>Configurer le type de démarrage</li>
+                        <li>Voir les logs d'événements</li>
+                    </ul>
+
+                    <h4>Désinstallation</h4>
+                    <div class="code-block"><code>node uninstall-services.js</code></div>
+
+                    <h3>Capacités de Performance</h3>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Métrique</th>
+                                <th>Limite/Capacité</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Tâches concurrentes max</td>
+                                <td>1000</td>
+                            </tr>
+                            <tr>
+                                <td>Durée max d'une tâche</td>
+                                <td>24 heures</td>
+                            </tr>
+                            <tr>
+                                <td>Mémoire par processus</td>
+                                <td>4 Go</td>
+                            </tr>
+                            <tr>
+                                <td>Taille chunk upload</td>
+                                <td>1-50 Mo (configurable)</td>
+                            </tr>
+                            <tr>
+                                <td>Reprise après interruption</td>
+                                <td>Supportée</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Interface en Ligne de Commande (CLI)</h3>
+
+                    <p>Pour les utilisateurs avancés, accès via Node.js :</p>
+                    <div class="code-block"><code>node src/index.js [commande] [options]</code></div>
+
+                    <h4>Commandes Disponibles</h4>
+                    <ul>
+                        <li><code>analyze</code> - Analyseur de médias</li>
+                        <li><code>mux-upload</code> - Upload vidéo vers Mux</li>
+                        <li><code>mux-subtitle-upload</code> - Upload sous-titre</li>
+                        <li><code>picture-upload</code> - Upload image vers S3</li>
+                        <li><code>complete-upload</code> - Workflow complet</li>
+                        <li><code>excel-batch-update</code> - Éditeur Excel par lots</li>
+                        <li><code>propagate-season-data</code> - Propagation saison</li>
+                        <li><code>cli-multi-upload</code> - Upload multi-dossiers parallèle</li>
+                        <li><code>gui</code> - Lancer l'interface graphique</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <strong>Astuce :</strong> La CLI est utile pour l'automatisation via scripts batch ou l'intégration dans des pipelines CI/CD.
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Back to Top Button -->
+        <div class="back-to-top" id="backToTop">
+            ↑
+        </div>
+    </div>
+
+    <script>
+        // Toggle sections
+        document.querySelectorAll('.section-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const section = header.parentElement;
+                section.classList.toggle('collapsed');
+            });
+        });
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.dataset.section;
+                const section = document.getElementById(sectionId);
+
+                // Update active state
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                // Scroll to section
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Expand section if collapsed
+                section.classList.remove('collapsed');
+            });
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const sections = document.querySelectorAll('.section');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+
+            sections.forEach(section => {
+                const content = section.textContent.toLowerCase();
+                if (searchTerm === '' || content.includes(searchTerm)) {
+                    section.classList.remove('hidden');
+                    // Expand sections with matching content
+                    if (searchTerm !== '') {
+                        section.classList.remove('collapsed');
+                    }
+                } else {
+                    section.classList.add('hidden');
+                }
+            });
+        });
+
+        // Back to top button
+        const backToTop = document.getElementById('backToTop');
+        const mainContent = document.querySelector('.main-content');
+
+        mainContent.addEventListener('scroll', () => {
+            if (mainContent.scrollTop > 300) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        });
+
+        backToTop.addEventListener('click', () => {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Highlight active section on scroll
+        const observerOptions = {
+            root: mainContent,
+            rootMargin: '-100px 0px -80% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const sectionId = entry.target.id;
+                    document.querySelectorAll('.nav-item').forEach(item => {
+                        if (item.dataset.section === sectionId) {
+                            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                            item.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + F to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

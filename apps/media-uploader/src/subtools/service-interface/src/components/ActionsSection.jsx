@@ -248,6 +248,12 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
                   requiredFields={['configFile', 'mediaDescriptionId', 'folder']}
                   description="Scanne automatiquement le dossier pour trouver les sous-titres, les associe à la vidéo principale et les téléverse vers l'ID de description média"
                 />
+                <ActionButton
+                  taskType="optimize-media-description-pictures"
+                  label="Optimiser Images par ID"
+                  requiredFields={['configFile', 'mediaDescriptionId']}
+                  description="Crée les variantes WebP (large et small) pour toutes les images d'une description média"
+                />
               </div>
             </div>
 

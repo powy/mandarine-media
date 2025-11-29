@@ -178,6 +178,32 @@ export async function uploadPictureAndLinkToMedia(
     await apiService.updateMediaDescription(mediaDescriptionId, updateData);
     log(`Media description updated: ${fieldName} = ${uploadResult.pictureId}`);
 
+    // Step 3: Optimize picture (create WebP variants)
+    // This runs automatically after upload and is non-blocking (errors don't fail the upload)
+    try {
+      log('Optimizing picture (creating WebP variants)...');
+      const { optimizePictureCore, formatToResolution } = await import('../../optimize-picture/optimizeCore.js');
+
+      // Convert format from underscore notation (1920_1080) to colon notation (1920x1080)
+      const resolution = formatToResolution(pictureFormat);
+
+      const optimizeResult = await optimizePictureCore(
+        uploadResult.pictureId,
+        resolution,
+        config,
+        { verbose, logger: log }
+      );
+
+      if (optimizeResult.skipped) {
+        log(`Optimization skipped: ${optimizeResult.reason}`);
+      } else {
+        log(`Optimization successful: large=${optimizeResult.largeUrl}, small=${optimizeResult.smallUrl}`);
+      }
+    } catch (optimizeError) {
+      // Non-blocking: log warning but don't fail the upload
+      log(`⚠️  Warning: Optimization failed but upload succeeded: ${optimizeError.message}`);
+    }
+
     // Return result
     return {
       pictureId: uploadResult.pictureId,

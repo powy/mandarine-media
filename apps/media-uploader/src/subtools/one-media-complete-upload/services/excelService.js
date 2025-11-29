@@ -634,7 +634,7 @@ export class ExcelService {
         this.logger.info(`Performing immediate auto-fill of Files sheet...`);
         
         // Generate file mappings using MediaAnalysisService
-        const fileMappings = mediaAnalysisService.generateFileMappings(fileList);
+        const fileMappings = await mediaAnalysisService.generateFileMappings(fileList);
         
         // Apply mappings to Excel file with preserved formatting
         await this.autoFillFilesSheet(excelPath, fileMappings);

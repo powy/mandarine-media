@@ -179,6 +179,23 @@ async function executeTask() {
         );
       },
 
+      optimizeMediaDescriptionPictures: async () => {
+        // Optimize all pictures of a media description (create WebP large/small variants)
+        const { optimizeMediaDescriptionPicturesWithIni } = await import('../optimize-picture/iniWrapper.js');
+
+        logWriter.info(\);
+
+        return await optimizeMediaDescriptionPicturesWithIni(
+          PARAMS.mediaDescriptionId,  // Media description UUID
+          PARAMS.config,              // INI config file path
+          {
+            verbose: true,
+            dryRun: PARAMS.dryRun || false,
+            logger: logWriter
+          }
+        );
+      },
+
       uploadSubtitleSpecific: async () => {
         // MIGRATED: Now uses unified mux-subtitle-upload system
         const { uploadFromExcelWithIni } = await import('../mux-subtitle-upload/iniWrappers/uploadFromExcelWithIni.js');

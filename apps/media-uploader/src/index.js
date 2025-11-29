@@ -168,6 +168,82 @@ class UploaderToolCLI {
         }
       });
 
+    
+    // Optimize Picture Command
+    this.program
+      .command('optimize-picture')
+      .description('Optimize pictures by creating WebP variants (large and small)')
+      .requiredOption('-c, --config <path>', 'Configuration JSON file path')
+      .option('-p, --picture-id <uuid>', 'Single picture ID to optimize')
+      .option('-r, --resolution <format>', 'Resolution format (e.g., 1920x1080)')
+      .option('-m, --media-description-id <uuid>', 'Media description ID to optimize all pictures')
+      .option('-v, --verbose', 'Verbose output')
+      .option('--dry-run', 'Validate without processing')
+      .action(async (options) => {
+        try {
+          console.log(chalk.blue.bold('🖼️  Picture Optimization'));
+
+          // Auto-detect INI vs JSON config
+          const isIniFile = options.config.toLowerCase().endsWith('.ini');
+          
+          let result;
+          if (isIniFile) {
+            // Use INI wrapper
+            const { optimizeMediaDescriptionPicturesWithIni, optimizePictureWithIni } = 
+              await import('./subtools/optimize-picture/iniWrapper.js');
+            
+            if (options.mediaDescriptionId) {
+              result = await optimizeMediaDescriptionPicturesWithIni(
+                options.mediaDescriptionId,
+                options.config,
+                { verbose: options.verbose, dryRun: options.dryRun }
+              );
+            } else {
+              result = await optimizePictureWithIni(
+                options.pictureId,
+                options.resolution,
+                options.config,
+                { verbose: options.verbose, dryRun: options.dryRun }
+              );
+            }
+          } else {
+            // Use JSON wrapper
+            if (options.mediaDescriptionId) {
+              result = await this.wrappers.optimizeMediaDescriptionPictures({
+                config: options.config,
+                mediaDescriptionId: options.mediaDescriptionId,
+                verbose: options.verbose,
+                dryRun: options.dryRun
+              });
+            } else {
+              result = await this.wrappers.optimizePicture({
+                config: options.config,
+                pictureId: options.pictureId,
+                resolution: options.resolution,
+                verbose: options.verbose,
+                dryRun: options.dryRun
+              });
+            }
+          }
+
+          if (result.dryRun) {
+            console.log(chalk.yellow('✓ Dry run completed successfully'));
+          } else if (result.success) {
+            console.log(chalk.green('✅ Optimization completed successfully'));
+          } else {
+            console.log(chalk.yellow('⚠️  Optimization completed with warnings'));
+          }
+
+          process.exit(result.errors?.length > 0 ? 1 : 0);
+        } catch (error) {
+          console.error(chalk.red(`❌ Optimization failed: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
+      });
+
     // One Media Complete Upload Command
     this.program
       .command('one-media-complete-upload')
@@ -394,6 +470,7 @@ async function main() {
     const { uploadToMux } = await import('./subtools/mux-upload/wrapper.js');
     const { uploadSubtitlesToMux } = await import('./subtools/mux-subtitle-upload/wrapper.js');
     const { uploadPicture } = await import('./subtools/picture-upload/wrapper.js');
+    const { optimizePicture, optimizeMediaDescriptionPictures } = await import('./subtools/optimize-picture/wrapper.js');
     const { oneMediaCompleteUpload } = await import('./subtools/one-media-complete-upload/wrapper.js');
     const { batchUpdateExcel } = await import('./subtools/excel-batch-editor/wrapper.js');
     const { propagateSeasonData } = await import('./subtools/propagate-data/wrapper.js');
@@ -404,6 +481,8 @@ async function main() {
       uploadToMux,
       uploadSubtitlesToMux,
       uploadPicture,
+      optimizePicture,
+      optimizeMediaDescriptionPictures,
       oneMediaCompleteUpload,
       batchUpdateExcel,
       propagateSeasonData,

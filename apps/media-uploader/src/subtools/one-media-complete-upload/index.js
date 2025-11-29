@@ -885,7 +885,7 @@ export class OneMediaCompleteUpload {
       this.log(chalk.gray('Analyzing media files for intelligent mapping...'));
       
       // Generate file mappings using MediaAnalysisService
-      const fileMappings = this.mediaAnalysisService.generateFileMappings(mediaFiles);
+      const fileMappings = await this.mediaAnalysisService.generateFileMappings(mediaFiles);
       
       // Apply mappings to Excel file
       await this.excelService.autoFillFilesSheet(excelPath, fileMappings);

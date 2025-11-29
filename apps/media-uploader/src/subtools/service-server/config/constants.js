@@ -130,6 +130,11 @@ export const CONFIG = {
       description: 'Batch upload all images in folder',
       requiredParams: ['config', 'folderPath', 'mediaDescriptionId']
     },
+    'optimize-media-description-pictures': {
+      function: 'optimizeMediaDescriptionPictures',
+      description: 'Optimize all pictures of a media description (create WebP variants)',
+      requiredParams: ['config', 'mediaDescriptionId']
+    },
     'delete-subtitle-by-media-desc-id': {
       function: 'deleteSubtitleByMediaDescriptionId',
       description: 'Delete subtitle track using media description ID from backend',
