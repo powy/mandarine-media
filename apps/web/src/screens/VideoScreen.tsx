@@ -25,6 +25,10 @@ interface VideoScreenData {
 const VideoScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  // Internal state to track current episode (prevents component remount)
+  const [currentEpisodeId, setCurrentEpisodeId] = useState<string>(id || '');
+
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [playbackToken, setPlaybackToken] = useState<string | null>(null);
   const [drmToken, setDrmToken] = useState<string | null>(null);
@@ -32,20 +36,36 @@ const VideoScreen: React.FC = () => {
 
   const { isAuthenticated } = useAuth();
 
-  // Check region access using video ID
-  const regionAccess = useRegionAccessById(id || '');
+  // Sync internal state with URL parameter (for browser back/forward)
+  useEffect(() => {
+    if (id && id !== currentEpisodeId) {
+      console.log('🔄 URL changed, syncing internal state:', { from: currentEpisodeId, to: id });
+      setCurrentEpisodeId(id);
+    }
+  }, [id]);
+
+  // Reset media state when episode changes to prevent token/playbackId mismatch
+  useEffect(() => {
+    console.log('🧹 Episode changed, clearing media state for:', currentEpisodeId);
+    setPosterUrl(null);
+    setPlaybackToken(null);
+    setDrmToken(null);
+  }, [currentEpisodeId]);
+
+  // Check region access using current episode ID (not URL param)
+  const regionAccess = useRegionAccessById(currentEpisodeId || '');
 
   // Resolve MediaDescription type and redirect if necessary
   useEffect(() => {
     const checkMediaType = async () => {
-      if (!id) {
+      if (!currentEpisodeId) {
         setIsResolvingMediaType(false);
         return;
       }
 
       try {
-        console.log('🔍 VideoScreen: Checking media type for ID:', id);
-        const resolution = await resolveMediaDescriptionId(id);
+        console.log('🔍 VideoScreen: Checking media type for ID:', currentEpisodeId);
+        const resolution = await resolveMediaDescriptionId(currentEpisodeId);
 
         console.log('✅ VideoScreen: Media type resolved:', {
           isMediaDescription: resolution.isMediaDescription,
@@ -72,22 +92,22 @@ const VideoScreen: React.FC = () => {
     };
 
     checkMediaType();
-  }, [id, navigate]);
+  }, [currentEpisodeId, navigate]);
 
   const {
     data: videoData,
     isLoading,
     error,
   } = useQuery<VideoScreenData>({
-    queryKey: ['video-screen', id],
+    queryKey: ['video-screen', currentEpisodeId],
     queryFn: async () => {
-      if (!id) throw new Error('Video ID is required');
+      if (!currentEpisodeId) throw new Error('Video ID is required');
 
-      console.log('🔍 VideoScreen: Starting getVideoScreenData for ID:', id);
+      console.log('🔍 VideoScreen: Starting getVideoScreenData for ID:', currentEpisodeId);
       console.log('🔍 VideoScreen: Authentication state:', { isAuthenticated });
 
       try {
-        const result = await getVideoScreenData(id);
+        const result = await getVideoScreenData(currentEpisodeId);
         console.log('✅ VideoScreen: getVideoScreenData success:', {
           hasMediaDescription: !!result.mediaDescription,
           hasVideoFile: !!result.videoFile,
@@ -106,13 +126,13 @@ const VideoScreen: React.FC = () => {
             message: fetchError.message,
             stack: fetchError.stack
           } : fetchError,
-          videoId: id,
+          videoId: currentEpisodeId,
           isAuthenticated
         });
         throw fetchError;
       }
     },
-    enabled: !!id && !isResolvingMediaType,
+    enabled: !!currentEpisodeId && !isResolvingMediaType,
   });
 
   useEffect(() => {
@@ -121,7 +141,7 @@ const VideoScreen: React.FC = () => {
         error,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         errorType: typeof error,
-        videoId: id,
+        videoId: currentEpisodeId,
         isAuthenticated,
         regionAccess: {
           isLoading: regionAccess.isLoading,
@@ -129,20 +149,20 @@ const VideoScreen: React.FC = () => {
           error: regionAccess.error
         }
       });
-      
+
       // Only redirect to error page after logging - this helps with debugging
       console.log('🔄 VideoScreen: Redirecting to error page due to:', error);
       // Navigate with error state for better debugging
-      navigate('/error', { 
-        replace: true, 
-        state: { 
+      navigate('/error', {
+        replace: true,
+        state: {
           originalError: error instanceof Error ? error.message : String(error),
-          videoId: id,
+          videoId: currentEpisodeId,
           timestamp: new Date().toISOString()
         }
       });
     }
-  }, [error, navigate, id, isAuthenticated, regionAccess]);
+  }, [error, navigate, currentEpisodeId, isAuthenticated, regionAccess]);
 
   // Debug log for Mux metrics activation
   useEffect(() => {
@@ -257,11 +277,40 @@ const VideoScreen: React.FC = () => {
   }, [videoData?.videoFile?.id, videoData?.videoFile?.playback_policy, isAuthenticated, regionAccess.isLoading, regionAccess.isAuthorized]);
 
   const handleEpisodeClick = (episodeId: string) => {
-    navigate(`/video/${episodeId}`);
+    console.log('🎬 Switching episode:', { from: currentEpisodeId, to: episodeId });
+
+    // Update internal state (triggers React Query refetch without remounting)
+    setCurrentEpisodeId(episodeId);
+
+    // Update URL in browser history (for back/forward navigation)
+    window.history.pushState({}, '', `/video/${episodeId}`);
   };
 
   const handleSeasonClick = (seasonId: string) => {
     navigate(`/season/${seasonId}`);
+  };
+
+  // Handle video end for auto-chaining to next episode
+  const handleVideoEnded = () => {
+    console.log('🎬 Video ended, checking for next episode...');
+
+    // Get next episode from current video data
+    if (videoData) {
+      const sortedEpisodes = [...videoData.relatedEpisodes, videoData.mediaDescription]
+        .sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+      const currentIndex = sortedEpisodes.findIndex(ep => ep.id === videoData.mediaDescription.id);
+      const nextEpisode = currentIndex < sortedEpisodes.length - 1 ? sortedEpisodes[currentIndex + 1] : null;
+
+      if (nextEpisode) {
+        console.log('🎬 Auto-playing next episode:', {
+          current: videoData.mediaDescription.episode_title,
+          next: nextEpisode.episode_title
+        });
+        handleEpisodeClick(nextEpisode.id);
+      } else {
+        console.log('🎬 No next episode available');
+      }
+    }
   };
 
   // Extract playback ID from Mux URL (based on alpha app implementation)
@@ -378,12 +427,18 @@ const VideoScreen: React.FC = () => {
   const playbackId = videoFile ? getPlaybackId(videoFile) : null;
   const needsToken = videoFile?.playback_policy === 'signed' || videoFile?.playback_policy === 'drm';
   const needsDrmToken = videoFile?.playback_policy === 'drm';
+
+  // Detect if we're transitioning between episodes (videoData hasn't caught up with currentEpisodeId)
+  const isTransitioning = mediaDescription?.id !== currentEpisodeId;
+
   const isReadyToPlay = playbackId &&
     (!needsToken || playbackToken != null) &&
-    (!needsDrmToken || drmToken != null);
+    (!needsDrmToken || drmToken != null) &&
+    !isTransitioning; // Don't play during episode transition
   
   // Debug logging
   console.log('Video Screen Debug:', {
+    currentEpisodeId,
     videoFile,
     playbackId,
     hasVideoFile: !!videoFile,
@@ -396,6 +451,7 @@ const VideoScreen: React.FC = () => {
     hasDrmToken: !!drmToken,
     playbackTokenValue: playbackToken ? playbackToken.substring(0, 50) + '...' : null,
     drmTokenValue: drmToken ? drmToken.substring(0, 50) + '...' : null,
+    isTransitioning,
     isReadyToPlay,
     mediaDescription: {
       id: mediaDescription?.id,
@@ -486,6 +542,13 @@ const VideoScreen: React.FC = () => {
                 </p>
               </div>
             </div>
+          ) : isTransitioning ? (
+            <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-blue-400 text-xl mb-2">Changement d'épisode...</p>
+                <p className="text-gray-400">Chargement en cours</p>
+              </div>
+            </div>
           ) : videoFile && playbackId && isReadyToPlay ? (
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
               {(() => {
@@ -497,12 +560,19 @@ const VideoScreen: React.FC = () => {
                 if (drmToken) {
                   tokens.drm = drmToken;
                 }
-                
+
                 const muxPlayerProps = {
                   playbackId,
                   streamType: "on-demand",
                   style: { width: '100%', height: '100%' },
                   className: "w-full h-full",
+                  onEnded: handleVideoEnded,
+                  metadata: {
+                    video_id: mediaDescription.id,
+                    video_title: mediaDescription.episode_title,
+                    ...(season && { video_series: season.season_name }),
+                    ...(program && { video_producer: program.program_name }),
+                  },
                   ...(videoFile?.environment_key && {
                     envKey: videoFile.environment_key
                   }),
@@ -512,7 +582,7 @@ const VideoScreen: React.FC = () => {
                   // Pass tokens object if we have any tokens
                   ...(Object.keys(tokens).length > 0 && { tokens })
                 };
-                
+
                 console.log('MuxPlayer props being passed:', {
                   ...muxPlayerProps,
                   tokens: muxPlayerProps.tokens ? {
@@ -520,7 +590,7 @@ const VideoScreen: React.FC = () => {
                     drm: muxPlayerProps.tokens.drm ? muxPlayerProps.tokens.drm.substring(0, 50) + '...' : undefined
                   } : undefined
                 });
-                
+
                 return <MuxPlayer {...muxPlayerProps} />;
               })()}
             </div>
