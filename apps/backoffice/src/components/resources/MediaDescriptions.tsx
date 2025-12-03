@@ -30,6 +30,10 @@ import {
   FunctionField,
   ArrayField,
   ReferenceArrayField,
+  Button,
+  useNotify,
+  useRefresh,
+  useRecordContext,
 } from 'react-admin';
 import { ProgramInput } from '../inputs/ProgramInput';
 import { SeasonInput } from '../inputs/SeasonInput';
@@ -54,6 +58,7 @@ import {
   AdditionalImageInput,
 } from '../inputs/RelationshipInputs';
 import { CopyMediaDescriptionButton } from './CopyMediaDescriptionButton';
+import { useVerifyMediaDescription } from 'share';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -161,6 +166,7 @@ export const MediaDescriptionList = () => (
       <TextField source="media_type" label="Type" />
       <NumberField source="file_number" />
       <TextField source="content_status" label="Status" />
+      <TextField source="diagnostics" label="Diagnostics" />
       <BooleanField source="is_featured" label="Featured" />
       <NumberField source="paid_token_cost" label="Token Cost" />
       <DateField source="creation_date_utc" />
@@ -417,8 +423,8 @@ export const MediaDescriptionEdit = () => (
       
       {/* Production Information */}
       <NumberInput source="production_year" />
-      <SelectInput 
-        source="content_status" 
+      <SelectInput
+        source="content_status"
         choices={[
           { id: 'draft', name: 'Draft' },
           { id: 'published', name: 'Published' },
@@ -427,7 +433,10 @@ export const MediaDescriptionEdit = () => (
         ]}
       />
       <BooleanInput source="is_featured" />
-      
+
+      {/* Diagnostics - read only */}
+      <TextInput source="diagnostics" disabled label="Diagnostics Status" />
+
       {/* People Relationships */}
       <ActorInput />
       <DirectorInput />
@@ -524,9 +533,56 @@ export const MediaDescriptionEdit = () => (
   </Edit>
 );
 
+// Run Diagnosis Button Component
+const MediaRunDiagnosisButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const { state, verify } = useVerifyMediaDescription();
+
+  const handleRunDiagnosis = async () => {
+    if (!record?.id) {
+      notify('No media description selected', { type: 'warning' });
+      return;
+    }
+
+    try {
+      const result = await verify(record.id);
+
+      if (!result) {
+        notify('Verification failed', { type: 'error' });
+        return;
+      }
+
+      if (result.is_ready) {
+        notify(`Media description is ready! Diagnostics: ${result.diagnostics}`, { type: 'success' });
+      } else {
+        notify(`Diagnosis found issues: ${result.errors.join(', ')}`, { type: 'warning' });
+      }
+
+      refresh();
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Unknown error occurred';
+      notify(`Failed to run diagnosis: ${errorMessage}`, { type: 'error' });
+      console.error('Diagnosis error:', error);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRunDiagnosis}
+      disabled={state.isLoading}
+      label={state.isLoading ? "Running diagnosis..." : "Run Diagnosis"}
+      variant="outlined"
+      color="info"
+    />
+  );
+};
+
 const MediaDescriptionShowActions = () => (
   <TopToolbar>
     <EditButton />
+    <MediaRunDiagnosisButton />
     <CopyMediaDescriptionButton />
   </TopToolbar>
 );
@@ -539,14 +595,15 @@ export const MediaDescriptionShow = () => (
       <TextField source="media_type" label="Type" />
       <NumberField source="file_number" />
       <NumberField source="episode_number" />
-      
+
       {/* Main Video File */}
       <TextField source="main_video_file_id" label="Main Video File ID" />
-      
+
       <TextField source="descriptive_summary_text" />
       <TextField source="synopsis_text" />
       <NumberField source="production_year" />
       <TextField source="content_status" label="Status" />
+      <TextField source="diagnostics" label="Diagnostics Status" />
       <BooleanField source="is_featured" label="Featured" />
       
       {/* Show relationship data */}

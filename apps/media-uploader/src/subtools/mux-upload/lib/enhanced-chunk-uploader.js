@@ -1,4 +1,6 @@
 import fs from 'fs/promises';
+import http from 'http';
+import https from 'https';
 import axios from 'axios';
 import { createUpload } from '@mux/upchunk';
 import { handleChunkUploadError, handleResumeStateError, handleUploadMethodError, ErrorCodes } from '../utils/errorHandler.js';
@@ -18,6 +20,28 @@ export class EnhancedChunkUploader {
     this.memoryThreshold = this.getMemoryThreshold();
     this.uploadMethod = this.getUploadMethod();
     this.enableResume = this.config.options?.enable_resume !== false;
+
+    // HTTP connection pooling and keep-alive configuration
+    this.httpAgent = new http.Agent({
+      keepAlive: this.config.options?.enable_keep_alive !== false,
+      keepAliveMsecs: 30000, // Keep connections alive for 30 seconds
+      maxSockets: this.config.options?.connection_pool_size || 5,
+      maxFreeSockets: 2,
+      timeout: 60000 // Socket timeout
+    });
+
+    this.httpsAgent = new https.Agent({
+      keepAlive: this.config.options?.enable_keep_alive !== false,
+      keepAliveMsecs: 30000,
+      maxSockets: this.config.options?.connection_pool_size || 5,
+      maxFreeSockets: 2,
+      timeout: 60000
+    });
+
+    this.logger.info('HTTP connection pooling configured', {
+      keepAlive: this.config.options?.enable_keep_alive !== false,
+      maxSockets: this.config.options?.connection_pool_size || 5
+    });
   }
 
   getChunkSize() {
@@ -245,12 +269,20 @@ export class EnhancedChunkUploader {
           const end = Math.min(start + this.chunkSize - 1, fileSize - 1);
           const length = end - start + 1;
 
-          this.logger.debug('Starting chunk upload', {
-            chunkNumber,
+          const totalChunks = Math.ceil(fileSize / this.chunkSize);
+
+          // Enhanced logging: Starting chunk upload with context
+          this.logger.info(`Starting chunk ${chunkNumber}/${totalChunks} upload`, {
             chunkSize: this.logger.formatBytes(length),
+            range: `bytes ${start}-${end}/${fileSize}`,
+            progress: `${((uploadedBytes)/fileSize*100).toFixed(1)}%`
+          });
+
+          this.logger.debug('Chunk details', {
+            chunkNumber,
             offset: start,
-            totalChunks: Math.ceil(fileSize / this.chunkSize),
-            range: `bytes ${start}-${end}/${fileSize}`
+            totalChunks,
+            chunkSize: this.logger.formatBytes(length)
           });
 
           // Read chunk efficiently
@@ -273,6 +305,7 @@ export class EnhancedChunkUploader {
 
           try {
             // Upload chunk with enhanced retry logic
+            const chunkStartTime = Date.now();
             const response = await this.retryHandler.executeWithRetry(
               () => this.uploadChunk(uploadUrl, buffer, start, end, fileSize),
               {
@@ -281,14 +314,20 @@ export class EnhancedChunkUploader {
                 context: `chunk ${chunkNumber}`
               }
             );
+            const chunkDuration = Date.now() - chunkStartTime;
 
             // Clear timeout after successful upload
             clearTimeout(chunkTimeout);
 
-            this.logger.debug('Chunk uploaded successfully', {
-              chunkNumber,
-              uploadedBytes: uploadedBytes + length,
+            this.logger.info(`✓ Chunk ${chunkNumber}/${totalChunks} uploaded successfully`, {
+              duration: `${(chunkDuration / 1000).toFixed(2)}s`,
+              uploadedBytes: this.logger.formatBytes(uploadedBytes + length),
               progress: `${((uploadedBytes + length)/fileSize*100).toFixed(1)}%`
+            });
+
+            this.logger.debug('Chunk upload complete', {
+              chunkNumber,
+              status: response.status
             });
 
             // Handle response and update progress
@@ -329,6 +368,16 @@ export class EnhancedChunkUploader {
           } catch (chunkError) {
             // Clear timeout on error
             clearTimeout(chunkTimeout);
+
+            // Enhanced error logging with chunk context
+            this.logger.error(`✗ Chunk ${chunkNumber}/${totalChunks} upload failed`, {
+              chunkNumber,
+              error: chunkError.message,
+              errorCode: chunkError.errorCode || chunkError.code,
+              attempts: chunkError.attempts || 'unknown',
+              range: `bytes ${start}-${end}/${fileSize}`
+            });
+
             throw chunkError;
           }
         }
@@ -364,7 +413,7 @@ export class EnhancedChunkUploader {
         'Content-Type': 'application/octet-stream'
       };
 
-      this.logger.info('Uploading chunk', {
+      this.logger.debug('Uploading chunk to Mux...', {
         chunkNumber,
         size: this.logger.formatBytes(chunk.length),
         range: headers['Content-Range']
@@ -375,10 +424,18 @@ export class EnhancedChunkUploader {
         timeout: this.config.options?.chunk_timeout || 120000, // 2 minutes per chunk
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        validateStatus: (status) => status === 200 || status === 201 || status === 308
+        validateStatus: (status) => status === 200 || status === 201 || status === 308,
+        // Use connection pooling and keep-alive
+        httpAgent: this.httpAgent,
+        httpsAgent: this.httpsAgent,
+        // DNS lookup timeout
+        lookup: {
+          family: 4, // IPv4
+          hints: 0
+        }
       });
 
-      this.logger.info('Chunk upload response', {
+      this.logger.debug('Chunk upload response received', {
         chunkNumber,
         status: response.status,
         headers: {
@@ -390,6 +447,13 @@ export class EnhancedChunkUploader {
       return response;
 
     } catch (error) {
+      // Enhanced error logging before throwing
+      this.logger.debug(`Chunk ${chunkNumber} upload error caught`, {
+        error: error.message,
+        code: error.code,
+        errno: error.errno
+      });
+
       // Use enhanced chunk-specific error handling
       handleChunkUploadError(error, chunkInfo, `chunk ${chunkNumber} upload`);
     }

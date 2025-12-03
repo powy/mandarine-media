@@ -289,6 +289,7 @@ export const SeasonCreate = () => (
         source="general_media_description_id"
         label="Media Description (Optional)"
         allowDirectUUID={true}
+        mediaTypeFilter="season"
       />
     </SimpleForm>
   </Create>
@@ -318,6 +319,7 @@ export const SeasonEdit = () => (
         source="general_media_description_id"
         label="Media Description (Optional)"
         allowDirectUUID={true}
+        mediaTypeFilter="season"
       />
     </SimpleForm>
   </Edit>

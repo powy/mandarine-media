@@ -552,6 +552,12 @@ export class OrchestrationService {
         const errorMsg = `Failed to upload video ${entry.fileName}: ${error.message}`;
         errors.push(errorMsg);
 
+        // Extract retry information if available
+        const retryInfo = {
+          attempts: error.attempts || 'unknown',
+          errorCode: error.errorCode || error.code || 'UNKNOWN'
+        };
+
         // Enhanced error logging with detailed context
         const errorContext = {
           fileName: entry.fileName,
@@ -559,7 +565,9 @@ export class OrchestrationService {
           isCritical: isCritical,
           error: error.message,
           code: error.code,
+          errorCode: error.errorCode,
           errno: error.errno,
+          retryAttempts: retryInfo.attempts,
           stack: error.stack
         };
 
@@ -568,8 +576,23 @@ export class OrchestrationService {
           errorContext.details = error.details;
         }
 
-        this.logger.info(chalk.red(`    ❌ ${entry.fileName}: ${error.message}`));
+        // Enhanced error message with retry context
+        let errorDisplayMsg = error.message;
+        if (retryInfo.attempts !== 'unknown') {
+          errorDisplayMsg += ` (${retryInfo.attempts} attempts)`;
+        }
+
+        this.logger.info(chalk.red(`    ❌ ${entry.fileName}: ${errorDisplayMsg}`));
         this.logger.error('Video upload failed with detailed context', errorContext);
+
+        // Add network diagnostic suggestion for network errors
+        const networkErrors = ['ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE'];
+        if (networkErrors.includes(retryInfo.errorCode)) {
+          this.logger.error(`Network error detected: ${retryInfo.errorCode}`, {
+            suggestion: 'Check network connectivity, DNS resolution, and firewall settings',
+            errorType: this.getNetworkErrorDescription(retryInfo.errorCode)
+          });
+        }
 
         // Critical failure handling - stop immediately for main videos
         if (isCritical) {
@@ -577,10 +600,19 @@ export class OrchestrationService {
           this.logger.info(chalk.red(`Main video upload failed: ${entry.fileName}`));
           this.logger.info(chalk.red(`Process terminated to prevent incomplete upload.`));
 
+          if (networkErrors.includes(retryInfo.errorCode)) {
+            this.logger.info(chalk.yellow(`\n💡 Network Issue Detected:`));
+            this.logger.info(chalk.yellow(`   Error Type: ${this.getNetworkErrorDescription(retryInfo.errorCode)}`));
+            this.logger.info(chalk.yellow(`   Retry Attempts: ${retryInfo.attempts}`));
+            this.logger.info(chalk.yellow(`   Suggestion: Check your network connection and try again`));
+          }
+
           this.logger.error('Critical video upload failure - terminating process', {
             fileName: entry.fileName,
             type: entry.type,
-            error: error.message
+            error: error.message,
+            retryAttempts: retryInfo.attempts,
+            errorCode: retryInfo.errorCode
           });
 
           throw new Error(`Critical upload failure: ${errorMsg}`);
@@ -1101,10 +1133,10 @@ export class OrchestrationService {
         const season = await this.getOrCreateSeason(descriptionData.season_name);
         seasonId = season.id;
 
-        // For season type, use temporary episode title (required field) if not provided
+        // For season type, use season name as episode title (required field) if not provided
         if (!descriptionData.episode_title) {
-          descriptionData.episode_title = `${descriptionData.season_name} all episodes`;
-          this.logger.info(chalk.yellow(`🔄 Using temporary episode title for season: ${descriptionData.episode_title}`));
+          descriptionData.episode_title = descriptionData.season_name;
+          this.logger.info(chalk.yellow(`🔄 Using season name as episode title: ${descriptionData.episode_title}`));
         }
 
         // ALWAYS mark season uploads for cleanup (to remove season_id and link to season.general_media_description_id)
@@ -2025,16 +2057,18 @@ export class OrchestrationService {
     try {
       this.logger.info(chalk.cyan(`🧹 Cleaning up season upload for: ${seasonName}`));
 
-      // Step 1: Update media description to remove season_id (keep the episode_title set earlier)
+      // Step 1: Update media description to remove season_id and set proper episode_title
       const mediaDescriptionUpdateUrl = this.forceIPv4Url(
         `${this.config.backend.baseUrl}/api/v1/media-descriptions/${mediaDescriptionId}`
       );
 
       const mediaDescriptionUpdate = {
-        season_id: null      // Remove episode-season relationship
+        season_id: null,          // Remove episode-season relationship
+        episode_title: seasonName // Use actual season name instead of temporary title
       };
 
-      this.logger.info(chalk.gray(`  • Removing episode-season link from media description ${mediaDescriptionId}`));
+      this.logger.info(chalk.gray(`  • Removing episode-season link and updating title for media description ${mediaDescriptionId}`));
+      this.logger.info(chalk.gray(`  • Updating episode_title from temporary value to: "${seasonName}"`));
 
       const mediaDescriptionResponse = await axios.patch(mediaDescriptionUpdateUrl, mediaDescriptionUpdate, {
         headers: {
@@ -2045,7 +2079,7 @@ export class OrchestrationService {
       });
 
       if (mediaDescriptionResponse.status === 200 || mediaDescriptionResponse.status === 204) {
-        this.logger.info(chalk.green(`  ✅ Media description cleaned up successfully`));
+        this.logger.info(chalk.green(`  ✅ Media description cleaned up: episode_title set to "${seasonName}"`));
       } else {
         this.logger.info(chalk.red(`  ❌ Failed to clean up media description (status: ${mediaDescriptionResponse.status})`));
       }
@@ -2366,6 +2400,22 @@ export class OrchestrationService {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Get human-readable description for network error codes
+   */
+  getNetworkErrorDescription(errorCode) {
+    const descriptions = {
+      'ENOTFOUND': 'DNS resolution failed - unable to resolve hostname',
+      'ETIMEDOUT': 'Connection timeout - server did not respond in time',
+      'ECONNRESET': 'Connection reset - connection was closed unexpectedly',
+      'ECONNREFUSED': 'Connection refused - server rejected the connection',
+      'EPIPE': 'Broken pipe - connection was terminated',
+      'ENETUNREACH': 'Network unreachable - cannot reach the destination network',
+      'EHOSTUNREACH': 'Host unreachable - cannot reach the destination host'
+    };
+    return descriptions[errorCode] || 'Unknown network error';
   }
 
   /**

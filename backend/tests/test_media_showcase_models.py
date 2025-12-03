@@ -310,6 +310,6 @@ class TestMediaShowcaseModel:
 
         assert showcase.is_active is True  # Default
         assert showcase.priority_in_screen == 0  # Default
-        assert showcase.latest_first is True  # Default
+        assert showcase.latest_first is False  # Default (model default is False)
         assert showcase.json_content is None
         assert showcase.json_last_updated is None

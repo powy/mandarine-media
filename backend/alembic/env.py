@@ -16,7 +16,7 @@ from app.models import (
     user, media_description, video_file, public_person, subscription_plan,
     audience_category, description_report, video_file_report,
     program, season, language, country, picture, screen_description, media_theme, media_showcase,
-    media_description_person
+    media_description_person, view_session, view_summary
 )
 
 # this is the Alembic Config object, which provides

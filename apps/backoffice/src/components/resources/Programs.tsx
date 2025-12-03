@@ -252,16 +252,17 @@ export const ProgramList = () => (
 export const ProgramCreate = () => (
   <Create redirect="list">
     <SimpleForm toolbar={<ProgramToolbar />}>
-      <TextInput 
-        source="program_name" 
+      <TextInput
+        source="program_name"
         label="Program Name"
-        validate={[required()]} 
-        fullWidth 
+        validate={[required()]}
+        fullWidth
       />
       <MediaDescriptionInput
         source="general_media_description_id"
         label="Media Description (Optional)"
         allowDirectUUID={true}
+        mediaTypeFilter="program"
       />
     </SimpleForm>
   </Create>
@@ -270,16 +271,17 @@ export const ProgramCreate = () => (
 export const ProgramEdit = () => (
   <Edit>
     <SimpleForm toolbar={<ProgramToolbar />}>
-      <TextInput 
-        source="program_name" 
+      <TextInput
+        source="program_name"
         label="Program Name"
-        validate={[required()]} 
-        fullWidth 
+        validate={[required()]}
+        fullWidth
       />
       <MediaDescriptionInput
         source="general_media_description_id"
         label="Media Description (Optional)"
         allowDirectUUID={true}
+        mediaTypeFilter="program"
       />
     </SimpleForm>
   </Edit>

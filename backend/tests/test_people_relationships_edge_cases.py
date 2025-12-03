@@ -17,7 +17,7 @@ def large_cast(db: Session):
     people = []
     for i in range(100):
         person = PublicPerson(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             stage_name_roman=f"Actor {i:03d}"
         )
         db.add(person)
@@ -34,7 +34,7 @@ def large_cast(db: Session):
 def sample_media_description(db: Session):
     """Create a sample media description for testing."""
     media = MediaDescription(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         file_number=77777,
         episode_title="Edge Case Test Movie",
         media_type="video"

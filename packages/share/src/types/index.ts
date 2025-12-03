@@ -122,6 +122,9 @@ export interface MediaDescription {
   // media_categories_id_list removed in v1.12 (replaced by media_categories_list)
   is_premium_content?: boolean;
 
+  // Diagnostics field
+  diagnostics?: string;
+
   // Fields consolidated above - no duplicates needed here
   
   // API 1.13 Relationship arrays (for create/update requests)
@@ -210,6 +213,9 @@ export interface VideoFile {
   resolutions_list?: string[];
   accessibilities_list?: string[];
   audio_languages_id_list?: string[];
+
+  // Diagnostics field
+  diagnostics?: string;
 }
 
 export interface VideoFileSimple {
@@ -1581,3 +1587,14 @@ export interface ProgramScreenData {
     episodeCount: number;
   }>;
 }
+
+// Verify/Diagnosis response types
+export interface VerifyResponse {
+  id: string;
+  diagnostics: string;
+  is_ready: boolean;
+  errors: string[];
+}
+
+export interface VideoFileVerifyResponse extends VerifyResponse {}
+export interface MediaDescriptionVerifyResponse extends VerifyResponse {}

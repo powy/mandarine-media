@@ -244,3 +244,137 @@ class TestImageHelpers:
         url = _get_thumbnail_url(sample_media_description, "1080x1080")
 
         assert url is None
+
+    def test_get_thumbnail_url_cascading_small_priority(self, db: Session, sample_media_description):
+        """Test cascading URL selection with is_large=False (small → large → original)."""
+        # Create picture with all three variants
+        picture = Picture(
+            image_url="https://example.com/original.jpg",
+            large_image_url="https://example.com/large.jpg",
+            small_image_url="https://example.com/small.jpg"
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        sample_media_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_media_description)
+
+        # Should return small version when is_large=False
+        url = _get_thumbnail_url(sample_media_description, "1920x1080", is_large=False)
+        assert url == "https://example.com/small.jpg"
+
+    def test_get_thumbnail_url_cascading_small_fallback_to_large(self, db: Session, sample_media_description):
+        """Test cascading fallback to large when small is not available."""
+        # Create picture with large and original, but no small
+        picture = Picture(
+            image_url="https://example.com/original.jpg",
+            large_image_url="https://example.com/large.jpg",
+            small_image_url=None
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        sample_media_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_media_description)
+
+        # Should return large version when small is not available
+        url = _get_thumbnail_url(sample_media_description, "1920x1080", is_large=False)
+        assert url == "https://example.com/large.jpg"
+
+    def test_get_thumbnail_url_cascading_small_fallback_to_original(self, db: Session, sample_media_description):
+        """Test cascading fallback to original when both small and large are not available."""
+        # Create picture with only original
+        picture = Picture(
+            image_url="https://example.com/original.jpg",
+            large_image_url=None,
+            small_image_url=None
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        sample_media_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_media_description)
+
+        # Should return original version when small and large are not available
+        url = _get_thumbnail_url(sample_media_description, "1920x1080", is_large=False)
+        assert url == "https://example.com/original.jpg"
+
+    def test_get_thumbnail_url_cascading_large_priority(self, db: Session, sample_media_description):
+        """Test cascading URL selection with is_large=True (large → original)."""
+        # Create picture with all three variants
+        picture = Picture(
+            image_url="https://example.com/original.jpg",
+            large_image_url="https://example.com/large.jpg",
+            small_image_url="https://example.com/small.jpg"
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        sample_media_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_media_description)
+
+        # Should return large version when is_large=True (skip small)
+        url = _get_thumbnail_url(sample_media_description, "1920x1080", is_large=True)
+        assert url == "https://example.com/large.jpg"
+
+    def test_get_thumbnail_url_cascading_large_fallback_to_original(self, db: Session, sample_media_description):
+        """Test cascading fallback to original when large is not available (is_large=True)."""
+        # Create picture with small and original, but no large
+        picture = Picture(
+            image_url="https://example.com/original.jpg",
+            large_image_url=None,
+            small_image_url="https://example.com/small.jpg"
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        sample_media_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_media_description)
+
+        # Should return original version when large is not available (skip small)
+        url = _get_thumbnail_url(sample_media_description, "1920x1080", is_large=True)
+        assert url == "https://example.com/original.jpg"
+
+    def test_serialize_with_is_large_parameter(self, db: Session, sample_media_description):
+        """Test serialization respects is_large parameter for thumbnail_url."""
+        # Create picture with all three variants
+        picture = Picture(
+            image_url="https://example.com/original.jpg",
+            large_image_url="https://example.com/large.jpg",
+            small_image_url="https://example.com/small.jpg"
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        sample_media_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_media_description)
+
+        # Test with is_large=False (should select small)
+        result_small = serialize_media_description_to_json(
+            sample_media_description,
+            db,
+            thumbnail_format="1920x1080",
+            is_large=False
+        )
+        assert result_small["thumbnail_url"] == "https://example.com/small.jpg"
+
+        # Test with is_large=True (should select large)
+        result_large = serialize_media_description_to_json(
+            sample_media_description,
+            db,
+            thumbnail_format="1920x1080",
+            is_large=True
+        )
+        assert result_large["thumbnail_url"] == "https://example.com/large.jpg"

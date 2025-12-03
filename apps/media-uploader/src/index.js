@@ -374,6 +374,81 @@ class UploaderToolCLI {
         }
       });
 
+    // Media Diagnostic Command
+    this.program
+      .command('diagnostic <subcommand>')
+      .alias('diagnose')
+      .description('Run diagnostics on MediaDescriptions (subcommands: verify, verify-ini, verify-season, verify-season-ini, verify-batch, verify-batch-ini)')
+      .option('--url <url>', 'Backend base URL')
+      .option('--username <username>', 'Username')
+      .option('--password <password>', 'Password')
+      .option('-c, --config <path>', 'INI config file path')
+      .option('--id <uuid>', 'MediaDescription UUID')
+      .option('--season-id <uuid>', 'Season UUID')
+      .option('--verbose', 'Verbose logging')
+      .option('--no-continue-on-error', 'Stop on first error')
+      .option('--limit <number>', 'Max items to process', parseInt)
+      .option('--timeout <ms>', 'Request timeout in milliseconds', parseInt)
+      .action(async (subcommand, options) => {
+        try {
+          console.log(chalk.blue.bold('🔍 Media Diagnostic\n'));
+          const result = await this.wrappers.runDiagnostic(subcommand, options);
+
+          // Display results based on subcommand
+          if (subcommand === 'verify' || subcommand === 'verify-ini') {
+            console.log('\nResult:');
+            console.log(JSON.stringify(result, null, 2));
+            if (result.is_ready) {
+              console.log(chalk.green('\n✅ MediaDescription is ready'));
+              process.exit(0);
+            } else {
+              console.log(chalk.red('\n❌ MediaDescription has errors:'));
+              result.errors.forEach(err => console.log(`  - ${err}`));
+              process.exit(1);
+            }
+          } else if (subcommand === 'verify-season' || subcommand === 'verify-season-ini') {
+            console.log('\n📊 Summary:');
+            console.log(`  Season ID: ${result.seasonId}`);
+            if (result.generalResult) {
+              console.log(`  General MediaDescription: ${result.generalResult.is_ready ? chalk.green('✅ Ready') : chalk.red('❌ Errors')}`);
+            }
+            console.log(`  Total Episodes: ${result.summary.totalEpisodes}`);
+            console.log(`  Ready Episodes: ${chalk.green(result.summary.readyEpisodes)}`);
+            console.log(`  Episodes with Errors: ${chalk.red(result.summary.errorEpisodes)}`);
+
+            if (result.summary.errorEpisodes === 0 && (result.generalResult?.is_ready !== false)) {
+              console.log(chalk.green('\n✅ Season is fully ready'));
+              process.exit(0);
+            } else {
+              console.log(chalk.yellow('\n⚠️  Season has errors'));
+              process.exit(1);
+            }
+          } else if (subcommand === 'verify-batch' || subcommand === 'verify-batch-ini') {
+            console.log('\n📊 Summary:');
+            console.log(`  Total Non-Ready: ${result.summary.totalNonReady}`);
+            console.log(`  Total Non-Ready-Pending: ${result.summary.totalNonReadyPending}`);
+            console.log(`  Now Ready: ${chalk.green(result.summary.nowReady)}`);
+            console.log(`  Still Errors: ${chalk.red(result.summary.stillErrors)}`);
+
+            if (result.summary.stillErrors === 0) {
+              console.log(chalk.green('\n✅ All MediaDescriptions are now ready'));
+              process.exit(0);
+            } else {
+              console.log(chalk.yellow('\n⚠️  Some MediaDescriptions still have errors'));
+              process.exit(1);
+            }
+          }
+
+          process.exit(0);
+        } catch (error) {
+          console.error(chalk.red(`❌ Diagnostic failed: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
+      });
+
     // CLI Multi-Upload Command
     this.program
       .command('cli-multi-upload')
@@ -427,6 +502,8 @@ class UploaderToolCLI {
       console.log('  $ media-uploader complete-upload --config config.json --folder /path/to/media');
       console.log('  $ media-uploader excel-batch-update --folder /path/to/main --field policy --value "public"');
       console.log('  $ media-uploader propagate-season-data --season-id abc123 --config config.json');
+      console.log('  $ media-uploader diagnostic verify --url https://api.example.com --username admin --password secret --id uuid');
+      console.log('  $ media-uploader diagnostic verify-season-ini --config config.ini --season-id uuid');
       console.log('  $ media-uploader cli-multi-upload --config config.ini --parent-folder /path/to/season');
       console.log('  $ media-uploader gui --config config.ini');
       console.log('  $ media-uploader gui --create-config');
@@ -439,6 +516,7 @@ class UploaderToolCLI {
       console.log('  $ media-uploader complete-upload --help');
       console.log('  $ media-uploader excel-batch-update --help');
       console.log('  $ media-uploader propagate-season-data --help');
+      console.log('  $ media-uploader diagnostic --help');
       console.log('  $ media-uploader cli-multi-upload --help');
       console.log('  $ media-uploader gui --help');
       console.log('');
@@ -475,6 +553,7 @@ async function main() {
     const { batchUpdateExcel } = await import('./subtools/excel-batch-editor/wrapper.js');
     const { propagateSeasonData } = await import('./subtools/propagate-data/wrapper.js');
     const cliMultiUploadPkg = await import('./subtools/cli-multi-upload/wrapper.js');
+    const { runDiagnostic } = await import('./subtools/media-diagnostic/wrapper.js');
 
     const wrappers = {
       analyzeMedia: mediaAnalyzerPkg.default.analyzeMedia,
@@ -486,6 +565,7 @@ async function main() {
       oneMediaCompleteUpload,
       batchUpdateExcel,
       propagateSeasonData,
+      runDiagnostic,
       cliMultiUpload: async (options) => {
         // Handle different input methods
         if (options.parentFolder) {

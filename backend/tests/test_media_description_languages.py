@@ -24,7 +24,7 @@ def sample_languages(db: Session):
 
     languages = []
     for lang_data in languages_data:
-        language = Language(id=str(uuid.uuid4()), **lang_data)
+        language = Language(id=uuid.uuid4(), **lang_data)
         db.add(language)
         languages.append(language)
 

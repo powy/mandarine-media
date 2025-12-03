@@ -486,3 +486,59 @@ def create_media_description_from_text(
     # Create the media description using existing logic
     media_description = crud.media_description.create(db=db, obj_in=media_description_data)
     return media_description
+
+
+@router.post("/{id}/verify", response_model=schemas.media_description.MediaDescriptionVerifyResponse)
+async def verify_media_description(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Verify media description data integrity and check validation rules. Admin only.
+
+    Performs comprehensive validation:
+    - All linked VideoFile diagnostics are ready
+    - Essential fields are populated (title, synopsis, summary, broadcast date)
+    - Type-specific validations (season, program, video)
+    - Required image formats are present
+
+    Returns diagnostics field set to "ready" or comma-separated errors.
+    Note: Does NOT automatically fix any issues found.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Get media description
+    media_description = crud.media_description.get(db=db, id=id)
+    if not media_description:
+        raise HTTPException(status_code=404, detail="Media description not found")
+
+    logger.info(f"Starting verification for media description {id}")
+
+    try:
+        # Call diagnostic method
+        diagnostics = await media_description.diagnostic(db=db)
+
+        logger.info(f"Verification complete for media description {id}: {diagnostics}")
+
+        # Parse response
+        is_ready = diagnostics == "ready"
+        errors = [] if is_ready else [e.strip() for e in diagnostics.split(",")]
+
+        return schemas.media_description.MediaDescriptionVerifyResponse(
+            id=media_description.id,
+            diagnostics=diagnostics,
+            is_ready=is_ready,
+            errors=errors
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying media description {id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to verify media description: {str(e)}"
+        )

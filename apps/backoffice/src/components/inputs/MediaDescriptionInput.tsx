@@ -26,6 +26,7 @@ interface MediaDescriptionInputProps {
   validate?: any[];
   fullWidth?: boolean;
   allowDirectUUID?: boolean;
+  mediaTypeFilter?: string;
 }
 
 export const MediaDescriptionInput = ({
@@ -34,6 +35,7 @@ export const MediaDescriptionInput = ({
   validate = [],
   fullWidth = true,
   allowDirectUUID = true,
+  mediaTypeFilter,
 }: MediaDescriptionInputProps) => {
   const [inputMode, setInputMode] = useState<'reference' | 'direct'>('reference');
   console.log('🚀 MediaDescriptionInput is rendering!', { source, inputMode });
@@ -75,7 +77,10 @@ export const MediaDescriptionInput = ({
         label={label}
         sort={{ field: 'episode_title', order: 'ASC' }}
         perPage={100} // Increase from default 25 for better UX
-        filterToQuery={(searchText) => ({ q: searchText })}
+        filterToQuery={(searchText) => ({
+          q: searchText,
+          ...(mediaTypeFilter && { media_type: mediaTypeFilter })
+        })}
       >
         <AutocompleteInput
           optionText="episode_title"

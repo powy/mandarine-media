@@ -226,3 +226,35 @@ class TestProgramUpdateJson:
             assert "episode_count" in season_json
             assert "episodes" in season_json
             assert season_json["program_id"] == str(sample_program.id)
+
+    def test_general_description_uses_large_images(self, db: Session, sample_program, sample_general_description):
+        """Test that program banners (general_description) prioritize large images."""
+        # Create picture with all three variants
+        picture = Picture(
+            image_url="https://example.com/program-banner-original.jpg",
+            large_image_url="https://example.com/program-banner-large.jpg",
+            small_image_url="https://example.com/program-banner-small.jpg",
+            file_name="program-banner.jpg",
+            width=1920,
+            height=1080
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        # Link picture to general description
+        sample_general_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_general_description)
+
+        # Link general description to program
+        sample_program.general_media_description_id = sample_general_description.id
+        db.commit()
+        db.refresh(sample_program)
+
+        # Generate JSON
+        result = sample_program.update_json(db)
+
+        # Verify the banner uses large image (not small)
+        assert result["general_description"] is not None
+        assert result["general_description"]["thumbnail_url"] == "https://example.com/program-banner-large.jpg"

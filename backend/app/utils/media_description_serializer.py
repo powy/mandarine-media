@@ -15,7 +15,8 @@ def serialize_media_description_to_json(
     db_session: Session,
     thumbnail_format: Optional[str] = None,
     include_display_order: bool = False,
-    association_id: Optional[UUID] = None
+    association_id: Optional[UUID] = None,
+    is_large: bool = False
 ) -> Dict[str, Any]:
     """
     Serialize a MediaDescription to JSON with resolved image URLs and relationships.
@@ -24,7 +25,7 @@ def serialize_media_description_to_json(
     - Core fields (title, media_type, slug, etc.)
     - Resolved program_id and season_id based on media_type
     - All 5 image format URLs with 3 variants each (standard, large, small) - 15 URL fields total
-    - Optional thumbnail_url for a specific format
+    - Optional thumbnail_url for a specific format with cascading size selection
     - Optional display_order from association table
 
     Args:
@@ -33,6 +34,8 @@ def serialize_media_description_to_json(
         thumbnail_format: If provided, includes 'thumbnail_url' field (e.g., "1920x1080")
         include_display_order: Whether to include display_order field
         association_id: ID of parent (showcase/season) for display_order lookup
+        is_large: If True, prioritize large images for thumbnail_url (large → original).
+                  If False, prioritize small images (small → large → original).
 
     Returns:
         Dictionary with serialized data ready for JSON encoding
@@ -79,9 +82,9 @@ def serialize_media_description_to_json(
         "image_1080_1920_small_url": format_urls["image_1080_1920_small_url"]
     }
 
-    # Step 4: Add optional thumbnail_url
+    # Step 4: Add optional thumbnail_url with cascading size selection
     if thumbnail_format:
-        item_data["thumbnail_url"] = _get_thumbnail_url(media_desc, thumbnail_format)
+        item_data["thumbnail_url"] = _get_thumbnail_url(media_desc, thumbnail_format, is_large)
 
     # Note: display_order is not added here because it's context-specific
     # (different for showcase vs season). The caller should add it if needed.
@@ -174,13 +177,15 @@ def _get_all_image_format_urls(media_desc) -> Dict[str, Optional[str]]:
     return result
 
 
-def _get_thumbnail_url(media_desc, format_type: str) -> Optional[str]:
+def _get_thumbnail_url(media_desc, format_type: str, is_large: bool = False) -> Optional[str]:
     """
-    Get the appropriate thumbnail URL for a specific format.
+    Get the appropriate thumbnail URL for a specific format with cascading fallback.
 
     Args:
         media_desc: MediaDescription instance
         format_type: Format string (e.g., "1920x1080", "1920x720", etc.)
+        is_large: If True, prioritize large images (large → original).
+                  If False, prioritize small images (small → large → original).
 
     Returns:
         Image URL string or None if not available
@@ -194,6 +199,23 @@ def _get_thumbnail_url(media_desc, format_type: str) -> Optional[str]:
     }
 
     picture = format_to_picture.get(format_type)
-    if picture and hasattr(picture, 'image_url') and picture.image_url:
-        return picture.image_url
+    if not picture:
+        return None
+
+    # Cascading URL selection based on is_large parameter
+    if is_large:
+        # For large prioritization: Try large → original
+        if hasattr(picture, 'large_image_url') and picture.large_image_url:
+            return picture.large_image_url
+        if hasattr(picture, 'image_url') and picture.image_url:
+            return picture.image_url
+    else:
+        # For small prioritization: Try small → large → original
+        if hasattr(picture, 'small_image_url') and picture.small_image_url:
+            return picture.small_image_url
+        if hasattr(picture, 'large_image_url') and picture.large_image_url:
+            return picture.large_image_url
+        if hasattr(picture, 'image_url') and picture.image_url:
+            return picture.image_url
+
     return None

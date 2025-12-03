@@ -16,7 +16,8 @@ export class EnhancedRetryHandler {
       maxDelayMs = 30000,
       backoffMultiplier = 2,
       context = 'operation',
-      jitter = true
+      jitter = true,
+      errorCode = null // Allow passing error code for specific handling
     } = options;
 
     let lastError;
@@ -53,9 +54,25 @@ export class EnhancedRetryHandler {
           throw error;
         }
 
+        // DNS-specific retry configuration (faster initial retries, more attempts)
+        const isDnsError = error.code === 'ENOTFOUND' || errorCode === 'ENOTFOUND';
+        const effectiveMaxAttempts = isDnsError ? Math.max(maxAttempts, 8) : maxAttempts;
+        const effectiveBaseDelay = isDnsError ? 500 : baseDelayMs;
+
+        // If DNS error and we haven't reached DNS retry limit, continue
+        if (isDnsError && attempt < effectiveMaxAttempts) {
+          // Continue with DNS retry logic
+        } else if (!isDnsError && attempt >= maxAttempts) {
+          // Non-DNS error reached max attempts
+          break;
+        } else if (isDnsError && attempt >= effectiveMaxAttempts) {
+          // DNS error reached extended max attempts
+          break;
+        }
+
         // Calculate delay with exponential backoff and jitter
         let delay = Math.min(
-          baseDelayMs * Math.pow(backoffMultiplier, attempt - 1),
+          effectiveBaseDelay * Math.pow(backoffMultiplier, attempt - 1),
           maxDelayMs
         );
 
@@ -64,11 +81,23 @@ export class EnhancedRetryHandler {
           delay = delay * (0.5 + Math.random() * 0.5);
         }
 
-        this.logger.warn(`${context} failed, retrying`, {
-          attempt: `${attempt}/${maxAttempts}`,
+        // Log DNS-specific retry information
+        if (isDnsError && attempt === 1) {
+          this.logger.info(`DNS error detected - using extended retry strategy`, {
+            maxAttempts: effectiveMaxAttempts,
+            baseDelay: `${effectiveBaseDelay}ms`
+          });
+        }
+
+        // Enhanced retry logging with clear visibility
+        const remainingAttempts = effectiveMaxAttempts - attempt;
+        const currentErrorCode = error.code || error.response?.status || 'UNKNOWN';
+
+        this.logger.warn(`${context} failed - Attempt ${attempt}/${effectiveMaxAttempts}`, {
           error: error.message,
-          code: error.code,
+          errorCode: currentErrorCode,
           status: error.response?.status,
+          remainingAttempts,
           retryAfter: `${Math.round(delay)}ms`,
           consecutiveFailures
         });
@@ -76,29 +105,44 @@ export class EnhancedRetryHandler {
         // Circuit breaker: if too many consecutive failures, increase delay
         if (consecutiveFailures >= 3) {
           delay *= 2;
-          this.logger.warn(`Circuit breaker activated, increased delay`, {
+          this.logger.warn(`Circuit breaker activated - doubling backoff delay`, {
             consecutiveFailures,
+            originalDelay: `${Math.round(delay / 2)}ms`,
             newDelay: `${Math.round(delay)}ms`
           });
         }
 
+        this.logger.info(`Retrying ${context} after ${Math.round(delay)}ms backoff...`);
         await this.sleep(delay);
       }
     }
 
-    // All attempts failed
-    this.logger.error(`${context} failed after ${maxAttempts} attempts`, {
+    // All attempts failed - Enhanced error logging
+    const isDnsError = lastError.code === 'ENOTFOUND' || errorCode === 'ENOTFOUND';
+    const effectiveMaxAttempts = isDnsError ? Math.max(maxAttempts, 8) : maxAttempts;
+    const finalErrorCode = lastError.code || lastError.response?.status || 'UNKNOWN';
+
+    this.logger.error(`${context} failed after ${effectiveMaxAttempts} attempts - giving up`, {
+      totalAttempts: effectiveMaxAttempts,
       totalFailures: consecutiveFailures,
       finalError: lastError.message,
-      errorCode: lastError.code,
+      errorCode: finalErrorCode,
       httpStatus: lastError.response?.status
     });
 
+    // Log suggestion for network-related errors
+    if (this.networkErrorCodes.includes(lastError.code)) {
+      this.logger.error(`Network error detected: ${lastError.code}`, {
+        suggestion: 'Check network connectivity, DNS resolution, and firewall settings'
+      });
+    }
+
     // Enhance error with retry context
-    const enhancedError = new Error(`${context} failed after ${maxAttempts} attempts: ${lastError.message}`);
+    const enhancedError = new Error(`${context} failed after ${effectiveMaxAttempts} attempts: ${lastError.message}`);
     enhancedError.originalError = lastError;
-    enhancedError.attempts = maxAttempts;
+    enhancedError.attempts = effectiveMaxAttempts;
     enhancedError.consecutiveFailures = consecutiveFailures;
+    enhancedError.errorCode = finalErrorCode;
 
     throw enhancedError;
   }

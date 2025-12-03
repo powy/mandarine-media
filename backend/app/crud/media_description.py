@@ -49,7 +49,7 @@ class CRUDMediaDescription(
         return (
             db.query(MediaDescription)
             .options(
-                joinedload(MediaDescription.people_roles),
+                joinedload(MediaDescription.people_roles).joinedload(MediaDescriptionPerson.public_person),
                 joinedload(MediaDescription.origin_countries),
                 joinedload(MediaDescription.available_countries),
                 joinedload(MediaDescription.original_languages),

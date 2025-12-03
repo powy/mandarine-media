@@ -922,6 +922,74 @@ async def complete_video_file_from_mux(
         )
 
 
+@router.post("/{id}/verify", response_model=schemas.video_file.VideoFileVerifyResponse)
+async def verify_video_file(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: UUID,
+    current_user: schemas.User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Verify video file against Mux API and check data consistency. Admin only.
+
+    Performs comprehensive validation:
+    - Mux asset exists and is ready
+    - Subtitle validation (broken, missing FR, duplicates)
+    - Media description linkage
+    - Data consistency checks
+
+    Returns diagnostics field set to "ready" or comma-separated errors.
+    Note: Does NOT automatically fix mismatches.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Get video file
+    video_file = crud.video_file.get(db=db, id=id)
+    if not video_file:
+        raise HTTPException(status_code=404, detail="Video file not found")
+
+    logger.info(f"Starting verification for video file {id}")
+
+    try:
+        # Get Mux configuration
+        upload_config = settings.get_upload_config()
+
+        if 'mux' not in upload_config.get('backends', {}):
+            raise HTTPException(
+                status_code=500,
+                detail="Mux backend not configured"
+            )
+
+        from app.services.storage.mux import MuxStorageBackend
+        mux_service = MuxStorageBackend(upload_config['backends']['mux'])
+
+        # Call diagnostic method
+        diagnostics = await video_file.diagnostic(db=db, mux_service=mux_service)
+
+        logger.info(f"Verification complete for video file {id}: {diagnostics}")
+
+        # Parse response
+        is_ready = diagnostics == "ready"
+        errors = [] if is_ready else [e.strip() for e in diagnostics.split(",")]
+
+        return schemas.video_file.VideoFileVerifyResponse(
+            id=video_file.id,
+            diagnostics=diagnostics,
+            is_ready=is_ready,
+            errors=errors
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying video file {id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to verify video file: {str(e)}"
+        )
+
+
 # Audio Language Relationship Endpoints
 
 @router.post("/{id}/audio_languages/{language_id}", response_model=schemas.video_file.VideoFile)

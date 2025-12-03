@@ -9,6 +9,7 @@ import MuxService from './muxService.js';
 import BackendService from './backendService.js';
 import { EnhancedChunkUploader } from '../lib/enhanced-chunk-uploader.js';
 import { EnhancedRetryHandler } from '../utils/enhanced-retry.js';
+import { NetworkHealthChecker } from '../utils/network-health-checker.js';
 
 const { Client: PostgresClient } = pg;
 
@@ -24,6 +25,7 @@ export class UploadService {
     // Initialize enhanced upload components
     this.retryHandler = new EnhancedRetryHandler(logger);
     this.chunkUploader = new EnhancedChunkUploader(config, logger, this.retryHandler);
+    this.healthChecker = new NetworkHealthChecker(logger);
 
     if (config.database) {
       this.initializeDatabase();
@@ -67,7 +69,43 @@ export class UploadService {
 
     try {
       this.logger.info('Starting enhanced video upload process with backend integration');
-      
+
+      // Step 0: Optional pre-upload network health check
+      if (this.config.options?.enable_health_check !== false) {
+        this.logger.info('Step 0: Performing pre-upload network health check');
+
+        // Extract backend hostname for health check
+        const backendHostname = this.config.backend.server_address.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
+        const healthResult = await this.healthChecker.checkHealth({
+          timeout: this.config.options?.health_check_timeout || 10000,
+          endpoints: ['api.mux.com', backendHostname]
+        });
+
+        if (!healthResult.healthy) {
+          this.logger.warn('⚠️  Network health check detected issues', {
+            issues: healthResult.issues.map(i => i.type)
+          });
+
+          // Get recommendations
+          const recommendations = this.healthChecker.getRecommendations(healthResult);
+          if (recommendations.length > 0) {
+            this.logger.warn('💡 Recommendations:');
+            recommendations.forEach(rec => {
+              this.logger.warn(`   ${rec.issue}:`);
+              rec.actions.forEach(action => {
+                this.logger.warn(`      - ${action}`);
+              });
+            });
+          }
+
+          // Continue with upload but warn user
+          this.logger.warn('⚠️  Continuing with upload despite network issues...');
+        } else {
+          this.logger.info('✅ Network health check passed');
+        }
+      }
+
       // Step 1: Check if video file exists
       this.logger.info('Step 1: Checking video file existence');
       await checkVideoFileExists(this.config.video.filepath, this.logger);
@@ -181,11 +219,51 @@ export class UploadService {
         });
       }
 
+      // Step 8c: Post-upload backend connectivity check (for long uploads)
+      if (uploadDuration > 5 * 60 * 1000) { // Only for uploads > 5 minutes
+        this.logger.info('Step 8c: Verifying backend connectivity after long upload');
+
+        const backendHostname = this.config.backend.server_address.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
+        const postUploadHealth = await this.healthChecker.checkHealth({
+          timeout: 10000,
+          endpoints: [backendHostname]
+        });
+
+        if (!postUploadHealth.healthy) {
+          this.logger.warn('⚠️  Backend connectivity issues detected after upload', {
+            issues: postUploadHealth.issues.map(i => i.type)
+          });
+
+          // Wait and retry health check
+          this.logger.info('Retrying backend health check after 5s...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
+
+          const retryHealth = await this.healthChecker.checkHealth({
+            timeout: 10000,
+            endpoints: [backendHostname]
+          });
+
+          if (!retryHealth.healthy) {
+            this.logger.warn('⚠️  Backend still unreachable after retry - continuing anyway (enhanced retry will handle it)', {
+              issues: retryHealth.issues.map(i => i.type)
+            });
+          } else {
+            this.logger.info('✅ Backend health check passed on retry');
+          }
+        } else {
+          this.logger.info('✅ Backend connectivity verified after long upload');
+        }
+      }
+
       // Update status to upload completed
+      const isPostUpload = uploadDuration > 5 * 60 * 1000; // Flag for post-upload retry logic
       await this.backendService.updateUploadStatus(
-        this.videoRecord.id, 
+        this.videoRecord.id,
         'upload_completed',
-        assetId
+        assetId,
+        null, // muxPlaybackId
+        isPostUpload
       );
       
       // Step 9: Wait for asset to be ready

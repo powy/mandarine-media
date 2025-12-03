@@ -417,14 +417,20 @@ export function handleChunkUploadError(error, chunkInfo = {}, operation = 'Chunk
     );
   }
 
-  // Generic chunk upload error
+  // Generic chunk upload error with enhanced context
+  const errorCode = error.code || error.errno || 'UNKNOWN';
   throw new MuxUploadError(
     `Chunk ${chunkNumber || 'unknown'} upload failed: ${error.message}`,
     ErrorCodes.CHUNK_UPLOAD_FAILED,
     {
       chunkNumber,
+      chunkSize: size,
+      chunkStart: start,
+      chunkEnd: end,
       originalError: error.message,
-      operation
+      errorCode: errorCode,
+      operation,
+      retryable: true
     }
   );
 }

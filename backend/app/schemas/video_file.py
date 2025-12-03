@@ -58,13 +58,14 @@ class VideoFileBase(BaseModel):
     # v1.9 fields - New environment and protection fields
     environment_key: Optional[str] = Field(None, description="Environment identifier key")
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
-    
+
     # NEW v1.10-C fields
     playback_policy: Optional[str] = None
     subtitle_tracks_text_list: Optional[List[str]] = None
     resolutions_list: Optional[List[ResolutionEnum]] = None
     accessibilities_list: Optional[List[str]] = None
-    
+    diagnostics: str = Field(default="pending", description="Diagnostic verification status")
+
     # NEW v1.4 fields - Language fields
     audio_languages: Optional[List[Language]] = Field(default_factory=list, description="Audio languages for this video file")
 
@@ -98,13 +99,14 @@ class VideoFileUpdate(BaseModel):
     # v1.9 fields - New environment and protection fields
     environment_key: Optional[str] = Field(None, description="Environment identifier key")
     slug: Optional[str] = Field(None, description="SEO-friendly URL slug (auto-generated from file_name if empty)")
-    
+
     # NEW v1.10-C fields
     playback_policy: Optional[str] = None
     subtitle_tracks_text_list: Optional[List[str]] = None
     resolutions_list: Optional[List[ResolutionEnum]] = None
     accessibilities_list: Optional[List[str]] = None
-    
+    diagnostics: Optional[str] = None
+
     # NEW v1.4 fields - Language fields
     audio_languages: Optional[List[Language]] = Field(default_factory=list, description="Audio languages for this video file")
 
@@ -156,3 +158,13 @@ class VideoFileTestResponse(BaseModel):
     playback_url: Optional[str] = None
     error_message: Optional[str] = None
     mux_playback_id: Optional[str] = None
+
+
+class VideoFileVerifyResponse(BaseModel):
+    """Response for video file verification endpoint"""
+    id: UUID
+    diagnostics: str
+    is_ready: bool = Field(description="True if diagnostics is 'ready'")
+    errors: List[str] = Field(description="Parsed error messages")
+
+    model_config = ConfigDict(from_attributes=True)

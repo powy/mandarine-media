@@ -88,11 +88,15 @@ class MediaShowcase(Base):
 
         # Iterate through sorted items
         for media_desc, priority in published_items:
+            # Determine if we should prioritize large images (for hero showcases)
+            is_large = self.list_type == "hero"
+
             # Use common serialization function
             item_data = serialize_media_description_to_json(
                 media_desc,
                 db_session=db_session,
-                thumbnail_format=self.thumbnail_format
+                thumbnail_format=self.thumbnail_format,
+                is_large=is_large
             )
 
             # Add showcase-specific display_order (use already-fetched priority)

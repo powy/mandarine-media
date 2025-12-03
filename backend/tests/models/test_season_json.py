@@ -260,3 +260,78 @@ class TestSeasonUpdateJson:
             assert "episode_order" in episode
             # Default order is 0 if not set in season_episodes table
             assert isinstance(episode["episode_order"], int)
+
+    def test_general_description_uses_large_images(self, db: Session, sample_season, sample_general_description):
+        """Test that season banners (general_description) prioritize large images."""
+        # Create picture with all three variants
+        picture = Picture(
+            image_url="https://example.com/season-banner-original.jpg",
+            large_image_url="https://example.com/season-banner-large.jpg",
+            small_image_url="https://example.com/season-banner-small.jpg",
+            file_name="season-banner.jpg",
+            width=1920,
+            height=1080
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        # Link picture to general description
+        sample_general_description.image_1920_1080_id = picture.id
+        db.commit()
+        db.refresh(sample_general_description)
+
+        # Link general description to season
+        sample_season.general_media_description_id = sample_general_description.id
+        db.commit()
+        db.refresh(sample_season)
+
+        # Generate JSON
+        result = sample_season.update_json(db)
+
+        # Verify the banner uses large image (not small)
+        assert result["general_description"] is not None
+        assert result["general_description"]["thumbnail_url"] == "https://example.com/season-banner-large.jpg"
+
+    def test_episodes_use_small_images(self, db: Session, sample_season, sample_program):
+        """Test that episodes prioritize small images while banner uses large."""
+        # Create picture with all three variants
+        picture = Picture(
+            image_url="https://example.com/episode-original.jpg",
+            large_image_url="https://example.com/episode-large.jpg",
+            small_image_url="https://example.com/episode-small.jpg",
+            file_name="episode.jpg",
+            width=1920,
+            height=1080
+        )
+        db.add(picture)
+        db.commit()
+        db.refresh(picture)
+
+        # Create episode with the picture
+        episode = MediaDescription(
+            file_number=4001,
+            episode_title="Episode with Images",
+            media_type="video",
+            friendly_url="/watch/ep-images",
+            slug="ep-images",
+            media_categories_list=["drama"],
+            descriptive_summary_text="Episode with all image variants",
+            is_featured=False,
+            production_year=2024,
+            content_status="published",
+            program_id=sample_program.id,
+            season_id=sample_season.id,
+            episode_number=1,
+            image_1920_1080_id=picture.id
+        )
+        db.add(episode)
+        db.commit()
+        db.refresh(episode)
+
+        # Generate JSON
+        result = sample_season.update_json(db)
+
+        # Verify the episode uses small image (not large)
+        assert len(result["episodes"]) == 1
+        assert result["episodes"][0]["thumbnail_url"] == "https://example.com/episode-small.jpg"

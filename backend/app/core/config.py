@@ -130,7 +130,8 @@ class Settings(BaseSettings):
     model_config = {
         # Load production config when building Lambda containers
         "env_file": [".env.test", ".env.local", ".env.production", ".env"],
-        "case_sensitive": True
+        "case_sensitive": True,
+        "extra": "ignore"  # Allow extra env vars without validation errors
     }
 
 

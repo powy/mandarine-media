@@ -81,12 +81,13 @@ class Season(Base):
             "episodes": []
         }
 
-        # Add general description if exists
+        # Add general description if exists (used as banner - prioritize large images)
         if self.general_media_description:
             json_data["general_description"] = serialize_media_description_to_json(
                 self.general_media_description,
                 db_session=db_session,
-                thumbnail_format="1920x1080"  # Default format for seasons
+                thumbnail_format="1920x1080",  # Default format for seasons
+                is_large=True  # Banner should use large images
             )
 
         # Get episodes using FK relationship (season_id)

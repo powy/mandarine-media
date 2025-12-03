@@ -37,7 +37,7 @@ def created_people(db):
 
     for name, role in names_and_roles:
         person = PublicPerson(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             stage_name_roman=name
         )
         db.add(person)

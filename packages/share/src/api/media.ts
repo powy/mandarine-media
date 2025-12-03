@@ -5,10 +5,10 @@ import { personsApi } from './persons';
 import { languagesApi } from './languages';
 import { countriesApi } from './countries';
 import { picturesApi } from './pictures';
-import { 
-  MediaDescription, 
-  VideoFile, 
-  MediaDescriptionListResponse, 
+import {
+  MediaDescription,
+  VideoFile,
+  MediaDescriptionListResponse,
   VideoFileListResponse,
   MediaFilters,
   VideoFileFilters,
@@ -16,7 +16,9 @@ import {
   BulkMediaDescriptionResponse,
   DescriptionReport,
   DescriptionReportListResponse,
-  Season
+  Season,
+  VideoFileVerifyResponse,
+  MediaDescriptionVerifyResponse
 } from '../types';
 
 export const mediaApi = {
@@ -261,6 +263,16 @@ export const mediaApi = {
 
   async completeFromMux(id: string): Promise<VideoFile> {
     const response = await apiClient.post<VideoFile>(`/video-files/${id}/complete-from-mux`);
+    return response.data;
+  },
+
+  async verifyVideoFile(id: string): Promise<VideoFileVerifyResponse> {
+    const response = await apiClient.post<VideoFileVerifyResponse>(`/video-files/${id}/verify`);
+    return response.data;
+  },
+
+  async verifyMediaDescription(id: string): Promise<MediaDescriptionVerifyResponse> {
+    const response = await apiClient.post<MediaDescriptionVerifyResponse>(`/media-descriptions/${id}/verify`);
     return response.data;
   },
 
@@ -1575,6 +1587,8 @@ export const getTrailersAndExcerpts = async (mediaDescriptionId: string) => {
 export const getMediaDescription = mediaApi.getMediaDescription;
 export const getMediaDescriptions = mediaApi.getMediaDescriptions;
 export const completeFromMux = mediaApi.completeFromMux;
+export const verifyVideoFile = mediaApi.verifyVideoFile;
+export const verifyMediaDescription = mediaApi.verifyMediaDescription;
 export const getVideoFilesByMediaDescription = (mediaId: string): Promise<{ data: VideoFile[] }> => {
   return mediaApi.getVideoFilesByMedia(mediaId).then(data => ({ data }));
 };

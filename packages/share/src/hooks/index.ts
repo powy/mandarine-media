@@ -13,6 +13,8 @@ export * from './useSeasonJSON';
 export { useMediaShowcase as useMediaShowcaseLogic } from './useMediaShowcase';
 export * from './usePicture';
 export * from './useDebounce';
+export * from './useVerifyVideoFile';
+export * from './useVerifyMediaDescription';
 
 // Legacy exports - deprecated (maintained for backward compatibility with alpha app)
 /** @deprecated Use MediaShowcase-related hooks instead. ContentList has been replaced by MediaShowcase. */

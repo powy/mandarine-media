@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { MuxUploadError, ErrorCodes } from '../utils/errorHandler.js';
+import { EnhancedRetryHandler } from '../utils/enhanced-retry.js';
 
 export class BackendService {
   constructor(config, logger) {
@@ -16,6 +17,9 @@ export class BackendService {
     this.maxRetries = 3;
     this.retryDelay = 1000; // Start with 1 second
     this.authenticationInProgress = false;
+
+    // Initialize enhanced retry handler for network resilience
+    this.retryHandler = new EnhancedRetryHandler(logger);
   }
 
   // JWT Token Management Utilities
@@ -126,27 +130,38 @@ export class BackendService {
 
   // Request wrapper with retry logic for 401 errors
   async makeAuthenticatedRequest(requestFn, options = {}) {
-    const maxRetries = options.maxRetries || this.maxRetries;
-    let lastError;
+    const {
+      maxRetries = this.maxRetries,
+      context = 'backend API call',
+      isPostUpload = false
+    } = options;
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Use more retries for post-upload calls (after long Mux upload)
+    const effectiveRetries = isPostUpload ? 8 : maxRetries;
+
+    this.logger.debug(`Starting ${context}`, {
+      maxRetries: effectiveRetries,
+      backendUrl: this.baseURL,
+      isPostUpload
+    });
+
+    // Use enhanced retry handler for network resilience
+    return await this.retryHandler.executeWithRetry(async () => {
+      // Check and refresh token before request
+      if (this.isTokenNearExpiry()) {
+        this.logger.info('Token near expiry, refreshing before request');
+        await this.authenticate(true);
+      }
+
       try {
-        // Check and refresh token before request
-        if (this.isTokenNearExpiry()) {
-          this.logger.info('Token near expiry, refreshing before request');
-          await this.authenticate(true);
-        }
-
         // Execute the actual request
         const result = await requestFn();
         return result;
 
       } catch (error) {
-        lastError = error;
-
-        // Check if it's a 401 error
+        // Handle 401 specially - re-authenticate and retry immediately
         if (error.response?.status === 401) {
-          this.logger.warn(`Authentication error on attempt ${attempt + 1}/${maxRetries}`, {
+          this.logger.warn(`Authentication error (401) - re-authenticating`, {
             url: error.config?.url,
             method: error.config?.method?.toUpperCase()
           });
@@ -156,28 +171,20 @@ export class BackendService {
           this.tokenExpiry = null;
 
           // Force re-authentication
-          try {
-            await this.authenticate(true);
+          await this.authenticate(true);
 
-            // If this is not the last attempt, retry
-            if (attempt < maxRetries - 1) {
-              const delay = this.retryDelay * Math.pow(2, attempt); // Exponential backoff
-              this.logger.info(`Retrying after ${delay}ms...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-          } catch (authError) {
-            this.logger.error('Re-authentication failed', { error: authError.message });
-            throw authError;
-          }
-        } else {
-          // For non-401 errors, throw immediately
-          throw error;
+          // Retry the request with new token
+          return await requestFn();
         }
-      }
-    }
 
-    throw lastError;
+        // For other errors (including DNS), throw to let EnhancedRetryHandler handle retry
+        throw error;
+      }
+    }, {
+      maxAttempts: effectiveRetries,
+      baseDelayMs: 1000,
+      context
+    });
   }
 
   handle401Error(error, context) {
@@ -292,7 +299,7 @@ export class BackendService {
     });
   }
   
-  async updateUploadStatus(uuid, status, muxAssetId = null, muxPlaybackId = null) {
+  async updateUploadStatus(uuid, status, muxAssetId = null, muxPlaybackId = null, isPostUpload = false) {
     return this.makeAuthenticatedRequest(async () => {
       const updateData = {
         upload_status: status
@@ -308,12 +315,16 @@ export class BackendService {
 
       const response = await axios.put(`${this.baseURL}/api/v1/video-files/${uuid}`, updateData, {
         headers: { Authorization: `Bearer ${this.token}` },
-        timeout: 30000
+        timeout: isPostUpload ? 60000 : 30000 // Longer timeout after long uploads
       });
 
       this.logger.logUploadStatusUpdate(uuid, status, true);
       return response.data;
-    }, { maxRetries: 5 }).catch(error => { // Extra retries for critical operation
+    }, {
+      maxRetries: 5,
+      context: `update upload status to ${status}`,
+      isPostUpload
+    }).catch(error => { // Extra retries for critical operation
       this.logger.logUploadStatusUpdate(uuid, status, false, error.message);
       throw new MuxUploadError(
         `Failed to update upload status: ${error.message}`,

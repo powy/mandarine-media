@@ -27,7 +27,7 @@ export * from './territories';
 export * from './category-lists';
 
 // Core function exports
-export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData, getSeasonScreenData, getProgramScreenData, getProgramScreenDataByProgramId, completeFromMux } from './media';
+export { getMediaDescription, getMediaDescriptions, getVideoFilesByMediaDescription, getVideoScreenData, getSeasonScreenData, getProgramScreenData, getProgramScreenDataByProgramId, completeFromMux, verifyVideoFile, verifyMediaDescription } from './media';
 export { getSeason, getSeasonsByProgram, getSeasonJSON, refreshSeasonJSON, refreshAllSeasonJSONs } from './seasons';
 export { getProgram, getProgramJSON, refreshProgramJSON, refreshAllProgramJSONs } from './programs';
 

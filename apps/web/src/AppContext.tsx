@@ -40,7 +40,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       if (homeScreen) {
         return homeScreen.id;
       } else {
-        screenDescriptions.data.length > 0
+        return screenDescriptions.data.length > 0
           ? screenDescriptions.data.sort(
               (a, b) => a.display_order - b.display_order
             )[0].id

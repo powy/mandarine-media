@@ -32,7 +32,7 @@ import {
   ListButton,
 } from 'react-admin';
 import { Alert } from '@mui/material';
-import { completeFromMux } from 'share';
+import { completeFromMux, useVerifyVideoFile } from 'share';
 
 // Complete from Mux Button Component
 const CompleteFromMuxButton = () => {
@@ -84,6 +84,52 @@ const CompleteFromMuxButton = () => {
   );
 };
 
+// Run Diagnosis Button Component
+const RunDiagnosisButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const { state, verify } = useVerifyVideoFile();
+
+  const handleRunDiagnosis = async () => {
+    if (!record?.id) {
+      notify('No video file selected', { type: 'warning' });
+      return;
+    }
+
+    try {
+      const result = await verify(record.id);
+
+      if (!result) {
+        notify('Verification failed', { type: 'error' });
+        return;
+      }
+
+      if (result.is_ready) {
+        notify(`Video file is ready! Diagnostics: ${result.diagnostics}`, { type: 'success' });
+      } else {
+        notify(`Diagnosis found issues: ${result.errors.join(', ')}`, { type: 'warning' });
+      }
+
+      refresh();
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Unknown error occurred';
+      notify(`Failed to run diagnosis: ${errorMessage}`, { type: 'error' });
+      console.error('Diagnosis error:', error);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleRunDiagnosis}
+      disabled={state.isLoading}
+      label={state.isLoading ? "Running diagnosis..." : "Run Diagnosis"}
+      variant="outlined"
+      color="info"
+    />
+  );
+};
+
 // Filters for the list view
 const VideoFileFilters = (props: any) => (
   <Filter {...props}>
@@ -113,12 +159,13 @@ export const VideoFileList = () => (
       <TextField source="id" />
       <TextField source="file_name" />
       <TextField source="upload_status" label="Status" />
+      <TextField source="diagnostics" label="Diagnostics" />
       <TextField source="playback_policy" label="Policy" />
       <FunctionField
         label="URL/File"
-        render={(record: any) => 
-          record.external_url ? 
-            <a href={record.external_url} target="_blank" rel="noopener noreferrer">External URL</a> : 
+        render={(record: any) =>
+          record.external_url ?
+            <a href={record.external_url} target="_blank" rel="noopener noreferrer">External URL</a> :
             record.file_url || 'N/A'
         }
       />
@@ -274,6 +321,9 @@ export const VideoFileEdit = () => (
       <TextInput source="mux_asset_id" disabled />
       <TextInput source="mux_playback_id" disabled />
       <TextInput source="encoding_logs" multiline rows={4} disabled />
+
+      {/* Diagnostics - read only */}
+      <TextInput source="diagnostics" disabled label="Diagnostics Status" />
     </SimpleForm>
   </Edit>
 );
@@ -283,6 +333,7 @@ const VideoFileShowActions = () => (
   <TopToolbar>
     <EditButton />
     <CompleteFromMuxButton />
+    <RunDiagnosisButton />
     <ListButton />
   </TopToolbar>
 );
@@ -324,7 +375,10 @@ export const VideoFileShow = () => (
       {/* Mux Integration */}
       <TextField source="mux_asset_id" label="Mux Asset ID" />
       <TextField source="mux_playback_id" label="Mux Playback ID" />
-      
+
+      {/* Diagnostics */}
+      <TextField source="diagnostics" label="Diagnostics Status" />
+
       {/* Advanced Fields */}
       <FunctionField
         label="Subtitle Tracks"

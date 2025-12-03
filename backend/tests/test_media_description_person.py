@@ -18,7 +18,7 @@ from app.schemas.media_description_person import (
 def sample_media_description(db: Session):
     """Create a sample media description for testing."""
     media = MediaDescription(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         file_number=12345,
         episode_title="Test Movie",
         media_type="video"
@@ -33,7 +33,7 @@ def sample_media_description(db: Session):
 def sample_public_person(db: Session):
     """Create a sample public person for testing."""
     person = PublicPerson(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         stage_name_roman="John Actor"
     )
     db.add(person)
@@ -46,7 +46,7 @@ def sample_public_person(db: Session):
 def sample_director(db: Session):
     """Create a sample director for testing."""
     director = PublicPerson(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         stage_name_roman="Jane Director"
     )
     db.add(director)
@@ -159,7 +159,12 @@ class TestMediaDescriptionPersonModel:
             stage_name_roman="Test Actor 2"
         )
 
-        db.add_all([media, person1, person2])
+        # Add separately to avoid batch insert sentinel matching issues with string IDs
+        db.add(media)
+        db.commit()
+        db.add(person1)
+        db.commit()
+        db.add(person2)
         db.commit()
 
         # Create first actor at position 10
@@ -238,16 +243,16 @@ class TestMediaDescriptionPersonModel:
     def test_ordering_by_position(self, db: Session, sample_media_description):
         """Test that people are correctly ordered by position."""
         # Create multiple actors with different positions
+        # Add each person separately to avoid batch insert sentinel matching issues with string IDs
         people = []
         for i, name in enumerate(["Lead Actor", "Supporting Actor", "Extra"], 1):
             person = PublicPerson(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 stage_name_roman=name
             )
             db.add(person)
+            db.commit()  # Commit each separately
             people.append(person)
-
-        db.commit()
 
         # Add them in reverse order of position
         positions = [30, 10, 20]  # Will be ordered as 10, 20, 30
@@ -285,7 +290,7 @@ class TestPersonRoleSchemas:
         """Test PersonRoleCreate schema validation."""
         # Valid schema
         role_data = PersonRoleCreate(
-            public_person_id=str(uuid.uuid4()),
+            public_person_id=uuid.uuid4(),
             role=PersonRoleEnum.actor,
             position=10,
             character_name="Hero",
@@ -302,7 +307,7 @@ class TestPersonRoleSchemas:
         """Test default values in PersonRoleCreate."""
         # Minimal schema
         role_data = PersonRoleCreate(
-            public_person_id=str(uuid.uuid4()),
+            public_person_id=uuid.uuid4(),
             role=PersonRoleEnum.director
         )
 
@@ -326,17 +331,17 @@ class TestPersonRoleSchemas:
         """Test BulkPersonRoleAssignment validation."""
         people_roles = [
             PersonRoleCreate(
-                public_person_id=str(uuid.uuid4()),
+                public_person_id=uuid.uuid4(),
                 role=PersonRoleEnum.actor,
                 position=10
             ),
             PersonRoleCreate(
-                public_person_id=str(uuid.uuid4()),
+                public_person_id=uuid.uuid4(),
                 role=PersonRoleEnum.actor,
                 position=20
             ),
             PersonRoleCreate(
-                public_person_id=str(uuid.uuid4()),
+                public_person_id=uuid.uuid4(),
                 role=PersonRoleEnum.director,
                 position=10  # Same position but different role - OK
             )
@@ -351,12 +356,12 @@ class TestPersonRoleSchemas:
         """Test that BulkPersonRoleAssignment catches position conflicts."""
         people_roles = [
             PersonRoleCreate(
-                public_person_id=str(uuid.uuid4()),
+                public_person_id=uuid.uuid4(),
                 role=PersonRoleEnum.actor,
                 position=10
             ),
             PersonRoleCreate(
-                public_person_id=str(uuid.uuid4()),
+                public_person_id=uuid.uuid4(),
                 role=PersonRoleEnum.actor,
                 position=10  # Duplicate position in same role
             )
@@ -383,7 +388,7 @@ class TestMediaDescriptionHelperProperties:
 
         for name, position in actors_data:
             person = PublicPerson(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 stage_name_roman=name
             )
             db.add(person)
@@ -411,10 +416,12 @@ class TestMediaDescriptionHelperProperties:
     def test_backward_compatibility_properties(self, db: Session, sample_media_description):
         """Test that backward compatibility properties work."""
         # Create one actor and one director
-        actor = PublicPerson(id=str(uuid.uuid4()), stage_name_roman="Actor Name")
-        director = PublicPerson(id=str(uuid.uuid4()), stage_name_roman="Director Name")
-
+        # Add separately to avoid batch insert sentinel matching issues with string IDs
+        actor = PublicPerson(id=uuid.uuid4(), stage_name_roman="Actor Name")
         db.add(actor)
+        db.commit()
+
+        director = PublicPerson(id=uuid.uuid4(), stage_name_roman="Director Name")
         db.add(director)
         db.commit()
 

@@ -14,7 +14,7 @@ from app.schemas.media_description_person import PersonRoleCreate, PersonRoleUpd
 def sample_media_description(db: Session):
     """Create a sample media description for testing."""
     media = MediaDescription(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         file_number=12345,
         episode_title="Test Movie",
         media_type="video"
@@ -33,7 +33,7 @@ def sample_people(db: Session):
 
     for name in names:
         person = PublicPerson(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             stage_name_roman=name
         )
         db.add(person)
@@ -129,7 +129,7 @@ class TestMediaDescriptionPersonCRUD:
         media_list = []
         for i in range(3):
             media = MediaDescription(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 file_number=12345 + i,
                 episode_title=f"Movie {i+1}",
                 media_type="video"

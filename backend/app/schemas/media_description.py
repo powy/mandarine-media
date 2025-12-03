@@ -161,6 +161,9 @@ class MediaDescriptionBase(BaseModel):
     revenue_share: Optional[float] = None
     paid_token_cost: Optional[int] = None
 
+    # v1.10-D fields - Diagnostics
+    diagnostics: str = Field(default="pending", description="Diagnostic verification status")
+
     # Note: Removed v1.12 JSON fields - replaced with proper relationship handling in Create/Update schemas
 
 
@@ -261,6 +264,9 @@ class MediaDescriptionUpdate(BaseModel):
     other_share: Optional[float] = None
     revenue_share: Optional[float] = None
     paid_token_cost: Optional[int] = None
+
+    # Diagnostics field for updates
+    diagnostics: Optional[str] = None
 
     # Relationship update fields
     actor_ids: Optional[List[str]] = None
@@ -487,3 +493,13 @@ class MediaDescriptionCreateFromText(BaseModel):
             from app.utils.text_normalization import split_semicolon_separated_list
             return split_semicolon_separated_list(v)
         return v
+
+
+class MediaDescriptionVerifyResponse(BaseModel):
+    """Response for media description verification endpoint"""
+    id: UUID
+    diagnostics: str
+    is_ready: bool = Field(description="True if diagnostics is 'ready'")
+    errors: List[str] = Field(description="Parsed error messages")
+
+    model_config = ConfigDict(from_attributes=True)

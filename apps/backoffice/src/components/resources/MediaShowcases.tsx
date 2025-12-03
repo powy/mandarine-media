@@ -361,30 +361,26 @@ const MediaItemCard: React.FC<{
   );
 };
 
-// Custom component for managing media descriptions with ordering
-const MediaDescriptionManager = ({ source, ...props }) => {
+// Component for searching and adding media by type
+const MediaSearchByType = ({
+  source,
+  filterMediaType,
+  ...props
+}: {
+  source: string;
+  filterMediaType: 'program' | 'season' | 'video';
+  [key: string]: any
+}) => {
   const { field } = useInput({ source, ...props });
   const dataProvider = useDataProvider();
   const notify = useNotify();
-  const [manualId, setManualId] = React.useState('');
-  const [manualError, setManualError] = React.useState<string | null>(null);
-  const [isAddingById, setIsAddingById] = React.useState(false);
   const [searchOptions, setSearchOptions] = React.useState([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchText, setSearchText] = React.useState('');
   const [debouncedSearchText, setDebouncedSearchText] = React.useState('');
   const [selectedSearchOption, setSelectedSearchOption] = React.useState(null);
-  const [mediaItems, setMediaItems] = React.useState<MediaItemData[]>([]);
-  const [loadingItems, setLoadingItems] = React.useState<Set<string>>(new Set());
 
   const selectedIds = field.value || [];
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   // Debounce search text - update debouncedSearchText 300ms after user stops typing
   React.useEffect(() => {
@@ -406,9 +402,10 @@ const MediaDescriptionManager = ({ source, ...props }) => {
 
       setSearchLoading(true);
       try {
+        const filter: any = { q: debouncedSearchText, media_type: filterMediaType };
         const { data } = await dataProvider.getList('media-descriptions', {
           pagination: { page: 1, perPage: 20 },
-          filter: { q: debouncedSearchText },
+          filter,
           sort: { field: 'episode_title', order: 'ASC' }
         });
         setSearchOptions(data || []);
@@ -421,7 +418,121 @@ const MediaDescriptionManager = ({ source, ...props }) => {
     };
 
     performSearch();
-  }, [debouncedSearchText, dataProvider, notify]);
+  }, [debouncedSearchText, dataProvider, notify, filterMediaType]);
+
+  const handleAdd = (newIds: string[], position: 'head' | 'queue' = 'queue') => {
+    let uniqueIds: string[];
+    if (position === 'head') {
+      // Add to the beginning, avoiding duplicates
+      const newUniqueIds = newIds.filter(id => !selectedIds.includes(id));
+      uniqueIds = [...newUniqueIds, ...selectedIds];
+    } else {
+      // Add to the end (existing behavior)
+      uniqueIds = [...new Set([...selectedIds, ...newIds])];
+    }
+    field.onChange(uniqueIds);
+  };
+
+  const getTitle = () => {
+    if (filterMediaType === 'program') return 'Programs';
+    if (filterMediaType === 'season') return 'Seasons';
+    if (filterMediaType === 'video') return 'Videos';
+    return 'Media Descriptions';
+  };
+
+  return (
+    <Box mb={3}>
+      <Typography variant="h6" gutterBottom>
+        Search and Add {getTitle()}
+      </Typography>
+      <Autocomplete
+        options={searchOptions}
+        getOptionLabel={(option) => option.episode_title || ''}
+        loading={searchLoading}
+        value={selectedSearchOption}
+        onInputChange={(event, value) => setSearchText(value)}
+        onChange={(event, newValue) => {
+          setSelectedSearchOption(newValue);
+        }}
+        inputValue={searchText}
+        renderInput={(params) => (
+          <MuiTextField
+            {...params}
+            label="Search by Title"
+            helperText="Type to search media descriptions by title (updates as you type)"
+          />
+        )}
+        noOptionsText={searchText.length < 2 ? "Type at least 2 characters..." : "No results found"}
+        filterOptions={(x) => x}
+      />
+      <Box display="flex" gap={2} mt={1}>
+        <MuiButton
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            if (selectedSearchOption?.id) {
+              handleAdd([selectedSearchOption.id], 'head');
+              notify(
+                `Added ${selectedSearchOption.episode_title || 'media description'} to beginning`,
+                { type: 'info' }
+              );
+              setSearchText('');
+              setSelectedSearchOption(null);
+              setSearchOptions([]);
+            }
+          }}
+          disabled={!selectedSearchOption}
+        >
+          Add in Head
+        </MuiButton>
+        <MuiButton
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            if (selectedSearchOption?.id) {
+              handleAdd([selectedSearchOption.id], 'queue');
+              notify(
+                `Added ${selectedSearchOption.episode_title || 'media description'} to end`,
+                { type: 'info' }
+              );
+              setSearchText('');
+              setSelectedSearchOption(null);
+              setSearchOptions([]);
+            }
+          }}
+          disabled={!selectedSearchOption}
+        >
+          Add in Queue
+        </MuiButton>
+      </Box>
+    </Box>
+  );
+};
+
+// Component for managing the list - Add by ID and Current Items display
+const MediaListManager = ({
+  source,
+  ...props
+}: {
+  source: string;
+  [key: string]: any
+}) => {
+  const { field } = useInput({ source, ...props });
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const [manualId, setManualId] = React.useState('');
+  const [manualError, setManualError] = React.useState<string | null>(null);
+  const [isAddingById, setIsAddingById] = React.useState(false);
+  const [mediaItems, setMediaItems] = React.useState<MediaItemData[]>([]);
+
+  const selectedIds = field.value || [];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Fetch MediaDescription data with images when selectedIds changes
   React.useEffect(() => {
@@ -500,13 +611,6 @@ const MediaDescriptionManager = ({ source, ...props }) => {
     field.onChange(updatedIds);
   };
 
-  const handleReorder = (fromIndex, toIndex) => {
-    const reorderedIds = [...selectedIds];
-    const [removed] = reorderedIds.splice(fromIndex, 1);
-    reorderedIds.splice(toIndex, 0, removed);
-    field.onChange(reorderedIds);
-  };
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -555,79 +659,9 @@ const MediaDescriptionManager = ({ source, ...props }) => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Media Descriptions (Ordered)
-      </Typography>
-
-      {/* Add new items */}
-      <Box mb={2}>
-        <Typography variant="subtitle1" gutterBottom>
-          Search and Add Media Items
-        </Typography>
-        <Autocomplete
-          options={searchOptions}
-          getOptionLabel={(option) => option.episode_title || ''}
-          loading={searchLoading}
-          value={selectedSearchOption}
-          onInputChange={(event, value) => setSearchText(value)}
-          onChange={(event, newValue) => {
-            setSelectedSearchOption(newValue);
-          }}
-          inputValue={searchText}
-          renderInput={(params) => (
-            <MuiTextField
-              {...params}
-              label="Search by Title"
-              helperText="Type to search media descriptions by title (updates as you type)"
-            />
-          )}
-          noOptionsText={searchText.length < 2 ? "Type at least 2 characters..." : "No results found"}
-          filterOptions={(x) => x}
-        />
-        <Box display="flex" gap={2} mt={1}>
-          <MuiButton
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              if (selectedSearchOption?.id) {
-                handleAdd([selectedSearchOption.id], 'head');
-                notify(
-                  `Added ${selectedSearchOption.episode_title || 'media description'} to beginning`,
-                  { type: 'info' }
-                );
-                setSearchText('');
-                setSelectedSearchOption(null);
-                setSearchOptions([]);
-              }
-            }}
-            disabled={!selectedSearchOption}
-          >
-            Add in Head
-          </MuiButton>
-          <MuiButton
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              if (selectedSearchOption?.id) {
-                handleAdd([selectedSearchOption.id], 'queue');
-                notify(
-                  `Added ${selectedSearchOption.episode_title || 'media description'} to end`,
-                  { type: 'info' }
-                );
-                setSearchText('');
-                setSelectedSearchOption(null);
-                setSearchOptions([]);
-              }
-            }}
-            disabled={!selectedSearchOption}
-          >
-            Add in Queue
-          </MuiButton>
-        </Box>
-      </Box>
-
-      <Box mt={2}>
-        <Typography variant="subtitle1" gutterBottom>
+      {/* Add by ID section */}
+      <Box mb={3}>
+        <Typography variant="h6" gutterBottom>
           Add by ID
         </Typography>
         <MuiTextField
@@ -660,13 +694,16 @@ const MediaDescriptionManager = ({ source, ...props }) => {
       </Box>
 
       {/* Display current items with drag-and-drop reordering */}
-      <Box mt={2}>
-        <Typography variant="subtitle1" gutterBottom>
-          Current Items (drag to reorder):
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          Current Items ({mediaItems.length})
+        </Typography>
+        <Typography variant="caption" color="textSecondary" gutterBottom display="block">
+          Drag to reorder items
         </Typography>
         {mediaItems.length === 0 && selectedIds.length === 0 ? (
           <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic' }}>
-            No media items added yet. Use the selector above to add items.
+            No media items added yet. Use the search or ID sections above to add items.
           </Typography>
         ) : (
           <DndContext
@@ -830,10 +867,41 @@ export const MediaShowcaseCreate = () => (
         label="Relative URL Link (Optional)"
         helperText="Relative URL path for navigation (e.g., /category/action)"
       />
-      {/* Initial Media Items - Enhanced with ordering */}
-      <MediaDescriptionManager
-        source="media_description_ids"
-      />
+      {/* Media Selection Section */}
+      <Box sx={{ mt: 3, pt: 3, borderTop: '2px solid #1976d2' }}>
+        <Typography variant="h5" gutterBottom>
+          Media Selection
+        </Typography>
+
+        {/* Section 1: Search in Programs */}
+        <MediaSearchByType
+          source="media_description_ids"
+          filterMediaType="program"
+        />
+
+        {/* Section 2: Search in Seasons */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+          <MediaSearchByType
+            source="media_description_ids"
+            filterMediaType="season"
+          />
+        </Box>
+
+        {/* Section 3: Search in Videos */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+          <MediaSearchByType
+            source="media_description_ids"
+            filterMediaType="video"
+          />
+        </Box>
+
+        {/* Section 4 & 5: Add by ID and Current Items List */}
+        <Box sx={{ mt: 3, pt: 3, borderTop: '2px solid #e0e0e0' }}>
+          <MediaListManager
+            source="media_description_ids"
+          />
+        </Box>
+      </Box>
     </SimpleForm>
   </Create>
 );
@@ -905,10 +973,41 @@ export const MediaShowcaseEdit = () => (
         helperText="Relative URL path for navigation (e.g., /category/action)"
       />
 
-      {/* Media Description Management - Enhanced with ordering */}
-      <MediaDescriptionManager
-        source="media_description_ids"
-      />
+      {/* Media Selection Section */}
+      <Box sx={{ mt: 3, pt: 3, borderTop: '2px solid #1976d2' }}>
+        <Typography variant="h5" gutterBottom>
+          Media Selection
+        </Typography>
+
+        {/* Section 1: Search in Programs */}
+        <MediaSearchByType
+          source="media_description_ids"
+          filterMediaType="program"
+        />
+
+        {/* Section 2: Search in Seasons */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+          <MediaSearchByType
+            source="media_description_ids"
+            filterMediaType="season"
+          />
+        </Box>
+
+        {/* Section 3: Search in Videos */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+          <MediaSearchByType
+            source="media_description_ids"
+            filterMediaType="video"
+          />
+        </Box>
+
+        {/* Section 4 & 5: Add by ID and Current Items List */}
+        <Box sx={{ mt: 3, pt: 3, borderTop: '2px solid #e0e0e0' }}>
+          <MediaListManager
+            source="media_description_ids"
+          />
+        </Box>
+      </Box>
     </SimpleForm>
   </Edit>
 );

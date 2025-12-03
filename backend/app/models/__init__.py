@@ -1,4 +1,5 @@
 from .user import User
+from .account import Account, SubscriptionPlanEnum, AgeCategoryEnum
 from .media_description import (
     MediaDescription,
     MediaTypeEnum,
@@ -20,3 +21,4 @@ from .media_showcase import MediaShowcase
 from .screen_description import ScreenDescription, ScreenTypeEnum
 from .media_theme import MediaTheme
 from .media_description_person import MediaDescriptionPerson, PersonRoleEnum
+from .password_reset_token import PasswordResetToken

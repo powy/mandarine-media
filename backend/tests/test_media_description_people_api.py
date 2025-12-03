@@ -12,7 +12,7 @@ from app.models.media_description_person import MediaDescriptionPerson
 def sample_media_description(db):
     """Create a sample media description for testing."""
     media = MediaDescription(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         file_number=12345,
         episode_title="Test Movie",
         media_type="video"
@@ -31,7 +31,7 @@ def sample_people(db):
 
     for name in names:
         person = PublicPerson(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             stage_name_roman=name
         )
         db.add(person)

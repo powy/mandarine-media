@@ -70,6 +70,10 @@ class MediaDescription(Base):
     is_featured = Column(Boolean, default=False, nullable=True)
     last_updated_utc = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
     content_status = Column(String, default="published", nullable=True)  # Will use enum validation in schemas
+
+    # NEW v1.10-D field - Diagnostics
+    diagnostics = Column(String, nullable=False, default="pending")  # Verification diagnostics status
+
     seo_title = Column(String, nullable=True)
     seo_description = Column(Text, nullable=True)
     seo_keywords_text_list = Column(JSONArray(), nullable=True)
@@ -192,3 +196,148 @@ class MediaDescription(Base):
     def authors(self):
         """Get authors (for backward compatibility)"""
         return [pr.public_person for pr in self.people_roles if pr.role == 'author']
+
+    async def diagnostic(self, db):
+        """
+        Perform diagnostic verification of media description.
+
+        Validates:
+        - All linked VideoFile diagnostics are ready
+        - Essential fields are populated (episode_title, synopsis, descriptive_summary, original_broadcast_date)
+        - Type-specific validations (season, program, video)
+        - Image fields are set (4 required image formats)
+
+        Args:
+            db: SQLAlchemy database session
+
+        Returns:
+            str: "ready" or comma-separated error messages
+
+        Side Effects:
+            Updates self.diagnostics and commits to database
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        errors = []
+
+        # === Check A: VideoFile Diagnostics ===
+        # Get all linked video files
+        video_files_to_check = []
+
+        # Main video file
+        if self.main_video_file:
+            video_files_to_check.append(('Main Video', self.main_video_file))
+
+        # Trailers
+        for idx, trailer in enumerate(self.trailers, start=1):
+            video_files_to_check.append((f'Trailer {idx}', trailer))
+
+        # Excerpts
+        for idx, excerpt in enumerate(self.excerpts, start=1):
+            video_files_to_check.append((f'Excerpt {idx}', excerpt))
+
+        # Check each video file's diagnostics
+        for label, video_file in video_files_to_check:
+            if video_file.diagnostics != "ready":
+                # If not ready, trigger its diagnostic if needed
+                if video_file.diagnostics == "pending":
+                    try:
+                        from app.core.config import settings
+                        from app.services.storage.mux import MuxStorageBackend
+
+                        upload_config = settings.get_upload_config()
+                        if 'mux' in upload_config.get('backends', {}):
+                            mux_service = MuxStorageBackend(upload_config['backends']['mux'])
+                            await video_file.diagnostic(db=db, mux_service=mux_service)
+                    except Exception as e:
+                        logger.warning(f"Could not run diagnostic on {label} (ID: {video_file.id}): {e}")
+
+                # Add error if still not ready
+                if video_file.diagnostics != "ready":
+                    errors.append(f"{label} - Video File {video_file.id} - Diagnostics: {video_file.diagnostics}")
+
+        # === Check B: Essential Fields ===
+        # episode_title is required field, always set
+        if not self.episode_title or not self.episode_title.strip():
+            errors.append("Episode title is empty")
+
+        if not self.synopsis_text or not self.synopsis_text.strip():
+            errors.append("Synopsis text is missing")
+
+        if not self.descriptive_summary_text or not self.descriptive_summary_text.strip():
+            errors.append("Descriptive summary text is missing")
+
+        if not self.original_broadcast_date_utc:
+            errors.append("Original broadcast date is missing")
+
+        # === Check C: Type-Specific Validations ===
+
+        if self.media_type == "season":
+            # Season should NOT have season_id set (not part of another season)
+            if self.season_id:
+                errors.append("Season type should not have season_id set")
+
+            # Season should be referenced by Season.general_media_description_id
+            from app.models.season import Season
+            season_ref = db.query(Season).filter(Season.general_media_description_id == self.id).first()
+            if not season_ref:
+                errors.append("Season type is not referenced by any Season entity")
+            else:
+                # Check if episode_title matches Season.season_name
+                if season_ref.season_name and self.episode_title != season_ref.season_name:
+                    errors.append(f"Episode title '{self.episode_title}' does not match Season name '{season_ref.season_name}'")
+
+            # Season should not have main_video_file_id set
+            if self.main_video_file_id:
+                errors.append("Season type should not have main_video_file_id set")
+
+        elif self.media_type == "program":
+            # Program should NOT have program_id set (not part of another program)
+            if self.program_id:
+                errors.append("Program type should not have program_id set")
+
+            # Program should be referenced by Program.general_media_description_id
+            from app.models.program import Program
+            program_ref = db.query(Program).filter(Program.general_media_description_id == self.id).first()
+            if not program_ref:
+                errors.append("Program type is not referenced by any Program entity")
+            else:
+                # Check if episode_title matches Program.program_name
+                if self.episode_title != program_ref.program_name:
+                    errors.append(f"Episode title '{self.episode_title}' does not match Program name '{program_ref.program_name}'")
+
+            # Program should not have main_video_file_id set
+            if self.main_video_file_id:
+                errors.append("Program type should not have main_video_file_id set")
+
+        elif self.media_type == "video":
+            # Video type must have main_video_file_id set
+            if not self.main_video_file_id:
+                errors.append("Video type must have main_video_file_id set")
+
+        elif self.media_type in ["excerpt", "trailer", "webtoon"]:
+            # These types are considered invalid per requirements
+            errors.append(f"Invalid media_type: {self.media_type}")
+
+        # === Check D: Picture Validation ===
+        # Check required image formats
+        required_images = [
+            ('image_1920_1080_id', 'Image 1920x1080'),
+            ('image_1920_720_id', 'Image 1920x720'),
+            ('image_1080_1080_id', 'Image 1080x1080'),
+            ('image_810_1080_id', 'Image 810x1080'),
+        ]
+
+        for field_name, label in required_images:
+            if not getattr(self, field_name):
+                errors.append(f"{label} is missing")
+
+        # Set diagnostics and commit
+        if errors:
+            self.diagnostics = ", ".join(errors)
+        else:
+            self.diagnostics = "ready"
+
+        db.commit()
+        logger.info(f"Diagnostic complete for media description {self.id}: {self.diagnostics}")
+        return self.diagnostics
