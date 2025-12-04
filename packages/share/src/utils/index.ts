@@ -14,3 +14,4 @@ export * from './displayFormatters';
 export * from './media-description-resolver';
 export * from './programAdapters';
 export * from './seasonAdapters';
+export * from './imageUrlSelector';

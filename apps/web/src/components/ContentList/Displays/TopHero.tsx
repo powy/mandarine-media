@@ -4,6 +4,7 @@ import {
   MediaShowcaseJSON,
   resolveMediaDescriptionId,
   useMediaShowcaseLogic,
+  getHeroImageUrl,
 } from 'share';
 import { useNavigate } from 'react-router-dom';
 import { ContentThemedButton } from './TopHero.styles';
@@ -91,7 +92,7 @@ const BigCarousel: React.FC<BigCarouselProps> = ({ showcase }) => {
     <div
       className="relative flex flex-col items-center"
       style={{
-        backgroundImage: `url(${sortedItems[currentCarouselIndex].thumbnail_url})`,
+        backgroundImage: `url(${getHeroImageUrl(sortedItems[currentCarouselIndex])})`,
         height: '600px',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',

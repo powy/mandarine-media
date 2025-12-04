@@ -5,6 +5,7 @@ import {
   resolveMediaDescriptionId,
   ThumbnailFormatEnum,
   useMediaShowcaseLogic,
+  getThumbnailImageUrl,
 } from 'share';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
@@ -123,9 +124,9 @@ const ClassicShowcase: React.FC<ClassicShowcaseProps> = ({ showcase }) => {
           className="rounded-lg overflow-hidden mb-2 bg-gray-800"
           style={{ width: `${width}px`, height: `${height}px` }}
         >
-          {item.thumbnail_url ? (
+          {getThumbnailImageUrl(item) ? (
             <img
-              src={item.thumbnail_url}
+              src={getThumbnailImageUrl(item)}
               alt={item.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
               title={item.descriptive_summary_text || item.title}

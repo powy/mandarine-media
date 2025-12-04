@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useMediaShowcaseLogic } from 'share';
+import { useMediaShowcaseLogic, getThumbnailImageUrl } from 'share';
 import type {
   ContentListItem,
   MediaShowcaseItem,
@@ -120,9 +120,9 @@ const ContentList: React.FC<ContentListProps> = ({ contentList }) => {
           className="rounded-lg overflow-hidden mb-2 bg-gray-800"
           style={{ width: `${width}px`, height: `${height}px` }}
         >
-          {item.thumbnail_url ? (
+          {getThumbnailImageUrl(item) ? (
             <img
-              src={item.thumbnail_url}
+              src={getThumbnailImageUrl(item)}
               alt={item.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
               title={item.descriptive_summary_text || item.title}

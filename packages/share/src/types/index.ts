@@ -1410,6 +1410,22 @@ export interface MediaShowcaseItemJSON {
   season_id?: string;
   episode_number?: number;
   display_order: number;
+  // All 5 formats with 3 variants each (15 fields)
+  image_1920_1080_url?: string;
+  image_1920_1080_large_url?: string;
+  image_1920_1080_small_url?: string;
+  image_1920_720_url?: string;
+  image_1920_720_large_url?: string;
+  image_1920_720_small_url?: string;
+  image_1080_1080_url?: string;
+  image_1080_1080_large_url?: string;
+  image_1080_1080_small_url?: string;
+  image_810_1080_url?: string;
+  image_810_1080_large_url?: string;
+  image_810_1080_small_url?: string;
+  image_1080_1920_url?: string;
+  image_1080_1920_large_url?: string;
+  image_1080_1920_small_url?: string;
 }
 
 export interface MediaShowcaseJSON {
