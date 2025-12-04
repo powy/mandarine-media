@@ -15,6 +15,7 @@ export * from './screen-contents'; // Note: now includes screen-descriptions exp
 export * from './audience-categories';
 export * from './subscription-plans';
 export * from './media-themes';
+export * from './system';
 
 // API 1.13 New exports
 export * from './media-showcases';
@@ -50,3 +51,4 @@ export {
   refreshAllMediaShowcaseJSONs
 } from './media-showcases';
 export { getDescriptionReports, getDescriptionReport, getDescriptionReportsByBatch } from './description-reports';
+export { getSystemInfo, getHealthStatus, getServerVersion, getEnvVars, parseVersionFromMessage } from './system';

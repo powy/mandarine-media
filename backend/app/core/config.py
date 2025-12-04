@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     
     # Environment
     ENVIRONMENT: str = "local"
-    
+
+    # Server Version
+    SERVER_VERSION: str = "1.10.0"
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002"
     

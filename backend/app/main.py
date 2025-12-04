@@ -6,7 +6,7 @@ from app.api.v1.api import api_router
 app = FastAPI(
     title="KYOOL Media Platform API",
     description="Media platform backend for video content and web-comics",
-    version="1.10.0",
+    version=settings.SERVER_VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
@@ -23,7 +23,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():
-    return {"message": "KYOOL Media Platform API v1.10"}
+    return {"message": f"KYOOL Media Platform API v{settings.SERVER_VERSION}"}
 
 @app.get("/health")
 async def health_check():

@@ -19,6 +19,7 @@ from app.api.v1.endpoints import (
     audience_categories,
     subscription_plans,
     media_themes,
+    system,
 )
 
 api_router = APIRouter()
@@ -71,3 +72,4 @@ api_router.include_router(
 api_router.include_router(
     media_themes.router, prefix="/media-themes", tags=["media-themes"]
 )
+api_router.include_router(system.router, prefix="/system", tags=["system"])

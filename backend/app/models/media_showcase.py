@@ -78,6 +78,10 @@ class MediaShowcase(Base):
         published_items = []
         for md in self.media_descriptions:
             if md.content_status == "published":
+                # Eager load all picture relationships before serialization
+                if db_session:
+                    db_session.refresh(md, ['image_1920_1080', 'image_1920_720', 'image_1080_1080',
+                                            'image_810_1080', 'image_1080_1920'])
                 priority = self._get_item_priority_in_showcase(md.id, db_session)
                 published_items.append((md, priority))
 
@@ -113,40 +117,6 @@ class MediaShowcase(Base):
 
         return json_data
 
-    def _get_thumbnail_url(self, media_desc, format_type: str) -> str:
-        """Helper to get the appropriate thumbnail URL based on format"""
-        format_to_picture = {
-            "1920x1080": getattr(media_desc, 'image_1920_1080', None),
-            "1920x720": getattr(media_desc, 'image_1920_720', None),
-            "1080x1080": getattr(media_desc, 'image_1080_1080', None),
-            "810x1080": getattr(media_desc, 'image_810_1080', None),
-            "1080x1920": getattr(media_desc, 'image_1080_1920', None)
-        }
-
-        picture = format_to_picture.get(format_type)
-        if picture and hasattr(picture, 'image_url') and picture.image_url:
-            return picture.image_url
-        return None
-
-    def _get_all_format_urls(self, media_desc) -> Dict[str, Optional[str]]:
-        """Helper to get all thumbnail format URLs for a media description"""
-        format_fields = {
-            "image_1920_1080_url": 'image_1920_1080',
-            "image_1920_720_url": 'image_1920_720',
-            "image_1080_1080_url": 'image_1080_1080',
-            "image_810_1080_url": 'image_810_1080',
-            "image_1080_1920_url": 'image_1080_1920'
-        }
-
-        result = {}
-        for url_field, picture_attr in format_fields.items():
-            picture = getattr(media_desc, picture_attr, None)
-            if picture and hasattr(picture, 'image_url') and picture.image_url:
-                result[url_field] = picture.image_url
-            else:
-                result[url_field] = None
-
-        return result
 
     def _get_item_priority_in_showcase(self, media_desc_id, db_session=None) -> int:
         """Get priority_in_showcase for a specific item within this showcase"""

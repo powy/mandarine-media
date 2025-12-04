@@ -21,6 +21,7 @@ import { AudienceCategoryList, AudienceCategoryCreate, AudienceCategoryEdit, Aud
 import { SubscriptionPlanList, SubscriptionPlanCreate, SubscriptionPlanEdit, SubscriptionPlanShow } from './components/resources/SubscriptionPlans';
 import { Tooltip } from '@mui/material';
 import { regenerateAllScreenDescriptionJSON } from 'share';
+import Footer from './components/Footer';
 
 
 // Custom Menu for better organization
@@ -157,7 +158,19 @@ const CustomAppBar = () => (
 
 // Custom Layout
 const CustomLayout = (props: any) => (
-  <Layout {...props} appBar={CustomAppBar} menu={CustomMenu} />
+  <>
+    <Layout
+      {...props}
+      appBar={CustomAppBar}
+      menu={CustomMenu}
+      sx={{
+        '& .RaLayout-content': {
+          paddingBottom: '48px',
+        }
+      }}
+    />
+    <Footer />
+  </>
 );
 
 // Dashboard component - placeholder for now
