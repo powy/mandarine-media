@@ -23,7 +23,7 @@ def upgrade() -> None:
     sa.Column('id', GUID(), nullable=False),
     sa.Column('user_id', GUID(), nullable=False),
     sa.Column('full_name', sa.String(length=255), nullable=True),
-    sa.Column('subscription_plan', sa.Enum('FREE', 'BASIC', 'PREMIUM', 'VIP', 'TRIAL', name='subscription_plan_enum'), server_default='free', nullable=False),
+    sa.Column('subscription_plan', sa.Enum('FREE', 'BASIC', 'PREMIUM', 'VIP', 'TRIAL', name='subscription_plan_enum'), server_default='FREE', nullable=False),
     sa.Column('subscription_expire_at', sa.DateTime(timezone=True), nullable=True, comment='NULL means no expiration (free or lifetime)'),
     sa.Column('language_preference', sa.String(length=5), server_default='en', nullable=False, comment='ISO 639-1 language code'),
     sa.Column('country', sa.String(length=2), nullable=True, comment='ISO-3166 country code for content rights'),
