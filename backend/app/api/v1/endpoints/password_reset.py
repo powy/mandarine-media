@@ -15,6 +15,7 @@ from app.db.database import get_db
 from app.core.config import settings
 from app.utils.rate_limiter import SimpleRateLimiter
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -39,8 +40,11 @@ async def request_password_reset(
     - Only sends email if user exists and is active
     """
 
+    start_time = time.time()
     # Get client IP address
     client_ip = request.client.host if request.client else "unknown"
+
+    logger.info(f"[RESET] Password reset request started for {reset_request.email} from IP {client_ip}")
 
     # Validate email confirmation
     if reset_request.email != reset_request.email_confirm:
@@ -48,6 +52,8 @@ async def request_password_reset(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Les adresses email ne correspondent pas"
         )
+
+    logger.info(f"[RESET] Email validation passed, elapsed: {time.time() - start_time:.2f}s")
 
     # Rate limiting check
     is_allowed, remaining = password_reset_rate_limiter.is_allowed(
@@ -62,6 +68,8 @@ async def request_password_reset(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Trop de tentatives. Veuillez réessayer plus tard."
         )
+
+    logger.info(f"[RESET] Rate limit check passed, elapsed: {time.time() - start_time:.2f}s")
 
     # TODO: TEMPORARILY DISABLED FOR TESTING - RE-ENABLE FOR PRODUCTION
     # Verify Turnstile token
@@ -80,13 +88,19 @@ async def request_password_reset(
     # Check if user exists (but don't reveal this to the client)
     user = crud_user.get_by_email(db, email=reset_request.email)
 
+    logger.info(f"[RESET] User lookup completed, elapsed: {time.time() - start_time:.2f}s")
+
     if user and user.is_active:
         try:
             # Delete any existing tokens for this user
             crud_password_reset.delete_user_tokens(db, user_id=user.id)
 
+            logger.info(f"[RESET] Old tokens deleted, elapsed: {time.time() - start_time:.2f}s")
+
             # Generate new token
             token = generate_password_reset_token()
+
+            logger.info(f"[RESET] Token generated, elapsed: {time.time() - start_time:.2f}s")
 
             # Store hashed token in database
             crud_password_reset.create_reset_token(
@@ -97,12 +111,19 @@ async def request_password_reset(
                 ip_address=client_ip
             )
 
+            logger.info(f"[RESET] Token stored in DB, elapsed: {time.time() - start_time:.2f}s")
+
             # Send email with reset link
+            logger.info(f"[RESET] About to send email, elapsed: {time.time() - start_time:.2f}s")
+            logger.info(f"[RESET] SMTP config: {settings.SMTP_HOST}:{settings.SMTP_PORT}, user={settings.SMTP_USER}")
+
             email_sent = EmailService.send_password_reset_email(
                 email=user.email,
                 reset_token=token,
                 user_name=user.full_name
             )
+
+            logger.info(f"[RESET] Email send returned: {email_sent}, elapsed: {time.time() - start_time:.2f}s")
 
             if email_sent:
                 logger.info(f"Password reset email sent to {user.email} (IP: {client_ip})")
@@ -118,6 +139,8 @@ async def request_password_reset(
         logger.info(f"Password reset requested for non-existent/inactive user: {reset_request.email} (IP: {client_ip})")
 
     # Always return success message (security: don't reveal if email exists)
+    logger.info(f"[RESET] Request completed, total time: {time.time() - start_time:.2f}s")
+
     return PasswordResetRequestResponse(
         success=True,
         message="Si cette adresse correspond bien à un compte, un email vous a été envoyé"

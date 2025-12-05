@@ -140,8 +140,13 @@ Cet email provient du formulaire de contact de KYOOL Media.
         Returns:
             bool: True if email sent successfully, False otherwise
         """
+        import time
+        start = time.time()
+
         try:
             # Log email details for debugging (in all environments)
+            logger.info(f"[EMAIL] Starting send to {email}")
+            logger.info(f"[EMAIL] SMTP: {settings.SMTP_HOST}:{settings.SMTP_PORT}")
             print(f"[EMAIL] Sending password reset to {email}")
             print(f"[EMAIL] User: {user_name}, Token: {reset_token[:20]}...")
 
@@ -149,6 +154,8 @@ Cet email provient du formulaire de contact de KYOOL Media.
             if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
                 logger.error("SMTP credentials not configured")
                 return False
+
+            logger.info(f"[EMAIL] Credentials validated, elapsed: {time.time() - start:.2f}s")
 
             # Build reset URL
             frontend_base_url = settings.FRONTEND_BASE_URL
@@ -235,22 +242,45 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
             msg.attach(part1)
             msg.attach(part2)
 
+            logger.info(f"[EMAIL] Message created, elapsed: {time.time() - start:.2f}s")
+
             # Send email
             # Use SMTP_SSL for port 465, SMTP with STARTTLS for port 587
-            if settings.SMTP_PORT == 465:
-                with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                    server.send_message(msg)
-            else:
-                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                    if settings.SMTP_TLS:
-                        server.starttls()
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                    server.send_message(msg)
+            logger.info(f"[EMAIL] Attempting SMTP connection, elapsed: {time.time() - start:.2f}s")
 
+            if settings.SMTP_PORT == 465:
+                logger.info("[EMAIL] Using SMTP_SSL port 465")
+                try:
+                    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8) as server:
+                        logger.info(f"[EMAIL] Connected, elapsed: {time.time() - start:.2f}s")
+                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                        logger.info(f"[EMAIL] Logged in, elapsed: {time.time() - start:.2f}s")
+                        server.send_message(msg)
+                        logger.info(f"[EMAIL] Message sent, elapsed: {time.time() - start:.2f}s")
+                except Exception as conn_error:
+                    logger.error(f"[EMAIL] Connection error: {conn_error}, elapsed: {time.time() - start:.2f}s")
+                    raise
+            else:
+                logger.info(f"[EMAIL] Using SMTP with STARTTLS (port {settings.SMTP_PORT})")
+                try:
+                    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8) as server:
+                        logger.info(f"[EMAIL] Connected, elapsed: {time.time() - start:.2f}s")
+                        if settings.SMTP_TLS:
+                            server.starttls()
+                            logger.info(f"[EMAIL] STARTTLS completed, elapsed: {time.time() - start:.2f}s")
+                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                        logger.info(f"[EMAIL] Logged in, elapsed: {time.time() - start:.2f}s")
+                        server.send_message(msg)
+                        logger.info(f"[EMAIL] Message sent, elapsed: {time.time() - start:.2f}s")
+                except Exception as conn_error:
+                    logger.error(f"[EMAIL] Connection error: {conn_error}, elapsed: {time.time() - start:.2f}s")
+                    raise
+
+            logger.info(f"[EMAIL] Total time: {time.time() - start:.2f}s")
             logger.info(f"Password reset email sent successfully to {email}")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send password reset email: {str(e)}")
+            logger.error(f"[EMAIL] Failed after {time.time() - start:.2f}s: {str(e)}")
+            logger.exception("[EMAIL] Full traceback:")
             return False
