@@ -1,4 +1,4 @@
-é#!/usr/bin/env node
+#!/usr/bin/env node
 
 /**
  * S3 deployment script
@@ -155,7 +155,7 @@ async function deployToS3() {
         '--include', '*.js',
         '--content-type', 'application/javascript',
         '--cache-control', 'max-age=31536000',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
@@ -171,7 +171,7 @@ async function deployToS3() {
         '--include', '*.map',
         '--content-type', 'application/json',
         '--cache-control', 'max-age=31536000',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
@@ -188,7 +188,7 @@ async function deployToS3() {
         '--exclude', '*.js',
         '--exclude', '*.map',
         '--cache-control', 'max-age=86400',
-        '--profile', AWS_PROFILE,
+        ...getProfileArgs(),
         '--region', S3_REGION,
         '--delete'
       ]);
