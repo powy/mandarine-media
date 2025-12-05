@@ -61,6 +61,8 @@ const TopScreen: React.FC<TopScreenProps> = ({ screenType }) => {
 
   console.log('All showcased %o', showcases);
 
+  console.log('All showcased %o', showcases);
+
   return (
     <div className="min-h-screen bg-black text-kyool-blue">
       {/* Hero Top Section */}

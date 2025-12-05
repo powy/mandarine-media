@@ -95,7 +95,7 @@ const BigCarousel: React.FC<BigCarouselProps> = ({ showcase }) => {
   return (
     // Carousel display
     <div
-      className="relative flex flex-col items-center"
+      className="relative flex flex-col items-center h-[350px] md:h-[500px] lg:h-[600px] 2xl:h-[700px]"
       style={{
         backgroundImage: `url(${getHeroImageUrl(sortedItems[currentCarouselIndex])})`,
         height: '600px',

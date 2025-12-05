@@ -2,7 +2,20 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from 'share';
 import kyoolLogo from '../assets/kyool_black.svg';
-import { Button } from '@heroui/react';
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Link,
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  NavbarMenu,
+  NavbarMenuItem,
+  NavbarMenuToggle,
+} from '@heroui/react';
 import { useAppContext } from '@src/AppContext';
 
 const Header: React.FC = () => {
@@ -12,6 +25,8 @@ const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isLoading, menu } = useAppContext();
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   if (isLoading) {
     return null;
@@ -50,107 +65,114 @@ const Header: React.FC = () => {
   }
 
   return (
-    <header className="bg-gradient-to-b from-black/70 to-100% fixed top-0 w-full z-1">
-      {/* First line: Logo, Search, User */}
-      <div className="flex items-center justify-between px-4 py-1 max-w-[1920px] m-auto">
-        {/* Logo */}
-        <button
-          onClick={handleLogoClick}
-          className="flex items-center hover:opacity-80 transition-opacity hover:cursor-pointer"
-        >
-          <img src={kyoolLogo} alt="KYOOL" className="h-8" />
-        </button>
+    <Navbar
+      onMenuOpenChange={setIsMenuOpen}
+      maxWidth="2xl"
+      className="dark bg-gradient-to-b from-black/80 to-black/0 fixed top-0"
+      isBlurred={false}
+    >
+      <NavbarContent>
+        <NavbarMenuToggle
+          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          className="lg:hidden text-white"
+        />
+        <NavbarBrand>
+          <Link href="#" onPress={handleLogoClick}>
+            <img src={kyoolLogo} alt="KYOOL" className="h-8" />
+          </Link>
+        </NavbarBrand>
+      </NavbarContent>
 
-        {/* Second line: Navigation */}
-        <nav className="border-white border-1 rounded-sm my-2">
-          <div className="flex items-center px-4 gap-6 overflow-x-auto">
-            {menu.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => navigate(item.path)}
-                className={`whitespace-nowrap hover:text-white transition-colors text-sm py-1 text-white text-shadow-sm hover:cursor-pointer ${
-                  location.pathname === item.path ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Search and User */}
-        <div className="flex items-center gap-4">
-          {/* Search button */}
-          <button
-            onClick={() => navigate('/search')}
-            className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-            aria-label="Rechercher"
-          >
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <NavbarContent className="hidden lg:flex gap-4 my-2" justify="center">
+        {menu.map((item, index) => (
+          <NavbarItem key={`${item.label}-${index}`} className="text-white">
+            <Link
+              color="foreground"
+              isBlock={true}
+              href="#"
+              onPress={() => navigate(item.path)}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </button>
-
-          {/* User menu */}
-          <div className="relative">
-            {isAuthenticated ? (
-              <button
-                onClick={handleUserClick}
-                className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-                aria-label="Compte utilisateur"
+              {item.label}
+            </Link>
+          </NavbarItem>
+        ))}
+      </NavbarContent>
+      <NavbarContent justify="end">
+        {/* Search button */}
+        <button
+          onClick={() => navigate('/search')}
+          className="p-2 rounded-full hover:bg-gray-800 transition-colors"
+          aria-label="Rechercher"
+        >
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+        <Dropdown placement="bottom-end" className="dark">
+          <DropdownTrigger>
+            <button
+              onClick={handleUserClick}
+              className="p-2 rounded-full hover:bg-gray-800 transition-colors"
+              aria-label="Compte utilisateur"
+            >
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </button>
-            ) : (
-              <Button
-                size="sm"
-                className="bg-kyool-blue text-white"
-                onPress={() => navigate('/login')}
-              >
-                Connexion
-              </Button>
-            )}
-
-            {/* User dropdown menu */}
-            {showUserMenu && isAuthenticated && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50">
-                <div className="px-4 py-2 border-b border-gray-700">
-                  <p className="text-sm text-kyool-blue">{user?.email}</p>
-                </div>
-                <button
-                  onClick={() => setShowLogoutConfirm(true)}
-                  className="w-full px-4 py-2 text-left text-sm text-kyool-blue hover:bg-gray-800 transition-colors"
-                >
-                  Déconnexion
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </button>
+          </DropdownTrigger>
+          <DropdownMenu
+            aria-label="Profile Actions"
+            variant="flat"
+            className="dark"
+          >
+            <DropdownItem key="profile">
+              <p className="font-semibold text-kyool-blue">{user?.email}</p>
+            </DropdownItem>
+            <DropdownItem
+              key="logout"
+              color="danger"
+              onPress={() => setShowLogoutConfirm(true)}
+            >
+              <span className="text-kyool-blue">Déconnexion</span>
+            </DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+      </NavbarContent>
+      <NavbarMenu className="dark">
+        {menu.map((item, index) => (
+          <NavbarMenuItem key={`${item.label}-${index}`}>
+            <Link
+              className="w-full"
+              color="foreground"
+              href="#"
+              size="lg"
+              onPress={() => navigate(item.path)}
+            >
+              {item.label}
+            </Link>
+          </NavbarMenuItem>
+        ))}
+      </NavbarMenu>
       {/* Logout confirmation modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -178,7 +200,7 @@ const Header: React.FC = () => {
           </div>
         </div>
       )}
-    </header>
+    </Navbar>
   );
 };
 

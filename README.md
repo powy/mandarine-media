@@ -5,6 +5,7 @@ A modern Korean media streaming platform with support for videos, webtoons, and 
 ## 🏗️ Project Overview
 
 Kyool Media is a complete media platform offering:
+
 - **Video Streaming**: Korean dramas, movies, variety shows, music videos
 - **Webtoons**: Digital comics with chapter-based reading
 - **Content Management**: Admin tools for content curation and user management
@@ -47,12 +48,14 @@ docker >= 20.0.0
 ### Installation & Setup
 
 1. **Install Dependencies:**
+
 ```bash
 cd kyool-media
 npm install                        # Install all workspace dependencies
 ```
 
 2. **Backend Setup:**
+
 ```bash
 cd backend
 python -m venv venv
@@ -61,6 +64,7 @@ pip install -r requirements.txt
 ```
 
 3. **Database Initialization:**
+
 ```bash
 cd backend
 alembic upgrade head              # Apply database migrations
@@ -69,6 +73,7 @@ python scripts/db_seeder.py --file data/test_seed_data.xlsx  # Seed sample data
 ```
 
 4. **Start Development Servers:**
+
 ```bash
 # Terminal 1: Frontend applications
 npm run dev                       # Starts all frontend apps
@@ -79,17 +84,18 @@ npm run start:backend            # Starts Python FastAPI server
 
 ### Access Points
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **Web App** | http://localhost:3000 | User registration or admin |
-| **Backoffice** | http://localhost:3001 | admin@kyool.com / admin123 |
-| **Alpha Mobile** | Metro bundler URLs | Same as web |
-| **API Docs** | http://localhost:8000/docs | N/A |
-| **API (ReDoc)** | http://localhost:8000/redoc | N/A |
+| Service          | URL                         | Credentials                |
+| ---------------- | --------------------------- | -------------------------- |
+| **Web App**      | http://localhost:3000       | User registration or admin |
+| **Backoffice**   | http://localhost:3001       | admin@kyool.com / admin123 |
+| **Alpha Mobile** | Metro bundler URLs          | Same as web                |
+| **API Docs**     | http://localhost:8000/docs  | N/A                        |
+| **API (ReDoc)**  | http://localhost:8000/redoc | N/A                        |
 
 ## 🛠️ Technology Stack
 
 ### Frontend
+
 - **React 18** with TypeScript across all applications
 - **Vite** for fast development and building
 - **TanStack React Query** for server state management
@@ -98,6 +104,7 @@ npm run start:backend            # Starts Python FastAPI server
 - **React Native** with Expo for mobile applications
 
 ### Backend
+
 - **FastAPI** (Python) REST API
 - **SQLAlchemy 2.0** ORM with Alembic migrations
 - **PostgreSQL** (production) / SQLite (development)
@@ -105,6 +112,7 @@ npm run start:backend            # Starts Python FastAPI server
 - **File Storage** (Local, S3, Mux video processing)
 
 ### Development Tools
+
 - **NX** monorepo management
 - **npm workspaces** for dependency management
 - **Docker** for backend containerization
@@ -113,6 +121,7 @@ npm run start:backend            # Starts Python FastAPI server
 ## 🎯 Key Features
 
 ### Content Management
+
 - **Media Descriptions**: Rich metadata for all content types
 - **Programs & Seasons**: Hierarchical content organization
 - **Category Lists**: Curated content collections
@@ -120,17 +129,20 @@ npm run start:backend            # Starts Python FastAPI server
 - **Content Status**: Draft, published, archived, scheduled states
 
 ### User Management
+
 - **Authentication**: JWT-based secure login system
 - **Role-Based Access**: Admin and regular user permissions
 - **User Profiles**: Customizable user information
 
 ### Media Support
+
 - **Video Types**: Movies, dramas, variety shows, music videos, trailers
 - **Webtoon Support**: Chapter-based image galleries
 - **File Processing**: Multiple storage backends (local, S3, Mux)
 - **Metadata Management**: Comprehensive content descriptions
 
 ### Administrative Tools
+
 - **React Admin Interface**: Full CRUD operations for all content
 - **Bulk Operations**: Excel import/export functionality
 - **User Management**: Admin controls for user accounts
@@ -139,6 +151,7 @@ npm run start:backend            # Starts Python FastAPI server
 ## 📚 Available Scripts
 
 ### Root Level Commands
+
 ```bash
 # Development
 npm run dev                    # Start all development servers
@@ -167,6 +180,7 @@ npm run stop:backend         # Stop Docker services
 ```
 
 ### Media Uploader Commands
+
 ```bash
 # Media processing and upload tool
 npm run media-uploader -- [command] [options]  # Run media uploader CLI
@@ -179,6 +193,7 @@ node apps/media-uploader/src/index.js [command] # Direct execution
 ```
 
 ### Backend Commands
+
 ```bash
 cd backend
 
@@ -204,6 +219,7 @@ The `media-uploader` is a powerful CLI tool for processing and uploading media c
 ### Overview
 
 The media uploader provides automated workflows for:
+
 - **File Analysis**: Scan and associate video, subtitle, and image files
 - **Video Upload**: Upload videos to Mux streaming platform
 - **Subtitle Management**: Upload subtitles to existing Mux assets
@@ -230,6 +246,7 @@ node apps/media-uploader/src/index.js [command] # Direct execution
 ### Available Commands
 
 #### 🔍 **analyze** (Media Analyzer)
+
 Scans directories to find and associate related media files (videos, subtitles, images).
 
 ```bash
@@ -247,8 +264,9 @@ npm run media-uploader -- analyze \
 ```
 
 **Options:**
+
 - `--video-path <path>`: Specific video folder location
-- `--subtitle-path <path>`: Specific subtitle folder location  
+- `--subtitle-path <path>`: Specific subtitle folder location
 - `--image-path <path>`: Specific image folder location
 - `--output <file>`: Save analysis results to JSON file
 - `--min-score <score>`: Minimum association confidence (default: 60)
@@ -257,6 +275,7 @@ npm run media-uploader -- analyze \
 - `--export-for-upload`: Format output for upload workflows
 
 #### 🎥 **mux-upload** (Video Upload)
+
 Uploads video files to Mux streaming platform with comprehensive options.
 
 ```bash
@@ -273,6 +292,7 @@ npm run media-uploader -- mux-upload \
 ```
 
 **Options:**
+
 - `--config <path>`: **Required** - JSON configuration file
 - `--debug`: Enable detailed debug logging
 - `--timeout <seconds>`: Upload timeout (default: 3600)
@@ -284,6 +304,7 @@ npm run media-uploader -- mux-upload \
 - `--quiet`: Errors only
 
 #### 📝 **mux-subtitle-upload** (Subtitle Upload)
+
 Uploads subtitle files to existing Mux video assets via S3 temporary storage.
 
 ```bash
@@ -298,6 +319,7 @@ npm run media-uploader -- mux-subtitle-upload \
 ```
 
 **Options:**
+
 - `--config <path>`: **Required** - JSON configuration file
 - `--debug`: Enable detailed debug logging
 - `--retry <count>`: Retry attempts (default: 3)
@@ -308,6 +330,7 @@ npm run media-uploader -- mux-subtitle-upload \
 - `--cleanup-delay <minutes>`: S3 cleanup delay (default: 120)
 
 #### 🖼️ **picture-upload** (Image Upload)
+
 Uploads images to S3 storage and creates corresponding records in the Kyool backend API.
 
 ```bash
@@ -322,11 +345,13 @@ npm run media-uploader -- picture-upload \
 ```
 
 **Options:**
+
 - `--config <path>`: **Required** - JSON configuration file
 - `--verbose`: Detailed output
 - `--dry-run`: Validate configuration without uploading
 
 #### 🚀 **one-media-complete-upload** (Complete Workflow)
+
 Executes a complete media processing workflow from folder analysis to final upload.
 
 ```bash
@@ -344,6 +369,7 @@ npm run media-uploader -- complete-upload \
 ```
 
 **Options:**
+
 - `--config <path>`: **Required** - JSON workflow configuration
 - `--folder <path>`: **Required** - Media folder path
 - `--verbose`: Detailed processing output
@@ -354,6 +380,7 @@ npm run media-uploader -- complete-upload \
 Each tool requires JSON configuration files with specific structures:
 
 #### Video Upload Configuration
+
 ```json
 {
   "mux": {
@@ -371,10 +398,11 @@ Each tool requires JSON configuration files with specific structures:
 ```
 
 #### Subtitle Upload Configuration
+
 ```json
 {
   "mux": {
-    "token_id": "your-mux-token-id", 
+    "token_id": "your-mux-token-id",
     "token_secret": "your-mux-token-secret"
   },
   "s3": {
@@ -393,6 +421,7 @@ Each tool requires JSON configuration files with specific structures:
 ```
 
 #### Picture Upload Configuration
+
 ```json
 {
   "s3": {
@@ -416,6 +445,7 @@ Each tool requires JSON configuration files with specific structures:
 ### Examples
 
 #### Complete Media Processing Workflow
+
 ```bash
 # 1. Analyze media folder structure
 npm run media-uploader -- analyze /content/new-series \
@@ -442,6 +472,7 @@ npm run media-uploader -- complete-upload \
 ```
 
 #### Batch Processing with Validation
+
 ```bash
 # Always validate first
 npm run media-uploader -- complete-upload \
@@ -459,6 +490,7 @@ npm run media-uploader -- complete-upload \
 ### Logging and Monitoring
 
 All tools provide comprehensive logging:
+
 - **Console Output**: Real-time progress and status
 - **Log Files**: Detailed logs in `apps/media-uploader/logs/`
 - **Progress Tracking**: Upload progress bars and percentage completion
@@ -469,12 +501,14 @@ All tools provide comprehensive logging:
 Common issues and solutions:
 
 1. **Configuration Errors**:
+
    ```bash
    # Use dry-run to validate configs
    npm run media-uploader -- [command] --config config.json --dry-run
    ```
 
 2. **Upload Failures**:
+
    ```bash
    # Increase timeout and retries
    npm run media-uploader -- mux-upload \
@@ -501,6 +535,7 @@ The project includes comprehensive documentation added in August 2025:
 - **[Web App Code Review](documents/kyool_web_app_code_review_20250819.md)**: Frontend implementation details
 
 ### Interactive Documentation
+
 - **API Documentation**: http://localhost:8000/docs (Swagger UI)
 - **Alternative API Docs**: http://localhost:8000/redoc
 - **OpenAPI Schema**: http://localhost:8000/api/v1/openapi.json
@@ -508,12 +543,14 @@ The project includes comprehensive documentation added in August 2025:
 ## 🔧 Development Workflow
 
 ### Adding New Features
+
 1. **Backend**: Create model → schema → CRUD → API endpoint
 2. **Frontend**: Add API client → React hooks → components → screens
 3. **Shared**: Update types and shared utilities
 4. **Testing**: Add unit and integration tests
 
 ### Database Changes
+
 ```bash
 cd backend
 # Modify models in app/models/
@@ -526,6 +563,7 @@ alembic upgrade head
 ### Environment Configuration
 
 #### Backend (.env)
+
 ```bash
 ENVIRONMENT=development
 SECRET_KEY=your-secret-key
@@ -533,15 +571,23 @@ DATABASE_URI=sqlite:///./kyool_media.db
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
-#### Frontend (apps/backoffice/.env)
+#### Frontend Backoffice (apps/backoffice/.env)
+
 ```bash
 VITE_API_BASE_URL=http://localhost:8000
 VITE_ENVIRONMENT=development
 ```
 
+#### Frontend (apps/web/.env et apps/web/.env.production)
+
+```bash
+VITE_BACKEND_URL=https://api.dev.kyool.fr
+```
+
 ## 🧪 Testing
 
 ### Backend Testing
+
 ```bash
 cd backend
 pytest                          # All tests
@@ -551,6 +597,7 @@ pytest --cov=app tests/         # Coverage report
 ```
 
 ### Frontend Testing
+
 ```bash
 npm run test                     # All workspaces
 npm run test:share              # Shared package only
@@ -558,6 +605,7 @@ npm run test:backoffice         # Backoffice only
 ```
 
 ### End-to-End Testing
+
 ```bash
 npm run test:e2e                # Run E2E test suite
 ```
@@ -565,6 +613,7 @@ npm run test:e2e                # Run E2E test suite
 ## 🚀 Deployment
 
 ### Production Build
+
 ```bash
 npm run build                   # Build all frontend apps
 cd backend
@@ -574,6 +623,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 ### Docker Deployment
+
 ```bash
 cd backend
 docker-compose -f docker-compose.dev.yml up --build
@@ -584,11 +634,13 @@ docker-compose -f docker-compose.dev.yml up --build
 ### Common Issues
 
 1. **Module not found errors**:
+
    ```bash
    npm run clean && npm install
    ```
 
 2. **Database issues**:
+
    ```bash
    cd backend
    alembic downgrade base
@@ -607,6 +659,7 @@ docker-compose -f docker-compose.dev.yml up --build
    ```
 
 ### Performance Tips
+
 - Use pagination for large datasets
 - Implement proper caching strategies
 - Monitor API response times

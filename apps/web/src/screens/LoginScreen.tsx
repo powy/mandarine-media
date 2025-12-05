@@ -108,12 +108,11 @@ const LoginScreen: React.FC = () => {
 
         {/* Register Link */}
         <div className="mt-6 text-center">
-          <span className="text-gray-400 text-sm">Vous n'avez pas de compte? </span>
           <Link
             to="/register"
             className="text-kyool-blue hover:text-kyool-blue/80 text-sm font-medium"
           >
-            Nouveau compte
+            Vous n'avez pas de compte? Nouveau compte
           </Link>
         </div>
       </div>

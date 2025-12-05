@@ -57,7 +57,7 @@ const RegisterScreen: React.FC = () => {
           <h1 className="text-2xl font-bold text-kyool-blue">
             Créer un compte
           </h1>
-          <p className="text-gray-400 mt-2 text-sm">
+          <p className="text-kyool-blue mt-2 text-sm">
             Entrez votre adresse email pour créer votre compte
           </p>
         </div>
@@ -141,12 +141,11 @@ const RegisterScreen: React.FC = () => {
 
         {/* Back to Login Link */}
         <div className="mt-6 text-center">
-          <span className="text-gray-400 text-sm">Vous avez déjà un compte? </span>
           <Link
             to="/login"
             className="text-kyool-blue hover:text-kyool-blue/80 text-sm font-medium"
           >
-            Se connecter
+            Vous avez déjà un compte? Se connecter
           </Link>
         </div>
       </div>
