@@ -13,6 +13,9 @@ export * from './useSeasonJSON';
 export { useMediaShowcase as useMediaShowcaseLogic } from './useMediaShowcase';
 export * from './usePicture';
 export * from './useDebounce';
+export * from './useContact';
+export * from './usePasswordReset';
+export * from './useRegister';
 export * from './useVerifyVideoFile';
 export * from './useVerifyMediaDescription';
 

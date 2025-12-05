@@ -55,7 +55,9 @@ const TopScreen: React.FC<TopScreenProps> = ({ screenType }) => {
 
   // Use media_showcases from screen data
   const showcases = screenData.media_showcases || [];
-  const hero = showcases.length > 0 ? showcases[0] : null;
+  const hero = showcases.length > 0 && showcases[0].items?.length > 0
+    ? showcases[0]
+    : null;
 
   console.log('All showcased %o', showcases);
 

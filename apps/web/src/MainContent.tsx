@@ -8,6 +8,14 @@ import ProgramScreen from './screens/ProgramScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import SearchScreen from './screens/SearchScreen';
 import PrivateRoutes from './PrivateRoutes';
+import CgvScreen from './screens/legal/CgvScreen';
+import PrivacyScreen from './screens/legal/PrivacyScreen';
+import CookiesScreen from './screens/legal/CookiesScreen';
+import MentionsLegalesScreen from './screens/legal/MentionsLegalesScreen';
+import ContactScreen from './screens/ContactScreen';
+import RequestPasswordResetScreen from './screens/RequestPasswordResetScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import RegisterScreen from './screens/RegisterScreen';
 
 const MainContent: FC = () => {
   return (
@@ -25,9 +33,17 @@ const MainContent: FC = () => {
           <Route path="/dramas" element={<TopScreen />} />
           <Route path="/tv-shows" element={<TopScreen />} />
           <Route path="/autre" element={<TopScreen />} />
+          <Route path="/contact" element={<ContactScreen />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Route>
         <Route path="/login" element={<LoginScreen />} />
+        <Route path="/register" element={<RegisterScreen />} />
+        <Route path="/request-password-reset" element={<RequestPasswordResetScreen />} />
+        <Route path="/reset-password" element={<ResetPasswordScreen />} />
+        <Route path="/legal/cgv" element={<CgvScreen />} />
+        <Route path="/legal/privacy" element={<PrivacyScreen />} />
+        <Route path="/legal/cookies" element={<CookiesScreen />} />
+        <Route path="/legal/mentions" element={<MentionsLegalesScreen />} />
       </Routes>
     </main>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from 'share';
 import kyoolLogo from '../assets/kyool_black.svg';
 
@@ -79,6 +79,14 @@ const LoginScreen: React.FC = () => {
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-kyool-blue focus:border-transparent"
               placeholder="••••••••"
             />
+            <div className="mt-2 text-center">
+              <Link
+                to="/request-password-reset"
+                className="text-kyool-blue hover:text-kyool-blue/80 text-sm"
+              >
+                J'ai perdu mon mot de passe
+              </Link>
+            </div>
           </div>
 
           {/* Error Message */}
@@ -97,6 +105,17 @@ const LoginScreen: React.FC = () => {
             {isLoggingIn ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
+
+        {/* Register Link */}
+        <div className="mt-6 text-center">
+          <span className="text-gray-400 text-sm">Vous n'avez pas de compte? </span>
+          <Link
+            to="/register"
+            className="text-kyool-blue hover:text-kyool-blue/80 text-sm font-medium"
+          >
+            Nouveau compte
+          </Link>
+        </div>
       </div>
     </div>
   );

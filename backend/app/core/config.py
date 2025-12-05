@@ -52,10 +52,50 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
-    
+
+    # Email Configuration
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: str = "noreply@kyool-media.com"
+    SMTP_FROM_NAME: str = "KYOOL Media"
+    SMTP_TLS: bool = True
+
+    # Contact Form Configuration
+    CONTACT_RECIPIENT_EMAIL: str = "thierry@kftv.fr"
+    CONTACT_RATE_LIMIT_PER_HOUR: int = 10
+
+    # Cloudflare Turnstile
+    TURNSTILE_SECRET_KEY: Optional[str] = None
+
+    # Password Reset Configuration
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 1
+    PASSWORD_RESET_RATE_LIMIT_PER_HOUR: int = 3
+    FRONTEND_BASE_URL: str = "http://localhost:3000"  # For email links
+
+    # User Registration Configuration
+    REGISTRATION_RATE_LIMIT_PER_HOUR: int = 5
+
     # API Settings
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
+
+    # AWS and S3 Playback Logging Configuration
+    AWS_REGION: str = "us-east-1"
+    S3_PLAYBACK_LOGS_BUCKET: Optional[str] = None
+    ENABLE_S3_LOGGING: bool = False
+    S3_WRITE_TIMEOUT_SECONDS: int = 10
+
+    # Playback Session Configuration
+    HEARTBEAT_BUFFER_SIZE: int = 100
+    HEARTBEAT_INTERVAL_SECONDS: int = 15
+    SESSION_TIMEOUT_MINUTES: int = 30
+    HEARTBEAT_RATE_LIMIT_SECONDS: int = 5
+
+    # Streaming Limits
+    MAX_CONCURRENT_STREAMS: int = 2
+    MAX_DAILY_WATCH_HOURS: int = 8
     
     # File Upload Storage Configuration
     UPLOAD_LOCAL_STORAGE_PATH: str = "./uploads"

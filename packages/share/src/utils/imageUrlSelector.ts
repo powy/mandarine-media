@@ -12,9 +12,12 @@ import { MediaShowcaseItemJSON } from '../types';
  * @returns The selected image URL, or falls back to thumbnail_url if variants unavailable
  */
 export function selectImageUrl(
-  item: MediaShowcaseItemJSON,
+  item: MediaShowcaseItemJSON | undefined,
   preferLarge: boolean = false
 ): string | undefined {
+  // Guard against undefined item
+  if (!item) return undefined;
+
   // If no thumbnail_url, return undefined
   if (!item.thumbnail_url) return undefined;
 
@@ -99,7 +102,7 @@ export function selectImageUrl(
  * @param item - The media showcase item
  * @returns The optimal thumbnail URL
  */
-export function getThumbnailImageUrl(item: MediaShowcaseItemJSON): string | undefined {
+export function getThumbnailImageUrl(item: MediaShowcaseItemJSON | undefined): string | undefined {
   return selectImageUrl(item, false);
 }
 
@@ -110,6 +113,6 @@ export function getThumbnailImageUrl(item: MediaShowcaseItemJSON): string | unde
  * @param item - The media showcase item
  * @returns The optimal hero image URL
  */
-export function getHeroImageUrl(item: MediaShowcaseItemJSON): string | undefined {
+export function getHeroImageUrl(item: MediaShowcaseItemJSON | undefined): string | undefined {
   return selectImageUrl(item, true);
 }

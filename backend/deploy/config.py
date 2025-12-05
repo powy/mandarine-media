@@ -172,6 +172,18 @@ _essential_vars = {
     "MUX_SIGNING_KEY_ID",
     "MUX_PRIVATE_KEY",
     "MUX_TOKEN_EXPIRATION_MINUTES",
+    # Email configuration (required for contact form and password reset)
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASSWORD",
+    "SMTP_FROM_EMAIL",
+    "SMTP_FROM_NAME",
+    "SMTP_TLS",
+    "CONTACT_RECIPIENT_EMAIL",
+    "TURNSTILE_SECRET_KEY",
+    "PASSWORD_RESET_TOKEN_EXPIRE_HOURS",
+    "FRONTEND_BASE_URL",
 }
 
 # Filter environment file variables to only essential ones

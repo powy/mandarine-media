@@ -19,6 +19,9 @@ from app.api.v1.endpoints import (
     audience_categories,
     subscription_plans,
     media_themes,
+    contact,
+    password_reset,
+    register,
     system,
 )
 
@@ -29,7 +32,9 @@ api_router.include_router(
     media_descriptions.router, prefix="/media-descriptions", tags=["media-descriptions"]
 )
 api_router.include_router(
-    media_description_people.router, prefix="/media-descriptions", tags=["media-description-people"]
+    media_description_people.router,
+    prefix="/media-descriptions",
+    tags=["media-description-people"],
 )
 api_router.include_router(
     video_files.router, prefix="/video-files", tags=["video-files"]
@@ -72,4 +77,9 @@ api_router.include_router(
 api_router.include_router(
     media_themes.router, prefix="/media-themes", tags=["media-themes"]
 )
+api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+api_router.include_router(
+    password_reset.router, prefix="/password-reset", tags=["password-reset"]
+)
+api_router.include_router(register.router, prefix="/register", tags=["register"])
 api_router.include_router(system.router, prefix="/system", tags=["system"])

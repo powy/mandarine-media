@@ -49,15 +49,30 @@ const PUBLIC_READ_ONLY_PATTERNS = [
   /^\/countries\/[^\/]+$/,
 ];
 
+// Define POST endpoints that do NOT require authentication (auth flows)
+const PUBLIC_POST_PATTERNS = [
+  /^\/password-reset\/request$/,
+  /^\/password-reset\/confirm$/,
+  /^\/auth\/refresh$/,  // Token refresh should also be public
+];
+
 // Check if endpoint is public and doesn't need authentication
 const isPublicEndpoint = (method: string, url?: string): boolean => {
   if (!url) return false;
 
-  // Only GET requests can be public
-  if (method.toUpperCase() !== 'GET') return false;
+  const methodUpper = method.toUpperCase();
 
-  // Check if URL matches public patterns
-  return PUBLIC_READ_ONLY_PATTERNS.some(pattern => pattern.test(url));
+  // Check POST patterns for auth-related endpoints
+  if (methodUpper === 'POST') {
+    return PUBLIC_POST_PATTERNS.some(pattern => pattern.test(url));
+  }
+
+  // Check GET patterns for public read-only endpoints
+  if (methodUpper === 'GET') {
+    return PUBLIC_READ_ONLY_PATTERNS.some(pattern => pattern.test(url));
+  }
+
+  return false;
 };
 
 // Request interceptor to add auth token when needed

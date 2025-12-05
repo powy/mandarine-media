@@ -1604,6 +1604,55 @@ export interface ProgramScreenData {
   }>;
 }
 
+// Contact Form Types
+export interface ContactFormRequest {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  turnstileToken: string;
+  user_id?: string;
+}
+
+export interface ContactFormResponse {
+  success: boolean;
+  message: string;
+}
+
+// Password Reset Types
+export interface PasswordResetRequest {
+  email: string;
+  email_confirm: string;
+  turnstileToken: string;
+}
+
+export interface PasswordResetRequestResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface PasswordResetConfirm {
+  token: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
+export interface PasswordResetConfirmResponse {
+  success: boolean;
+  message: string;
+}
+
+// User Registration Types
+export interface UserRegistrationRequest {
+  email: string;
+  email_confirm: string;
+  turnstileToken: string;
+}
+
+export interface UserRegistrationResponse {
+  success: boolean;
+  message: string;
+}
 // Verify/Diagnosis response types
 export interface VerifyResponse {
   id: string;

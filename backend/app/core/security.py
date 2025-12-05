@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union, Optional
+import secrets
 from jose import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
@@ -37,3 +38,20 @@ def verify_token(token: str) -> Optional[str]:
         return payload.get("sub")
     except jwt.JWTError:
         return None
+
+
+# Password Reset Token Functions
+
+def generate_password_reset_token() -> str:
+    """Generate a secure random token for password reset (256 bits of randomness)"""
+    return secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    """Hash a reset token for storage using bcrypt"""
+    return get_password_hash(token)
+
+
+def verify_reset_token(plain_token: str, hashed_token: str) -> bool:
+    """Verify a reset token against its hash using bcrypt"""
+    return verify_password(plain_token, hashed_token)

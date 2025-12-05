@@ -15,6 +15,7 @@ export * from './screen-contents'; // Note: now includes screen-descriptions exp
 export * from './audience-categories';
 export * from './subscription-plans';
 export * from './media-themes';
+export * from './contact';
 export * from './system';
 
 // API 1.13 New exports

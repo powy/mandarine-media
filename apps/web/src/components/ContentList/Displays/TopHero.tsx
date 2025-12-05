@@ -27,6 +27,11 @@ const BigCarousel: React.FC<BigCarouselProps> = ({ showcase }) => {
     return null;
   }
 
+  // Guard against empty sortedItems array
+  if (!sortedItems || sortedItems.length === 0) {
+    return null;
+  }
+
   const handleItemClick = async (item: MediaShowcaseItem) => {
     console.log('MediaShowcase: Item clicked:', item);
 
