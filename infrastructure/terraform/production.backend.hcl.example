@@ -1,0 +1,4 @@
+bucket = "kyool-terraform-state-123456789012"
+region = "eu-west-3"
+profile = "kyool"
+dynamodb_table = "kyool-terraform-locks"

@@ -1,0 +1,29 @@
+# Sensitive variable files — never commit real values
+*.tfvars
+!*.tfvars.example
+
+# Terraform state — stored in S3 remote backend
+*.tfstate
+*.tfstate.backup
+
+# Terraform working directory
+.terraform/
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files (local overrides, not for VCS)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraformer generated output (raw import, not curated)
+generated/
+
+# Plan files (may contain secrets)
+*.tfplan
+
+# Local backend selection
+*.backend.hcl

@@ -1,0 +1,35 @@
+# Fresh deployment settings; credentials/IDs belong in gitignored production.tfvars.
+aws_region = "eu-west-3"
+aws_profile = "kyool"
+environment = "production"
+vpc_cidr = "172.31.0.0/16"
+db_master_username = "postgres"
+db_master_password = "REPLACE_WITH_NEW_PASSWORD"
+db_instance_class = "db.t4g.micro"
+# Confirm the current PostgreSQL 15 version available in this region.
+db_engine_version = "15"
+# Build and push an x86_64-compatible image before the full apply.
+lambda_image_uri = "123456789012.dkr.ecr.eu-west-3.amazonaws.com/kyool-api-production:rebuild"
+site_domains = ["kyool.eu", "www.kyool.eu", "kyool.fr", "www.kyool.fr"]
+# Generated names avoid relying on deleted globally unique bucket names.
+bucket_names = {}
+# These prefixes are reconstruction choices; paths retain prefixes in object keys.
+content_path_patterns = { public_files = "files/*", public_pictures = "pictures/*" }
+lambda_env_vars = {
+  SECRET_KEY = "REPLACE_WITH_NEW_SECRET"
+  MUX_SIGNING_KEY_ID = ""
+  MUX_PRIVATE_KEY = ""
+  MUX_TOKEN_EXPIRATION_MINUTES = "60"
+  SMTP_HOST = "mail.infomaniak.com"
+  SMTP_PORT = "587"
+  SMTP_USER = "noreply@kyool.eu"
+  SMTP_PASSWORD = "REPLACE_WITH_NEW_PASSWORD"
+  SMTP_FROM_EMAIL = "noreply@kyool.eu"
+  SMTP_FROM_NAME = "Kyool Media"
+  SMTP_TLS = "true"
+  CONTACT_RECIPIENT_EMAIL = "REPLACE_WITH_EMAIL"
+  TURNSTILE_SECRET_KEY = "REPLACE_WITH_NEW_SECRET"
+  PASSWORD_RESET_TOKEN_EXPIRE_HOURS = "24"
+  FRONTEND_BASE_URL = "https://www.kyool.eu"
+}
+# Database settings and API stage prefix are derived in main.tf.
