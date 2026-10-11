@@ -5,6 +5,7 @@ import { createLogger } from './config/logger.js';
 import { loadConfigFile } from './utils/fileUtils.js';
 import { MuxUploadError, ErrorCodes } from './utils/errorHandler.js';
 import UploadService from './services/uploadService.js';
+import UploadServiceNoServer from './services/uploadServiceNoServer.js';
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,12 @@ export async function uploadToMux(options, context = {}) {
 
     // Load and validate configuration
     const { config, configPath } = await loadConfigFile(options.config);
+
+    // Strip server credentials when in no-server mode
+    if (options.noServer) {
+      delete config.backend;
+      delete config.database;
+    }
 
     // Override config with environment variables
     mergeEnvironmentVariables(config);
@@ -85,7 +92,9 @@ export async function uploadToMux(options, context = {}) {
     });
 
     // Initialize upload service
-    const uploadService = new UploadService(validatedConfig, logger);
+    const uploadService = options.noServer
+      ? new UploadServiceNoServer(validatedConfig, logger)
+      : new UploadService(validatedConfig, logger);
 
     // Perform upload
     const result = await performUpload(uploadService, validatedConfig);

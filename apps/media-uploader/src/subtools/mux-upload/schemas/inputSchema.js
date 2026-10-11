@@ -143,7 +143,9 @@ export const configSchema = Joi.object({
     server_address: Joi.string().uri().required(),
     user: Joi.string().required(),
     password: Joi.string().required()
-  }).required(),
+  }).optional(),
+
+  no_server: Joi.boolean().optional(),
   
   video: Joi.object({
     filepath: Joi.string().required(),

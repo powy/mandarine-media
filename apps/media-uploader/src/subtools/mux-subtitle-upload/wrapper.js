@@ -70,7 +70,8 @@ export async function uploadSubtitlesToMux(options) {
       quiet: options.quiet,
       dryRun: options.dryRun,
       logFile: options.logFile,
-      logger: options.logger
+      logger: options.logger,
+      noServer: options.noServer
     });
 
     // Display completion message if not quiet

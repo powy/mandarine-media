@@ -17,9 +17,14 @@ const LANGUAGES = {
   'ko': '한국어'
 };
 
+// Strip Unicode bidirectional control characters (e.g. U+202A inserted by Windows Explorer on copy)
+const BIDI_CONTROL_RE = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
+const PATH_FIELDS = new Set(['configFile', 'folder', 'parentFolder', 'picture', 'subtitle']);
+
 export default function InputSection({ inputs, onChange, errors }) {
   const handleChange = (field, value) => {
-    onChange({ ...inputs, [field]: value });
+    const sanitized = PATH_FIELDS.has(field) ? value.replace(BIDI_CONTROL_RE, '') : value;
+    onChange({ ...inputs, [field]: sanitized });
   };
 
   return (

@@ -193,6 +193,13 @@ export const CONFIG = {
       function: 'regenerateEpisodeNames',
       description: 'Regenerate episode names from season name and folder structure',
       requiredParams: ['config', 'parentFolder']
+    },
+
+    // Mux reports and diagnostics
+    'generate-mux-report': {
+      function: 'generateMuxReport',
+      description: 'Generate comprehensive Mux asset report',
+      requiredParams: ['config']
     }
   },
 

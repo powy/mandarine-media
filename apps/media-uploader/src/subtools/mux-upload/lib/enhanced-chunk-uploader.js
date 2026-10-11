@@ -427,12 +427,7 @@ export class EnhancedChunkUploader {
         validateStatus: (status) => status === 200 || status === 201 || status === 308,
         // Use connection pooling and keep-alive
         httpAgent: this.httpAgent,
-        httpsAgent: this.httpsAgent,
-        // DNS lookup timeout
-        lookup: {
-          family: 4, // IPv4
-          hints: 0
-        }
+        httpsAgent: this.httpsAgent
       });
 
       this.logger.debug('Chunk upload response received', {

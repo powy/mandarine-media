@@ -367,6 +367,48 @@ export default function ActionsSection({ inputs, onCreateTask, creating }) {
             </div>
           </div>
         </div>
+
+        {/* Category 5: RAPPORTS ET DIAGNOSTICS */}
+        <div>
+          <h2 className="text-lg font-bold mb-4 text-purple-800 border-b-2 border-purple-300 pb-2">
+            5. RAPPORTS ET DIAGNOSTICS
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-md font-semibold mb-3 text-blue-700">Rapports Mux</h3>
+              <div className="space-y-2">
+                <ActionButton
+                  taskType="generate-mux-report"
+                  label="Générer Rapport Complet Mux"
+                  requiredFields={['configFile']}
+                  description={createTooltip(
+                    ['configFile'],
+                    'Génère un rapport Excel complet de tous les assets Mux avec analyse des sous-titres et URLs de lecture'
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-blue-800 mb-2">
+              <strong>📊 Génération de Rapport Mux</strong>
+            </p>
+            <p className="text-sm text-blue-800">
+              Le rapport sera sauvegardé dans le dossier <code>Desktop\mux_reports</code> avec un horodatage.
+            </p>
+            <p className="text-sm text-blue-800 mt-2">
+              <strong>Contenu du rapport:</strong>
+            </p>
+            <ul className="text-sm text-blue-800 list-disc ml-5 mt-1">
+              <li>Tous les assets Mux avec leur statut (ready, preparing, errored, etc.)</li>
+              <li>Analyse des sous-titres pour fr, en, ko (OK, none, broken, duplicated)</li>
+              <li>URLs de lecture (public, signed, DRM)</li>
+              <li>Asset ID et date de création</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* Info message */}

@@ -19,6 +19,14 @@ const FUNCTION_NAME = process.env.FUNCTION;
 const PARAMS = JSON.parse(process.env.PARAMS || '{}');
 const LOG_FILE = process.env.LOG_FILE;
 
+// Strip Unicode bidirectional control characters from path params (e.g. U+202A from Windows Explorer copy-paste)
+const BIDI_CONTROL_RE = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
+for (const key of ['subtitle', 'folder', 'parentFolder', 'picture', 'config']) {
+  if (typeof PARAMS[key] === 'string') {
+    PARAMS[key] = PARAMS[key].replace(BIDI_CONTROL_RE, '');
+  }
+}
+
 // Create log writer
 const logWriter = {
   write(message) {
@@ -183,7 +191,7 @@ async function executeTask() {
         // Optimize all pictures of a media description (create WebP large/small variants)
         const { optimizeMediaDescriptionPicturesWithIni } = await import('../optimize-picture/iniWrapper.js');
 
-        logWriter.info(\);
+        logWriter.info(`Optimizing pictures for media description: ${PARAMS.mediaDescriptionId}`);
 
         return await optimizeMediaDescriptionPicturesWithIni(
           PARAMS.mediaDescriptionId,  // Media description UUID
@@ -550,6 +558,35 @@ async function executeTask() {
             verbose: true,
             logFile: LOG_FILE,
             dryRun: PARAMS.dryRun || false
+          }
+        );
+      },
+
+      // Mux report generation
+      generateMuxReport: async () => {
+        const { generateMuxReportWithIni } = await import('../mux-report-generator/index.js');
+
+        logWriter.info('Generating Mux asset report');
+        logWriter.info(`Config: ${PARAMS.config}`);
+
+        // Validate required parameters
+        if (!PARAMS.config) {
+          throw new Error('Missing config file path');
+        }
+
+        return await generateMuxReportWithIni(
+          PARAMS.config,
+          {
+            verbose: true,
+            logger: logWriter,
+            progressCallback: (progress) => {
+              if (progress.message) {
+                logWriter.info(`Progress: ${progress.message}`);
+              }
+              if (progress.current) {
+                reportProgress(progress.current);
+              }
+            }
           }
         );
       }

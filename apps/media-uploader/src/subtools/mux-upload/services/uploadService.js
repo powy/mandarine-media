@@ -21,6 +21,7 @@ export class UploadService {
     this.backendService = new BackendService(config, logger);
     this.dbClient = null;
     this.videoRecord = null;
+    this.backendSkipped = false;
 
     // Initialize enhanced upload components
     this.retryHandler = new EnhancedRetryHandler(logger);
@@ -74,12 +75,15 @@ export class UploadService {
       if (this.config.options?.enable_health_check !== false) {
         this.logger.info('Step 0: Performing pre-upload network health check');
 
-        // Extract backend hostname for health check
-        const backendHostname = this.config.backend.server_address.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+        const healthEndpoints = ['api.mux.com'];
+        if (this.config.backend?.server_address) {
+          const backendHostname = this.config.backend.server_address.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+          healthEndpoints.push(backendHostname);
+        }
 
         const healthResult = await this.healthChecker.checkHealth({
           timeout: this.config.options?.health_check_timeout || 10000,
-          endpoints: ['api.mux.com', backendHostname]
+          endpoints: healthEndpoints
         });
 
         if (!healthResult.healthy) {
@@ -112,7 +116,13 @@ export class UploadService {
       
       // Step 2: Test backend connection
       this.logger.info('Step 2: Testing backend connection');
-      await this.backendService.testConnection();
+      try {
+        await this.backendService.testConnection();
+        this.logger.info('✅ Backend connection verified');
+      } catch (error) {
+        this.logger.warn(`⚠️  Backend unreachable — skipping backend steps: ${error.message}`);
+        this.backendSkipped = true;
+      }
       
       // Step 3: Extract video metadata
       this.logger.info('Step 3: Extracting video metadata');
@@ -120,7 +130,17 @@ export class UploadService {
       
       // Step 4: Get languages from backend
       this.logger.info('Step 4: Fetching language list from backend');
-      const languages = await this.backendService.getLanguages();
+      let languages = [];
+      if (!this.backendSkipped) {
+        try {
+          languages = await this.backendService.getLanguages();
+        } catch (error) {
+          this.logger.warn(`⚠️  Could not fetch languages from backend: ${error.message}`);
+          this.backendSkipped = true;
+        }
+      } else {
+        this.logger.info('Step 4: Skipping language fetch (backend unavailable)');
+      }
       videoMetadata.languages = languages;
       
       // Step 5: Validate video file (needed for Mux upload)
@@ -151,9 +171,20 @@ export class UploadService {
       });
       
       // Step 7: Create video file record (asset ID will be added later)
-      this.logger.info('Step 7: Creating video file record in backend');
-      this.videoRecord = await this.backendService.createVideoFileRecord(videoMetadata);
-      this.logger.info('Video record created with UUID', { uuid: this.videoRecord.id });
+      if (!this.backendSkipped) {
+        this.logger.info('Step 7: Creating video file record in backend');
+        try {
+          this.videoRecord = await this.backendService.createVideoFileRecord(videoMetadata);
+          this.logger.info('Video record created with UUID', { uuid: this.videoRecord.id });
+        } catch (error) {
+          this.logger.warn(`⚠️  Could not create backend video record: ${error.message} — continuing with Mux upload`);
+          this.videoRecord = null;
+          this.backendSkipped = true;
+        }
+      } else {
+        this.logger.info('Step 7: Skipping backend record creation (backend unavailable)');
+        this.videoRecord = null;
+      }
       
       this.logger.logUploadStart(fileInfo.filepath, fileInfo.size, uploadId);
 
@@ -206,13 +237,18 @@ export class UploadService {
       this.logger.logUploadComplete(uploadId, assetId, asset.duration);
 
       // CRITICAL: Re-authenticate after long upload to prevent 401 errors on backend updates
-      if (uploadDuration > 30 * 60 * 1000 || this.backendService.isTokenNearExpiry(10)) {
+      if (!this.backendSkipped && (uploadDuration > 30 * 60 * 1000 || this.backendService.isTokenNearExpiry(10))) {
         this.logger.info('Refreshing authentication after upload completion', {
           uploadDuration: `${Math.round(uploadDuration / 1000)} seconds`,
           tokenNearExpiry: this.backendService.isTokenNearExpiry(10)
         });
-        await this.backendService.authenticate(true);
-      } else {
+        try {
+          await this.backendService.authenticate(true);
+        } catch (error) {
+          this.logger.warn(`⚠️  Re-authentication failed: ${error.message}`);
+          this.backendSkipped = true;
+        }
+      } else if (!this.backendSkipped) {
         this.logger.debug('Authentication check passed - no refresh needed', {
           uploadDuration: `${Math.round(uploadDuration / 1000)} seconds`,
           tokenExpired: this.backendService.isTokenExpired()
@@ -220,7 +256,7 @@ export class UploadService {
       }
 
       // Step 8c: Post-upload backend connectivity check (for long uploads)
-      if (uploadDuration > 5 * 60 * 1000) { // Only for uploads > 5 minutes
+      if (!this.backendSkipped && uploadDuration > 5 * 60 * 1000) { // Only for uploads > 5 minutes
         this.logger.info('Step 8c: Verifying backend connectivity after long upload');
 
         const backendHostname = this.config.backend.server_address.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
@@ -258,13 +294,15 @@ export class UploadService {
 
       // Update status to upload completed
       const isPostUpload = uploadDuration > 5 * 60 * 1000; // Flag for post-upload retry logic
-      await this.backendService.updateUploadStatus(
-        this.videoRecord.id,
-        'upload_completed',
-        assetId,
-        null, // muxPlaybackId
-        isPostUpload
-      );
+      if (this.videoRecord) {
+        await this.backendService.updateUploadStatus(
+          this.videoRecord.id,
+          'upload_completed',
+          assetId,
+          null, // muxPlaybackId
+          isPostUpload
+        );
+      }
       
       // Step 9: Wait for asset to be ready
       this.logger.info('Step 9: Waiting for Mux asset to be ready');
@@ -294,35 +332,39 @@ export class UploadService {
       }
 
       // Step 10: Complete video file data from Mux API
-      this.logger.info('Step 10: Completing video file data from Mux API');
-      try {
-        const completedVideoFile = await this.backendService.completeVideoFileFromMux(this.videoRecord.id);
+      if (this.videoRecord) {
+        this.logger.info('Step 10: Completing video file data from Mux API');
+        try {
+          const completedVideoFile = await this.backendService.completeVideoFileFromMux(this.videoRecord.id);
 
-        if (completedVideoFile) {
-          this.logger.info('Video file completed successfully with Mux data', {
-            uuid: this.videoRecord.id,
-            duration: completedVideoFile.duration_seconds,
-            encoding_status: completedVideoFile.encoding_status,
-            file_url: completedVideoFile.file_url,
-            mux_playback_id: completedVideoFile.mux_playback_id
+          if (completedVideoFile) {
+            this.logger.info('Video file completed successfully with Mux data', {
+              uuid: this.videoRecord.id,
+              duration: completedVideoFile.duration_seconds,
+              encoding_status: completedVideoFile.encoding_status,
+              file_url: completedVideoFile.file_url,
+              mux_playback_id: completedVideoFile.mux_playback_id
+            });
+            // Update our local reference with completed data
+            this.videoRecord = completedVideoFile;
+          }
+        } catch (error) {
+          // The complete-from-mux endpoint failed - use fallback method
+          this.logger.warn('Complete-from-mux endpoint failed, using fallback manual update', {
+            error: error.message,
+            assetId,
+            videoRecordId: this.videoRecord.id
           });
-          // Update our local reference with completed data
-          this.videoRecord = completedVideoFile;
-        }
-      } catch (error) {
-        // The complete-from-mux endpoint failed - use fallback method
-        this.logger.warn('Complete-from-mux endpoint failed, using fallback manual update', {
-          error: error.message,
-          assetId,
-          videoRecordId: this.videoRecord.id
-        });
 
-        await this.backendService.updateVideoFileWithMuxData(this.videoRecord.id, {
-          assetId: readyAsset.id,
-          status: readyAsset.status,
-          duration: readyAsset.duration,
-          playback_ids: readyAsset.playback_ids
-        });
+          await this.backendService.updateVideoFileWithMuxData(this.videoRecord.id, {
+            assetId: readyAsset.id,
+            status: readyAsset.status,
+            duration: readyAsset.duration,
+            playback_ids: readyAsset.playback_ids
+          });
+        }
+      } else {
+        this.logger.info('Step 10: Skipping backend completion (backend unavailable)');
       }
       
       // Step 11: Add subtitles if provided
@@ -343,11 +385,11 @@ export class UploadService {
       // Prepare result
       const result = {
         success: true,
-        backend_record: {
+        backend_record: this.videoRecord ? {
           uuid: this.videoRecord.id,
           upload_status: 'upload_completed',
           upload_url: this.videoRecord.upload_url
-        },
+        } : null,
         upload: {
           id: uploadId,
           status: 'completed'
@@ -385,7 +427,7 @@ export class UploadService {
       };
       
       this.logger.info('Enhanced upload process completed successfully', {
-        uuid: this.videoRecord.id,
+        uuid: this.videoRecord?.id || null,
         uploadId,
         assetId,
         duration: readyAsset.duration

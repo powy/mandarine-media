@@ -72,6 +72,11 @@ export async function uploadFromJson(jsonPath, options = {}) {
     logger.info?.(`[uploadFromJson] Loading configuration from ${jsonPath}`);
     const { config } = await loadConfigFile(jsonPath);
 
+    // Strip backend credentials in no-server mode
+    if (options.noServer) {
+      delete config.backend;
+    }
+
     // Step 2: Validate basic structure
     if (!config.subtitles || !Array.isArray(config.subtitles) || config.subtitles.length === 0) {
       throw new Error('Invalid JSON configuration: "subtitles" array is required and must contain at least one subtitle');

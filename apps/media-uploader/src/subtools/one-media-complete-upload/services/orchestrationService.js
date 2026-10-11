@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
 import axios from 'axios';
+import Mux from '@mux/mux-node';
 import { uploadToMux } from '../../mux-upload/wrapper.js';
 import { uploadSubtitlesToMux } from '../../mux-subtitle-upload/wrapper.js';
 import { uploadPicture } from '../../picture-upload/wrapper.js';
@@ -12,9 +13,28 @@ export class OrchestrationService {
     this.logger = logger;
     this.excelService = excelService;
     this.tempConfigDir = path.join(process.cwd(), '.temp-configs');
+    this.backendAvailable = true;
 
     // Ensure temp directory exists
     this.ensureTempDirectory();
+  }
+
+  /**
+   * Check if backend is configured (has a baseUrl)
+   */
+  isBackendConfigured() {
+    return !!(this.config?.backend?.baseUrl);
+  }
+
+  /**
+   * Determine if an axios error is a network/connectivity error (as opposed to a server response error)
+   */
+  isNetworkError(error) {
+    if (!error) return false;
+    const networkCodes = ['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET', 'ECONNABORTED', 'ERR_NETWORK', 'ENETUNREACH'];
+    if (error.code && networkCodes.includes(error.code)) return true;
+    if (!error.response && error.request) return true; // request made but no response
+    return false;
   }
 
   /**
@@ -188,6 +208,237 @@ export class OrchestrationService {
     return normalized || language; // Return original if no mapping found
   }
 
+  /**
+   * Extract which subtitles were requested in Excel data
+   * @param {Array} filesData - Array of file entries from Excel
+   * @returns {Map} Map of fileName -> {languages: Set, type: string}
+   */
+  extractRequestedSubtitles(filesData) {
+    const requestedByFile = new Map();
+
+    filesData.forEach(file => {
+      if (!file.fileName) return;
+
+      const languages = new Set();
+      if (file.frSubtitle) languages.add('fr');
+      if (file.enSubtitle) languages.add('en');
+      if (file.koSubtitle) languages.add('ko');
+      if (file.krSubtitle) languages.add('ko');
+
+      if (languages.size > 0) {
+        requestedByFile.set(file.fileName, {
+          languages: languages,
+          type: file.type
+        });
+      }
+    });
+
+    return requestedByFile;
+  }
+
+  /**
+   * Verify Mux uploads are fully processed and ready
+   * Checks video assets are ready with playback IDs
+   * Verifies requested subtitles were uploaded and are ready
+   * @param {Array} videoAssets - Array of uploaded video results
+   * @param {Array} subtitleResults - Array of uploaded subtitle results
+   * @param {Map} requestedSubtitlesMap - Map from extractRequestedSubtitles()
+   * @returns {Object} Checkup results with overall status
+   */
+  async verifyMuxUploads(videoAssets, subtitleResults, requestedSubtitlesMap) {
+    const checkupResults = {
+      overall: 'pending',
+      videos: {
+        total: videoAssets.length,
+        ready: 0,
+        errors: []
+      },
+      subtitles: {
+        requested: 0,
+        uploaded: 0,
+        ready: 0,
+        missing: [],
+        errors: []
+      },
+      details: []
+    };
+
+    // Initialize Mux client
+    const mux = new Mux({
+      tokenId: this.config.mux.tokenId,
+      tokenSecret: this.config.mux.tokenSecret
+    });
+
+    // PART 1: Verify video assets
+    this.logger.info(chalk.cyan('CHECKING VIDEO ASSETS...'.toUpperCase()));
+
+    for (const videoAsset of videoAssets) {
+      try {
+        this.logger.info(`VERIFYING ASSET: ${videoAsset.assetId} (${videoAsset.type})`.toUpperCase());
+
+        const asset = await mux.video.assets.retrieve(videoAsset.assetId);
+
+        const isReady = asset.status === 'ready';
+        const hasPlaybackIds = asset.playback_ids && asset.playback_ids.length > 0;
+
+        if (isReady && hasPlaybackIds) {
+          checkupResults.videos.ready++;
+          this.logger.info(`✅ ASSET READY: ${videoAsset.assetId} - STATUS: ${asset.status}`.toUpperCase());
+        } else {
+          const issue = !isReady ? `STATUS: ${asset.status}` : 'NO PLAYBACK IDS';
+          checkupResults.videos.errors.push({
+            assetId: videoAsset.assetId,
+            type: videoAsset.type,
+            issue: issue
+          });
+          this.logger.info(`❌ ASSET NOT READY: ${videoAsset.assetId} - ${issue}`.toUpperCase());
+        }
+
+        checkupResults.details.push({
+          type: 'video',
+          assetId: videoAsset.assetId,
+          videoType: videoAsset.type,
+          status: asset.status,
+          playbackIds: asset.playback_ids?.length || 0,
+          ready: isReady && hasPlaybackIds
+        });
+
+      } catch (error) {
+        checkupResults.videos.errors.push({
+          assetId: videoAsset.assetId,
+          type: videoAsset.type,
+          error: error.message
+        });
+        this.logger.info(`❌ FAILED TO RETRIEVE ASSET: ${videoAsset.assetId} - ${error.message}`.toUpperCase());
+      }
+    }
+
+    // PART 2: Verify requested subtitles
+    if (requestedSubtitlesMap.size > 0) {
+      this.logger.info(chalk.cyan('CHECKING REQUESTED SUBTITLES...'.toUpperCase()));
+
+      // Build map of what was actually uploaded
+      const uploadedByAssetAndLang = new Map();
+      subtitleResults.forEach(sub => {
+        const key = `${sub.assetId}_${sub.language}`;
+        uploadedByAssetAndLang.set(key, sub);
+      });
+
+      // Check each video's requested subtitles
+      for (const videoAsset of videoAssets) {
+        // Match video asset to Excel request
+        const requested = Array.from(requestedSubtitlesMap.entries()).find(([fileName, _]) => {
+          const normalizedExcel = fileName.toLowerCase().replace(/\s+/g, ' ').trim();
+          const normalizedAsset = videoAsset.fileName.toLowerCase().replace(/\s+/g, ' ').trim();
+          return normalizedExcel === normalizedAsset;
+        });
+
+        if (!requested) continue;
+
+        const [fileName, { languages, type }] = requested;
+
+        for (const lang of languages) {
+          checkupResults.subtitles.requested++;
+
+          const key = `${videoAsset.assetId}_${lang}`;
+          const uploadedSub = uploadedByAssetAndLang.get(key);
+
+          if (!uploadedSub) {
+            checkupResults.subtitles.missing.push({
+              assetId: videoAsset.assetId,
+              videoType: videoAsset.type,
+              language: lang,
+              fileName: fileName
+            });
+            this.logger.info(`❌ MISSING SUBTITLE: ${lang} FOR ${videoAsset.type} (${videoAsset.assetId})`.toUpperCase());
+            continue;
+          }
+
+          checkupResults.subtitles.uploaded++;
+
+          // Verify subtitle track status
+          try {
+            const asset = await mux.video.assets.retrieve(videoAsset.assetId);
+            const track = asset.tracks?.find(t => t.id === uploadedSub.trackId);
+
+            if (track) {
+              if (track.status === 'ready') {
+                checkupResults.subtitles.ready++;
+                this.logger.info(`✅ SUBTITLE READY: ${lang} FOR ${videoAsset.type} - TRACK: ${uploadedSub.trackId}`.toUpperCase());
+              } else if (track.status === 'errored') {
+                checkupResults.subtitles.errors.push({
+                  assetId: videoAsset.assetId,
+                  trackId: uploadedSub.trackId,
+                  language: lang,
+                  status: track.status,
+                  error: track.error || 'Track errored'
+                });
+                this.logger.info(`❌ SUBTITLE ERRORED: ${lang} FOR ${videoAsset.type} - STATUS: ${track.status}`.toUpperCase());
+              } else {
+                // Status is 'preparing' or similar
+                this.logger.info(`⏳ SUBTITLE PROCESSING: ${lang} FOR ${videoAsset.type} - STATUS: ${track.status}`.toUpperCase());
+              }
+
+              checkupResults.details.push({
+                type: 'subtitle',
+                assetId: videoAsset.assetId,
+                trackId: uploadedSub.trackId,
+                language: lang,
+                status: track.status,
+                ready: track.status === 'ready'
+              });
+            } else {
+              checkupResults.subtitles.errors.push({
+                assetId: videoAsset.assetId,
+                trackId: uploadedSub.trackId,
+                language: lang,
+                error: 'Track not found in asset'
+              });
+              this.logger.info(`❌ SUBTITLE TRACK NOT FOUND: ${lang} - TRACK ID: ${uploadedSub.trackId}`.toUpperCase());
+            }
+
+          } catch (error) {
+            checkupResults.subtitles.errors.push({
+              assetId: videoAsset.assetId,
+              trackId: uploadedSub.trackId,
+              language: lang,
+              error: error.message
+            });
+            this.logger.info(`❌ FAILED TO CHECK SUBTITLE: ${lang} - ${error.message}`.toUpperCase());
+          }
+        }
+      }
+    } else {
+      this.logger.info('NO SUBTITLES REQUESTED - SKIPPING SUBTITLE CHECKUP'.toUpperCase());
+    }
+
+    // Determine overall status
+    const allVideosReady = checkupResults.videos.ready === checkupResults.videos.total;
+    const allRequestedSubtitlesReady = checkupResults.subtitles.requested === 0 ||
+                                       checkupResults.subtitles.ready === checkupResults.subtitles.requested;
+    const hasErrors = checkupResults.videos.errors.length > 0 ||
+                      checkupResults.subtitles.errors.length > 0 ||
+                      checkupResults.subtitles.missing.length > 0;
+
+    if (allVideosReady && allRequestedSubtitlesReady && !hasErrors) {
+      checkupResults.overall = 'success';
+      this.logger.info(chalk.green.bold('✅ CHECKUP PASSED: ALL MUX UPLOADS READY'.toUpperCase()));
+    } else {
+      checkupResults.overall = 'failed';
+      this.logger.info(chalk.red.bold('❌ CHECKUP FAILED: SOME MUX UPLOADS NOT READY'.toUpperCase()));
+    }
+
+    // Summary logging
+    this.logger.info('CHECKUP SUMMARY:'.toUpperCase());
+    this.logger.info(`  VIDEOS: ${checkupResults.videos.ready}/${checkupResults.videos.total} READY`.toUpperCase());
+    this.logger.info(`  SUBTITLES: ${checkupResults.subtitles.ready}/${checkupResults.subtitles.requested} READY`.toUpperCase());
+    if (checkupResults.subtitles.missing.length > 0) {
+      this.logger.info(`  MISSING: ${checkupResults.subtitles.missing.length} SUBTITLES`.toUpperCase());
+    }
+
+    return checkupResults;
+  }
+
   async processUploads(excelData, mediaFiles, folderPath, excelPath = null, options = {}) {
     const startTime = Date.now();
     const results = {
@@ -284,6 +535,26 @@ export class OrchestrationService {
             results.errors.push(...subtitleResults.errors);
           }
         }
+
+        // Step 2.5: Verify Mux uploads are ready
+        if (videoResults.successes.length > 0) {
+          this.logger.info(chalk.cyan('🔍 RUNNING MUX UPLOAD CHECKUP...'));
+
+          const requestedSubtitles = this.extractRequestedSubtitles(excelData.files);
+          const checkupResults = await this.verifyMuxUploads(
+            videoResults.successes,
+            results.uploads.subtitles,
+            requestedSubtitles
+          );
+
+          results.checkup = checkupResults;
+
+          if (checkupResults.overall === 'success') {
+            this.logger.info(chalk.green.bold('✅ CHECKUP PASSED: ALL MUX UPLOADS READY'));
+          } else {
+            this.logger.info(chalk.red.bold('❌ CHECKUP FAILED: SOME MUX UPLOADS NOT READY'));
+          }
+        }
       } else {
         this.logger.info(chalk.yellow(`ℹ️  Media type "${mediaType}" does not require video uploads - skipping video processing`));
       }
@@ -314,13 +585,62 @@ export class OrchestrationService {
         results.uploads.videos // Use results.uploads.videos instead of videoResults.successes
       );
       
-      if (apiResult.success) {
-        results.mediaDescriptionId = apiResult.id;
-        results.success = true;
-        this.logger.info(chalk.green(`✅ Media description created with ID: ${apiResult.id}`));
+      if (apiResult.success || apiResult.skipped) {
+        results.mediaDescriptionId = apiResult.id || null;
+        results.backendSkipped = !!apiResult.skipped;
+
+        // Determine overall success based on checkup + other tasks
+        const checkupPassed = !results.checkup || results.checkup.overall === 'success';
+        const hasImageErrors = results.errors.some(e =>
+          typeof e === 'string' && e.toLowerCase().includes('image')
+        );
+
+        if (!checkupPassed) {
+          // Mux checkup failed - complete failure
+          results.success = false;
+          results.status = 'failed';
+          this.logger.info(chalk.red.bold('❌ UPLOAD FAILED: CRITICAL MUX UPLOADS NOT READY'));
+          this.logger.info(chalk.red('   ❌ Mux: Video/subtitle verification failed'));
+          this.logger.info(chalk.cyan('   → Status: FAILED - Critical assets not available'));
+        } else if (checkupPassed && !apiResult.skipped && !hasImageErrors) {
+          // Everything succeeded
+          results.success = true;
+          results.status = 'success';
+          this.logger.info(chalk.green.bold('✅ UPLOAD COMPLETE: ALL TASKS SUCCEEDED'));
+          this.logger.info(chalk.green('   ✅ Mux: Videos and subtitles uploaded and verified'));
+          this.logger.info(chalk.green('   ✅ Backend: Media description created'));
+          this.logger.info(chalk.green('   ✅ Images: S3 upload completed'));
+          this.logger.info(chalk.cyan('   → Status: SUCCESS'));
+        } else if (checkupPassed && apiResult.skipped) {
+          // Mux succeeded, backend skipped
+          results.success = true;
+          results.status = 'partial';
+          this.logger.info(chalk.yellow.bold('⚠️  PARTIAL SUCCESS: MUX UPLOADS COMPLETED'));
+          this.logger.info(chalk.green('   ✅ Mux: Videos and subtitles uploaded and verified'));
+          this.logger.info(chalk.yellow('   ⚠️  Backend: Skipped — backend unreachable'));
+          if (hasImageErrors) {
+            this.logger.info(chalk.red('   ❌ Images: S3 upload failed'));
+          }
+          this.logger.info(chalk.cyan('   → Status: PARTIAL - Critical assets safe in Mux'));
+        } else if (checkupPassed && hasImageErrors) {
+          // Mux succeeded but images failed - partial
+          results.success = false;
+          results.status = 'partial';
+          this.logger.info(chalk.yellow.bold('⚠️  PARTIAL SUCCESS: CRITICAL UPLOADS COMPLETED'));
+          this.logger.info(chalk.green('   ✅ Mux: Videos and subtitles uploaded and verified'));
+          this.logger.info(chalk.green('   ✅ Backend: Media description created'));
+          this.logger.info(chalk.red('   ❌ Images: S3 upload failed'));
+          this.logger.info(chalk.cyan('   → Status: PARTIAL - Critical assets safe in Mux'));
+        }
+
+        if (apiResult.id) {
+          this.logger.info(chalk.green(`✅ Media description created with ID: ${apiResult.id}`));
+        } else if (apiResult.skipped) {
+          this.logger.info(chalk.yellow('⚠️  Media description not created — backend was unreachable'));
+        }
         
         // Update Excel file with media_description ID and rename file
-        if (this.excelService && excelPath) {
+        if (this.excelService && excelPath && apiResult.success && !apiResult.skipped && apiResult.id) {
           try {
             this.logger.info(chalk.cyan('📄 Updating Excel file with media description ID...'));
             
@@ -367,10 +687,31 @@ export class OrchestrationService {
 
             this.logger.info(chalk.green(`\n✅ Upload was successful despite Excel update failure!`));
           }
+        } else if (apiResult.skipped || !apiResult.id) {
+          this.logger.warn('No backend media description ID - leaving Excel file unchanged');
         } else {
           this.logger.warn('ExcelService or excelPath not available - skipping Excel update');
         }
       } else {
+        // Backend API failed (not skipped — server was reachable but returned an error)
+        const checkupPassed = !results.checkup || results.checkup.overall === 'success';
+
+        if (!checkupPassed) {
+          results.success = false;
+          results.status = 'failed';
+          this.logger.info(chalk.red.bold('❌ UPLOAD FAILED: MUX CHECKUP AND BACKEND BOTH FAILED'));
+          this.logger.info(chalk.red('   ❌ Mux: Video/subtitle verification failed'));
+          this.logger.info(chalk.red('   ❌ Backend: API media description creation failed'));
+          this.logger.info(chalk.cyan('   → Status: FAILED'));
+        } else {
+          results.success = false;
+          results.status = 'partial';
+          this.logger.info(chalk.yellow.bold('⚠️  PARTIAL SUCCESS: CRITICAL UPLOADS COMPLETED'));
+          this.logger.info(chalk.green('   ✅ Mux: Videos and subtitles uploaded and verified'));
+          this.logger.info(chalk.red('   ❌ Backend: API media description creation failed'));
+          this.logger.info(chalk.cyan('   → Status: PARTIAL - Critical assets safe in Mux'));
+        }
+
         results.errors.push(`Media description creation failed: ${apiResult.error}`);
       }
       
@@ -624,6 +965,11 @@ export class OrchestrationService {
   }
 
   async uploadImagesToS3(filesData, mediaFiles, folderPath) {
+    if (!this.config?.s3?.pictures?.bucket) {
+      this.logger.warn('S3 pictures not configured (missing s3.pictures.bucket) — skipping image upload');
+      return { successes: [], errors: [] };
+    }
+
     const successes = [];
     const errors = [];
 
@@ -949,45 +1295,53 @@ export class OrchestrationService {
    * Authenticate with backend and get JWT token
    */
   async authenticateWithBackend() {
+    if (!this.isBackendConfigured()) {
+      this.logger.warn('Backend not configured — skipping authentication');
+      this.backendAvailable = false;
+      return { success: false, skipped: true, reason: 'not_configured' };
+    }
+
     try {
       const loginUrl = this.forceIPv4Url(`${this.config.backend.baseUrl}/api/v1/auth/login`);
 
       this.logger.info(`Authenticating with backend: ${loginUrl}`);
-      
+
       const loginData = new URLSearchParams();
       loginData.append('username', this.config.backend.username);
       loginData.append('password', this.config.backend.password);
-      
+
       const response = await axios.post(loginUrl, loginData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         timeout: 10000
       });
-      
+
       if (response.status === 200 && response.data.access_token) {
         this.logger.info('Successfully authenticated with backend');
+        this.backendAvailable = true;
         return {
           success: true,
           token: response.data.access_token
         };
       } else {
-        return {
-          success: false,
-          error: `Login failed - invalid response: ${JSON.stringify(response.data)}`
-        };
+        this.logger.warn(`Backend login returned unexpected response — skipping backend`);
+        this.backendAvailable = false;
+        return { success: false, skipped: true, reason: 'unexpected_response', error: `Invalid response: ${JSON.stringify(response.data)}` };
       }
-      
+
     } catch (error) {
-      this.logger.error(`Authentication failed: ${error.message}`);
-      
+      this.logger.warn(`Backend unreachable or auth failed: ${error.message}`);
+
       if (error.response) {
-        this.logger.error(`Login Response Status: ${error.response.status}`);
-        this.logger.error(`Login Response Data: ${JSON.stringify(error.response.data)}`);
+        this.logger.warn(`Login Response Status: ${error.response.status}`);
       }
-      
+
+      this.backendAvailable = false;
       return {
         success: false,
+        skipped: true,
+        reason: this.isNetworkError(error) ? 'unreachable' : 'auth_failed',
         error: error.message,
         details: error.response?.data
       };
@@ -999,6 +1353,10 @@ export class OrchestrationService {
       // First authenticate to get JWT token
       const authResult = await this.authenticateWithBackend();
       if (!authResult.success) {
+        if (authResult.skipped) {
+          this.logger.warn('Backend unavailable — duplicate check skipped');
+          return { success: true, skipped: true, duplicates: { bySlug: null, byTitle: null }, totalChecked: 0 };
+        }
         return {
           success: false,
           error: `Authentication failed: ${authResult.error}`
@@ -1075,26 +1433,31 @@ export class OrchestrationService {
       }
 
     } catch (error) {
-      this.logger.error(`Duplicate check failed: ${error.message}`);
-      
+      this.logger.warn(`Duplicate check failed: ${error.message} — skipping`);
+
       if (error.response) {
-        this.logger.error(`API Response Status: ${error.response.status}`);
-        this.logger.error(`API Response Data: ${JSON.stringify(error.response.data)}`);
+        this.logger.warn(`API Response Status: ${error.response.status}`);
       }
-      
-      return {
-        success: false,
-        error: error.message,
-        details: error.response?.data
-      };
+
+      this.backendAvailable = false;
+      return { success: true, skipped: true, duplicates: { bySlug: null, byTitle: null }, totalChecked: 0 };
     }
   }
 
   async createMediaDescription(descriptionData, uploadedImages, videoAssets) {
+    if (!this.backendAvailable) {
+      this.logger.warn('Backend unavailable — skipping media description creation');
+      return { success: false, skipped: true };
+    }
+
     try {
       // First authenticate to get JWT token
       const authResult = await this.authenticateWithBackend();
       if (!authResult.success) {
+        if (authResult.skipped) {
+          this.logger.warn('Backend unavailable — skipping media description creation');
+          return { success: false, skipped: true };
+        }
         return {
           success: false,
           error: `Authentication failed: ${authResult.error}`,
@@ -1131,7 +1494,7 @@ export class OrchestrationService {
         this.logger.info(chalk.cyan('📂 Processing Season type - managing season entity...'));
 
         const season = await this.getOrCreateSeason(descriptionData.season_name);
-        seasonId = season.id;
+        seasonId = season?.id || null;
 
         // For season type, use season name as episode title (required field) if not provided
         if (!descriptionData.episode_title) {
@@ -1154,7 +1517,7 @@ export class OrchestrationService {
         this.logger.info(chalk.cyan('📂 Processing Program type - managing program entity...'));
 
         const program = await this.getOrCreateProgram(descriptionData.program_name);
-        programId = program.id;
+        programId = program?.id || null;
 
         // For program type, use program name as episode title (required field)
         if (!descriptionData.episode_title) {
@@ -1348,8 +1711,14 @@ export class OrchestrationService {
       }
       
     } catch (error) {
+      if (this.isNetworkError(error)) {
+        this.logger.warn(`Backend unreachable during media description creation: ${error.message} — skipping`);
+        this.backendAvailable = false;
+        return { success: false, skipped: true, error: error.message };
+      }
+
       this.logger.error(`Media description creation/patching failed: ${error.message}`);
-      
+
       if (error.response) {
         this.logger.error(`API Response Status: ${error.response.status}`);
         this.logger.error(`API Response Headers: ${JSON.stringify(error.response.headers)}`);
@@ -1361,7 +1730,7 @@ export class OrchestrationService {
           timeout: error.config?.timeout
         })}`);
       }
-      
+
       return {
         success: false,
         error: error.message,
@@ -1989,9 +2358,18 @@ export class OrchestrationService {
    * Get or create a season by name
    */
   async getOrCreateSeason(seasonName, programId = null) {
+    if (!this.backendAvailable) {
+      this.logger.warn('Backend unavailable — skipping season creation');
+      return null;
+    }
+
     try {
       const authResult = await this.authenticateWithBackend();
       if (!authResult.success) {
+        if (authResult.skipped) {
+          this.logger.warn('Backend unavailable — skipping season creation');
+          return null;
+        }
         throw new Error(`Authentication failed: ${authResult.error}`);
       }
 
@@ -2128,9 +2506,18 @@ export class OrchestrationService {
    * Get or create a program by name
    */
   async getOrCreateProgram(programName) {
+    if (!this.backendAvailable) {
+      this.logger.warn('Backend unavailable — skipping program creation');
+      return null;
+    }
+
     try {
       const authResult = await this.authenticateWithBackend();
       if (!authResult.success) {
+        if (authResult.skipped) {
+          this.logger.warn('Backend unavailable — skipping program creation');
+          return null;
+        }
         throw new Error(`Authentication failed: ${authResult.error}`);
       }
 

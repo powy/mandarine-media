@@ -236,7 +236,7 @@ export class OneMediaCompleteUpload {
       this.log(chalk.cyan('\n🔍 Checking for existing media descriptions...'));
       const duplicateCheck = await this.orchestrationService.checkForDuplicates(excelData.description);
 
-      if (!duplicateCheck.success) {
+      if (!duplicateCheck.success && !duplicateCheck.skipped) {
         this.log(chalk.red(`❌ Duplicate check failed: ${duplicateCheck.error}`));
         return this.validationService.createErrorReport(
           validationResult.context,
@@ -244,39 +244,41 @@ export class OneMediaCompleteUpload {
         );
       }
 
-      const { duplicates } = duplicateCheck;
+      if (duplicateCheck.skipped) {
+        this.log(chalk.yellow('⚠️  Backend unreachable — duplicate check skipped, proceeding with Mux upload'));
+      } else {
+        const { duplicates } = duplicateCheck;
 
-      // Check for slug duplicates (blocking error)
-      if (duplicates.bySlug) {
-        this.log(chalk.red(`❌ Duplicate slug found: "${excelData.description.slug}"`));
-        this.log(chalk.yellow(`   Existing media description ID: ${duplicates.bySlug.id}`));
-        if (duplicates.bySlug.creation_date_utc) {
-          this.log(chalk.yellow(`   Created: ${duplicates.bySlug.creation_date_utc}`));
+        // Check for slug duplicates (blocking error)
+        if (duplicates.bySlug) {
+          this.log(chalk.red(`❌ Duplicate slug found: "${excelData.description.slug}"`));
+          this.log(chalk.yellow(`   Existing media description ID: ${duplicates.bySlug.id}`));
+          if (duplicates.bySlug.creation_date_utc) {
+            this.log(chalk.yellow(`   Created: ${duplicates.bySlug.creation_date_utc}`));
+          }
+          this.log(chalk.cyan('\n   Please either:'));
+          this.log(chalk.cyan('   1. Change the slug in your Excel file'));
+          this.log(chalk.cyan('   2. Delete the existing media description'));
+          this.log(chalk.cyan(`   3. Use a different slug (e.g., "${excelData.description.slug}_v2")`));
+
+          return this.validationService.createErrorReport(
+            validationResult.context,
+            [
+              `Duplicate slug exists: "${excelData.description.slug}"`,
+              `Existing record ID: ${duplicates.bySlug.id}`,
+              'Change the slug in your Excel file or delete the existing record'
+            ]
+          );
         }
-        this.log(chalk.cyan('\n   Please either:'));
-        this.log(chalk.cyan('   1. Change the slug in your Excel file'));
-        this.log(chalk.cyan('   2. Delete the existing media description'));
-        this.log(chalk.cyan(`   3. Use a different slug (e.g., "${excelData.description.slug}_v2")`));
 
-        return this.validationService.createErrorReport(
-          validationResult.context,
-          [
-            `Duplicate slug exists: "${excelData.description.slug}"`,
-            `Existing record ID: ${duplicates.bySlug.id}`,
-            'Change the slug in your Excel file or delete the existing record'
-          ]
-        );
-      }
+        // Check for title duplicates (error - stop execution)
+        if (duplicates.byTitle) {
+          this.log(chalk.red(`❌ Error: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
+          this.log(chalk.red(`   Existing media description ID: ${duplicates.byTitle.id}`));
+          this.log(chalk.red('   Stopping upload to prevent duplicates.'));
+          throw new Error(`Duplicate episode title detected: "${duplicates.byTitle.episode_title}"`);
+        }
 
-      // Check for title duplicates (error - stop execution)
-      if (duplicates.byTitle) {
-        this.log(chalk.red(`❌ Error: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
-        this.log(chalk.red(`   Existing media description ID: ${duplicates.byTitle.id}`));
-        this.log(chalk.red('   Stopping upload to prevent duplicates.'));
-        throw new Error(`Duplicate episode title detected: "${duplicates.byTitle.episode_title}"`);
-      }
-
-      if (!duplicates.bySlug && !duplicates.byTitle) {
         this.log(chalk.green(`✅ No duplicates found (checked ${duplicateCheck.totalChecked} records)`));
       }
 
@@ -534,50 +536,52 @@ export class OneMediaCompleteUpload {
       this.log(chalk.cyan('\n🔍 Checking for existing media descriptions...'));
       const duplicateCheck = await this.orchestrationService.checkForDuplicates(excelData.description);
       
-      if (!duplicateCheck.success) {
+      if (!duplicateCheck.success && !duplicateCheck.skipped) {
         this.log(chalk.red(`❌ Duplicate check failed: ${duplicateCheck.error}`));
         return this.validationService.createErrorReport(
           validationResult.context,
           [`Duplicate check failed: ${duplicateCheck.error}`]
         );
       }
-      
-      const { duplicates } = duplicateCheck;
-      
-      // Check for slug duplicates (blocking error)
-      if (duplicates.bySlug) {
-        this.log(chalk.red(`❌ Duplicate slug found: "${excelData.description.slug}"`));
-        this.log(chalk.yellow(`   Existing media description ID: ${duplicates.bySlug.id}`));
-        if (duplicates.bySlug.creation_date_utc) {
-          this.log(chalk.yellow(`   Created: ${duplicates.bySlug.creation_date_utc}`));
+
+      if (duplicateCheck.skipped) {
+        this.log(chalk.yellow('⚠️  Backend unreachable — duplicate check skipped, proceeding with Mux upload'));
+      } else {
+        const { duplicates } = duplicateCheck;
+
+        // Check for slug duplicates (blocking error)
+        if (duplicates.bySlug) {
+          this.log(chalk.red(`❌ Duplicate slug found: "${excelData.description.slug}"`));
+          this.log(chalk.yellow(`   Existing media description ID: ${duplicates.bySlug.id}`));
+          if (duplicates.bySlug.creation_date_utc) {
+            this.log(chalk.yellow(`   Created: ${duplicates.bySlug.creation_date_utc}`));
+          }
+          this.log(chalk.cyan('\n   Please either:'));
+          this.log(chalk.cyan('   1. Change the slug in your Excel file'));
+          this.log(chalk.cyan('   2. Delete the existing media description'));
+          this.log(chalk.cyan(`   3. Use a different slug (e.g., "${excelData.description.slug}_v2")`));
+
+          return this.validationService.createErrorReport(
+            validationResult.context,
+            [
+              `Duplicate slug exists: "${excelData.description.slug}"`,
+              `Existing record ID: ${duplicates.bySlug.id}`,
+              'Change the slug in your Excel file or delete the existing record'
+            ]
+          );
         }
-        this.log(chalk.cyan('\n   Please either:'));
-        this.log(chalk.cyan('   1. Change the slug in your Excel file'));
-        this.log(chalk.cyan('   2. Delete the existing media description'));
-        this.log(chalk.cyan(`   3. Use a different slug (e.g., "${excelData.description.slug}_v2")`));
-        
-        return this.validationService.createErrorReport(
-          validationResult.context,
-          [
-            `Duplicate slug exists: "${excelData.description.slug}"`,
-            `Existing record ID: ${duplicates.bySlug.id}`,
-            'Change the slug in your Excel file or delete the existing record'
-          ]
-        );
-      }
-      
-      // Check for title duplicates (error - stop execution)
-      if (duplicates.byTitle) {
-        this.log(chalk.red(`❌ Error: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
-        this.log(chalk.red(`   Existing media description ID: ${duplicates.byTitle.id}`));
-        this.log(chalk.red('   Stopping upload to prevent duplicates.'));
-        throw new Error(`Duplicate episode title detected: "${duplicates.byTitle.episode_title}"`);
-      }
-      
-      if (!duplicates.bySlug && !duplicates.byTitle) {
+
+        // Check for title duplicates (error - stop execution)
+        if (duplicates.byTitle) {
+          this.log(chalk.red(`❌ Error: Similar episode title exists: "${duplicates.byTitle.episode_title}"`));
+          this.log(chalk.red(`   Existing media description ID: ${duplicates.byTitle.id}`));
+          this.log(chalk.red('   Stopping upload to prevent duplicates.'));
+          throw new Error(`Duplicate episode title detected: "${duplicates.byTitle.episode_title}"`);
+        }
+
         this.log(chalk.green(`✅ No duplicates found (checked ${duplicateCheck.totalChecked} records)`));
       }
-      
+
       // Begin upload process
       this.log(chalk.blue('\n🚀 Starting upload process...'));
       const uploadResults = await this.orchestrationService.processUploads(

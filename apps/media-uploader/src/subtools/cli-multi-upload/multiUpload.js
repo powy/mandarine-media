@@ -88,6 +88,7 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
   let completedCount = 0;
   let successCount = 0;
   let failedCount = 0;
+  let partialCount = 0;  // Track partial successes (Mux OK, backend/images issues)
   let runningCount = 0;
 
   // Process queue
@@ -154,9 +155,18 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
           runningCount--;
           completedCount++;
 
-          if (message.success) {
+          // Categorize by granular status (success/partial/failed)
+          const uploadStatus = message.result?.status || (message.success ? 'success' : 'failed');
+
+          if (uploadStatus === 'success') {
             successCount++;
             log(chalk.green(`✅ [${completedCount}/${validFolders.length}] Success: ${folderName} (${duration}s)`), logger);
+            if (message.mediaDescriptionId) {
+              log(chalk.gray(`   Media ID: ${message.mediaDescriptionId}`), logger);
+            }
+          } else if (uploadStatus === 'partial') {
+            partialCount++;
+            log(chalk.yellow(`⚠️  [${completedCount}/${validFolders.length}] Partial (Mux OK): ${folderName} (${duration}s)`), logger);
             if (message.mediaDescriptionId) {
               log(chalk.gray(`   Media ID: ${message.mediaDescriptionId}`), logger);
             }
@@ -272,32 +282,120 @@ export async function multiUploadFromList(iniFilePath, folderPaths, options = {}
   // Execute the queue
   await processQueue();
 
+  // Print detailed breakdown of all uploads
+  log(chalk.blue.bold('\n📋 Individual Upload Results:'), logger);
+  log(chalk.gray('─'.repeat(80)), logger);
+
+  results.forEach(result => {
+    const status = result.result?.status || (result.success ? 'success' : 'failed');
+    const duration = result.duration;
+    const mediaId = result.result?.mediaDescriptionId || 'N/A';
+
+    let statusIcon, statusColor, statusLabel;
+
+    if (status === 'success') {
+      statusIcon = '✅';
+      statusColor = chalk.green;
+      statusLabel = 'SUCCESS';
+    } else if (status === 'partial') {
+      statusIcon = '⚠️ ';
+      statusColor = chalk.yellow;
+      statusLabel = 'PARTIAL (MUX OK)';
+    } else {
+      statusIcon = '❌';
+      statusColor = chalk.red;
+      statusLabel = 'FAILED';
+    }
+
+    log(
+      `${statusIcon} ${statusColor.bold(result.folderName.padEnd(40))} ` +
+      `${statusColor(statusLabel.padEnd(20))} ` +
+      `${chalk.cyan(duration + 's')}`,
+      logger
+    );
+
+    // Show media ID for successful/partial uploads
+    if (status === 'success' || status === 'partial') {
+      if (mediaId !== 'N/A') {
+        log(chalk.gray(`   └─ Media ID: ${mediaId}`), logger);
+      }
+    }
+
+    // Show error details for failed uploads
+    if (status === 'failed' && result.result?.data?.errors?.length > 0) {
+      const firstError = result.result.data.errors[0];
+      log(chalk.red(`   └─ Error: ${firstError.substring(0, 60)}...`), logger);
+    }
+  });
+
+  log(chalk.gray('─'.repeat(80)), logger);
+  log('', logger);
+
   // Print failed folders list if any
   if (failedCount > 0) {
     log(chalk.red.bold('\n❌ Failed Folders:'), logger);
     results
-      .filter(result => !result.success)
+      .filter(result => {
+        const status = result.result?.status || (result.success ? 'success' : 'failed');
+        return status === 'failed';
+      })
       .forEach(result => {
         log(chalk.red(`  ${result.folderName}`), logger);
       });
   }
 
-  // Print summary
+  // Print enhanced summary
   log(chalk.blue.bold('\n📊 Upload Summary:'), logger);
-  log(chalk.green(`✅ Successful: ${successCount}/${validFolders.length}`), logger);
-  log(chalk.red(`❌ Failed: ${failedCount}/${validFolders.length}`), logger);
+  log(chalk.green(`✅ Full Success:    ${successCount}/${validFolders.length} uploads`), logger);
+
+  if (partialCount > 0) {
+    log(chalk.yellow(`⚠️  Partial Success: ${partialCount}/${validFolders.length} uploads (Mux OK, backend/images issues)`), logger);
+  }
+
+  log(chalk.red(`❌ Failed:          ${failedCount}/${validFolders.length} uploads`), logger);
+
   if (invalidFolders.length > 0) {
-    log(chalk.yellow(`⚠️  Skipped: ${invalidFolders.length}`), logger);
+    log(chalk.yellow(`⚠️  Skipped:         ${invalidFolders.length} invalid folders`), logger);
+  }
+
+  // Overall assessment
+  const totalCompleted = successCount + partialCount + failedCount;
+  const overallStatus = failedCount > 0
+    ? 'FAILED (some uploads failed)'
+    : partialCount > 0
+      ? 'PARTIAL (all critical assets uploaded, some secondary tasks failed)'
+      : 'SUCCESS (all uploads completed successfully)';
+
+  log('', logger);
+  log(chalk.blue.bold('Overall Status: ') +
+    (failedCount > 0 ? chalk.red.bold(overallStatus) :
+     partialCount > 0 ? chalk.yellow.bold(overallStatus) :
+     chalk.green.bold(overallStatus)), logger);
+
+  // Determine overall task status
+  let overallTaskStatus;
+  if (failedCount > 0) {
+    overallTaskStatus = 'failed';  // Any failure → failed
+  } else if (partialCount > 0) {
+    overallTaskStatus = 'partial';  // Mix of success/partial, no failures → partial
+  } else {
+    overallTaskStatus = 'success';  // All success → success
   }
 
   return {
-    success: successCount > 0,
+    success: successCount > 0 || partialCount > 0,  // TRUE if any succeeded or partial
+    status: overallTaskStatus,  // Granular overall status
     totalFolders: validFolders.length,
     successCount,
+    partialCount,  // Track partial successes
     failedCount,
     skippedCount: invalidFolders.length,
     results: results.sort((a, b) => a.index - b.index),
-    invalidFolders
+    invalidFolders,
+    // Categorized results for convenience
+    successfulUploads: results.filter(r => (r.result?.status || (r.success ? 'success' : 'failed')) === 'success'),
+    partialUploads: results.filter(r => (r.result?.status || (r.success ? 'success' : 'failed')) === 'partial'),
+    failedUploads: results.filter(r => (r.result?.status || (r.success ? 'success' : 'failed')) === 'failed')
   };
 }
 
