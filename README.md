@@ -113,6 +113,10 @@ Known limitations include:
 
 **Mandarine Media** is the name of this archive repository. **Kyool** was the intended name of the original platform and remains in historical code, configuration, and documentation.
 
-The contributors do not own the Kyool name, and its trademark status has not been established here. Do not reuse it as a commercial product name without independently confirming the necessary rights.
+The contributors do not own the Kyool name or logos. The Kyool brand is in use by another project, which this repository is not affiliated with. If you reuse this code, remove or replace the Kyool names, logos and domains. See [NOTICE.md](NOTICE.md).
 
 The demo videos and artwork used during development have been removed from this repository, including its history. The remaining logos, sample files, and third-party dependencies have their own ownership and licensing considerations. Their inclusion in this archive does not grant permission to redistribute or use them commercially.
+
+## License
+
+The code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md): you may use, modify and share it for any noncommercial purpose. The license does not cover the Kyool names and logos; see [NOTICE.md](NOTICE.md).
