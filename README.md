@@ -115,4 +115,4 @@ Known limitations include:
 
 The contributors do not own the Kyool name, and its trademark status has not been established here. Do not reuse it as a commercial product name without independently confirming the necessary rights.
 
-The sample media, artwork, and third-party dependencies have their own ownership and licensing considerations. Their inclusion in this archive does not grant permission to redistribute or use them commercially.
+The demo videos and artwork used during development have been removed from this repository, including its history. The remaining logos, sample files, and third-party dependencies have their own ownership and licensing considerations. Their inclusion in this archive does not grant permission to redistribute or use them commercially.

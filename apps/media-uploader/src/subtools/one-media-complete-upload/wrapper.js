@@ -23,9 +23,7 @@ function resolveModulePath(relativePath, productionSubpath) {
   // For production builds, try alternative path structures
   const productionPaths = [
     // Current working directory relative
-    path.resolve(process.cwd(), 'src', 'subtools', productionSubpath),
-    // Fallback to development-style path in bundle
-    path.resolve(process.cwd(), 'kyool-media', 'apps', 'media-uploader', 'src', 'subtools', productionSubpath)
+    path.resolve(process.cwd(), 'src', 'subtools', productionSubpath)
   ];
 
   for (const testPath of productionPaths) {
