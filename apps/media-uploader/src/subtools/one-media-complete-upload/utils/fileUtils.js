@@ -59,7 +59,7 @@ export async function loadJsonFile(filePath) {
     // Check if it's an INI file - support direct INI loading
     if (filePath.endsWith('.ini')) {
       // Import ConfigReader dynamically to avoid circular dependencies
-      const { ConfigReader } = await import('../../upload-gui/config/configReader.js');
+      const { ConfigReader } = await import('../../../shared/config/configReader.js');
       return ConfigReader.readConfig(filePath);
     }
 

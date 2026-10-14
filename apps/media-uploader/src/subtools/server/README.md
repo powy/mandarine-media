@@ -222,7 +222,7 @@ server/
 
 ## Integration
 
-This server is designed to work alongside the existing Tauri GUI application. Both can run simultaneously, sharing the same underlying tools and configuration files.
+Originally designed to run alongside the (now removed) Tauri GUI; it shares the same underlying tools and configuration files as the CLI.
 
 ## Troubleshooting
 

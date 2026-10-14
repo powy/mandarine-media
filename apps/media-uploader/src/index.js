@@ -281,28 +281,6 @@ class UploaderToolCLI {
         }
       });
 
-    // Upload GUI Command
-    this.program
-      .command('gui')
-      .alias('upload-gui')
-      .description('Launch graphical interface for media upload')
-      .option('-c, --config <path>', 'Path to config.ini file (default: ./config.ini)')
-      .option('--create-config', 'Create a sample configuration file and exit')
-      .option('-v, --verbose', 'Enable verbose output')
-      .action(async (options) => {
-        try {
-          console.log(chalk.blue.bold('🖥️  Media Upload GUI\n'));
-          const { launchUploadGUI } = await import('./subtools/upload-gui/wrapper.js');
-          await launchUploadGUI(options);
-        } catch (error) {
-          console.error(chalk.red(`❌ GUI launch failed: ${error.message}`));
-          if (options.verbose) {
-            console.error(error.stack);
-          }
-          process.exit(1);
-        }
-      });
-
     // Excel Batch Editor Command
     this.program
       .command('excel-batch-update')
@@ -505,8 +483,6 @@ class UploaderToolCLI {
       console.log('  $ media-uploader diagnostic verify --url https://api.example.com --username admin --password secret --id uuid');
       console.log('  $ media-uploader diagnostic verify-season-ini --config config.ini --season-id uuid');
       console.log('  $ media-uploader cli-multi-upload --config config.ini --parent-folder /path/to/season');
-      console.log('  $ media-uploader gui --config config.ini');
-      console.log('  $ media-uploader gui --create-config');
       console.log('');
       console.log(chalk.cyan('Individual Tool Help:'));
       console.log('  $ media-uploader analyze --help');
@@ -518,7 +494,6 @@ class UploaderToolCLI {
       console.log('  $ media-uploader propagate-season-data --help');
       console.log('  $ media-uploader diagnostic --help');
       console.log('  $ media-uploader cli-multi-upload --help');
-      console.log('  $ media-uploader gui --help');
       console.log('');
     });
   }

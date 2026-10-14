@@ -29,9 +29,7 @@ export function createLogger(config = {}, context = {}) {
     const videoBasename = path.basename(config.video.filepath, path.extname(config.video.filepath));
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
-    // Use a logs directory outside src-tauri to avoid triggering Tauri rebuilds
-    // When running in Tauri context, process.cwd() points to src-tauri directory
-    const logsDir = path.join(process.cwd(), '..', 'logs', 'mux-logs');
+    const logsDir = path.join(process.cwd(), 'logs', 'mux-logs');
 
     // Create unique log filename based on context (taskId for batch uploads, or timestamp for direct uploads)
     if (context.taskId) {

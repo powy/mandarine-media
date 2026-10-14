@@ -242,7 +242,7 @@ export default {
 };
 
 // ============================================================================
-// CLI Interface for Tauri
+// CLI Interface (standalone entry point; originally built for the Tauri app)
 // ============================================================================
 
 /**

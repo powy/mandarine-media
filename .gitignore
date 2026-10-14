@@ -148,7 +148,9 @@ android/build/
 *.backup
 *.old
 
-# Temporary files
+# Temporary and backup files
+*.bak
+*.backup*
 *.tmp
 *.temp
 .temp*/
@@ -159,18 +161,9 @@ apps/media-uploader/.temp*/
 .upload-pids.json
 .upload-progress
 
-# Tauri build artifacts
-apps/media-uploader/src-tauri/target/
-apps/media-uploader/src-tauri/Cargo.lock
-apps/media-uploader/src-tauri/WixTools/
-
-# Electron build artifacts (legacy)
-apps/media-uploader/out/
-apps/media-uploader/dist/
-
-# Temporary build files
-apps/media-uploader/src-tauri/*.exe
-apps/media-uploader/src-tauri/*.msi
-apps/media-uploader/src-tauri/*.pdb
+# Service-server runtime data
 apps/media-uploader/src/subtools/service-server/data/tasks.json
 apps/media-uploader/src/subtools/service-server/data/*.json
+
+# Local-only archive (backed up outside git)
+Archive/

@@ -22,10 +22,6 @@ function resolveModulePath(relativePath, productionSubpath) {
 
   // For production builds, try alternative path structures
   const productionPaths = [
-    // Tauri bundled structure
-    path.resolve(process.resourcesPath || process.cwd(), 'src', 'subtools', productionSubpath),
-    // Alternative bundled path - this is where Tauri actually puts files
-    path.resolve(process.cwd(), '_up_', 'src', 'subtools', productionSubpath),
     // Current working directory relative
     path.resolve(process.cwd(), 'src', 'subtools', productionSubpath),
     // Fallback to development-style path in bundle
@@ -55,7 +51,7 @@ async function importDependencies() {
     const indexModule = await import(moduleURL1);
 
     // Dynamic import for ConfigReader
-    const configReaderPath = resolveModulePath('../upload-gui/config/configReader.js', 'upload-gui/config/configReader.js');
+    const configReaderPath = resolveModulePath('../../shared/config/configReader.js', '../shared/config/configReader.js');
     const moduleURL2 = pathToFileURL(configReaderPath).href;
     console.log(`🔍 Importing ConfigReader from URL: ${moduleURL2}`);
     const configReaderModule = await import(moduleURL2);
@@ -305,7 +301,7 @@ function safeStringify(obj) {
 }
 
 /**
- * CLI interface for Tauri backend calls
+ * CLI entry point, spawned by the server workers (originally for the Tauri app)
  */
 async function main() {
   const args = process.argv.slice(2);
@@ -401,7 +397,7 @@ async function main() {
       throw new Error('No folder specified. Use --folder or --batch-folder');
     }
 
-    // Output result as JSON for Tauri to parse (using safe stringify to avoid circular references)
+    // Output result as JSON for the calling process to parse (using safe stringify to avoid circular references)
     console.log(safeStringify(result));
     process.exit(result.success ? 0 : 1);
 

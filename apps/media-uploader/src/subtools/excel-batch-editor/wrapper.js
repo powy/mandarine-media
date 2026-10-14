@@ -492,7 +492,7 @@ export async function regenerateEpisodeNamesFromSeason(parentFolderPath, options
 }
 
 /**
- * CLI interface for Tauri backend calls
+ * CLI entry point, spawned by the server workers (originally for the Tauri app)
  */
 async function main() {
   const args = process.argv.slice(2);
@@ -559,7 +559,7 @@ async function main() {
     // Execute the batch update
     const result = await batchUpdateExcel(options);
 
-    // Output result as JSON for Tauri to parse
+    // Output result as JSON for the calling process to parse
     console.log(JSON.stringify(result, null, 2));
     process.exit(result.success ? 0 : 1);
 

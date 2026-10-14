@@ -1,6 +1,6 @@
 /**
  * Resend Subtitles INI Interface
- * INI config file wrapper for subtitle resending (for Tauri integration)
+ * INI config file wrapper for subtitle resending (originally for the Tauri app; currently not referenced elsewhere)
  */
 
 import fs from 'fs-extra';

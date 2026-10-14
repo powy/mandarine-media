@@ -43,8 +43,7 @@ export default {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/coverage/',
-    '/logs/',
-    '/src-tauri/'
+    '/logs/'
   ],
 
   passWithNoTests: true
