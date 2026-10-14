@@ -19,7 +19,7 @@ describe('programAdapters', () => {
         episode_number: undefined,
         episode_order: 0,
         image_1920_1080_url: 'https://example.com/program-image.jpg',
-        image_1920_720_url: undefined,
+        image_1920_720_url: 'https://example.com/program-image.jpg',
         image_1080_1080_url: undefined,
         image_810_1080_url: undefined,
         image_1080_1920_url: undefined
@@ -81,7 +81,8 @@ describe('programAdapters', () => {
         episode_order: 0,
         media_categories_list: ['comedy'],
         descriptive_summary_text: 'Funny season description',
-        image_1920_1080_url: 'https://example.com/season-image.jpg'
+        image_1920_1080_url: 'https://example.com/season-image.jpg',
+        image_1920_720_url: 'https://example.com/season-image.jpg'
       };
 
       const mockSeason: SeasonJSON = {
@@ -124,7 +125,8 @@ describe('programAdapters', () => {
         episode_order: 1,
         media_categories_list: ['thriller'],
         descriptive_summary_text: 'Episode description',
-        image_1920_1080_url: 'https://example.com/episode.jpg'
+        image_1920_1080_url: 'https://example.com/episode.jpg',
+        image_1920_720_url: 'https://example.com/episode.jpg'
       };
 
       const mockSeason: SeasonJSON = {

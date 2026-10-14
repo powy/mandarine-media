@@ -121,7 +121,7 @@ class TestSlugUniqueness:
         print("SUCCESS: All records retrievable by their unique slugs!")
 
     def test_no_slug_provided(self, client: TestClient, test_admin_user):
-        """Test that records without slugs work normally"""
+        """Test that a slug is generated when none is provided"""
 
         access_token = create_access_token(subject=test_admin_user.email)
         headers = {"Authorization": f"Bearer {access_token}"}
@@ -140,6 +140,6 @@ class TestSlugUniqueness:
 
         assert response.status_code == 200
         data = response.json()
-        # slug should be None if not provided
-        assert data.get("slug") is None
+        # slug is auto-generated from the title when not provided
+        assert data.get("slug") == "no-slug-episode"
         print("SUCCESS: Records without slugs work normally!")

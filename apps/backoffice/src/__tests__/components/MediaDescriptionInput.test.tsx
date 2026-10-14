@@ -4,8 +4,8 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { MediaDescriptionInput } from '../../components/inputs/MediaDescriptionInput';
 
 // Mock react-admin
-const mockUseInput = vi.fn();
-const mockUseDataProvider = vi.fn();
+const mockUseInput = vi.hoisted(() => vi.fn());
+const mockUseDataProvider = vi.hoisted(() => vi.fn());
 
 vi.mock('react-admin', () => ({
   ReferenceInput: ({ children }: any) => <div data-testid="reference-input">{children}</div>,
@@ -56,7 +56,7 @@ describe('MediaDescriptionInput', () => {
 
     expect(screen.getByTestId('reference-input')).toBeInTheDocument();
     expect(screen.getByTestId('autocomplete-input')).toBeInTheDocument();
-    expect(screen.getByText('Enter UUID directly instead')).toBeInTheDocument();
+    expect(screen.getByText(/Enter UUID directly instead/)).toBeInTheDocument();
   });
 
   test('switches to direct UUID entry mode when clicked', () => {
@@ -68,12 +68,12 @@ describe('MediaDescriptionInput', () => {
       />
     );
 
-    const switchLink = screen.getByText('Enter UUID directly instead');
+    const switchLink = screen.getByText(/Enter UUID directly instead/);
     fireEvent.click(switchLink);
 
     expect(screen.getByTestId('text-input')).toBeInTheDocument();
     expect(screen.getByText('Media Description (Direct UUID Entry)')).toBeInTheDocument();
-    expect(screen.getByText('Switch to search mode')).toBeInTheDocument();
+    expect(screen.getByText(/Switch to search mode/)).toBeInTheDocument();
   });
 
   test('switches back to reference mode', () => {
@@ -86,11 +86,11 @@ describe('MediaDescriptionInput', () => {
     );
 
     // Switch to direct mode
-    const directLink = screen.getByText('Enter UUID directly instead');
+    const directLink = screen.getByText(/Enter UUID directly instead/);
     fireEvent.click(directLink);
 
     // Switch back to reference mode
-    const referenceLink = screen.getByText('Switch to search mode');
+    const referenceLink = screen.getByText(/Switch to search mode/);
     fireEvent.click(referenceLink);
 
     expect(screen.getByTestId('reference-input')).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe('MediaDescriptionInput', () => {
       />
     );
 
-    const switchLink = screen.getByText('Enter UUID directly instead');
+    const switchLink = screen.getByText(/Enter UUID directly instead/);
     fireEvent.click(switchLink);
 
     expect(screen.getByPlaceholderText('e.g. f3a43213-5c78-43c4-8635-1cc32c66ece0')).toBeInTheDocument();
@@ -131,9 +131,9 @@ describe('MediaDescriptionInput', () => {
       />
     );
 
-    const switchLink = screen.getByText('Enter UUID directly instead');
+    const switchLink = screen.getByText(/Enter UUID directly instead/);
     fireEvent.click(switchLink);
 
-    expect(screen.getByText('Enter a valid MediaDescription UUID directly')).toBeInTheDocument();
+    expect(screen.getByText(/Enter a valid MediaDescription UUID directly/)).toBeInTheDocument();
   });
 });

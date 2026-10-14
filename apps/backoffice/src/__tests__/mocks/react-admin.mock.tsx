@@ -60,6 +60,11 @@ export const reactAdminMock = {
   ),
   AutocompleteInput: ({ source, label }: any) => <div data-testid={`autocomplete-input-${source}`}>{label}</div>,
   ArrayInput: ({ children }: any) => <div data-testid="array-input">{children}</div>,
+  ReferenceArrayInput: ({ source, children }: any) => (
+    <div data-testid={`reference-array-input-${source}`}>{children}</div>
+  ),
+  AutocompleteArrayInput: ({ source }: any) => <div data-testid={`autocomplete-array-input-${source}`} />,
+  SelectArrayInput: ({ source }: any) => <div data-testid={`select-array-input-${source}`} />,
   SimpleFormIterator: ({ children }: any) => <div data-testid="form-iterator">{children}</div>,
   
   // Button Components
@@ -89,4 +94,6 @@ export const reactAdminMock = {
   useRecordContext: vi.fn(() => ({})),
   useNotify: vi.fn(() => vi.fn()),
   useRefresh: vi.fn(() => vi.fn()),
+  useRedirect: vi.fn(() => vi.fn()),
+  useGetList: vi.fn(() => ({ data: [], total: 0, isLoading: false })),
 };

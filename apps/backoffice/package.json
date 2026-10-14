@@ -17,7 +17,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "build:production": "node scripts/build-production.js",
     "deploy:s3": "node scripts/deploy-s3.js",
     "deploy:cloudfront": "node scripts/invalidate-cloudfront.js",

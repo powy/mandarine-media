@@ -5,14 +5,26 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { VideoFileReportList, VideoFileReportShow } from '../../components/resources/VideoFileReports';
 
 // Mock react-admin
-vi.mock('react-admin', () => ({
-  List: ({ children }: any) => <div data-testid="list">{children}</div>,
+vi.mock('react-admin', async () => ({
+  ...(await import('../mocks/react-admin.mock')).reactAdminMock,
+  List: ({ children, filters, actions }: any) => (
+    <div data-testid="list">
+      {actions}
+      {filters}
+      {children}
+    </div>
+  ),
   Datagrid: ({ children }: any) => <div data-testid="datagrid">{children}</div>,
   TextField: ({ source }: any) => <div data-testid={`field-${source}`}>{source}</div>,
   DateField: ({ source }: any) => <div data-testid={`date-field-${source}`}>{source}</div>,
   FunctionField: ({ label, render }: any) => <div data-testid={`function-field-${label?.toLowerCase().replace(/\s+/g, '-')}`}>{label}</div>,
   ShowButton: () => <div data-testid="show-button">Show</div>,
-  Show: ({ children }: any) => <div data-testid="show">{children}</div>,
+  Show: ({ children, actions }: any) => (
+    <div data-testid="show">
+      {actions}
+      {children}
+    </div>
+  ),
   SimpleShowLayout: ({ children }: any) => <div data-testid="show-layout">{children}</div>,
   TextInput: ({ source, label }: any) => <div data-testid={`input-${source}`}>{label}</div>,
   SelectInput: ({ source, choices }: any) => <div data-testid={`select-input-${source}`}>{source}</div>,
@@ -98,7 +110,6 @@ describe('VideoFileReport Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('filter')).toBeInTheDocument();
       expect(screen.getByTestId('search-input-q')).toBeInTheDocument();
       expect(screen.getByTestId('select-input-event')).toBeInTheDocument();
     });

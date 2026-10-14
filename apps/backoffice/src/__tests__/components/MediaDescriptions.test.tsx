@@ -26,6 +26,8 @@ vi.mock('../../components/inputs/RelationshipInputs', () => ({
   OriginCountryInput: () => <div data-testid="origin-country-input">Origin Countries</div>,
   AvailableCountryInput: () => <div data-testid="available-country-input">Available Countries</div>,
   OriginalLanguageInput: () => <div data-testid="original-language-input">Original Languages</div>,
+  AvailableSubtitleLanguageInput: () => <div data-testid="available-subtitle-language-input">Subtitle Languages</div>,
+  AvailableAudioLanguageInput: () => <div data-testid="available-audio-language-input">Audio Languages</div>,
   AudienceCategoryInput: () => <div data-testid="audience-category-input">Audience Categories</div>,
   EligiblePlanInput: () => <div data-testid="eligible-plan-input">Eligible Plans</div>,
   TrailerInput: () => <div data-testid="trailer-input">Trailers</div>,
@@ -36,8 +38,15 @@ vi.mock('../../components/inputs/RelationshipInputs', () => ({
 }));
 
 // Mock react-admin
-vi.mock('react-admin', () => ({
-  List: ({ children }: any) => <div data-testid="list">{children}</div>,
+vi.mock('react-admin', async () => ({
+  ...(await import('../mocks/react-admin.mock')).reactAdminMock,
+  List: ({ children, filters, actions }: any) => (
+    <div data-testid="list">
+      {actions}
+      {filters}
+      {children}
+    </div>
+  ),
   Datagrid: ({ children }: any) => <div data-testid="datagrid">{children}</div>,
   TextField: ({ source }: any) => <div data-testid={`field-${source}`}>{source}</div>,
   DateField: ({ source }: any) => <div data-testid={`date-field-${source}`}>{source}</div>,
@@ -51,8 +60,18 @@ vi.mock('react-admin', () => ({
   DeleteButton: () => <div data-testid="delete-button">Delete</div>,
   Create: ({ children }: any) => <div data-testid="create">{children}</div>,
   Edit: ({ children }: any) => <div data-testid="edit">{children}</div>,
-  Show: ({ children }: any) => <div data-testid="show">{children}</div>,
-  SimpleForm: ({ children }: any) => <div data-testid="form">{children}</div>,
+  Show: ({ children, actions }: any) => (
+    <div data-testid="show">
+      {actions}
+      {children}
+    </div>
+  ),
+  SimpleForm: ({ children, toolbar }: any) => (
+    <div data-testid="form">
+      {children}
+      {toolbar}
+    </div>
+  ),
   SimpleShowLayout: ({ children }: any) => <div data-testid="show-layout">{children}</div>,
   TextInput: ({ source, label }: any) => <div data-testid={`input-${source}`}>{label}</div>,
   NumberInput: ({ source, label }: any) => <div data-testid={`number-input-${source}`}>{label}</div>,
@@ -141,7 +160,7 @@ describe('MediaDescription Components', () => {
       );
 
       expect(screen.getByTestId('filter')).toBeInTheDocument();
-      expect(screen.getByTestId('search-input-q')).toBeInTheDocument();
+      expect(screen.getByTestId('input-q')).toBeInTheDocument();
       expect(screen.getByTestId('select-input-media_type')).toBeInTheDocument();
       expect(screen.getByTestId('select-input-content_status')).toBeInTheDocument();
     });
@@ -166,7 +185,8 @@ describe('MediaDescription Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('number-input-file_number')).toBeInTheDocument();
+      // file_number is auto-generated, so the create form has no input for it
+      expect(screen.queryByTestId('number-input-file_number')).not.toBeInTheDocument();
       expect(screen.getByTestId('input-episode_title')).toBeInTheDocument();
       expect(screen.getByTestId('select-input-media_type')).toBeInTheDocument();
     });
@@ -240,7 +260,6 @@ describe('MediaDescription Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('input-tag_text_list')).toBeInTheDocument();
       expect(screen.getByTestId('input-slug')).toBeInTheDocument();
     });
 

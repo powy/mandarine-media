@@ -22,7 +22,8 @@ vi.mock('share', () => ({
 }));
 
 // Mock react-admin
-vi.mock('react-admin', () => ({
+vi.mock('react-admin', async () => ({
+  ...(await import('./mocks/react-admin.mock')).reactAdminMock,
   Admin: ({ children }: any) => <div data-testid="admin">{children}</div>,
   Resource: ({ name }: any) => <div data-testid={`resource-${name}`}>{name}</div>,
   Layout: ({ children }: any) => <div data-testid="layout">{children}</div>,
@@ -77,18 +78,16 @@ describe('App Component', () => {
     // Check for core resources
     expect(screen.getByTestId('resource-media-descriptions')).toBeInTheDocument();
     expect(screen.getByTestId('resource-countries')).toBeInTheDocument();
-    expect(screen.getByTestId('resource-territories')).toBeInTheDocument();
     expect(screen.getByTestId('resource-languages')).toBeInTheDocument();
     expect(screen.getByTestId('resource-audience-categories')).toBeInTheDocument();
     expect(screen.getByTestId('resource-subscription-plans')).toBeInTheDocument();
-    expect(screen.getByTestId('resource-themes')).toBeInTheDocument();
     expect(screen.getByTestId('resource-media-themes')).toBeInTheDocument();
     expect(screen.getByTestId('resource-programs')).toBeInTheDocument();
     expect(screen.getByTestId('resource-seasons')).toBeInTheDocument();
     expect(screen.getByTestId('resource-public-persons')).toBeInTheDocument();
     expect(screen.getByTestId('resource-pictures')).toBeInTheDocument();
     expect(screen.getByTestId('resource-users')).toBeInTheDocument();
-    expect(screen.getByTestId('resource-content-lists')).toBeInTheDocument();
+    expect(screen.getByTestId('resource-media-showcases')).toBeInTheDocument();
     expect(screen.getByTestId('resource-screen-descriptions')).toBeInTheDocument();
     expect(screen.getByTestId('resource-video-files')).toBeInTheDocument();
   });

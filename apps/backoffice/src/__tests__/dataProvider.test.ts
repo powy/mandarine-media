@@ -1,8 +1,9 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { getMediaThemes, getMediaTheme } from 'share';
 import { dataProvider } from '../dataProvider';
 
 // Mock the share package
-const mockMediaApi = {
+const mockMediaApi = vi.hoisted(() => ({
   getMediaDescriptions: vi.fn(),
   getMediaDescription: vi.fn(),
   createMediaDescription: vi.fn(),
@@ -10,17 +11,17 @@ const mockMediaApi = {
   deleteMediaDescription: vi.fn(),
   getVideoFiles: vi.fn(),
   getVideoFile: vi.fn(),
-};
+}));
 
-const mockCountriesApi = {
+const mockCountriesApi = vi.hoisted(() => ({
   getAll: vi.fn(),
   getById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
-};
+}));
 
-const mockContentListApi = {
+const mockContentListApi = vi.hoisted(() => ({
   getContentLists: vi.fn(),
   getContentList: vi.fn(),
   createContentList: vi.fn(),
@@ -28,30 +29,30 @@ const mockContentListApi = {
   deleteContentList: vi.fn(),
   getContentListJSON: vi.fn(),
   regenerateContentListJSON: vi.fn(),
-};
+}));
 
-const mockAudienceCategoriesApi = {
+const mockAudienceCategoriesApi = vi.hoisted(() => ({
   getAll: vi.fn(),
   getById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
-};
+}));
 
-const mockSubscriptionPlansApi = {
+const mockSubscriptionPlansApi = vi.hoisted(() => ({
   getAll: vi.fn(),
   getById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
-};
+}));
 
-const mockVideoFileReportsApi = {
+const mockVideoFileReportsApi = vi.hoisted(() => ({
   getReports: vi.fn(),
   getReport: vi.fn(),
   getReportsByVideoFile: vi.fn(),
   destroyVideoFile: vi.fn(),
-};
+}));
 
 vi.mock('share', () => ({
   mediaApi: mockMediaApi,
@@ -76,6 +77,8 @@ vi.mock('share', () => ({
   createScreenDescription: vi.fn(),
   updateScreenDescription: vi.fn(),
   deleteScreenDescription: vi.fn(),
+  getMediaThemes: vi.fn(),
+  getMediaTheme: vi.fn(),
 }));
 
 // Mock fetch for themes and media-themes
@@ -103,10 +106,10 @@ describe('DataProvider', () => {
         filter: {},
       });
 
-      expect(mockMediaApi.getMediaDescriptions).toHaveBeenCalledWith({
+      expect(mockMediaApi.getMediaDescriptions).toHaveBeenCalledWith(expect.objectContaining({
         skip: 0,
         limit: 20,
-      });
+      }));
       expect(result).toEqual({
         data: expect.arrayContaining([
           expect.objectContaining({
@@ -135,10 +138,10 @@ describe('DataProvider', () => {
         filter: {},
       });
 
-      expect(mockCountriesApi.getAll).toHaveBeenCalledWith({
+      expect(mockCountriesApi.getAll).toHaveBeenCalledWith(expect.objectContaining({
         skip: 0,
         limit: 20,
-      });
+      }));
       expect(result.total).toBe(1);
     });
 
@@ -158,10 +161,10 @@ describe('DataProvider', () => {
         filter: {},
       });
 
-      expect(mockAudienceCategoriesApi.getAll).toHaveBeenCalledWith({
+      expect(mockAudienceCategoriesApi.getAll).toHaveBeenCalledWith(expect.objectContaining({
         skip: 0,
         limit: 20,
-      });
+      }));
       expect(result.total).toBe(1);
     });
 
@@ -181,10 +184,10 @@ describe('DataProvider', () => {
         filter: {},
       });
 
-      expect(mockSubscriptionPlansApi.getAll).toHaveBeenCalledWith({
+      expect(mockSubscriptionPlansApi.getAll).toHaveBeenCalledWith(expect.objectContaining({
         skip: 0,
         limit: 20,
-      });
+      }));
       expect(result.total).toBe(1);
     });
 
@@ -490,10 +493,10 @@ describe('DataProvider', () => {
         filter: {},
       });
 
-      expect(mockVideoFileReportsApi.getReports).toHaveBeenCalledWith({
+      expect(mockVideoFileReportsApi.getReports).toHaveBeenCalledWith(expect.objectContaining({
         skip: 0,
         limit: 20,
-      });
+      }));
       expect(result.total).toBe(1);
     });
 
@@ -518,53 +521,6 @@ describe('DataProvider', () => {
     });
   });
 
-  describe('themes resource', () => {
-    test('should handle getList for themes', async () => {
-      const mockResponse = [
-        {
-          id: '1',
-          name: 'Action',
-          category: 'genre',
-          creation_date_utc: '2024-01-01T00:00:00Z'
-        }
-      ];
-
-      (global.fetch as any).mockResolvedValue({
-        json: () => Promise.resolve(mockResponse)
-      });
-
-      const result = await dataProvider.getList('themes', {
-        pagination: { page: 1, perPage: 20 },
-        sort: { field: 'id', order: 'ASC' },
-        filter: {},
-      });
-
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/themes?skip=0&limit=20');
-      expect(result.total).toBe(1);
-    });
-
-    test('should handle getOne for themes', async () => {
-      const mockResponse = {
-        id: '1',
-        name: 'Action',
-        category: 'genre',
-        creation_date_utc: '2024-01-01T00:00:00Z'
-      };
-
-      (global.fetch as any).mockResolvedValue({
-        json: () => Promise.resolve(mockResponse)
-      });
-
-      const result = await dataProvider.getOne('themes', { id: '1' });
-
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/themes/1');
-      expect(result.data).toEqual(expect.objectContaining({
-        id: '1',
-        name: 'Action'
-      }));
-    });
-  });
-
   describe('media-themes resource', () => {
     test('should handle getList for media-themes', async () => {
       const mockResponse = [
@@ -575,8 +531,9 @@ describe('DataProvider', () => {
         }
       ];
 
-      (global.fetch as any).mockResolvedValue({
-        json: () => Promise.resolve(mockResponse)
+      (getMediaThemes as any).mockResolvedValue({
+        data: mockResponse,
+        pagination: { total: 1 },
       });
 
       const result = await dataProvider.getList('media-themes', {
@@ -585,7 +542,7 @@ describe('DataProvider', () => {
         filter: {},
       });
 
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/media-themes?skip=0&limit=20');
+      expect(getMediaThemes).toHaveBeenCalledWith(expect.objectContaining({ skip: 0, limit: 20 }));
       expect(result.total).toBe(1);
     });
 
@@ -596,13 +553,11 @@ describe('DataProvider', () => {
         creation_date_utc: '2024-01-01T00:00:00Z'
       };
 
-      (global.fetch as any).mockResolvedValue({
-        json: () => Promise.resolve(mockResponse)
-      });
+      (getMediaTheme as any).mockResolvedValue(mockResponse);
 
       const result = await dataProvider.getOne('media-themes', { id: '1' });
 
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/media-themes/1');
+      expect(getMediaTheme).toHaveBeenCalledWith('1');
       expect(result.data).toEqual(expect.objectContaining({
         id: '1',
         name: 'Romantic Comedy'

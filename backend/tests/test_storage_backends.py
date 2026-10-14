@@ -4,6 +4,7 @@ import os
 from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
 from io import BytesIO
+from datetime import datetime, timezone
 from fastapi import UploadFile
 
 from app.services.storage.base import MediaFileInfo, UploadResult
@@ -259,7 +260,7 @@ class TestLocalStorageBackend:
         
         # Should contain media type, year, month, UUID, and filename
         assert path.startswith("video/")
-        assert "/2024/" in path or "/2025/" in path  # Current year
+        assert f"/{datetime.now(timezone.utc).year}/" in path  # Current year
         assert "test_video.mp4" in path
         # Should have UUID in the filename
         parts = path.split("/")

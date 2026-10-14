@@ -6,7 +6,13 @@ import { LanguageList, LanguageShow, LanguageCreate, LanguageEdit } from '../../
 
 // Mock react-admin
 vi.mock('react-admin', () => ({
-  List: ({ children }: any) => <div data-testid="list">{children}</div>,
+  List: ({ children, filters, actions }: any) => (
+    <div data-testid="list">
+      {actions}
+      {filters}
+      {children}
+    </div>
+  ),
   Datagrid: ({ children }: any) => <div data-testid="datagrid">{children}</div>,
   TextField: ({ source }: any) => <div data-testid={`field-${source}`}>{source}</div>,
   DateField: ({ source }: any) => <div data-testid={`date-field-${source}`}>{source}</div>,
@@ -15,8 +21,18 @@ vi.mock('react-admin', () => ({
   DeleteButton: () => <div data-testid="delete-button">Delete</div>,
   Create: ({ children }: any) => <div data-testid="create">{children}</div>,
   Edit: ({ children }: any) => <div data-testid="edit">{children}</div>,
-  Show: ({ children }: any) => <div data-testid="show">{children}</div>,
-  SimpleForm: ({ children }: any) => <div data-testid="form">{children}</div>,
+  Show: ({ children, actions }: any) => (
+    <div data-testid="show">
+      {actions}
+      {children}
+    </div>
+  ),
+  SimpleForm: ({ children, toolbar }: any) => (
+    <div data-testid="form">
+      {children}
+      {toolbar}
+    </div>
+  ),
   SimpleShowLayout: ({ children }: any) => <div data-testid="show-layout">{children}</div>,
   TextInput: ({ source, label }: any) => <div data-testid={`input-${source}`}>{label}</div>,
   TopToolbar: ({ children }: any) => <div data-testid="toolbar">{children}</div>,

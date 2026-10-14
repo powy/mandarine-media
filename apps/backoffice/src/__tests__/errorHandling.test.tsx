@@ -5,6 +5,7 @@ import { Router } from 'react-router-dom';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { dataProvider } from '../dataProvider';
 import { authProvider } from '../authProvider';
+import { authApi } from 'share';
 
 // Mock console.error to prevent error logs in test output
 const originalConsoleError = console.error;
@@ -17,13 +18,13 @@ afterEach(() => {
 });
 
 // Mock share with error scenarios
-const mockErrorApi = {
+const mockErrorApi = vi.hoisted(() => ({
   getAll: vi.fn(),
   getById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
-};
+}));
 
 vi.mock('share', () => ({
   authApi: {
@@ -131,38 +132,13 @@ describe('Error Handling Tests', () => {
         })
       ).rejects.toThrow('Unknown resource: unknown-resource');
     });
-
-    test('should handle fetch errors for themes', async () => {
-      (global.fetch as any).mockRejectedValue(new Error('Fetch failed'));
-
-      await expect(
-        dataProvider.getList('themes', {
-          pagination: { page: 1, perPage: 20 },
-          sort: { field: 'id', order: 'ASC' },
-          filter: {},
-        })
-      ).rejects.toThrow('Fetch failed');
-    });
-
-    test('should handle malformed response for themes', async () => {
-      (global.fetch as any).mockResolvedValue({
-        json: () => Promise.reject(new Error('Invalid JSON'))
-      });
-
-      await expect(
-        dataProvider.getList('themes', {
-          pagination: { page: 1, perPage: 20 },
-          sort: { field: 'id', order: 'ASC' },
-          filter: {},
-        })
-      ).rejects.toThrow('Invalid JSON');
-    });
   });
 
   describe('AuthProvider Error Handling', () => {
     test('should handle authentication failures', async () => {
-      const mockAuthApi = require('share').authApi;
+      const mockAuthApi = vi.mocked(authApi);
       mockAuthApi.login.mockRejectedValue({
+        code: 'ERR_BAD_REQUEST',
         response: { status: 401 },
         message: 'Invalid credentials'
       });
@@ -173,7 +149,7 @@ describe('Error Handling Tests', () => {
     });
 
     test('should handle network failures during auth', async () => {
-      const mockAuthApi = require('share').authApi;
+      const mockAuthApi = vi.mocked(authApi);
       mockAuthApi.login.mockRejectedValue({
         code: 'ERR_NETWORK'
       });
@@ -184,14 +160,14 @@ describe('Error Handling Tests', () => {
     });
 
     test('should handle checkAuth failures', async () => {
-      const mockAuthApi = require('share').authApi;
+      const mockAuthApi = vi.mocked(authApi);
       mockAuthApi.isAuthenticated.mockRejectedValue(new Error('Auth check failed'));
 
       await expect(authProvider.checkAuth()).rejects.toThrow('Authentication check failed');
     });
 
     test('should handle identity fetch failures gracefully', async () => {
-      const mockAuthApi = require('share').authApi;
+      const mockAuthApi = vi.mocked(authApi);
       mockAuthApi.isAuthenticated.mockResolvedValue(true);
       mockAuthApi.getCachedUser.mockResolvedValue(null);
       mockAuthApi.getCurrentUser.mockRejectedValue(new Error('User fetch failed'));
@@ -206,7 +182,7 @@ describe('Error Handling Tests', () => {
     });
 
     test('should handle permission check failures gracefully', async () => {
-      const mockAuthApi = require('share').authApi;
+      const mockAuthApi = vi.mocked(authApi);
       mockAuthApi.isAuthenticated.mockResolvedValue(true);
       mockAuthApi.getCachedUser.mockResolvedValue(null);
       mockAuthApi.getCurrentUser.mockRejectedValue(new Error('User fetch failed'));
@@ -242,9 +218,9 @@ describe('Error Handling Tests', () => {
     });
 
     test('should handle malformed pagination data', async () => {
-      mockErrorApi.getAll.mockResolvedValue([
-        { id: '1', name: 'Test', creation_date_utc: '2024-01-01T00:00:00Z' }
-      ]);
+      mockErrorApi.getAll.mockResolvedValue({
+        data: [{ id: '1', name: 'Test', creation_date_utc: '2024-01-01T00:00:00Z' }],
+      });
 
       const result = await dataProvider.getList('countries', {
         pagination: { page: 1, perPage: 20 },

@@ -19,6 +19,10 @@ from app.models.subscription_plan import SubscriptionPlan
 from app.db.database import engine
 
 
+@pytest.mark.skipif(
+    engine.url.drivername.startswith("sqlite"),
+    reason="Inspects the app's configured database (not the test DB); needs a migrated Postgres instance",
+)
 class TestDatabaseTablesExist:
     """Verify all required tables exist in the database"""
 

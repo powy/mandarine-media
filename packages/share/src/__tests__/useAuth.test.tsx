@@ -339,7 +339,8 @@ describe('useAuth Hook', () => {
         await result.current.register(userData);
       });
 
-      expect(mockAuthApi.register).toHaveBeenCalledWith(userData);
+      // React Query v5 passes a mutation context as a 2nd argument; only the payload matters
+      expect(mockAuthApi.register.mock.calls[0][0]).toEqual(userData);
       expect(result.current.isRegistering).toBe(false);
       expect(result.current.registerError).toBeNull();
     });

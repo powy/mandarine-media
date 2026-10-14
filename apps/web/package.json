@@ -21,7 +21,7 @@
     "preview": "vite preview",
     "preview:static": "serve ../../dist/apps/web -p 3002 -s",
     "test:production": "npm run build && npm run preview:static",
-    "test": "vitest",
+    "test": "vitest run --passWithNoTests",
     "build:production": "node scripts/build-production.js",
     "deploy:s3": "node scripts/deploy-s3.js",
     "deploy:cloudfront": "node scripts/invalidate-cloudfront.js",

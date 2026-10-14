@@ -67,7 +67,8 @@ class TestMediaThemesCRUD:
 
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert isinstance(data["data"], list)
+        assert "pagination" in data
 
     def test_list_media_themes_requires_auth(self, client):
         """Test that listing media themes requires authentication."""
@@ -249,13 +250,13 @@ class TestMediaThemesCRUD:
         # Test first page
         response1 = client.get("/api/v1/media-themes?skip=0&limit=10", headers=user_headers)
         assert response1.status_code == 200
-        data1 = response1.json()
+        data1 = response1.json()["data"]
         assert len(data1) == 10
 
         # Test second page
         response2 = client.get("/api/v1/media-themes?skip=10&limit=10", headers=user_headers)
         assert response2.status_code == 200
-        data2 = response2.json()
+        data2 = response2.json()["data"]
         assert len(data2) == 10
 
         # Ensure different results

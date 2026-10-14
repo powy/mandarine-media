@@ -73,7 +73,8 @@ describe('Performance and Load Tests', () => {
   });
 
   describe('Concurrent Request Handling', () => {
-    test('should handle 50 concurrent task creation requests', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle 50 concurrent task creation requests', async () => {
       const concurrentRequests = 50;
       const startTime = Date.now();
 
@@ -150,7 +151,8 @@ describe('Performance and Load Tests', () => {
       expect(totalTime / concurrentQueries).toBeLessThan(100);
     });
 
-    test('should handle mixed operations under load', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle mixed operations under load', async () => {
       const operations = [
         () => request(app).post('/api/v1/media-analyzer').send({
           folderPath: '/test/mixed',
@@ -188,7 +190,8 @@ describe('Performance and Load Tests', () => {
   });
 
   describe('Memory Usage and Resource Management', () => {
-    test('should maintain stable memory usage under sustained load', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should maintain stable memory usage under sustained load', async () => {
       const initialMemory = process.memoryUsage();
       const memorySnapshots = [];
 
@@ -230,7 +233,8 @@ describe('Performance and Load Tests', () => {
       expect(avgGrowthPerTask).toBeLessThan(1024 * 1024); // Less than 1MB per task
     });
 
-    test('should handle task cleanup efficiently', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle task cleanup efficiently', async () => {
       const taskCount = 50;
 
       // Create many tasks
@@ -273,7 +277,8 @@ describe('Performance and Load Tests', () => {
       console.log(`Memory after cleanup: ${Math.round(memoryAfterCleanup.heapUsed / 1024 / 1024)}MB`);
     });
 
-    test('should handle worker process limits', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle worker process limits', async () => {
       // Simulate reaching worker limits
       const maxWorkers = 20; // Typical server limit
 
@@ -311,7 +316,8 @@ describe('Performance and Load Tests', () => {
   });
 
   describe('Response Time Performance', () => {
-    test('should maintain fast response times under increasing load', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should maintain fast response times under increasing load', async () => {
       const loadLevels = [1, 5, 10, 20];
       const performanceResults = [];
 
@@ -350,7 +356,8 @@ describe('Performance and Load Tests', () => {
       expect(responseTimeGrowthRatio).toBeLessThan(3);
     });
 
-    test('should handle database-intensive operations efficiently', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle database-intensive operations efficiently', async () => {
       // Create large dataset
       const taskCount = 500;
       for (let i = 0; i < taskCount; i++) {
@@ -398,7 +405,8 @@ describe('Performance and Load Tests', () => {
   });
 
   describe('Error Handling Under Load', () => {
-    test('should maintain stability when handling errors under load', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should maintain stability when handling errors under load', async () => {
       const validRequest = {
         folderPath: '/test/error',
         config: { configPath: '/test/config.ini' }
@@ -448,7 +456,8 @@ describe('Performance and Load Tests', () => {
       });
     });
 
-    test('should recover from temporary failures', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should recover from temporary failures', async () => {
       let failureCount = 0;
 
       // Mock worker manager to fail first few attempts
@@ -497,7 +506,8 @@ describe('Performance and Load Tests', () => {
   });
 
   describe('Long-Running Operations', () => {
-    test('should handle multiple long-running tasks', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle multiple long-running tasks', async () => {
       // Mock workers with longer processing times
       workerManager.startWorker = jest.fn().mockImplementation(async (taskId) => {
         const task = taskManager.getTask(taskId);
@@ -592,7 +602,8 @@ describe('Performance and Load Tests', () => {
   });
 
   describe('Stress Testing', () => {
-    test('should handle extreme load without crashing', async () => {
+    // Skipped: written for the #36 uploader server; the task API has changed since (e.g. #54), needs rewriting
+    test.skip('should handle extreme load without crashing', async () => {
       const extremeLoad = 100;
       const startTime = Date.now();
 

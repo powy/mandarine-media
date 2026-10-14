@@ -5,7 +5,8 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { UserList, UserShow, UserCreate, UserEdit } from '../../components/resources/Users';
 
 // Mock react-admin
-vi.mock('react-admin', () => ({
+vi.mock('react-admin', async () => ({
+  ...(await import('../mocks/react-admin.mock')).reactAdminMock,
   List: ({ children, filters, actions }: any) => (
     <div data-testid="list">
       {actions}
@@ -25,8 +26,18 @@ vi.mock('react-admin', () => ({
   DeleteButton: () => <div data-testid="delete-button">Delete</div>,
   Create: ({ children }: any) => <div data-testid="create">{children}</div>,
   Edit: ({ children }: any) => <div data-testid="edit">{children}</div>,
-  Show: ({ children }: any) => <div data-testid="show">{children}</div>,
-  SimpleForm: ({ children }: any) => <div data-testid="form">{children}</div>,
+  Show: ({ children, actions }: any) => (
+    <div data-testid="show">
+      {actions}
+      {children}
+    </div>
+  ),
+  SimpleForm: ({ children, toolbar }: any) => (
+    <div data-testid="form">
+      {children}
+      {toolbar}
+    </div>
+  ),
   SimpleShowLayout: ({ children }: any) => <div data-testid="show-layout">{children}</div>,
   TextInput: ({ source, label }: any) => <div data-testid={`input-${source}`}>{label}</div>,
   BooleanInput: ({ source, label }: any) => <div data-testid={`boolean-input-${source}`}>{label}</div>,
@@ -88,9 +99,8 @@ describe('User Components', () => {
       );
 
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
-      expect(screen.getByTestId('email-field-email')).toBeInTheDocument();
-      expect(screen.getByTestId('field-first_name')).toBeInTheDocument();
-      expect(screen.getByTestId('field-last_name')).toBeInTheDocument();
+      expect(screen.getByTestId('field-email')).toBeInTheDocument();
+      expect(screen.getByTestId('field-full_name')).toBeInTheDocument();
       expect(screen.getByTestId('boolean-field-is_active')).toBeInTheDocument();
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
     });
@@ -147,8 +157,7 @@ describe('User Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('input-first_name')).toBeInTheDocument();
-      expect(screen.getByTestId('input-last_name')).toBeInTheDocument();
+      expect(screen.getByTestId('input-full_name')).toBeInTheDocument();
     });
 
     test('includes password field', () => {
@@ -158,7 +167,7 @@ describe('User Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('password-input-password')).toBeInTheDocument();
+      expect(screen.getByTestId('input-password')).toBeInTheDocument();
     });
 
     test('includes active status field', () => {
@@ -212,8 +221,7 @@ describe('User Components', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('input-first_name')).toBeInTheDocument();
-      expect(screen.getByTestId('input-last_name')).toBeInTheDocument();
+      expect(screen.getByTestId('input-full_name')).toBeInTheDocument();
     });
 
     test('includes active status field', () => {
@@ -247,9 +255,8 @@ describe('User Components', () => {
       );
 
       expect(screen.getByTestId('field-id')).toBeInTheDocument();
-      expect(screen.getByTestId('email-field-email')).toBeInTheDocument();
-      expect(screen.getByTestId('field-first_name')).toBeInTheDocument();
-      expect(screen.getByTestId('field-last_name')).toBeInTheDocument();
+      expect(screen.getByTestId('field-email')).toBeInTheDocument();
+      expect(screen.getByTestId('field-full_name')).toBeInTheDocument();
       expect(screen.getByTestId('boolean-field-is_active')).toBeInTheDocument();
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
     });

@@ -119,7 +119,7 @@ class TestMediaDescriptionWithPeopleRoles:
         data = response.json()
 
         # Check basic fields
-        assert data["file_number"] == 99999
+        assert isinstance(data["file_number"], int)  # auto-generated
         assert data["episode_title"] == "Test Movie with People Roles"
 
         # Check that people_roles were processed (backward compatibility should still show old format)
@@ -160,7 +160,7 @@ class TestMediaDescriptionWithPeopleRoles:
         data = response.json()
 
         # Verify the media was created
-        assert data["file_number"] == 99998
+        assert isinstance(data["file_number"], int)  # auto-generated
 
         # Verify both roles exist via the people API
         people_response = client.get(
@@ -200,7 +200,7 @@ class TestMediaDescriptionWithPeopleRoles:
         data = response.json()
 
         # Check that old format still works
-        assert data["file_number"] == 99997
+        assert isinstance(data["file_number"], int)  # auto-generated
 
         # Verify people were assigned (but without position/character info)
         people_response = client.get(

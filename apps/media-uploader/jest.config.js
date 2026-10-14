@@ -5,7 +5,7 @@ export default {
   // ES Modules support
   preset: null,
   transform: {},
-  extensionsToTreatAsEsm: ['.js'],
+  // .js is already treated as ESM via "type": "module" in package.json
   globals: {
     'ts-jest': {
       useESM: true

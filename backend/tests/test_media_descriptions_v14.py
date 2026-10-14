@@ -128,7 +128,7 @@ class TestMediaDescriptionsV14:
         data = response.json()
         
         # Check basic fields
-        assert data["file_number"] == sample_media_v14_data["file_number"]
+        assert isinstance(data["file_number"], int)  # auto-generated
         assert data["episode_title"] == sample_media_v14_data["episode_title"]
         assert data["program_id"] == sample_media_v14_data["program_id"]
         assert data["season_id"] == sample_media_v14_data["season_id"]
@@ -273,7 +273,7 @@ class TestMediaDescriptionsV14:
         # Find our created media in the list
         created_media = None
         for item in data["data"]:
-            if item["file_number"] == sample_media_v14_data["file_number"]:
+            if item["id"] == create_response.json()["id"]:
                 created_media = item
                 break
         

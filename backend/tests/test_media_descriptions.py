@@ -407,14 +407,15 @@ class TestMediaDescriptionCreate:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["file_number"] == sample_media_data["file_number"]
+        # file_number is auto-generated; the provided value is ignored
+        assert isinstance(data["file_number"], int)
         assert data["episode_title"] == sample_media_data["episode_title"]
         assert data["media_type"] == sample_media_data["media_type"]
         assert "id" in data
         assert "creation_date_utc" in data
     
-    def test_create_media_description_duplicate_file_number(self, client, admin_token, sample_media_data):
-        """Test creation with duplicate file number."""
+    def test_create_media_description_ignores_provided_file_number(self, client, admin_token, sample_media_data):
+        """Provided file_number is ignored, so identical payloads get distinct auto-generated numbers."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # First creation should succeed
@@ -425,14 +426,14 @@ class TestMediaDescriptionCreate:
         )
         assert response1.status_code == 200
         
-        # Second creation with same file_number should fail
+        # Second creation with the same payload also succeeds, with a new number
         response2 = client.post(
             "/api/v1/media-descriptions",
             headers=headers,
             json=sample_media_data
         )
-        assert response2.status_code == 409
-        assert "already exists" in response2.json()["detail"]
+        assert response2.status_code == 200
+        assert response1.json()["file_number"] != response2.json()["file_number"]
     
     def test_create_media_description_invalid_data(self, client, admin_token):
         """Test creation with invalid data."""
@@ -698,7 +699,7 @@ class TestMediaDescriptionRead:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == media_id
-        assert data["file_number"] == sample_media_data["file_number"]
+        assert data["file_number"] == create_response.json()["file_number"]
         assert data["episode_title"] == sample_media_data["episode_title"]
     
     # Removed test_read_media_description_admin_no_view_increment - engagement fields removed
@@ -879,7 +880,7 @@ class TestMediaDescriptionUpdate:
         media2_id = create_response2.json()["id"]
         
         # Try to update second media with first media's file_number
-        update_data = {"file_number": 11111}
+        update_data = {"file_number": create_response1.json()["file_number"]}
         response = client.put(
             f"/api/v1/media-descriptions/{media2_id}",
             headers=headers,
@@ -1433,8 +1434,8 @@ class TestBulkMediaDescriptions:
             assert "success_associated_file" in report
             assert "timestamp" in report
     
-    def test_create_bulk_media_descriptions_with_duplicates(self, client, admin_token, sample_media_data):
-        """Test bulk creation with duplicate file numbers."""
+    def test_create_bulk_media_descriptions_ignores_existing_file_number(self, client, admin_token, sample_media_data):
+        """Bulk creation ignores provided file numbers, even ones that already exist."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         # Create one media description first
@@ -1444,7 +1445,7 @@ class TestBulkMediaDescriptions:
             json=sample_media_data
         )
         assert create_response.status_code == 200
-        existing_file_number = sample_media_data["file_number"]
+        existing_file_number = create_response.json()["file_number"]
         
         # Try to create bulk with duplicate file number
         bulk_data = {
@@ -1470,11 +1471,13 @@ class TestBulkMediaDescriptions:
             json=bulk_data
         )
         
-        assert response.status_code == 409
-        assert "already exist" in response.json()["detail"]
+        assert response.status_code == 200
+        result = response.json()
+        assert result["created_count"] == 2
+        assert existing_file_number not in [r["file_number"] for r in result["reports"]]
     
     def test_create_bulk_media_descriptions_duplicate_in_request(self, client, admin_token):
-        """Test bulk creation with duplicate file numbers within the request."""
+        """Duplicate file numbers within one request are ignored; each item gets its own number."""
         headers = {"Authorization": f"Bearer {admin_token}"}
         
         bulk_data = {
@@ -1500,8 +1503,10 @@ class TestBulkMediaDescriptions:
             json=bulk_data
         )
         
-        assert response.status_code == 400
-        assert "Duplicate file_numbers" in response.json()["detail"]
+        assert response.status_code == 200
+        result = response.json()
+        assert result["created_count"] == 2
+        assert len({r["file_number"] for r in result["reports"]}) == 2
     
     def test_create_bulk_media_descriptions_empty_list(self, client, admin_token):
         """Test bulk creation with empty descriptions list."""

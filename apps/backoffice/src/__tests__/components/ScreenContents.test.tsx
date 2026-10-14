@@ -12,6 +12,7 @@ vi.mock('@mui/material', () => ({
   DialogActions: ({ children }: any) => <div data-testid="dialog-actions">{children}</div>,
   Typography: ({ children }: any) => <div data-testid="typography">{children}</div>,
   Box: ({ children }: any) => <div data-testid="box">{children}</div>,
+  Tooltip: ({ children }: any) => <>{children}</>,
 }));
 
 // Mock share package functions
@@ -22,8 +23,15 @@ vi.mock('share', () => ({
 }));
 
 // Mock react-admin
-vi.mock('react-admin', () => ({
-  List: ({ children }: any) => <div data-testid="list">{children}</div>,
+vi.mock('react-admin', async () => ({
+  ...(await import('../mocks/react-admin.mock')).reactAdminMock,
+  List: ({ children, filters, actions }: any) => (
+    <div data-testid="list">
+      {actions}
+      {filters}
+      {children}
+    </div>
+  ),
   Datagrid: ({ children }: any) => <div data-testid="datagrid">{children}</div>,
   TextField: ({ source }: any) => <div data-testid={`field-${source}`}>{source}</div>,
   DateField: ({ source }: any) => <div data-testid={`date-field-${source}`}>{source}</div>,
@@ -37,8 +45,18 @@ vi.mock('react-admin', () => ({
   DeleteButton: () => <div data-testid="delete-button">Delete</div>,
   Create: ({ children }: any) => <div data-testid="create">{children}</div>,
   Edit: ({ children }: any) => <div data-testid="edit">{children}</div>,
-  Show: ({ children }: any) => <div data-testid="show">{children}</div>,
-  SimpleForm: ({ children }: any) => <div data-testid="form">{children}</div>,
+  Show: ({ children, actions }: any) => (
+    <div data-testid="show">
+      {actions}
+      {children}
+    </div>
+  ),
+  SimpleForm: ({ children, toolbar }: any) => (
+    <div data-testid="form">
+      {children}
+      {toolbar}
+    </div>
+  ),
   SimpleShowLayout: ({ children }: any) => <div data-testid="show-layout">{children}</div>,
   TextInput: ({ source, label }: any) => <div data-testid={`input-${source}`}>{label}</div>,
   NumberInput: ({ source, label }: any) => <div data-testid={`number-input-${source}`}>{label}</div>,
@@ -130,7 +148,7 @@ describe('ScreenContent Components', () => {
       );
 
       expect(screen.getByTestId('function-field-description')).toBeInTheDocument();
-      expect(screen.getByTestId('function-field-content-lists')).toBeInTheDocument();
+      expect(screen.getByTestId('function-field-media-showcases')).toBeInTheDocument();
       expect(screen.getByTestId('function-field-json')).toBeInTheDocument();
     });
 
@@ -201,14 +219,14 @@ describe('ScreenContent Components', () => {
       expect(screen.getByTestId('number-input-display_order')).toBeInTheDocument();
     });
 
-    test('includes content lists array input', () => {
+    test('includes media showcases array input', () => {
       render(
         <MemoryRouter>
           <ScreenContentCreate />
         </MemoryRouter>
       );
 
-      expect(screen.getByTestId('array-input-content_lists')).toBeInTheDocument();
+      expect(screen.getByTestId('array-input-media_showcases')).toBeInTheDocument();
     });
 
     test('renders form toolbar', () => {
@@ -256,7 +274,7 @@ describe('ScreenContent Components', () => {
       expect(screen.getByTestId('input-slug')).toBeInTheDocument();
       expect(screen.getByTestId('boolean-input-is_active')).toBeInTheDocument();
       expect(screen.getByTestId('number-input-display_order')).toBeInTheDocument();
-      expect(screen.getByTestId('array-input-content_lists')).toBeInTheDocument();
+      expect(screen.getByTestId('array-input-media_showcases')).toBeInTheDocument();
     });
   });
 
@@ -285,7 +303,7 @@ describe('ScreenContent Components', () => {
       expect(screen.getByTestId('field-slug')).toBeInTheDocument();
       expect(screen.getByTestId('boolean-field-is_active')).toBeInTheDocument();
       expect(screen.getByTestId('field-display_order')).toBeInTheDocument();
-      expect(screen.getByTestId('array-field-content_lists')).toBeInTheDocument();
+      expect(screen.getByTestId('array-field-media_showcases')).toBeInTheDocument();
       expect(screen.getByTestId('date-field-creation_date_utc')).toBeInTheDocument();
     });
 

@@ -1046,7 +1046,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.generatePlaybackToken('video-1');
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/video-files/video-1/playback-token?expiration_minutes=60');
+        expect(mockApiClient.post).toHaveBeenCalledWith('/video-files/video-1/playback-token?expiration_minutes=480');
         expect(result.success).toBe(true);
         expect(result.token).toBeTruthy();
         expect(result.playback_url).toContain('token=');
@@ -1085,7 +1085,7 @@ describe('Media API', () => {
 
         const result = await mediaApi.generateDrmToken('video-1');
 
-        expect(mockApiClient.post).toHaveBeenCalledWith('/video-files/video-1/drm-token?expiration_minutes=60');
+        expect(mockApiClient.post).toHaveBeenCalledWith('/video-files/video-1/drm-token?expiration_minutes=480');
         expect(result.success).toBe(true);
         expect(result.token).toBe('drm-token-123');
       });

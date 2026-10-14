@@ -19,7 +19,7 @@ describe('seasonAdapters', () => {
         episode_number: undefined,
         episode_order: 0,
         image_1920_1080_url: 'https://example.com/season-image.jpg',
-        image_1920_720_url: undefined,
+        image_1920_720_url: 'https://example.com/season-image.jpg',
         image_1080_1080_url: undefined,
         image_810_1080_url: undefined,
         image_1080_1920_url: undefined
@@ -85,7 +85,8 @@ describe('seasonAdapters', () => {
           episode_order: 1,
           media_categories_list: ['comedy'],
           descriptive_summary_text: 'A funny first episode',
-          image_1920_1080_url: 'https://example.com/ep1.jpg'
+          image_1920_1080_url: 'https://example.com/ep1.jpg',
+          image_1920_720_url: 'https://example.com/ep1.jpg'
         }
       ] as SeasonEpisodeItemJSON[];
 
@@ -240,7 +241,8 @@ describe('seasonAdapters', () => {
           is_featured: false,
           episode_number: 1,
           episode_order: 1,
-          image_1920_1080_url: 'https://example.com/ep1-fallback.jpg'
+          image_1920_1080_url: 'https://example.com/ep1-fallback.jpg',
+          image_1920_720_url: 'https://example.com/ep1-fallback.jpg'
         }
       ] as SeasonEpisodeItemJSON[];
 

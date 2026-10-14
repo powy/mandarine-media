@@ -111,8 +111,8 @@ class TestFromTextEndpoint:
         assert data["other_share"] == 0.05
         assert data["revenue_share"] == 0.65
 
-    def test_create_from_text_duplicate_file_number(self, client, db, test_admin_user):
-        """Test creation fails with duplicate file_number"""
+    def test_create_from_text_ignores_provided_file_number(self, client, db, test_admin_user):
+        """Provided file_number is ignored, so a repeated payload gets a new auto-generated number"""
         access_token = create_access_token(subject=test_admin_user.email)
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -124,14 +124,14 @@ class TestFromTextEndpoint:
         )
         assert response1.status_code == 200
         
-        # Try to create another with same file_number
+        # Create another with the same payload: succeeds with a different number
         response2 = client.post(
             "/api/v1/media-descriptions/from-text",
             json=self.test_data_minimal,
             headers=headers
         )
-        assert response2.status_code == 409
-        assert "already exists" in response2.json()["detail"].lower()
+        assert response2.status_code == 200
+        assert response1.json()["file_number"] != response2.json()["file_number"]
 
     def test_create_from_text_auto_file_number(self, client, db, test_admin_user):
         """Test automatic file number generation"""

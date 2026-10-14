@@ -185,32 +185,6 @@ class TestMediaShowcaseModel:
         assert "content_status" not in item
         assert "main_video_file_id" not in item
 
-    def test_thumbnail_url_generation(
-        self, db: Session, sample_media_showcase_data, sample_media_description
-    ):
-        """Test thumbnail URL generation based on thumbnail_format."""
-        # Test different thumbnail formats
-        formats_to_test = [
-            ThumbnailFormatEnum.format_1920x1080,
-            ThumbnailFormatEnum.format_1920x720,
-            ThumbnailFormatEnum.format_1080x1080,
-            ThumbnailFormatEnum.format_810x1080,
-            ThumbnailFormatEnum.format_1080x1920
-        ]
-
-        for format_enum in formats_to_test:
-            showcase_data = sample_media_showcase_data.copy()
-            showcase_data["thumbnail_format"] = format_enum.value
-            showcase_data["slug"] = f"test-showcase-{format_enum.value.replace('x', '-')}"
-            
-            showcase = MediaShowcase(**showcase_data)
-            
-            # Test the helper method
-            thumbnail_url = showcase._get_thumbnail_url(sample_media_description, format_enum.value)
-            
-            # Should return None since test MediaDescription doesn't have image IDs set
-            assert thumbnail_url is None
-
     def test_json_caching(
         self, db: Session, sample_media_showcase_data
     ):

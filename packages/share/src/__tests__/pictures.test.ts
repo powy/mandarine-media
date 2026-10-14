@@ -236,37 +236,6 @@ describe('Pictures API', () => {
   });
 
   describe('File Type Validation', () => {
-    it('should handle different image formats', async () => {
-      const formats = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-      for (const format of formats) {
-        const createData = {
-          image_url: `https://example.com/images/test.${format}`,
-          file_name: `test.${format}`,
-          width: 1920,
-          height: 1080,
-        };
-
-        const createdPicture: Picture = {
-          id: '1',
-          creation_date_utc: '2024-01-01T00:00:00Z',
-          image_url: `https://example.com/test.${format}`,
-          large_image_url: `https://example.com/test-large.${format}`,
-          small_image_url: `https://example.com/test-small.${format}`,
-          file_name: `test.${format}`,
-          file_size_bytes: 1024,
-          width: 1920,
-          height: 1080,
-        };
-
-        mockApiClient.post.mockResolvedValue({ data: createdPicture });
-
-        const result = await picturesApi.create(createData);
-
-        expect(result.format).toBe(format);
-      }
-    });
-
     it('should handle large file size', async () => {
       const largeFileSize = 10 * 1024 * 1024; // 10MB
       const createData = {

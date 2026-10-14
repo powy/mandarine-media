@@ -6,20 +6,20 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { App } from '../App';
 
 // Mock the entire share package with proper API structure
-const mockApiResponse = {
+const mockApiResponse = vi.hoisted(() => ({
   data: [
     { id: '1', name: 'Test Item', creation_date_utc: '2024-01-01T00:00:00Z' }
   ],
   pagination: { total: 1 }
-};
+}));
 
-const createMockApi = () => ({
+const createMockApi = vi.hoisted(() => () => ({
   getAll: vi.fn().mockResolvedValue(mockApiResponse),
   getById: vi.fn().mockResolvedValue(mockApiResponse.data[0]),
   create: vi.fn().mockResolvedValue(mockApiResponse.data[0]),
   update: vi.fn().mockResolvedValue(mockApiResponse.data[0]),
   delete: vi.fn().mockResolvedValue(mockApiResponse.data[0]),
-});
+}));
 
 vi.mock('share', () => ({
   authApi: {
@@ -71,6 +71,7 @@ vi.mock('share', () => ({
   createScreenDescription: vi.fn().mockResolvedValue(mockApiResponse.data[0]),
   updateScreenDescription: vi.fn().mockResolvedValue(mockApiResponse.data[0]),
   deleteScreenDescription: vi.fn().mockResolvedValue(undefined),
+  getMediaShowcases: vi.fn().mockResolvedValue(mockApiResponse),
 }));
 
 // Mock fetch for themes and media-themes
@@ -81,14 +82,20 @@ global.fetch = vi.fn().mockResolvedValue({
 });
 
 // Mock react-admin components to prevent complex rendering
-vi.mock('react-admin', () => ({
-  Admin: ({ children, dataProvider, authProvider }: any) => (
+vi.mock('react-admin', async () => ({
+  ...(await import('./mocks/react-admin.mock')).reactAdminMock,
+  Admin: ({ children, dataProvider, authProvider, layout: AdminLayout }: any) => (
     <div data-testid="admin" data-dp={!!dataProvider} data-ap={!!authProvider}>
-      {children}
+      {AdminLayout ? <AdminLayout>{children}</AdminLayout> : children}
     </div>
   ),
   Resource: ({ name }: any) => <div data-testid={`resource-${name}`}>{name}</div>,
-  Layout: ({ children }: any) => <div data-testid="layout">{children}</div>,
+  Layout: ({ children, menu: LayoutMenu }: any) => (
+    <div data-testid="layout">
+      {LayoutMenu && <LayoutMenu />}
+      {children}
+    </div>
+  ),
   AppBar: ({ children }: any) => <div data-testid="appbar">{children}</div>,
   Menu: ({ children }: any) => <div data-testid="menu">{children}</div>,
   MenuItemLink: ({ primaryText, to }: any) => (
@@ -130,18 +137,16 @@ describe('App Integration Tests', () => {
     // Core resources
     expect(screen.getByTestId('resource-media-descriptions')).toBeInTheDocument();
     expect(screen.getByTestId('resource-countries')).toBeInTheDocument();
-    expect(screen.getByTestId('resource-territories')).toBeInTheDocument();
     expect(screen.getByTestId('resource-languages')).toBeInTheDocument();
     expect(screen.getByTestId('resource-audience-categories')).toBeInTheDocument();
     expect(screen.getByTestId('resource-subscription-plans')).toBeInTheDocument();
-    expect(screen.getByTestId('resource-themes')).toBeInTheDocument();
     expect(screen.getByTestId('resource-media-themes')).toBeInTheDocument();
     expect(screen.getByTestId('resource-programs')).toBeInTheDocument();
     expect(screen.getByTestId('resource-seasons')).toBeInTheDocument();
     expect(screen.getByTestId('resource-public-persons')).toBeInTheDocument();
     expect(screen.getByTestId('resource-pictures')).toBeInTheDocument();
     expect(screen.getByTestId('resource-users')).toBeInTheDocument();
-    expect(screen.getByTestId('resource-content-lists')).toBeInTheDocument();
+    expect(screen.getByTestId('resource-media-showcases')).toBeInTheDocument();
     expect(screen.getByTestId('resource-screen-descriptions')).toBeInTheDocument();
     expect(screen.getByTestId('resource-video-files')).toBeInTheDocument();
     expect(screen.getByTestId('resource-video-file-reports')).toBeInTheDocument();
@@ -218,9 +223,9 @@ describe('Component Integration Tests', () => {
     
     // Test that all resources can be queried without throwing
     const resources = [
-      'countries', 'territories', 'languages', 'media-descriptions',
+      'countries', 'languages', 'media-descriptions',
       'pictures', 'programs', 'seasons', 'public-persons', 'users',
-      'content-lists', 'screen-descriptions', 'video-files',
+      'media-showcases', 'screen-descriptions', 'video-files',
       'audience-categories', 'subscription-plans', 'video-file-reports'
     ];
 

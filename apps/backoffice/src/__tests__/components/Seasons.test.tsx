@@ -5,7 +5,8 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { SeasonList, SeasonShow, SeasonCreate, SeasonEdit } from '../../components/resources/Seasons';
 
 // Mock react-admin
-vi.mock('react-admin', () => ({
+vi.mock('react-admin', async () => ({
+  ...(await import('../mocks/react-admin.mock')).reactAdminMock,
   List: ({ children, filters, actions }: any) => (
     <div data-testid="list">
       {actions}

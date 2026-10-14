@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --experimental-vm-modules ../../node_modules/.bin/jest --config=jest.config.js",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config=jest.config.js",
     "test:unit": "cross-env NODE_ENV=test NODE_OPTIONS=\"--experimental-vm-modules\" jest tests/unit",
     "test:integration": "cross-env NODE_ENV=test NODE_OPTIONS=\"--experimental-vm-modules\" jest tests/integration",
     "test:orchestration": "node --experimental-vm-modules tests/orchestration-regressions.js",

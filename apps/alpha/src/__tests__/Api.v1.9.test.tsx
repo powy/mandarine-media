@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DebugGetScreen } from '../screens/DebugGetScreen';
 
@@ -150,9 +150,7 @@ describe('API v1.9 Features Tests', () => {
     renderWithProvider(<DebugGetScreen />);
     
     // Wait for component to load and make API calls
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    expect(getScreenDescriptions).toHaveBeenCalledWith({ limit: 10 });
+    await waitFor(() => expect(getScreenDescriptions).toHaveBeenCalledWith({ limit: 10 }));
   });
 
   it('should handle MediaDescription with v1.9 fields (tag_text_list, slug)', async () => {
@@ -161,9 +159,7 @@ describe('API v1.9 Features Tests', () => {
     renderWithProvider(<DebugGetScreen />);
     
     // Wait for component to load and make API calls
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    expect(mediaApi.getMediaDescriptions).toHaveBeenCalledWith({ limit: 10 });
+    await waitFor(() => expect(mediaApi.getMediaDescriptions).toHaveBeenCalledWith({ limit: 10 }));
     
     // Verify v1.9 response structure is expected
     const mockResponse = await mediaApi.getMediaDescriptions({ limit: 10 });
